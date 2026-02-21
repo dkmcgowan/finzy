@@ -279,7 +279,7 @@ class CompanionRemoteProvider with ChangeNotifier {
 
   void sendCommand(RemoteCommandType type, {Map<String, dynamic>? data}) {
     if (_peerService == null || !isConnected) {
-      appLogger.w('CompanionRemote: Cannot send command - not connected');
+      appLogger.d('CompanionRemote: Cannot send command - not connected');
       return;
     }
 

@@ -202,6 +202,9 @@ class MobileVideoControls extends StatelessWidget {
           enabled: canControl,
           showFinishTime: true,
           thumbnailUrlBuilder: thumbnailUrlBuilder,
+          fallbackDuration: metadata.duration != null
+              ? Duration(milliseconds: metadata.duration!)
+              : null,
         ),
       ),
     );

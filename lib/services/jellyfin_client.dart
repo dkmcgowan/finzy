@@ -543,6 +543,24 @@ class JellyfinClient implements MediaServerClient {
   @override
   Future<List<PlexMetadata>> getExtras(String ratingKey) async {
     if (_offlineMode) return [];
+    // Prefer local trailers (streamable in-app); fall back to remote (URLs open in browser).
+    try {
+      final localResponse = await _dio.get<dynamic>(
+        '/Users/${config.userId}/Items/$ratingKey/LocalTrailers',
+      );
+      final localData = localResponse.data;
+      final localList = localData is List ? localData : (localData is Map ? (localData['Items'] as List?) ?? [] : null);
+      if (localList != null && localList.isNotEmpty) {
+        final list = <PlexMetadata>[];
+        for (final t in localList) {
+          if (t is! Map<String, dynamic>) continue;
+          final meta = _itemToMetadata(t);
+          list.add(meta.copyWith(subtype: 'trailer'));
+        }
+        return list;
+      }
+    } catch (_) {}
+
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/Users/${config.userId}/Items/$ratingKey',
@@ -670,15 +688,30 @@ class JellyfinClient implements MediaServerClient {
           if (mediaSources != null && mediaSources.isNotEmpty) {
             final idx = mediaIndex.clamp(0, mediaSources.length - 1);
             final source = mediaSources[idx] as Map<String, dynamic>;
-            final directUrl = source['DirectStreamUrl'] as String?;
-            final transcodeUrl = source['TranscodingUrl'] as String?;
-            videoUrl = directUrl ?? transcodeUrl;
-            if (videoUrl != null && !videoUrl.startsWith('http')) {
-              videoUrl = '${config.baseUrl}$videoUrl';
-              if (!videoUrl.contains('?')) {
-                videoUrl = '$videoUrl?api_key=${config.token}';
-              } else {
-                videoUrl = '$videoUrl&api_key=${config.token}';
+            final container = source['Container'] as String?;
+            // Prefer a direct, Range-capable stream so MPV can seek. The server may return
+            // TranscodingUrl (e.g. HLS) which is not seekable. Build stream.{container} with
+            // static=true to request the original file / direct stream (HTTP Range support).
+            if (container != null && container.isNotEmpty) {
+              final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
+              final q = <String>['static=true', 'allowVideoStreamCopy=true', 'allowAudioStreamCopy=true', 'api_key=${config.token}'];
+              final mediaSourceId = source['Id'] as String?;
+              if (mediaSourceId != null && mediaSourceId.isNotEmpty) {
+                q.add('mediaSourceId=$mediaSourceId');
+              }
+              videoUrl = '${base}Videos/$ratingKey/stream.$container?${q.join('&')}';
+            }
+            if (videoUrl == null) {
+              final directUrl = source['DirectStreamUrl'] as String?;
+              final transcodeUrl = source['TranscodingUrl'] as String?;
+              videoUrl = directUrl ?? transcodeUrl;
+              if (videoUrl != null && !videoUrl.startsWith('http')) {
+                videoUrl = '${config.baseUrl}$videoUrl';
+                if (!videoUrl.contains('?')) {
+                  videoUrl = '$videoUrl?api_key=${config.token}';
+                } else {
+                  videoUrl = '$videoUrl&api_key=${config.token}';
+                }
               }
             }
             videoUrl ??= '${config.baseUrl}/Videos/$ratingKey/stream?api_key=${config.token}';

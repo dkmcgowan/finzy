@@ -118,11 +118,10 @@ class PlayerNative extends PlayerBase {
       await setProperty('http-header-fields', headerList.join(','));
     }
 
-    // Set start position if provided (must be set before loading file)
+    // Set start position if provided (must be set before loading file).
     if (media.start != null && media.start!.inSeconds > 0) {
       await setProperty('start', media.start!.inSeconds.toString());
     } else {
-      // Reset start position if not resuming
       await setProperty('start', 'none');
     }
 

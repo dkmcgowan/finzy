@@ -165,7 +165,8 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
 
       case 'duration':
         if (value is num) {
-          final duration = Duration(milliseconds: (value * 1000).toInt());
+          final durationMs = (value * 1000).toInt();
+          final duration = Duration(milliseconds: durationMs);
           _state = _state.copyWith(duration: duration);
           durationController.add(duration);
         }

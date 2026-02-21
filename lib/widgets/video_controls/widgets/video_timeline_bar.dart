@@ -39,6 +39,10 @@ class VideoTimelineBar extends StatelessWidget {
   /// Optional callback that returns a thumbnail URL for a given timestamp.
   final String Function(Duration time)? thumbnailUrlBuilder;
 
+  /// When the player reports a growing or zero duration (e.g. HLS), use this as
+  /// the timeline scale so the progress bar doesn't jump.
+  final Duration? fallbackDuration;
+
   const VideoTimelineBar({
     super.key,
     required this.player,
@@ -53,6 +57,7 @@ class VideoTimelineBar extends StatelessWidget {
     this.enabled = true,
     this.showFinishTime = false,
     this.thumbnailUrlBuilder,
+    this.fallbackDuration,
   });
 
   @override
@@ -66,19 +71,25 @@ class VideoTimelineBar extends StatelessWidget {
           initialData: player.state.duration,
           builder: (context, durationSnapshot) {
             final position = positionSnapshot.data ?? Duration.zero;
-            final duration = durationSnapshot.data ?? Duration.zero;
+            final playerDuration = durationSnapshot.data ?? Duration.zero;
+            // Use fallback when player duration is zero or smaller (e.g. HLS buffer growth)
+            final duration = (fallbackDuration != null &&
+                    (playerDuration.inMilliseconds == 0 ||
+                        playerDuration.inMilliseconds < fallbackDuration!.inMilliseconds))
+                ? fallbackDuration!
+                : playerDuration;
             final remaining = position - duration; // We want this to be negative
 
             return horizontalLayout
-                ? _buildHorizontalLayout(position, duration, remaining)
-                : _buildVerticalLayout(position, duration, remaining);
+                ? _buildHorizontalLayout(position, duration, remaining, playerDuration)
+                : _buildVerticalLayout(position, duration, remaining, playerDuration);
           },
         );
       },
     );
   }
 
-  Widget _buildHorizontalLayout(Duration position, Duration duration, Duration remaining) {
+  Widget _buildHorizontalLayout(Duration position, Duration duration, Duration remaining, Duration playerDuration) {
     return Row(
       children: [
         _buildTimestamp(position),
@@ -90,7 +101,7 @@ class VideoTimelineBar extends StatelessWidget {
     );
   }
 
-  Widget _buildVerticalLayout(Duration position, Duration duration, Duration remaining) {
+  Widget _buildVerticalLayout(Duration position, Duration duration, Duration remaining, Duration playerDuration) {
     return Column(
       children: [
         _buildSlider(position, duration),

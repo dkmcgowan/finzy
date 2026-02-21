@@ -477,6 +477,9 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
               onFocusChange: _onFocusChange,
               enabled: canInteract,
               thumbnailUrlBuilder: widget.thumbnailUrlBuilder,
+              fallbackDuration: widget.metadata.duration != null
+                  ? Duration(milliseconds: widget.metadata.duration!)
+                  : null,
             ),
             const SizedBox(height: 4),
           ],
