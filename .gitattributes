@@ -1,3 +1,6 @@
+# Normalize line endings to LF so git add does not warn on Windows.
+* text=auto eol=lf
+
 *.sh text eol=lf
 *.Dockerfile text eol=lf
 Dockerfile text eol=lf
