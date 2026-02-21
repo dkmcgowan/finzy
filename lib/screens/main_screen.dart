@@ -6,7 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../i18n/strings.g.dart';
 import '../services/update_service.dart';
 import '../utils/app_logger.dart';
@@ -28,7 +28,9 @@ import '../providers/user_profile_provider.dart';
 import '../services/offline_watch_sync_service.dart';
 import '../services/settings_service.dart';
 import '../providers/offline_mode_provider.dart';
+import '../models/registered_server.dart';
 import '../services/plex_auth_service.dart';
+import '../services/server_registry.dart';
 import '../services/storage_service.dart';
 import '../services/companion_remote/companion_remote_receiver.dart';
 import '../providers/companion_remote_provider.dart';
@@ -72,7 +74,7 @@ class MainScreenFocusScope extends InheritedWidget {
 }
 
 class MainScreen extends StatefulWidget {
-  final PlexClient? client;
+  final MediaServerClient? client;
   final bool isOfflineMode;
 
   const MainScreen({super.key, this.client, this.isOfflineMode = false});
@@ -784,28 +786,30 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     _sideNavKey.currentState?.reloadLibraries();
   }
 
-  /// Invalidate all cached data across all screens when profile is switched
-  /// Receives the list of servers with new profile tokens for reconnection
+  /// Invalidate all cached data across all screens when profile is switched.
+  /// Receives the list of Plex servers with new profile tokens; merges with any Jellyfin servers from registry.
   Future<void> _invalidateAllScreens(List<PlexServer> servers) async {
-    appLogger.d('Invalidating all screen data due to profile switch with ${servers.length} servers');
+    appLogger.d('Invalidating all screen data due to profile switch with ${servers.length} Plex servers');
 
-    // Get all providers
     final multiServerProvider = context.read<MultiServerProvider>();
     final serverStateProvider = context.read<ServerStateProvider>();
     final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
     final librariesProvider = context.read<LibrariesProvider>();
     final playbackStateProvider = context.read<PlaybackStateProvider>();
 
-    // Clear libraries provider state before reconnecting
     librariesProvider.clear();
 
-    // Reconnect to all servers with new profile tokens
-    if (servers.isNotEmpty) {
-      final storage = await StorageService.getInstance();
+    final storage = await StorageService.getInstance();
+    final registry = ServerRegistry(storage);
+    final existing = await registry.getServers();
+    final jellyfinServers = existing.where((s) => s.isJellyfin).toList();
+    final registeredServers = [...jellyfinServers, ...servers.map((s) => RegisteredServer.plex(s))];
+
+    if (registeredServers.isNotEmpty) {
       final clientId = storage.getClientIdentifier();
 
-      final connectedCount = await multiServerProvider.reconnectWithServers(servers, clientIdentifier: clientId);
-      appLogger.d('Reconnected to $connectedCount/${servers.length} servers after profile switch');
+      final connectedCount = await multiServerProvider.reconnectWithServers(registeredServers, clientIdentifier: clientId);
+      appLogger.d('Reconnected to $connectedCount/${registeredServers.length} servers after profile switch');
 
       // Trigger watch state sync now that servers are connected
       if (connectedCount > 0) {

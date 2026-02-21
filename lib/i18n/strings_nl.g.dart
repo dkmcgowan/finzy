@@ -94,6 +94,12 @@ class _TranslationsAuthNl implements TranslationsAuthEn {
 
 	// Translations
 	@override String get signInWithPlex => 'Inloggen met Plex';
+	@override String get signInWithJellyfin => 'Inloggen met Jellyfin';
+	@override String get jellyfinServerUrl => 'Server-URL';
+	@override String get jellyfinServerUrlHint => 'https://jouw-jellyfin.voorbeeld.com';
+	@override String get jellyfinUsername => 'Gebruikersnaam';
+	@override String get jellyfinPassword => 'Wachtwoord';
+	@override String get jellyfinSignIn => 'Inloggen';
 	@override String get showQRCode => 'Toon QR-code';
 	@override String get authenticate => 'Authenticeren';
 	@override String get debugEnterToken => 'Debug: Voer Plex Token in';
@@ -231,6 +237,8 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get useGlobalHubsDescription => 'Toon startpagina-hubs zoals de officiële Plex-client. Indien uitgeschakeld, worden in plaats daarvan aanbevelingen per bibliotheek getoond.';
 	@override String get showServerNameOnHubs => 'Servernaam tonen bij hubs';
 	@override String get showServerNameOnHubsDescription => 'Toon altijd de servernaam in hub-titels. Indien uitgeschakeld, alleen bij dubbele hub-namen.';
+	@override String get showJellyfinRecommendations => 'Jellyfin filmaanbevelingen';
+	@override String get showJellyfinRecommendationsDescription => 'Toon "Omdat je keek" en vergelijkbare aanbevelingsrijen in de Aanbevolen-tab van de filmlibrary. Standaard uit tot het servergedrag verbetert.';
 	@override String get alwaysKeepSidebarOpen => 'Zijbalk altijd open houden';
 	@override String get alwaysKeepSidebarOpenDescription => 'Zijbalk blijft uitgevouwen en inhoudsgebied past zich aan';
 	@override String get showUnwatchedCount => 'Aantal ongekeken tonen';
@@ -694,6 +702,7 @@ class _TranslationsLibrariesNl implements TranslationsLibrariesEn {
 	@override String filtersWithCount({required Object count}) => 'Filters (${count})';
 	@override String get noRecommendations => 'Geen aanbevelingen beschikbaar';
 	@override String get noCollections => 'Geen collecties in deze bibliotheek';
+	@override String get noFavorites => 'Geen favorieten in deze bibliotheek';
 	@override String get noFoldersFound => 'Geen mappen gevonden';
 	@override String get folders => 'mappen';
 	@override late final _TranslationsLibrariesTabsNl tabs = _TranslationsLibrariesTabsNl._(_root);
@@ -1099,6 +1108,7 @@ class _TranslationsLibrariesTabsNl implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => 'Aanbevolen';
 	@override String get browse => 'Bladeren';
+	@override String get favorites => 'Favorieten';
 	@override String get collections => 'Collecties';
 	@override String get playlists => 'Afspeellijsten';
 }
@@ -1232,6 +1242,12 @@ extension on TranslationsNl {
 		return switch (path) {
 			'app.title' => 'Plezy',
 			'auth.signInWithPlex' => 'Inloggen met Plex',
+			'auth.signInWithJellyfin' => 'Inloggen met Jellyfin',
+			'auth.jellyfinServerUrl' => 'Server-URL',
+			'auth.jellyfinServerUrlHint' => 'https://jouw-jellyfin.voorbeeld.com',
+			'auth.jellyfinUsername' => 'Gebruikersnaam',
+			'auth.jellyfinPassword' => 'Wachtwoord',
+			'auth.jellyfinSignIn' => 'Inloggen',
 			'auth.showQRCode' => 'Toon QR-code',
 			'auth.authenticate' => 'Authenticeren',
 			'auth.debugEnterToken' => 'Debug: Voer Plex Token in',
@@ -1333,6 +1349,8 @@ extension on TranslationsNl {
 			'settings.useGlobalHubsDescription' => 'Toon startpagina-hubs zoals de officiële Plex-client. Indien uitgeschakeld, worden in plaats daarvan aanbevelingen per bibliotheek getoond.',
 			'settings.showServerNameOnHubs' => 'Servernaam tonen bij hubs',
 			'settings.showServerNameOnHubsDescription' => 'Toon altijd de servernaam in hub-titels. Indien uitgeschakeld, alleen bij dubbele hub-namen.',
+			'settings.showJellyfinRecommendations' => 'Jellyfin filmaanbevelingen',
+			'settings.showJellyfinRecommendationsDescription' => 'Toon "Omdat je keek" en vergelijkbare aanbevelingsrijen in de Aanbevolen-tab van de filmlibrary. Standaard uit tot het servergedrag verbetert.',
 			'settings.alwaysKeepSidebarOpen' => 'Zijbalk altijd open houden',
 			'settings.alwaysKeepSidebarOpenDescription' => 'Zijbalk blijft uitgevouwen en inhoudsgebied past zich aan',
 			'settings.showUnwatchedCount' => 'Aantal ongekeken tonen',
@@ -1674,10 +1692,12 @@ extension on TranslationsNl {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
 			'libraries.noRecommendations' => 'Geen aanbevelingen beschikbaar',
 			'libraries.noCollections' => 'Geen collecties in deze bibliotheek',
+			'libraries.noFavorites' => 'Geen favorieten in deze bibliotheek',
 			'libraries.noFoldersFound' => 'Geen mappen gevonden',
 			'libraries.folders' => 'mappen',
 			'libraries.tabs.recommended' => 'Aanbevolen',
 			'libraries.tabs.browse' => 'Bladeren',
+			'libraries.tabs.favorites' => 'Favorieten',
 			'libraries.tabs.collections' => 'Collecties',
 			'libraries.tabs.playlists' => 'Afspeellijsten',
 			'libraries.groupings.all' => 'Alles',
@@ -1732,6 +1752,8 @@ extension on TranslationsNl {
 			'liveTv.noRecordings' => 'Geen opnames gepland',
 			'liveTv.noSubscriptions' => 'Geen opnameregels',
 			'liveTv.channelNumber' => ({required Object number}) => 'Kanaal ${number}',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
 			'liveTv.premiere' => 'NIEUW',
@@ -1742,8 +1764,6 @@ extension on TranslationsNl {
 			'liveTv.today' => 'Vandaag',
 			'liveTv.midnight' => 'Middernacht',
 			'liveTv.overnight' => 'Nacht',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.morning' => 'Ochtend',
 			'liveTv.daytime' => 'Overdag',
 			'liveTv.evening' => 'Avond',

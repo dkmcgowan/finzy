@@ -25,7 +25,7 @@ import '../overlay_sheet.dart';
 import '../../focus/dpad_navigator.dart';
 import '../../focus/focusable_wrapper.dart';
 
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../../services/plex_api_cache.dart';
 import '../../models/plex_media_info.dart';
 import '../../models/plex_media_version.dart';
@@ -211,8 +211,8 @@ class _PlexVideoControlsState extends State<PlexVideoControls> with WindowListen
   // GlobalKey to access DesktopVideoControls state for focus management
   final GlobalKey<DesktopVideoControlsState> _desktopControlsKey = GlobalKey<DesktopVideoControlsState>();
 
-  /// Get the correct PlexClient for this metadata's server
-  PlexClient _getClientForMetadata() {
+  /// Get the correct MediaServerClient for this metadata's server
+  MediaServerClient _getClientForMetadata() {
     return context.getClientForServer(widget.metadata.serverId!);
   }
 

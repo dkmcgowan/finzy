@@ -32,6 +32,7 @@ import '../utils/plex_cache_parser.dart';
 import '../utils/plex_url_helper.dart';
 import '../utils/watch_state_notifier.dart';
 import 'plex_api_cache.dart';
+import 'media_server_client.dart';
 
 /// Constants for Plex stream types
 class PlexStreamType {
@@ -49,7 +50,7 @@ class ConnectionTestResult {
   ConnectionTestResult({required this.success, required this.latencyMs, this.error});
 }
 
-class PlexClient {
+class PlexClient implements MediaServerClient {
   PlexConfig config;
   late final Dio _dio;
   final EndpointFailoverManager? _endpointManager;
@@ -57,10 +58,24 @@ class PlexClient {
   final VoidCallback? _onAllEndpointsExhausted;
 
   /// Server identifier - all PlexMetadata items created by this client are tagged with this
+  @override
   final String serverId;
 
   /// Server name - all PlexMetadata items created by this client are tagged with this
+  @override
   final String? serverName;
+
+  @override
+  String get baseUrl => config.baseUrl;
+
+  @override
+  String? get token => config.token;
+
+  @override
+  Map<String, String> get requestHeaders => config.headers;
+
+  @override
+  bool get isJellyfin => false;
 
   /// API response cache for offline support
   final PlexApiCache _cache = PlexApiCache.instance;
@@ -69,11 +84,13 @@ class PlexClient {
   bool _offlineMode = false;
 
   /// Set offline mode - when true, only cached responses are returned
+  @override
   void setOfflineMode(bool offline) {
     _offlineMode = offline;
   }
 
   /// Get current offline mode state
+  @override
   bool get isOfflineMode => _offlineMode;
 
   /// Custom response decoder that handles malformed UTF-8 gracefully
@@ -305,6 +322,7 @@ class PlexClient {
   // ============================================================================
 
   /// Get server identity
+  @override
   Future<Map<String, dynamic>> getServerIdentity() async {
     final response = await _dio.get('/identity');
     return response.data;
@@ -312,18 +330,20 @@ class PlexClient {
 
   /// Get library sections
   /// Returns libraries automatically tagged with this client's serverId and serverName
+  @override
   Future<List<PlexLibrary>> getLibraries() async {
     final response = await _dio.get('/library/sections');
     return _extractLibraryList(response);
   }
 
   /// Get library content by section ID
+  @override
   Future<List<PlexMetadata>> getLibraryContent(
     String sectionId, {
     int? start,
     int? size,
     Map<String, String>? filters,
-    CancelToken? cancelToken,
+    dynamic cancelToken,
   }) async {
     final queryParams = <String, dynamic>{};
     if (start != null) queryParams['X-Plex-Container-Start'] = start;
@@ -337,7 +357,7 @@ class PlexClient {
     final response = await _dio.get(
       '/library/sections/$sectionId/all',
       queryParameters: queryParams,
-      cancelToken: cancelToken,
+      cancelToken: cancelToken as CancelToken?,
     );
 
     return _extractMetadataList(response);
@@ -353,6 +373,7 @@ class PlexClient {
   }
 
   /// Get the server's machine identifier
+  @override
   Future<String?> getMachineIdentifier() async {
     try {
       final response = await _dio.get('/');
@@ -367,6 +388,7 @@ class PlexClient {
 
   /// Build a proper metadata URI for adding to playlists
   /// Returns URI in format: server://{machineId}/com.plexapp.plugins.library/library/metadata/{ratingKey}
+  @override
   Future<String> buildMetadataUri(String ratingKey) async {
     // Use cached machine identifier from config if available
     final machineId = config.machineIdentifier ?? await getMachineIdentifier();
@@ -380,6 +402,7 @@ class PlexClient {
   /// Uses cache when offline or as fallback on network error
   /// Note: OnDeck data is not relevant for offline mode
   /// Always fetches with chapters/markers but caches at base endpoint
+  @override
   Future<Map<String, dynamic>> getMetadataWithImagesAndOnDeck(String ratingKey) async {
     // Cache key is always the base endpoint (no query params)
     final cacheKey = '/library/metadata/$ratingKey';
@@ -428,6 +451,7 @@ class PlexClient {
   /// Get metadata by rating key with images (includes clearLogo)
   /// Uses cache when offline or as fallback on network error
   /// Always fetches with chapters/markers but caches at base endpoint
+  @override
   Future<PlexMetadata?> getMetadataWithImages(String ratingKey) async {
     // Cache key is always the base endpoint (no query params)
     final cacheKey = '/library/metadata/$ratingKey';
@@ -588,6 +612,7 @@ class PlexClient {
   /// Set per-media language preferences (audio and subtitle)
   /// For TV shows, use grandparentRatingKey to set preference for the entire series
   /// For movies, use the movie's ratingKey
+  @override
   Future<bool> setMetadataPreferences(String ratingKey, {String? audioLanguage, String? subtitleLanguage}) async {
     final queryParams = <String, dynamic>{};
     if (audioLanguage != null) {
@@ -611,6 +636,7 @@ class PlexClient {
   /// Select specific audio and subtitle streams for playback
   /// This updates which streams are "selected" in the media metadata
   /// Uses the part ID from media info for accurate stream selection
+  @override
   Future<bool> selectStreams(int partId, {int? audioStreamID, int? subtitleStreamID, bool allParts = true}) async {
     final queryParams = <String, dynamic>{};
     if (audioStreamID != null) {
@@ -638,6 +664,7 @@ class PlexClient {
 
   /// Search across all libraries using the hub search endpoint
   /// Only returns movies and shows, filtering out seasons and episodes
+  @override
   Future<List<PlexMetadata>> search(String query, {int limit = 10}) async {
     final response = await _dio.get(
       '/hubs/search',
@@ -689,6 +716,7 @@ class PlexClient {
   }
 
   /// Get recently added media (filtered to video content only)
+  @override
   Future<List<PlexMetadata>> getRecentlyAdded({int limit = 50}) async {
     final response = await _dio.get(
       '/library/recentlyAdded',
@@ -701,6 +729,7 @@ class PlexClient {
   }
 
   /// Get on deck items (continue watching, filtered to video content only)
+  @override
   Future<List<PlexMetadata>> getOnDeck() async {
     final response = await _dio.get('/library/onDeck');
     final container = _getMediaContainer(response);
@@ -716,6 +745,7 @@ class PlexClient {
   }
 
   /// Get on deck items filtered by a specific library section
+  @override
   Future<List<PlexMetadata>> getOnDeckForLibrary(String sectionId) async {
     final allOnDeck = await getOnDeck();
 
@@ -727,6 +757,7 @@ class PlexClient {
 
   /// Get children of a metadata item (e.g., seasons for a show, episodes for a season)
   /// Uses cache when offline or as fallback on network error
+  @override
   Future<List<PlexMetadata>> getChildren(String ratingKey) async {
     final endpoint = '/library/metadata/$ratingKey/children';
 
@@ -741,6 +772,7 @@ class PlexClient {
 
   /// Get extras for a metadata item (trailers, behind-the-scenes, etc.)
   /// Uses cache when offline or as fallback on network error
+  @override
   Future<List<PlexMetadata>> getExtras(String ratingKey) async {
     final endpoint = '/library/metadata/$ratingKey/extras';
 
@@ -754,6 +786,7 @@ class PlexClient {
   }
 
   /// Get all unwatched episodes for a TV show across all seasons
+  @override
   Future<List<PlexMetadata>> getAllUnwatchedEpisodes(String showRatingKey) async {
     final allEpisodes = <PlexMetadata>[];
 
@@ -776,6 +809,7 @@ class PlexClient {
   }
 
   /// Get all unwatched episodes in a specific season
+  @override
   Future<List<PlexMetadata>> getUnwatchedEpisodesInSeason(String seasonRatingKey) async {
     final episodes = await getChildren(seasonRatingKey);
 
@@ -783,7 +817,11 @@ class PlexClient {
     return episodes.where((ep) => ep.isEpisode && (ep.viewCount ?? 0) == 0).toList();
   }
 
+  @override
+  Map<String, String>? get imageHttpHeaders => null;
+
   /// Get thumbnail URL
+  @override
   String getThumbnailUrl(String? thumbPath) {
     if (thumbPath == null || thumbPath.isEmpty) return '';
 
@@ -795,6 +833,7 @@ class PlexClient {
 
   /// Check whether thumbnail previews are available for a given part.
   /// Returns true if the server responds with 200 to the first thumbnail.
+  @override
   Future<bool> checkThumbnailsAvailable(int partId) async {
     try {
       final response = await _dio.get(
@@ -808,6 +847,7 @@ class PlexClient {
   }
 
   /// Get chapters for a media item
+  @override
   Future<List<PlexChapter>> getChapters(String ratingKey) async {
     final response = await _dio.get('/library/metadata/$ratingKey', queryParameters: {'includeChapters': 1});
 
@@ -829,6 +869,7 @@ class PlexClient {
     return [];
   }
 
+  @override
   Future<List<PlexMarker>> getMarkers(String ratingKey) async {
     final response = await _dio.get('/library/metadata/$ratingKey', queryParameters: {'includeMarkers': 1});
 
@@ -851,6 +892,7 @@ class PlexClient {
 
   /// Get chapters and markers from cached metadata or fetch if needed
   /// Uses same cache key as other metadata methods for consistency
+  @override
   Future<PlaybackExtras> getPlaybackExtras(String ratingKey) async {
     // Use same cache key as other metadata methods
     final cacheKey = '/library/metadata/$ratingKey';
@@ -951,6 +993,7 @@ class PlexClient {
   /// Get consolidated video playback data (URL, media info, versions, and markers) in a single API call.
   /// This is the primary method for playback initialization.
   /// Uses cache for offline mode support and network fallback.
+  @override
   Future<PlexVideoPlaybackData> getVideoPlaybackData(String ratingKey, {int mediaIndex = 0}) async {
     Map<String, dynamic>? data;
     try {
@@ -1035,6 +1078,7 @@ class PlexClient {
 
   /// Get file information for a media item
   /// Uses cache for offline mode support and network fallback.
+  @override
   Future<PlexFileInfo?> getFileInfo(String ratingKey) async {
     try {
       final data = await _fetchWithCacheFallback<Map<String, dynamic>>(
@@ -1107,6 +1151,7 @@ class PlexClient {
   /// Mark media as watched
   ///
   /// If [metadata] is provided, emits a [WatchStateEvent] for UI updates.
+  @override
   Future<void> markAsWatched(String ratingKey, {PlexMetadata? metadata}) async {
     await _dio.get('/:/scrobble', queryParameters: {'key': ratingKey, 'identifier': 'com.plexapp.plugins.library'});
     if (metadata != null) {
@@ -1117,6 +1162,7 @@ class PlexClient {
   /// Mark media as unwatched
   ///
   /// If [metadata] is provided, emits a [WatchStateEvent] for UI updates.
+  @override
   Future<void> markAsUnwatched(String ratingKey, {PlexMetadata? metadata}) async {
     await _dio.get('/:/unscrobble', queryParameters: {'key': ratingKey, 'identifier': 'com.plexapp.plugins.library'});
     if (metadata != null) {
@@ -1125,6 +1171,7 @@ class PlexClient {
   }
 
   /// Update playback progress
+  @override
   Future<void> updateProgress(
     String ratingKey, {
     required int time,
@@ -1144,6 +1191,7 @@ class PlexClient {
   }
 
   /// Send a live TV timeline heartbeat to keep the transcode session alive.
+  @override
   Future<void> updateLiveTimeline({
     required String ratingKey,
     required String sessionPath,
@@ -1173,12 +1221,14 @@ class PlexClient {
 
   /// Remove item from Continue Watching (On Deck) without affecting watch status or progress
   /// This uses the same endpoint Plex Web uses to hide items from Continue Watching
+  @override
   Future<void> removeFromOnDeck(String ratingKey) async {
     await _dio.put('/actions/removeFromContinueWatching', queryParameters: {'ratingKey': ratingKey});
   }
 
   /// Rate a media item (0.0-10.0 scale, where each integer = half a star)
   /// Pass -1 to clear an existing rating
+  @override
   Future<bool> rateItem(String ratingKey, double rating) {
     return _wrapBoolApiCall(
       () => _dio.put('/:/rate', queryParameters: {
@@ -1193,17 +1243,20 @@ class PlexClient {
   /// Delete a media item from the library
   /// This permanently removes the item and its associated files from the server
   /// Returns true if deletion was successful, false otherwise
+  @override
   Future<bool> deleteMediaItem(String ratingKey) {
     return _wrapBoolApiCall(() => _dio.delete('/library/metadata/$ratingKey'), 'Failed to delete media item');
   }
 
   /// Get server preferences
+  @override
   Future<Map<String, dynamic>> getServerPreferences() async {
     final response = await _dio.get('/:/prefs');
     return response.data;
   }
 
   /// Get sessions (currently playing)
+  @override
   Future<List<dynamic>> getSessions() async {
     final response = await _dio.get('/status/sessions');
     final container = _getMediaContainer(response);
@@ -1214,12 +1267,14 @@ class PlexClient {
   }
 
   /// Get available filters for a library section
+  @override
   Future<List<PlexFilter>> getLibraryFilters(String sectionId) async {
     final response = await _dio.get('/library/sections/$sectionId/filters');
     return _extractDirectoryList(response, PlexFilter.fromJson);
   }
 
   /// Get first characters (alphabet index) for a library section
+  @override
   Future<List<PlexFirstCharacter>> getFirstCharacters(
     String sectionId, {
     int? type,
@@ -1234,6 +1289,7 @@ class PlexClient {
   }
 
   /// Get filter values (e.g., list of genres, years, etc.)
+  @override
   Future<List<PlexFilterValue>> getFilterValues(String filterKey) async {
     final response = await _dio.get(filterKey);
     return _extractDirectoryList(response, PlexFilterValue.fromJson);
@@ -1243,6 +1299,7 @@ class PlexClient {
   ///
   /// If [libraryType] is provided (e.g., 'movie', 'show'), it's used for fallback
   /// sorts without needing to re-fetch the library sections list.
+  @override
   Future<List<PlexSort>> getLibrarySorts(String sectionId, {String? libraryType}) async {
     try {
       // Use the dedicated sorts endpoint
@@ -1300,6 +1357,7 @@ class PlexClient {
 
   /// Get library hubs (recommendations for a specific library section)
   /// Returns a list of recommendation hubs like "Trending Movies", "Top in Genre", etc.
+  @override
   Future<List<PlexHub>> getLibraryHubs(String sectionId, {int limit = 10}) async {
     try {
       final response = await _dio.get(
@@ -1349,9 +1407,15 @@ class PlexClient {
     return [];
   }
 
+  /// Movie recommendations by category. Plex has no equivalent; return empty.
+  @override
+  Future<List<PlexHub>> getMovieRecommendations(String sectionId, {int categoryLimit = 10, int itemLimit = 12}) async =>
+      [];
+
   /// Get global hubs (home page recommendations)
   /// Returns actual home page hubs like "Recently Added Movies", "Recently Added TV", etc.
   /// This matches the official Plex client's home page layout.
+  @override
   Future<List<PlexHub>> getGlobalHubs({int limit = 10}) async {
     try {
       final response = await _dio.get('/hubs', queryParameters: {'count': limit, 'includeGuids': 1});
@@ -1399,6 +1463,7 @@ class PlexClient {
 
   /// Get full content from a hub using its hub key
   /// Returns the complete list of metadata items in the hub
+  @override
   Future<List<PlexMetadata>> getHubContent(String hubKey) async {
     return _wrapListApiCall<PlexMetadata>(() => _dio.get(hubKey), (response) {
       final allItems = _extractMetadataList(response);
@@ -1411,6 +1476,7 @@ class PlexClient {
 
   /// Get playlist content by playlist ID
   /// Returns the list of metadata items in the playlist
+  @override
   Future<List<PlexMetadata>> getPlaylist(String playlistId) {
     return _wrapListApiCall<PlexMetadata>(
       () => _dio.get('/playlists/$playlistId/items'),
@@ -1422,6 +1488,7 @@ class PlexClient {
   /// Get all playlists
   /// Filters by playlistType=video by default
   /// Set smart to true/false to filter smart playlists, or null for all
+  @override
   Future<List<PlexPlaylist>> getPlaylists({String playlistType = 'video', bool? smart}) {
     final queryParams = <String, dynamic>{'playlistType': playlistType};
     if (smart != null) {
@@ -1437,6 +1504,7 @@ class PlexClient {
 
   /// Get playlist metadata by playlist ID
   /// Returns the playlist details (not the items)
+  @override
   Future<PlexPlaylist?> getPlaylistMetadata(String playlistId) async {
     try {
       final response = await _dio.get('/playlists/$playlistId');
@@ -1463,6 +1531,7 @@ class PlexClient {
   /// [title] - Name of the playlist
   /// [uri] - Optional comma-separated list of item URIs to add (e.g., "server://uuid/com.plexapp.plugins.library/library/metadata/1234")
   /// [playQueueId] - Optional play queue ID to create playlist from
+  @override
   Future<PlexPlaylist?> createPlaylist({required String title, String? uri, int? playQueueId}) async {
     try {
       final queryParams = <String, dynamic>{'type': 'video', 'title': title, 'smart': '0'};
@@ -1495,6 +1564,7 @@ class PlexClient {
   }
 
   /// Delete a playlist
+  @override
   Future<bool> deletePlaylist(String playlistId) {
     return _wrapBoolApiCall(() => _dio.delete('/playlists/$playlistId'), 'Failed to delete playlist');
   }
@@ -1502,6 +1572,7 @@ class PlexClient {
   /// Add items to a playlist
   /// [playlistId] - The playlist to add items to
   /// [uri] - Comma-separated list of item URIs to add
+  @override
   Future<bool> addToPlaylist({required String playlistId, required String uri}) async {
     appLogger.d(
       'Adding to playlist $playlistId with URI: ${uri.substring(0, uri.length > 100 ? 100 : uri.length)}${uri.length > 100 ? "..." : ""}',
@@ -1519,6 +1590,7 @@ class PlexClient {
   /// Remove an item from a playlist
   /// [playlistId] - The playlist to remove from
   /// [playlistItemId] - The playlist item ID to remove (from the item's playlistItemID field)
+  @override
   Future<bool> removeFromPlaylist({required String playlistId, required String playlistItemId}) {
     return _wrapBoolApiCall(
       () => _dio.delete('/playlists/$playlistId/items/$playlistItemId'),
@@ -1531,6 +1603,7 @@ class PlexClient {
   /// [playlistId] - The playlist rating key
   /// [playlistItemId] - The playlist item ID to move
   /// [afterPlaylistItemId] - Move the item after this playlist item ID (0 = move to top)
+  @override
   Future<bool> movePlaylistItem({
     required String playlistId,
     required int playlistItemId,
@@ -1551,12 +1624,14 @@ class PlexClient {
   }
 
   /// Clear all items from a playlist
+  @override
   Future<bool> clearPlaylist(String playlistId) {
     return _wrapBoolApiCall(() => _dio.delete('/playlists/$playlistId/items'), 'Failed to clear playlist');
   }
 
   /// Update playlist metadata (e.g., title, summary)
   /// Uses the same metadata editing mechanism as other items
+  @override
   Future<bool> updatePlaylist({required String playlistId, String? title, String? summary}) {
     final queryParams = <String, dynamic>{'type': 'playlist', 'id': playlistId};
 
@@ -1581,6 +1656,7 @@ class PlexClient {
 
   /// Get all collections for a library section
   /// Returns collections as PlexMetadata objects with type="collection"
+  @override
   Future<List<PlexMetadata>> getLibraryCollections(String sectionId) async {
     return _wrapListApiCall<PlexMetadata>(
       () => _dio.get('/library/sections/$sectionId/collections', queryParameters: {'includeGuids': 1}),
@@ -1595,8 +1671,17 @@ class PlexClient {
     );
   }
 
+  @override
+  Future<List<PlexMetadata>> getGlobalCollections() async => [];
+
+  @override
+  Future<List<PlexMetadata>> getLibraryFavorites(String sectionId) async {
+    return [];
+  }
+
   /// Get items in a collection
   /// Returns the list of metadata items in the collection
+  @override
   Future<List<PlexMetadata>> getCollectionItems(String collectionId) {
     return _wrapListApiCall<PlexMetadata>(
       () => _dio.get('/library/collections/$collectionId/children'),
@@ -1607,6 +1692,7 @@ class PlexClient {
 
   /// Delete a collection
   /// Deletes a library collection from the server
+  @override
   Future<bool> deleteCollection(String sectionId, String collectionId) async {
     appLogger.d('Deleting collection: sectionId=$sectionId, collectionId=$collectionId');
     final result = await _wrapBoolApiCall(
@@ -1622,6 +1708,7 @@ class PlexClient {
   /// Create a new collection
   /// Creates a new collection and optionally adds items to it
   /// Returns the created collection ID or null if failed
+  @override
   Future<String?> createCollection({
     required String sectionId,
     required String title,
@@ -1657,6 +1744,7 @@ class PlexClient {
 
   /// Add items to an existing collection
   /// Adds one or more items (specified by URI) to an existing collection
+  @override
   Future<bool> addToCollection({required String collectionId, required String uri}) async {
     appLogger.d('Adding items to collection: collectionId=$collectionId');
     final result = await _wrapBoolApiCall(
@@ -1671,6 +1759,7 @@ class PlexClient {
 
   /// Remove an item from a collection
   /// Removes a single item from an existing collection
+  @override
   Future<bool> removeFromCollection({required String collectionId, required String itemId}) async {
     appLogger.d('Removing item from collection: collectionId=$collectionId, itemId=$itemId');
     final result = await _wrapBoolApiCall(
@@ -1689,6 +1778,7 @@ class PlexClient {
 
   /// Create a new play queue
   /// Either uri or playlistID must be specified
+  @override
   Future<PlayQueueResponse?> createPlayQueue({
     String? uri,
     int? playlistID,
@@ -1727,6 +1817,7 @@ class PlexClient {
 
   /// Get a play queue with optional windowing
   /// Can request a window of items around a specific item
+  @override
   Future<PlayQueueResponse?> getPlayQueue(
     int playQueueId, {
     String? center,
@@ -1756,6 +1847,7 @@ class PlexClient {
 
   /// Shuffle a play queue
   /// The currently selected item is maintained
+  @override
   Future<PlayQueueResponse?> shufflePlayQueue(int playQueueId) async {
     try {
       final response = await _dio.put('/playQueues/$playQueueId/shuffle');
@@ -1767,6 +1859,7 @@ class PlexClient {
   }
 
   /// Clear all items from a play queue
+  @override
   Future<bool> clearPlayQueue(int playQueueId) {
     return _wrapBoolApiCall(() => _dio.delete('/playQueues/$playQueueId/items'), 'Failed to clear play queue');
   }
@@ -1782,6 +1875,7 @@ class PlexClient {
   /// - [startingEpisodeKey]: Optional rating key of episode to start from
   ///
   /// Returns a PlayQueueResponse with all episodes from the show
+  @override
   Future<PlayQueueResponse?> createShowPlayQueue({
     required String showRatingKey,
     int shuffle = 0,
@@ -1882,6 +1976,7 @@ class PlexClient {
 
   /// Get root folders for a library section
   /// Returns the top-level folder structure for filesystem-based browsing
+  @override
   Future<List<PlexMetadata>> getLibraryFolders(String sectionId) async {
     try {
       final response = await _dio.get(
@@ -1897,6 +1992,7 @@ class PlexClient {
 
   /// Get children of a specific folder
   /// Returns files and subfolders within the given folder
+  @override
   Future<List<PlexMetadata>> getFolderChildren(String folderKey) async {
     try {
       final response = await _dio.get(folderKey);
@@ -1910,6 +2006,7 @@ class PlexClient {
   /// Get library-specific playlists
   /// Filters playlists by checking if they contain items from the specified library
   /// This is a client-side filter since the API doesn't support sectionId for playlists
+  @override
   Future<List<PlexPlaylist>> getLibraryPlaylists({String playlistType = 'video'}) {
     // For now, return all video playlists
     // Future enhancement: filter by checking playlist items' library
@@ -1921,21 +2018,25 @@ class PlexClient {
   // ============================================================================
 
   /// Scan/refresh a library section to detect new files
+  @override
   Future<void> scanLibrary(String sectionId) async {
     await _dio.get('/library/sections/$sectionId/refresh');
   }
 
   /// Refresh metadata for a library section
+  @override
   Future<void> refreshLibraryMetadata(String sectionId) async {
     await _dio.get('/library/sections/$sectionId/refresh?force=1');
   }
 
   /// Empty trash for a library section
+  @override
   Future<void> emptyLibraryTrash(String sectionId) async {
     await _dio.put('/library/sections/$sectionId/emptyTrash');
   }
 
   /// Analyze library section
+  @override
   Future<void> analyzeLibrary(String sectionId) async {
     await _dio.get('/library/sections/$sectionId/analyze');
   }
@@ -1946,6 +2047,7 @@ class PlexClient {
 
   /// Get total item count for a library section efficiently.
   /// Uses X-Plex-Container-Size: 1 to get totalSize with minimal data transfer.
+  @override
   Future<int> getLibraryTotalCount(String sectionId) async {
     try {
       final response = await _dio.get(
@@ -1963,6 +2065,7 @@ class PlexClient {
 
   /// Get total episode count for a TV show library.
   /// Uses the allLeaves endpoint to count all episodes.
+  @override
   Future<int> getLibraryEpisodeCount(String sectionId) async {
     try {
       final response = await _dio.get(
@@ -1980,6 +2083,7 @@ class PlexClient {
   /// Get watch history count for a time period.
   /// [since] - Optional DateTime to filter history from this date onwards.
   /// Returns the total count of items watched.
+  @override
   Future<int> getWatchHistoryCount({DateTime? since}) async {
     try {
       final queryParams = <String, dynamic>{'X-Plex-Container-Start': 0, 'X-Plex-Container-Size': 1};
@@ -2001,6 +2105,7 @@ class PlexClient {
   // ============================================================================
 
   /// Get all DVR devices configured on this server
+  @override
   Future<List<LiveTvDvr>> getDvrs() async {
     return _wrapListApiCall<LiveTvDvr>(() => _dio.get('/livetv/dvrs'), (response) {
       final container = _getMediaContainer(response);
@@ -2012,12 +2117,14 @@ class PlexClient {
   }
 
   /// Check if this server has at least one DVR configured
+  @override
   Future<bool> hasDvr() async {
     final dvrs = await getDvrs();
     return dvrs.isNotEmpty;
   }
 
   /// Get EPG channels for a specific lineup
+  @override
   Future<List<LiveTvChannel>> getEpgChannels({String? lineup}) async {
     final queryParams = <String, dynamic>{};
     if (lineup != null) queryParams['lineup'] = lineup;
@@ -2119,6 +2226,7 @@ class PlexClient {
 
   /// Get guide/program data for channels (EPG grid data)
   /// Discovers grid endpoints from /media/providers on first call and queries all providers
+  @override
   Future<List<LiveTvProgram>> getEpgGrid({int? beginsAt, int? endsAt}) async {
     final providers = await _discoverEpgProviders();
     if (providers.isEmpty) return [];
@@ -2169,6 +2277,7 @@ class PlexClient {
 
   /// Get live TV hubs (What's On Now, etc.) from all EPG providers' discover endpoints.
   /// Returns hubs with both display metadata and EPG timing/channel data per item.
+  @override
   Future<List<LiveTvHubResult>> getLiveTvHubs({int count = 12}) async {
     final providers = await _discoverEpgProviders();
     if (providers.isEmpty) return [];
@@ -2278,6 +2387,7 @@ class PlexClient {
   /// Tune to a live TV channel and set up the transcode session.
   ///
   /// Flow: tune → decision → return /start path (MKV-over-HTTP).
+  @override
   Future<({PlexMetadata metadata, String streamPath, String sessionIdentifier, String sessionPath})?> tuneChannel(
     String dvrKey,
     String channelIdentifier,
@@ -2401,11 +2511,13 @@ class PlexClient {
   }
 
   /// Reload the DVR guide data
+  @override
   Future<bool> reloadGuide(String dvrKey) {
     return _wrapBoolApiCall(() => _dio.post('/livetv/dvrs/$dvrKey/reloadGuide'), 'Failed to reload guide');
   }
 
   /// Get active live TV sessions
+  @override
   Future<List<PlexMetadata>> getLiveTvSessions() {
     return _wrapListApiCall<PlexMetadata>(
       () => _dio.get('/livetv/sessions'),
@@ -2415,6 +2527,8 @@ class PlexClient {
   }
 
   /// Get all DVR recording subscriptions
+  @override
+  @override
   Future<List<LiveTvSubscription>> getSubscriptions() async {
     return _wrapListApiCall<LiveTvSubscription>(() => _dio.get('/media/subscriptions'), (response) {
       final container = _getMediaContainer(response);
@@ -2443,6 +2557,7 @@ class PlexClient {
   }
 
   /// Create a DVR recording subscription
+  @override
   Future<LiveTvSubscription?> createSubscription({
     required String type,
     required int targetSectionID,
@@ -2481,11 +2596,13 @@ class PlexClient {
   }
 
   /// Delete a DVR recording subscription
+  @override
   Future<bool> deleteSubscription(String subscriptionId) {
     return _wrapBoolApiCall(() => _dio.delete('/media/subscriptions/$subscriptionId'), 'Failed to delete subscription');
   }
 
   /// Edit a DVR recording subscription's preferences
+  @override
   Future<bool> editSubscription(String subscriptionId, Map<String, String> prefs) {
     final queryParams = <String, dynamic>{};
     for (final entry in prefs.entries) {
@@ -2498,6 +2615,7 @@ class PlexClient {
   }
 
   /// Get scheduled DVR recordings
+  @override
   Future<List<ScheduledRecording>> getScheduledRecordings() async {
     return _wrapListApiCall<ScheduledRecording>(() => _dio.get('/media/subscriptions/scheduled'), (response) {
       final container = _getMediaContainer(response);
@@ -2511,6 +2629,7 @@ class PlexClient {
   }
 
   /// Get subscription template for a program (used for recording setup)
+  @override
   Future<Map<String, dynamic>?> getSubscriptionTemplate(String guid) async {
     try {
       final response = await _dio.get('/media/subscriptions/template', queryParameters: {'guid': guid});

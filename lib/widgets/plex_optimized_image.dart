@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
+import '../../utils/app_logger.dart';
 import '../utils/plex_image_helper.dart';
 import 'media_card.dart';
 
@@ -35,7 +36,7 @@ Widget blurArtwork(Widget child, {double sigma = 30, bool clip = true}) {
 }
 
 class PlexOptimizedImage extends StatelessWidget {
-  final PlexClient? client;
+  final MediaServerClient? client;
   final String? imagePath;
   final double? width;
   final double? height;
@@ -73,7 +74,7 @@ class PlexOptimizedImage extends StatelessWidget {
   /// Generic constructor for optimized images.
   const factory PlexOptimizedImage({
     Key? key,
-    PlexClient? client,
+    MediaServerClient? client,
     required String? imagePath,
     double? width,
     double? height,
@@ -93,7 +94,7 @@ class PlexOptimizedImage extends StatelessWidget {
   /// Named constructor for poster images with default fallback icon.
   const factory PlexOptimizedImage.poster({
     Key? key,
-    PlexClient? client,
+    MediaServerClient? client,
     required String? imagePath,
     double? width,
     double? height,
@@ -111,7 +112,7 @@ class PlexOptimizedImage extends StatelessWidget {
   /// Named constructor for episode thumbnails.
   const factory PlexOptimizedImage.thumb({
     Key? key,
-    PlexClient? client,
+    MediaServerClient? client,
     required String? imagePath,
     double? width,
     double? height,
@@ -129,7 +130,7 @@ class PlexOptimizedImage extends StatelessWidget {
   /// Named constructor for playlist images.
   const factory PlexOptimizedImage.playlist({
     Key? key,
-    PlexClient? client,
+    MediaServerClient? client,
     required String? imagePath,
     double? width,
     double? height,
@@ -146,7 +147,7 @@ class PlexOptimizedImage extends StatelessWidget {
 
   const PlexOptimizedImage._poster({
     Key? key,
-    PlexClient? client,
+    MediaServerClient? client,
     required String? imagePath,
     double? width,
     double? height,
@@ -180,7 +181,7 @@ class PlexOptimizedImage extends StatelessWidget {
 
   const PlexOptimizedImage._thumb({
     Key? key,
-    PlexClient? client,
+    MediaServerClient? client,
     required String? imagePath,
     double? width,
     double? height,
@@ -214,7 +215,7 @@ class PlexOptimizedImage extends StatelessWidget {
 
   const PlexOptimizedImage._playlist({
     Key? key,
-    PlexClient? client,
+    MediaServerClient? client,
     required String? imagePath,
     double? width,
     double? height,
@@ -334,6 +335,10 @@ class PlexOptimizedImage extends StatelessWidget {
     // Generate cache key if not provided
     final effectiveCacheKey = cacheKey ?? _generateCacheKey(imageUrl, memWidth, memHeight);
 
+    final headers = <String, String>{'User-Agent': 'Plezy Flutter Client'};
+    if (client?.imageHttpHeaders != null) {
+      headers.addAll(client!.imageHttpHeaders!);
+    }
     return CachedNetworkImage(
       imageUrl: imageUrl,
       width: width,
@@ -345,8 +350,8 @@ class PlexOptimizedImage extends StatelessWidget {
       memCacheHeight: memHeight,
       cacheKey: effectiveCacheKey,
       placeholder: placeholder != null ? placeholder! : (context, url) => _buildPlaceholder(context),
-      errorWidget: errorWidget != null ? errorWidget! : (context, url, error) => _buildErrorWidget(context, error),
-      httpHeaders: {'User-Agent': 'Plezy Flutter Client'},
+      errorWidget: errorWidget != null ? errorWidget! : (context, url, error) => _buildErrorWidgetWithLog(context, url, error),
+      httpHeaders: headers,
     );
   }
 
@@ -370,6 +375,24 @@ class PlexOptimizedImage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static final Set<String> _loggedFailUrls = {};
+  static const int _maxLogFailUrls = 5;
+
+  /// Log thumbnail load failure (URL redacted, error and status if present) then show broken image.
+  Widget _buildErrorWidgetWithLog(BuildContext context, String url, dynamic error) {
+    final redactedUrl = url.replaceAll(RegExp(r'ApiKey=[^&]+'), 'ApiKey=***').replaceAll(RegExp(r'[?&]token=[^&]+'), '&token=***');
+    if (_loggedFailUrls.length < _maxLogFailUrls && _loggedFailUrls.add(redactedUrl)) {
+      int? statusCode;
+      if (error != null) {
+        final msg = error.toString();
+        final codeMatch = RegExp(r'(\d{3})').firstMatch(msg);
+        if (codeMatch != null) statusCode = int.tryParse(codeMatch.group(1)!);
+      }
+      appLogger.d('Thumbnail load failed: url=$redactedUrl statusCode=${statusCode ?? "n/a"}');
+    }
+    return _buildErrorWidget(context, error);
   }
 
   Widget _buildFallback(BuildContext context) {

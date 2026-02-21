@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../models/plex_metadata.dart';
 import '../providers/multi_server_provider.dart';
 import '../utils/provider_extensions.dart';
@@ -24,7 +24,7 @@ abstract class BaseMediaListDetailScreen<T extends StatefulWidget> extends State
   String? errorMessage;
 
   @override
-  PlexClient get client => _getClientForMediaItem();
+  MediaServerClient get client => _getClientForMediaItem();
 
   /// The media item being displayed (collection or playlist)
   dynamic get mediaItem;
@@ -38,8 +38,8 @@ abstract class BaseMediaListDetailScreen<T extends StatefulWidget> extends State
   /// Optional icon to show when list is empty
   IconData? get emptyIcon => null;
 
-  /// Get the correct PlexClient for this media item's server
-  PlexClient _getClientForMediaItem() {
+  /// Get the correct MediaServerClient for this media item's server
+  MediaServerClient _getClientForMediaItem() {
     // Try to get serverId from the media item
     String? serverId;
 

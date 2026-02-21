@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import '../services/plex_client.dart';
+import '../services/media_server_client.dart';
 import '../services/play_queue_launcher.dart';
 import '../models/plex_metadata.dart';
 import '../models/plex_playlist.dart';
@@ -105,8 +105,8 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     return null;
   }
 
-  /// Get the correct PlexClient for this item's server
-  PlexClient _getClientForItem() => context.getClientWithFallback(_itemServerId);
+  /// Get the correct MediaServerClient for this item's server
+  MediaServerClient _getClientForItem() => context.getClientWithFallback(_itemServerId);
 
   void _handleTap() {
     if (_isContextMenuOpen) return;
@@ -945,7 +945,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
   }
 
   /// Handle remove from collection action
-  Future<void> _showRatingSheet(BuildContext context, PlexMetadata metadata, PlexClient client) async {
+  Future<void> _showRatingSheet(BuildContext context, PlexMetadata metadata, MediaServerClient client) async {
     final currentStarValue = (metadata.userRating != null && metadata.userRating! > 0) ? metadata.userRating! / 2.0 : 0.0;
     await showModalBottomSheet(
       context: context,

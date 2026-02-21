@@ -7,7 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../focus/dpad_navigator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../utils/plex_image_helper.dart';
 import '../widgets/plex_optimized_image.dart' show blurArtwork;
 import '../models/plex_metadata.dart';
@@ -59,7 +59,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   static const Duration _indicatorUpdateInterval = Duration(milliseconds: 200);
 
   @override
-  PlexClient get client {
+  MediaServerClient get client {
     final multiServerProvider = Provider.of<MultiServerProvider>(context, listen: false);
     if (!multiServerProvider.hasConnectedServers) {
       throw Exception('No servers available');
@@ -141,8 +141,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   bool _isCompanionRemoteFocused = false;
   bool _isUserFocused = false;
 
-  /// Get the correct PlexClient for an item's server
-  PlexClient _getClientForItem(PlexMetadata? item) {
+  /// Get the correct MediaServerClient for an item's server
+  MediaServerClient _getClientForItem(PlexMetadata? item) {
     // Items should always have a serverId, but if not, fall back to first available server
     final serverId = item?.serverId;
     if (serverId == null) {
@@ -371,9 +371,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       return KeyEventResult.handled;
     }
 
-    // RIGHT: Move to watch together button
+    // RIGHT: Move to watch together button or user button (if Plex-only buttons hidden)
     if (key.isRightKey) {
-      _watchTogetherButtonFocusNode.requestFocus();
+      final multiServer = context.read<MultiServerProvider>();
+      if (multiServer.hasPlexServers) {
+        _watchTogetherButtonFocusNode.requestFocus();
+      } else {
+        _userButtonFocusNode.requestFocus();
+      }
       return KeyEventResult.handled;
     }
 
@@ -491,9 +496,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       return KeyEventResult.handled;
     }
 
-    // LEFT: Move to companion remote button
+    // LEFT: Move to companion remote button or refresh button (if Plex-only buttons hidden)
     if (key.isLeftKey) {
-      _companionRemoteButtonFocusNode.requestFocus();
+      final multiServer = context.read<MultiServerProvider>();
+      if (multiServer.hasPlexServers) {
+        _companionRemoteButtonFocusNode.requestFocus();
+      } else {
+        _refreshButtonFocusNode.requestFocus();
+      }
       return KeyEventResult.handled;
     }
 
@@ -684,9 +694,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         limit: 20,
         hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
       );
+      final useGlobalHubs = settingsProvider.useGlobalHubs;
       final hubsFuture = multiServerProvider.aggregationService.getHubsFromAllServers(
         hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
-        useGlobalHubs: settingsProvider.useGlobalHubs,
+        useGlobalHubs: useGlobalHubs,
       );
 
       // Wait for OnDeck to complete and show it immediately
@@ -1073,107 +1084,115 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                 ),
               ),
-              // Watch Together button
-              Consumer<WatchTogetherProvider>(
-                builder: (context, watchTogether, child) {
-                  return Focus(
-                    focusNode: _watchTogetherButtonFocusNode,
-                    onKeyEvent: _handleWatchTogetherKeyEvent,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _isWatchTogetherFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
-                        borderRadius: const BorderRadius.all(Radius.circular(20)),
-                      ),
-                      child: Stack(
-                        children: [
-                          IconButton(
-                            icon: AppIcon(
-                              Symbols.group_rounded,
-                              fill: watchTogether.isInSession ? 1 : 0,
-                              color: watchTogether.isInSession ? Theme.of(context).colorScheme.primary : Colors.white,
-                            ),
-                            onPressed: () =>
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => const WatchTogetherScreen())),
-                            tooltip: 'Watch Together',
+              // Watch Together button (Plex only; hidden when only Jellyfin is connected)
+              Consumer<MultiServerProvider>(
+                builder: (context, multiServer, _) {
+                  if (!multiServer.hasPlexServers) return const SizedBox.shrink();
+                  return Consumer<WatchTogetherProvider>(
+                    builder: (context, watchTogether, child) {
+                      return Focus(
+                        focusNode: _watchTogetherButtonFocusNode,
+                        onKeyEvent: _handleWatchTogetherKeyEvent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _isWatchTogetherFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+                            borderRadius: const BorderRadius.all(Radius.circular(20)),
                           ),
-                          // Badge showing participant count when in session
-                          if (watchTogether.isInSession && watchTogether.participantCount > 1)
-                            Positioned(
-                              top: 6,
-                              right: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                          child: Stack(
+                            children: [
+                              IconButton(
+                                icon: AppIcon(
+                                  Symbols.group_rounded,
+                                  fill: watchTogether.isInSession ? 1 : 0,
+                                  color: watchTogether.isInSession ? Theme.of(context).colorScheme.primary : Colors.white,
                                 ),
-                                child: Text(
-                                  '${watchTogether.participantCount}',
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                                onPressed: () =>
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => const WatchTogetherScreen())),
+                                tooltip: 'Watch Together',
+                              ),
+                              if (watchTogether.isInSession && watchTogether.participantCount > 1)
+                                Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      borderRadius: const BorderRadius.all(Radius.circular(8)),
+                                    ),
+                                    child: Text(
+                                      '${watchTogether.participantCount}',
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onPrimary,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
-              // Companion Remote button
-              Consumer<CompanionRemoteProvider>(
-                builder: (context, companionRemote, child) {
-                  final isDesktop = PlatformDetector.isDesktop(context);
-                  final hasDpadNav = isDesktop || PlatformDetector.isTV();
+              // Companion Remote button (Plex only; hidden when only Jellyfin is connected)
+              Consumer<MultiServerProvider>(
+                builder: (context, multiServer, _) {
+                  if (!multiServer.hasPlexServers) return const SizedBox.shrink();
+                  return Consumer<CompanionRemoteProvider>(
+                    builder: (context, companionRemote, child) {
+                      final isDesktop = PlatformDetector.isDesktop(context);
+                      final hasDpadNav = isDesktop || PlatformDetector.isTV();
 
-                  return Focus(
-                    focusNode: hasDpadNav ? _companionRemoteButtonFocusNode : null,
-                    onKeyEvent: hasDpadNav ? _handleCompanionRemoteKeyEvent : null,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: hasDpadNav && _isCompanionRemoteFocused
-                            ? Colors.white.withValues(alpha: 0.2)
-                            : Colors.transparent,
-                        borderRadius: const BorderRadius.all(Radius.circular(20)),
-                      ),
-                      child: Stack(
-                        children: [
-                          IconButton(
-                            icon: AppIcon(
-                              Symbols.phone_android_rounded,
-                              fill: companionRemote.isConnected ? 1 : 0,
-                              color: companionRemote.isConnected ? Theme.of(context).colorScheme.primary : Colors.white,
-                            ),
-                            onPressed: () {
-                              if (isDesktop) {
-                                RemoteSessionDialog.show(context);
-                              } else {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => MobileRemoteScreen()));
-                              }
-                            },
-                            tooltip: t.companionRemote.title,
+                      return Focus(
+                        focusNode: hasDpadNav ? _companionRemoteButtonFocusNode : null,
+                        onKeyEvent: hasDpadNav ? _handleCompanionRemoteKeyEvent : null,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: hasDpadNav && _isCompanionRemoteFocused
+                                ? Colors.white.withValues(alpha: 0.2)
+                                : Colors.transparent,
+                            borderRadius: const BorderRadius.all(Radius.circular(20)),
                           ),
-                          // Badge showing connection status
-                          if (companionRemote.isConnected)
-                            Positioned(
-                              top: 6,
-                              right: 6,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                  border: const Border.fromBorderSide(BorderSide(color: Colors.white, width: 1)),
+                          child: Stack(
+                            children: [
+                              IconButton(
+                                icon: AppIcon(
+                                  Symbols.phone_android_rounded,
+                                  fill: companionRemote.isConnected ? 1 : 0,
+                                  color: companionRemote.isConnected ? Theme.of(context).colorScheme.primary : Colors.white,
                                 ),
+                                onPressed: () {
+                                  if (isDesktop) {
+                                    RemoteSessionDialog.show(context);
+                                  } else {
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => MobileRemoteScreen()));
+                                  }
+                                },
+                                tooltip: t.companionRemote.title,
                               ),
-                            ),
-                        ],
-                      ),
-                    ),
+                              if (companionRemote.isConnected)
+                                Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      shape: BoxShape.circle,
+                                      border: const Border.fromBorderSide(BorderSide(color: Colors.white, width: 1)),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

@@ -8,7 +8,7 @@ import '../models/plex_metadata.dart';
 import '../utils/app_logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../i18n/strings.g.dart';
-import 'plex_client.dart';
+import 'media_server_client.dart';
 import 'settings_service.dart';
 
 const _externalPlayerChannel = MethodChannel('app.plezy/external_player');
@@ -19,7 +19,7 @@ class ExternalPlayerService {
   static Future<bool> launch({
     required BuildContext context,
     PlexMetadata? metadata,
-    PlexClient? client,
+    MediaServerClient? client,
     int mediaIndex = 0,
     String? videoUrl,
   }) async {

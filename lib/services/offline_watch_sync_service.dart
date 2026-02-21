@@ -7,7 +7,7 @@ import '../providers/offline_mode_provider.dart';
 import '../utils/app_logger.dart';
 import 'multi_server_manager.dart';
 import 'plex_api_cache.dart';
-import 'plex_client.dart';
+import 'media_server_client.dart';
 
 /// Service for managing offline watch progress and syncing to Plex servers.
 ///
@@ -359,8 +359,8 @@ class OfflineWatchSyncService extends ChangeNotifier {
   /// Execute a callback with an online client for the given server.
   ///
   /// Returns null if no client available or server is offline.
-  /// The callback receives the PlexClient and should return the result.
-  Future<T?> _withOnlineClient<T>(String serverId, Future<T> Function(PlexClient client) callback) async {
+  /// The callback receives the MediaServerClient and should return the result.
+  Future<T?> _withOnlineClient<T>(String serverId, Future<T> Function(MediaServerClient client) callback) async {
     final client = _serverManager.getClient(serverId);
     if (client == null) {
       appLogger.d('No client for server $serverId, skipping');
@@ -376,7 +376,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
   }
 
   /// Sync a single action to the server.
-  Future<void> _syncAction(PlexClient client, OfflineWatchProgressItem action) async {
+  Future<void> _syncAction(MediaServerClient client, OfflineWatchProgressItem action) async {
     switch (action.actionType) {
       case 'watched':
         await client.markAsWatched(action.ratingKey);
@@ -409,7 +409,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
   ///
   /// Returns the number of episodes synced, or -1 on failure.
   Future<int> _syncSeasonEpisodes(
-    PlexClient client,
+    MediaServerClient client,
     String serverId,
     String seasonRatingKey,
     Set<String> downloadedEpisodeKeys,

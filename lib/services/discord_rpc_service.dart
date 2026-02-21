@@ -7,7 +7,7 @@ import 'package:dio/dio.dart';
 
 import '../models/plex_metadata.dart';
 import '../utils/app_logger.dart';
-import 'plex_client.dart';
+import 'media_server_client.dart';
 import 'settings_service.dart';
 
 /// Cached Litterbox URL with expiry timestamp
@@ -42,7 +42,7 @@ class DiscordRPCService {
   bool _isEnabled = false;
   bool _isInitialized = false;
   PlexMetadata? _currentMetadata;
-  PlexClient? _currentClient;
+  MediaServerClient? _currentClient;
   String? _cachedThumbnailUrl;
   DateTime? _playbackStartTime;
   Duration? _mediaDuration;
@@ -100,7 +100,7 @@ class DiscordRPCService {
   }
 
   /// Start showing presence for media playback
-  Future<void> startPlayback(PlexMetadata metadata, PlexClient client) async {
+  Future<void> startPlayback(PlexMetadata metadata, MediaServerClient client) async {
     _currentMetadata = metadata;
     _currentClient = client;
     _playbackStartTime = DateTime.now();
@@ -281,7 +281,7 @@ class DiscordRPCService {
     await _updatePresence();
   }
 
-  Future<String?> _uploadThumbnail(PlexMetadata metadata, PlexClient client) async {
+  Future<String?> _uploadThumbnail(PlexMetadata metadata, MediaServerClient client) async {
     try {
       // Get the thumbnail path (prefer show poster for episodes)
       final thumbPath = metadata.grandparentThumb ?? metadata.thumb;

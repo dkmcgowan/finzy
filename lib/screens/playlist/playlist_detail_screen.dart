@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../../services/play_queue_launcher.dart';
 import '../../models/plex_playlist.dart';
 import '../../models/plex_metadata.dart';
@@ -15,6 +15,7 @@ import '../../focus/key_event_utils.dart';
 import 'playlist_item_card.dart';
 import '../../i18n/strings.g.dart';
 import '../../utils/dialogs.dart';
+import '../../utils/media_navigation_helper.dart';
 import '../../utils/snackbar_helper.dart';
 import '../base_media_list_detail_screen.dart';
 import '../focusable_detail_screen_mixin.dart';
@@ -121,11 +122,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
             _focusedIndex = 0;
             _focusedColumn = 0;
           });
-          if (widget.playlist.smart) {
-            firstItemFocusNode.requestFocus();
-          } else {
-            _listFocusNode.requestFocus();
-          }
+          firstItemFocusNode.requestFocus();
         }
       });
     }
@@ -136,24 +133,81 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     return 'Loaded $itemCount items for playlist: ${widget.playlist.title}';
   }
 
-  /// Navigate from app bar down to content - overridden to handle both grid and list
+  /// Navigate from app bar down to content
   @override
   void navigateToGrid() {
     if (!hasItems) return;
-
-    if (widget.playlist.smart) {
-      super.navigateToGrid();
-    } else {
-      setState(() {
-        isAppBarFocused = false;
-      });
-      _listFocusNode.requestFocus();
-    }
+    super.navigateToGrid();
   }
 
-  /// Get the correct PlexClient for this playlist's server
-  PlexClient _getClientForPlaylist() {
+  /// Get the correct MediaServerClient for this playlist's server
+  MediaServerClient _getClientForPlaylist() {
     return context.getClientForServer(widget.playlist.serverId!);
+  }
+
+  /// Group playlist items by series so we show one card per show (and one per movie), matching Library Browse.
+  /// Episodes are collapsed into their show; movies appear as-is. Order is first occurrence in playlist.
+  List<PlexMetadata> _getGroupedDisplayItems() {
+    final seenShowKeys = <String>{};
+    final result = <PlexMetadata>[];
+    for (final item in items) {
+      if (item.mediaType == PlexMediaType.episode || item.mediaType == PlexMediaType.clip) {
+        final showKey = item.grandparentRatingKey ?? item.parentRatingKey ?? item.ratingKey;
+        if (showKey.isEmpty) continue;
+        if (seenShowKeys.add(showKey)) {
+          // Build synthetic show metadata from this episode so the card shows the series poster and title
+          result.add(item.copyWith(
+            ratingKey: showKey,
+            key: showKey,
+            type: 'show',
+            title: item.grandparentTitle ?? item.title,
+            thumb: item.grandparentThumb,
+            art: item.grandparentArt,
+            grandparentRatingKey: null,
+            grandparentTitle: null,
+            grandparentThumb: null,
+            grandparentArt: null,
+            parentRatingKey: null,
+            parentTitle: null,
+            parentThumb: null,
+            parentIndex: null,
+            index: null,
+          ));
+        }
+      } else if (item.mediaType == PlexMediaType.season) {
+        // Group season under its show
+        final showKey = item.parentRatingKey ?? item.ratingKey;
+        if (showKey.isEmpty) continue;
+        if (seenShowKeys.add(showKey)) {
+          result.add(item.copyWith(
+            ratingKey: showKey,
+            key: showKey,
+            type: 'show',
+            title: item.parentTitle ?? item.grandparentTitle ?? item.title,
+            thumb: item.parentThumb ?? item.grandparentThumb,
+            art: item.grandparentArt,
+            grandparentRatingKey: null,
+            grandparentTitle: null,
+            grandparentThumb: null,
+            grandparentArt: null,
+            parentRatingKey: null,
+            parentTitle: null,
+            parentThumb: null,
+            parentIndex: null,
+            index: null,
+          ));
+        }
+      } else if (item.mediaType == PlexMediaType.movie) {
+        result.add(item);
+      }
+      // Other types (e.g. show already in playlist) add as-is
+      else if (item.mediaType == PlexMediaType.show) {
+        if (seenShowKeys.add(item.ratingKey)) result.add(item);
+      } else {
+        result.add(item);
+      }
+    }
+    return result;
   }
 
   Future<void> _deletePlaylist() async {
@@ -337,24 +391,36 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     }
   }
 
-  Future<void> _playFromItem(int index) async {
+  /// Handle tap on a playlist item: show detail for show/season/movie (same as Browse), play for episode/clip.
+  Future<void> _onPlaylistItemTap(int index) async {
     if (items.isEmpty || index < 0 || index >= items.length) return;
 
-    final plexClient = _getClientForPlaylist();
-    final selectedItem = items[index];
+    final item = items[index];
+    final mediaType = item.mediaType;
 
-    final launcher = PlayQueueLauncher(
-      context: context,
-      client: plexClient,
-      serverId: widget.playlist.serverId,
-      serverName: widget.playlist.serverName,
-    );
+    // For episode or clip, start playback from this item in the playlist
+    if (mediaType == PlexMediaType.episode || mediaType == PlexMediaType.clip) {
+      final plexClient = _getClientForPlaylist();
+      final launcher = PlayQueueLauncher(
+        context: context,
+        client: plexClient,
+        serverId: widget.playlist.serverId,
+        serverName: widget.playlist.serverName,
+      );
+      await launcher.launchFromPlaylistItem(
+        playlist: widget.playlist,
+        selectedItem: item,
+        showLoadingIndicator: true,
+      );
+      return;
+    }
 
-    await launcher.launchFromPlaylistItem(
-      playlist: widget.playlist,
-      selectedItem: selectedItem,
-      showLoadingIndicator: true,
-    );
+    // For show, season, or movie, navigate to the same detail view as Library Browse
+    await navigateToMediaItem(context, item, onRefresh: updateItem);
+  }
+
+  Future<void> _playFromItem(int index) async {
+    await _onPlaylistItemTap(index);
   }
 
   /// Ensure the focused item is visible in the list using scroll arithmetic.
@@ -543,10 +609,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
   Widget build(BuildContext context) {
     final isKeyboardMode = InputModeTracker.isKeyboardMode(context);
 
-    // For regular playlists, wrap the scroll view with the Focus widget
-    // (Focus is a RenderObject widget and cannot directly wrap a sliver)
-    final needsListFocus = !widget.playlist.smart && items.isNotEmpty;
-
+    // Grid uses its own focus nodes (firstItemFocusNode, getGridItemFocusNode)
     Widget scrollView = CustomScrollView(
       controller: scrollController,
       slivers: [
@@ -573,30 +636,13 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
         ),
         ...buildStateSlivers(),
         if (items.isNotEmpty)
-          if (widget.playlist.smart)
-            // Smart playlists: Use focusable grid view (cannot be reordered)
-            buildFocusableGrid(items: items, onRefresh: updateItem)
-          else
-            // Regular playlists: Use sliver reorderable list
-            _buildReorderableList(isKeyboardMode),
+          // Show series and movies as cards (same as Library Browse); episodes grouped by show
+          buildFocusableGrid(
+            items: _getGroupedDisplayItems(),
+            onRefresh: updateItem,
+          ),
       ],
     );
-
-    if (needsListFocus) {
-      scrollView = Focus(
-        autofocus: isKeyboardMode && !isAppBarFocused,
-        focusNode: _listFocusNode,
-        onKeyEvent: _handleListKeyEvent,
-        onFocusChange: (hasFocus) {
-          if (hasFocus && mounted) {
-            setState(() {
-              isAppBarFocused = false;
-            });
-          }
-        },
-        child: scrollView,
-      );
-    }
 
     return PopScope(
       canPop: false,
@@ -630,7 +676,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
             item: item,
             index: index,
             onRemove: () => _removeItem(index),
-            onTap: () => _playFromItem(index),
+            onTap: () => _onPlaylistItemTap(index),
             onRefresh: updateItem,
             canReorder: !widget.playlist.smart,
             isFocused: isFocused,

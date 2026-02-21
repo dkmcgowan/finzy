@@ -4,7 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../i18n/strings.g.dart';
 import '../../../mpv/mpv.dart';
-import '../../../services/plex_client.dart';
+import '../../../services/media_server_client.dart';
 import '../../../services/download_storage_service.dart';
 import '../../../models/plex_media_info.dart';
 import '../../../utils/formatters.dart';
@@ -35,8 +35,8 @@ class ChapterSheet extends StatefulWidget {
 
 class _ChapterSheetState extends State<ChapterSheet> {
 
-  /// Get the PlexClient for chapters, or null if unavailable (offline mode)
-  PlexClient? _tryGetClientForChapters(BuildContext context) {
+  /// Get the MediaServerClient for chapters, or null if unavailable (offline mode)
+  MediaServerClient? _tryGetClientForChapters(BuildContext context) {
     if (widget.serverId == null) return null;
     try {
       return context.getClientForServer(widget.serverId!);

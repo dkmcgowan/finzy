@@ -94,6 +94,12 @@ class _TranslationsAuthZh implements TranslationsAuthEn {
 
 	// Translations
 	@override String get signInWithPlex => '使用 Plex 登录';
+	@override String get signInWithJellyfin => '使用 Jellyfin 登录';
+	@override String get jellyfinServerUrl => '服务器 URL';
+	@override String get jellyfinServerUrlHint => 'https://your-jellyfin.example.com';
+	@override String get jellyfinUsername => '用户名';
+	@override String get jellyfinPassword => '密码';
+	@override String get jellyfinSignIn => '登录';
 	@override String get showQRCode => '显示二维码';
 	@override String get authenticate => '验证';
 	@override String get debugEnterToken => '调试：输入 Plex Token';
@@ -231,6 +237,8 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get useGlobalHubsDescription => '显示与官方 Plex 客户端相同的主页推荐。关闭时将显示按媒体库分类的推荐。';
 	@override String get showServerNameOnHubs => '在推荐栏显示服务器名称';
 	@override String get showServerNameOnHubsDescription => '始终在推荐栏标题中显示服务器名称。关闭时仅在推荐栏名称重复时显示。';
+	@override String get showJellyfinRecommendations => 'Jellyfin 电影推荐';
+	@override String get showJellyfinRecommendationsDescription => '在电影库的“推荐”标签页中显示“因为您观看过”等推荐行。在服务器行为改进前默认关闭。';
 	@override String get alwaysKeepSidebarOpen => '始终保持侧边栏展开';
 	@override String get alwaysKeepSidebarOpenDescription => '侧边栏保持展开状态，内容区域自动调整';
 	@override String get showUnwatchedCount => '显示未观看数量';
@@ -694,6 +702,7 @@ class _TranslationsLibrariesZh implements TranslationsLibrariesEn {
 	@override String filtersWithCount({required Object count}) => '筛选器（${count}）';
 	@override String get noRecommendations => '暂无推荐';
 	@override String get noCollections => '此媒体库中没有合集';
+	@override String get noFavorites => '此媒体库中无收藏';
 	@override String get noFoldersFound => '未找到文件夹';
 	@override String get folders => '文件夹';
 	@override late final _TranslationsLibrariesTabsZh tabs = _TranslationsLibrariesTabsZh._(_root);
@@ -1099,6 +1108,7 @@ class _TranslationsLibrariesTabsZh implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => '推荐';
 	@override String get browse => '浏览';
+	@override String get favorites => '收藏';
 	@override String get collections => '合集';
 	@override String get playlists => '播放列表';
 }
@@ -1232,6 +1242,12 @@ extension on TranslationsZh {
 		return switch (path) {
 			'app.title' => 'Plezy',
 			'auth.signInWithPlex' => '使用 Plex 登录',
+			'auth.signInWithJellyfin' => '使用 Jellyfin 登录',
+			'auth.jellyfinServerUrl' => '服务器 URL',
+			'auth.jellyfinServerUrlHint' => 'https://your-jellyfin.example.com',
+			'auth.jellyfinUsername' => '用户名',
+			'auth.jellyfinPassword' => '密码',
+			'auth.jellyfinSignIn' => '登录',
 			'auth.showQRCode' => '显示二维码',
 			'auth.authenticate' => '验证',
 			'auth.debugEnterToken' => '调试：输入 Plex Token',
@@ -1333,6 +1349,8 @@ extension on TranslationsZh {
 			'settings.useGlobalHubsDescription' => '显示与官方 Plex 客户端相同的主页推荐。关闭时将显示按媒体库分类的推荐。',
 			'settings.showServerNameOnHubs' => '在推荐栏显示服务器名称',
 			'settings.showServerNameOnHubsDescription' => '始终在推荐栏标题中显示服务器名称。关闭时仅在推荐栏名称重复时显示。',
+			'settings.showJellyfinRecommendations' => 'Jellyfin 电影推荐',
+			'settings.showJellyfinRecommendationsDescription' => '在电影库的“推荐”标签页中显示“因为您观看过”等推荐行。在服务器行为改进前默认关闭。',
 			'settings.alwaysKeepSidebarOpen' => '始终保持侧边栏展开',
 			'settings.alwaysKeepSidebarOpenDescription' => '侧边栏保持展开状态，内容区域自动调整',
 			'settings.showUnwatchedCount' => '显示未观看数量',
@@ -1674,10 +1692,12 @@ extension on TranslationsZh {
 			'libraries.filtersWithCount' => ({required Object count}) => '筛选器（${count}）',
 			'libraries.noRecommendations' => '暂无推荐',
 			'libraries.noCollections' => '此媒体库中没有合集',
+			'libraries.noFavorites' => '此媒体库中无收藏',
 			'libraries.noFoldersFound' => '未找到文件夹',
 			'libraries.folders' => '文件夹',
 			'libraries.tabs.recommended' => '推荐',
 			'libraries.tabs.browse' => '浏览',
+			'libraries.tabs.favorites' => '收藏',
 			'libraries.tabs.collections' => '合集',
 			'libraries.tabs.playlists' => '播放列表',
 			'libraries.groupings.all' => '全部',
@@ -1732,6 +1752,8 @@ extension on TranslationsZh {
 			'liveTv.noRecordings' => '没有计划的录制',
 			'liveTv.noSubscriptions' => '没有录制规则',
 			'liveTv.channelNumber' => ({required Object number}) => '频道 ${number}',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.live' => '直播',
 			'liveTv.hd' => '高清',
 			'liveTv.premiere' => '新',
@@ -1742,8 +1764,6 @@ extension on TranslationsZh {
 			'liveTv.today' => '今天',
 			'liveTv.midnight' => '午夜',
 			'liveTv.overnight' => '凌晨',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.morning' => '上午',
 			'liveTv.daytime' => '白天',
 			'liveTv.evening' => '晚上',

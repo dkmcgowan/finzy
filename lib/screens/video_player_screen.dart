@@ -13,7 +13,7 @@ import 'package:window_manager/window_manager.dart';
 import '../mpv/mpv.dart';
 import '../mpv/player/player_android.dart';
 
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../models/livetv_channel.dart';
 import '../services/plex_api_cache.dart';
 import '../models/plex_media_version.dart';
@@ -78,7 +78,7 @@ class VideoPlayerScreen extends StatefulWidget {
   final List<LiveTvChannel>? liveChannels;
   final int? liveCurrentChannelIndex;
   final String? liveDvrKey;
-  final PlexClient? liveClient;
+  final MediaServerClient? liveClient;
   final String? liveSessionIdentifier;
   final String? liveSessionPath;
 
@@ -179,8 +179,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   CompanionRemoteProvider? _companionRemoteProvider;
   VoidCallback? _savedOnHome;
 
-  /// Get the correct PlexClient for this metadata's server
-  PlexClient _getClientForMetadata(BuildContext context) {
+  /// Get the correct MediaServerClient for this metadata's server
+  MediaServerClient _getClientForMetadata(BuildContext context) {
     return context.getClientForServer(widget.metadata.serverId!);
   }
 
@@ -188,8 +188,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     final partId = _currentMediaInfo?.partId;
     if (partId == null || widget.isOffline) return null;
     final client = _getClientForMetadata(context);
-    return '${client.config.baseUrl}/library/parts/$partId/indexes/sd/${time.inMilliseconds}'.withPlexToken(
-      client.config.token,
+    return '${client.baseUrl}/library/parts/$partId/indexes/sd/${time.inMilliseconds}'.withPlexToken(
+      client.token,
     );
   }
 
@@ -877,7 +877,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
           final result = await client.tuneChannel(widget.liveDvrKey!, channel.key);
           if (result == null) throw Exception('Failed to tune channel');
 
-          streamUrl = '${client.config.baseUrl}${result.streamPath}'.withPlexToken(client.config.token);
+          streamUrl = '${client.baseUrl}${result.streamPath}'.withPlexToken(client.token);
 
           _liveSessionIdentifier = result.sessionIdentifier;
           _liveSessionPath = result.sessionPath;
@@ -921,7 +921,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       } else {
         // Online mode: use server-specific client
         final client = _getClientForMetadata(context);
-        plexHeaders = client.config.headers;
+        plexHeaders = client.requestHeaders;
         final playbackService = PlaybackInitializationService(client: client, database: PlexApiCache.instance.database);
         result = await playbackService.getPlaybackData(
           metadata: widget.metadata,
@@ -1817,7 +1817,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       final result = await client.tuneChannel(serverInfo.dvrKey, channel.key);
       if (result == null || !mounted) return;
 
-      final streamUrl = '${client.config.baseUrl}${result.streamPath}'.withPlexToken(client.config.token);
+      final streamUrl = '${client.baseUrl}${result.streamPath}'.withPlexToken(client.token);
 
       await _setLiveStreamOptions();
       await player!.open(Media(streamUrl, headers: const {'Accept-Language': 'en'}), play: true, isLive: true);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/plex_client.dart';
+import '../services/media_server_client.dart';
 import '../i18n/strings.g.dart';
 import '../models/plex_library.dart';
 import '../models/plex_metadata.dart';
@@ -22,9 +22,8 @@ extension ProviderExtensions on BuildContext {
   // Direct profile settings access (nullable)
   PlexUserProfile? get profileSettings => userProfile.profileSettings;
 
-  /// Get PlexClient for a specific server ID
-  /// Throws an exception if no client is available for the given serverId
-  PlexClient getClientForServer(String serverId) {
+  /// Get media server client for a specific server ID (Plex or Jellyfin)
+  MediaServerClient getClientForServer(String serverId) {
     final multiServerProvider = Provider.of<MultiServerProvider>(this, listen: false);
 
     final serverClient = multiServerProvider.getClientForServer(serverId);
@@ -37,10 +36,8 @@ extension ProviderExtensions on BuildContext {
     return serverClient;
   }
 
-  /// Get PlexClient for a library
-  /// Throws an exception if no client is available
-  PlexClient getClientForLibrary(PlexLibrary library) {
-    // If library doesn't have a serverId, fall back to first available server
+  /// Get client for a library
+  MediaServerClient getClientForLibrary(PlexLibrary library) {
     if (library.serverId == null) {
       final multiServerProvider = Provider.of<MultiServerProvider>(this, listen: false);
       if (!multiServerProvider.hasConnectedServers) {
@@ -51,27 +48,24 @@ extension ProviderExtensions on BuildContext {
     return getClientForServer(library.serverId!);
   }
 
-  /// Get PlexClient for metadata, with fallback to first available server
-  /// Throws an exception if no servers are available
-  PlexClient getClientForMetadata(PlexMetadata metadata) {
+  /// Get client for metadata, with fallback to first available server
+  MediaServerClient getClientForMetadata(PlexMetadata metadata) {
     if (metadata.serverId != null) {
       return getClientForServer(metadata.serverId!);
     }
     return getFirstAvailableClient();
   }
 
-  /// Get PlexClient for metadata, or null if offline mode or no serverId
-  /// Use this for screens that support offline mode
-  PlexClient? getClientForMetadataOrNull(PlexMetadata metadata, {bool isOffline = false}) {
+  /// Get client for metadata, or null if offline mode or no serverId
+  MediaServerClient? getClientForMetadataOrNull(PlexMetadata metadata, {bool isOffline = false}) {
     if (isOffline || metadata.serverId == null) {
       return null;
     }
-    return getClientForServer(metadata.serverId!);
+    return Provider.of<MultiServerProvider>(this, listen: false).getClientForServer(metadata.serverId!);
   }
 
   /// Get the first available client from connected servers
-  /// Throws an exception if no servers are available
-  PlexClient getFirstAvailableClient() {
+  MediaServerClient getFirstAvailableClient() {
     final multiServerProvider = Provider.of<MultiServerProvider>(this, listen: false);
     if (!multiServerProvider.hasConnectedServers) {
       throw Exception(t.errors.noClientAvailable);
@@ -81,7 +75,7 @@ extension ProviderExtensions on BuildContext {
 
   /// Get client for a serverId with fallback to first available server
   /// Useful for items that might not have a serverId
-  PlexClient getClientWithFallback(String? serverId) {
+  MediaServerClient getClientWithFallback(String? serverId) {
     if (serverId != null) {
       return getClientForServer(serverId);
     }

@@ -1,26 +1,21 @@
-import 'dart:convert';
-
+import '../models/registered_server.dart';
 import '../utils/app_logger.dart';
 import 'plex_auth_service.dart';
 import 'storage_service.dart';
 
 /// Centralized server configuration registry
-/// Manages which servers are available and their configurations
+/// Manages which servers are available (Plex and/or Jellyfin) and their configurations
 class ServerRegistry {
   final StorageService _storage;
 
   ServerRegistry(this._storage);
 
-  /// Get all registered servers
-  Future<List<PlexServer>> getServers() async {
+  /// Get all registered servers (Plex and Jellyfin)
+  Future<List<RegisteredServer>> getServers() async {
     try {
       final serversJson = _storage.getServersListJson();
-      if (serversJson == null || serversJson.isEmpty) {
-        return [];
-      }
-
-      final List<dynamic> serversList = jsonDecode(serversJson);
-      return serversList.map((json) => PlexServer.fromJson(json as Map<String, dynamic>)).toList();
+      final list = RegisteredServer.listFromJsonString(serversJson);
+      return list;
     } catch (e, stackTrace) {
       appLogger.e('Failed to load servers from storage', error: e, stackTrace: stackTrace);
       return [];
@@ -28,9 +23,9 @@ class ServerRegistry {
   }
 
   /// Save all servers to storage
-  Future<void> saveServers(List<PlexServer> servers) async {
+  Future<void> saveServers(List<RegisteredServer> servers) async {
     try {
-      final serversJson = jsonEncode(servers.map((s) => s.toJson()).toList());
+      final serversJson = RegisteredServer.listToJsonString(servers);
       await _storage.saveServersListJson(serversJson);
       appLogger.d('Saved ${servers.length} servers to storage');
     } catch (e, stackTrace) {
@@ -40,10 +35,10 @@ class ServerRegistry {
   }
 
   /// Get a specific server by ID
-  Future<PlexServer?> getServer(String serverId) async {
+  Future<RegisteredServer?> getServer(String serverId) async {
     final servers = await getServers();
     try {
-      return servers.firstWhere((s) => s.clientIdentifier == serverId);
+      return servers.firstWhere((s) => s.serverId == serverId);
     } catch (e) {
       return null;
     }
@@ -51,41 +46,42 @@ class ServerRegistry {
 
   /// Update server status (called when server connection status changes)
   Future<void> updateServerStatus(String serverId) async {
-    final servers = await getServers();
-    final serverIndex = servers.indexWhere((s) => s.clientIdentifier == serverId);
-
-    if (serverIndex == -1) {
-      appLogger.w('Server not found for status update: $serverId');
-      return;
-    }
-
-    // Note: PlexServer from auth service doesn't have mutable status fields
     // Status tracking is handled by MultiServerManager
-    // This method is kept for future extension if we add status to PlexServer model
   }
 
-  /// Add or update a single server
+  /// Add or update a single Plex server
   Future<void> upsertServer(PlexServer server) async {
     final servers = await getServers();
-    final index = servers.indexWhere((s) => s.clientIdentifier == server.clientIdentifier);
-
+    final index = servers.indexWhere((s) => s.isPlex && s.serverId == server.clientIdentifier);
     if (index >= 0) {
-      servers[index] = server;
+      servers[index] = RegisteredServer.plex(server);
       appLogger.d('Updated server: ${server.name}');
     } else {
-      servers.add(server);
+      servers.add(RegisteredServer.plex(server));
       appLogger.d('Added new server: ${server.name}');
     }
+    await saveServers(servers);
+  }
 
+  /// Add a Jellyfin server (e.g. after sign-in). Replaces existing if same serverId.
+  Future<void> addOrReplaceJellyfinServer(JellyfinServerData data) async {
+    final servers = await getServers();
+    final index = servers.indexWhere((s) => s.isJellyfin && s.serverId == data.serverId);
+    if (index >= 0) {
+      servers[index] = RegisteredServer.jellyfin(data);
+      appLogger.d('Updated Jellyfin server: ${data.serverName}');
+    } else {
+      servers.add(RegisteredServer.jellyfin(data));
+      appLogger.d('Added Jellyfin server: ${data.serverName}');
+    }
     await saveServers(servers);
   }
 
   /// Remove a server
   Future<void> removeServer(String serverId) async {
     final servers = await getServers();
-    servers.removeWhere((s) => s.clientIdentifier == serverId);
+    servers.removeWhere((s) => s.serverId == serverId);
     await saveServers(servers);
-
     appLogger.i('Removed server: $serverId');
   }
 
@@ -95,47 +91,36 @@ class ServerRegistry {
     appLogger.i('Cleared all servers from registry');
   }
 
-  /// Refresh servers from Plex API and update storage
-  /// This updates connection info (IPs, ports) that may have changed
+  /// Refresh Plex servers from Plex API (connection info). Jellyfin servers are left unchanged.
   Future<void> refreshServersFromApi() async {
+    final existing = await getServers();
+    final jellyfinServers = existing.where((s) => s.isJellyfin).toList();
+    final hasPlex = existing.any((s) => s.isPlex);
+
+    if (!hasPlex) {
+      appLogger.d('No Plex servers to refresh');
+      return;
+    }
+
     final token = _storage.getPlexToken();
     if (token == null || token.isEmpty) {
-      appLogger.d('No Plex token available, skipping server refresh');
+      appLogger.d('No Plex token available, skipping Plex server refresh');
       return;
     }
 
     try {
-      appLogger.d('Refreshing servers from Plex API...');
+      appLogger.d('Refreshing Plex servers from API...');
       final authService = await PlexAuthService.create();
-      final freshServers = await authService.fetchServers(token);
+      final freshPlex = await authService.fetchServers(token);
 
-      if (freshServers.isEmpty) {
-        appLogger.w('API returned no servers, keeping existing data');
-        return;
-      }
-
-      // Get existing servers to preserve any local-only data
-      final existingServers = await getServers();
-      final existingIds = existingServers.map((s) => s.clientIdentifier).toSet();
-
-      // Update existing servers with fresh connection info, add new ones
-      final updatedServers = <PlexServer>[];
-      for (final fresh in freshServers) {
-        if (existingIds.contains(fresh.clientIdentifier)) {
-          // Server exists - use fresh data (updated IPs, connections)
-          updatedServers.add(fresh);
-        } else {
-          // New server - add it
-          updatedServers.add(fresh);
-          appLogger.i('Discovered new server: ${fresh.name}');
-        }
-      }
-
-      await saveServers(updatedServers);
-      appLogger.i('Refreshed ${updatedServers.length} servers from API');
+      final updated = <RegisteredServer>[
+        ...jellyfinServers,
+        ...freshPlex.map((s) => RegisteredServer.plex(s)),
+      ];
+      await saveServers(updated);
+      appLogger.i('Refreshed ${freshPlex.length} Plex servers, ${jellyfinServers.length} Jellyfin unchanged');
     } catch (e, stackTrace) {
       appLogger.w('Failed to refresh servers from API, using cached data', error: e, stackTrace: stackTrace);
-      // Don't rethrow - we can continue with cached servers
     }
   }
 }

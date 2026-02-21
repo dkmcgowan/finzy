@@ -1,7 +1,7 @@
 import 'base_notifier.dart';
 
 /// Types of library refresh events
-enum LibraryRefreshType { collections, playlists }
+enum LibraryRefreshType { collections, playlists, recommendations }
 
 /// Notifier for triggering refreshes of library tabs.
 ///
@@ -20,6 +20,9 @@ class LibraryRefreshNotifier extends BaseNotifier<LibraryRefreshType> {
   /// Stream for playlists tab (backward compatible)
   Stream<void> get playlistsStream => stream.where((t) => t == LibraryRefreshType.playlists).cast<void>();
 
+  /// Stream for recommendations tab (e.g. when Jellyfin recommendations setting toggles)
+  Stream<void> get recommendationsStream => stream.where((t) => t == LibraryRefreshType.recommendations).cast<void>();
+
   /// Notify that collections have changed
   void notifyCollectionsChanged() {
     notify(LibraryRefreshType.collections);
@@ -28,5 +31,10 @@ class LibraryRefreshNotifier extends BaseNotifier<LibraryRefreshType> {
   /// Notify that playlists have changed
   void notifyPlaylistsChanged() {
     notify(LibraryRefreshType.playlists);
+  }
+
+  /// Notify that recommendations tab should refresh (e.g. Jellyfin recommendations setting changed)
+  void notifyRecommendationsChanged() {
+    notify(LibraryRefreshType.recommendations);
   }
 }

@@ -96,6 +96,10 @@ class PlexMetadata with MultiServerFields {
   // Clear logo URL (extracted from Image array, but serialized for offline storage)
   final String? clearLogo;
 
+  /// True when item is marked as favorite (Jellyfin only; set at runtime, not serialized).
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final bool? isFavorite;
+
   /// Global unique identifier across all servers (serverId:ratingKey)
   String get globalKey => serverId != null ? '$serverId:$ratingKey' : ratingKey;
 
@@ -167,6 +171,7 @@ class PlexMetadata with MultiServerFields {
     this.serverId,
     this.serverName,
     this.clearLogo,
+    this.isFavorite,
   });
 
   /// Create a copy of this metadata with optional field overrides
@@ -271,6 +276,7 @@ class PlexMetadata with MultiServerFields {
       serverId: serverId ?? this.serverId,
       serverName: serverName ?? this.serverName,
       clearLogo: clearLogo ?? this.clearLogo,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 

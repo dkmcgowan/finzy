@@ -1,13 +1,17 @@
 import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../models/registered_server.dart';
+import '../services/jellyfin_auth_service.dart';
 import '../services/plex_auth_service.dart';
-import '../services/storage_service.dart';
-import '../services/server_registry.dart';
 import '../services/server_connection_orchestrator.dart';
+import '../services/server_registry.dart';
+import '../services/storage_service.dart';
 import '../providers/multi_server_provider.dart';
 import '../providers/libraries_provider.dart';
 import '../providers/user_profile_provider.dart';
@@ -30,13 +34,27 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _errorMessage;
   late PlexAuthService _authService;
   bool _shouldCancelPolling = false;
-  bool _useQrFlow = false; // whether current auth attempt is QR based
-  String? _qrAuthUrl; // auth URL rendered as QR
+  bool _useQrFlow = false;
+  String? _qrAuthUrl;
+
+  /// When true, show Jellyfin URL/username/password form instead of Plex vs Jellyfin choice
+  bool _showJellyfinForm = false;
+  final _jellyfinUrlController = TextEditingController();
+  final _jellyfinUsernameController = TextEditingController();
+  final _jellyfinPasswordController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _initializeAuthService();
+  }
+
+  @override
+  void dispose() {
+    _jellyfinUrlController.dispose();
+    _jellyfinUsernameController.dispose();
+    _jellyfinPasswordController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeAuthService() async {
@@ -80,21 +98,20 @@ class _AuthScreenState extends State<AuthScreen> {
         return;
       }
 
-      // Save all servers to registry (all servers are considered enabled)
       final registry = ServerRegistry(storage);
-      await registry.saveServers(servers);
+      final registeredServers = servers.map((s) => RegisteredServer.plex(s)).toList();
+      await registry.saveServers(registeredServers);
 
       if (!mounted) return;
 
-      // Start profile initialization in parallel with server connection.
-      // The home users API (clients.plex.tv) is independent of server connections.
       final profileFuture = context.read<UserProfileProvider>().initialize();
 
       final result = await ServerConnectionOrchestrator.connectAndInitialize(
-        servers: servers,
+        servers: registeredServers,
         multiServerProvider: context.read<MultiServerProvider>(),
         librariesProvider: context.read<LibrariesProvider>(),
         syncService: context.read<OfflineWatchSyncService>(),
+        clientIdentifier: storage.getClientIdentifier(),
       );
 
       if (!result.hasConnections) {
@@ -224,8 +241,111 @@ class _AuthScreenState extends State<AuthScreen> {
       _isAuthenticating = false;
       _qrAuthUrl = null;
     });
-    // Start new authentication after a brief delay to ensure cleanup
     Future.delayed(const Duration(milliseconds: 100), _startAuthentication);
+  }
+
+  /// Normalize Jellyfin base URL (ensure scheme, no trailing slash)
+  static String _normalizeJellyfinBaseUrl(String input) {
+    var url = input.trim();
+    if (url.isEmpty) return url;
+    if (!url.startsWith(RegExp(r'https?://'))) url = 'https://$url';
+    if (url.endsWith('/')) url = url.substring(0, url.length - 1);
+    return url;
+  }
+
+  Future<void> _signInWithJellyfin() async {
+    final baseUrl = _normalizeJellyfinBaseUrl(_jellyfinUrlController.text);
+    final username = _jellyfinUsernameController.text.trim();
+    final password = _jellyfinPasswordController.text;
+
+    if (baseUrl.isEmpty) {
+      setState(() => _errorMessage = 'Please enter server URL');
+      return;
+    }
+    if (username.isEmpty) {
+      setState(() => _errorMessage = 'Please enter username');
+      return;
+    }
+
+    setState(() {
+      _isAuthenticating = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await JellyfinAuthService.authenticateByName(
+        baseUrl: baseUrl,
+        username: username,
+        password: password,
+      );
+
+      String serverId = result.serverId ?? baseUrl.hashCode.abs().toString();
+      String serverName = result.serverName ?? 'Jellyfin';
+
+      try {
+        final dio = Dio(
+          BaseOptions(
+            baseUrl: baseUrl,
+            headers: {
+              'Authorization': 'MediaBrowser Client="Plezy", Device="Plezy", DeviceId="plezy-jellyfin", Version="1.0.0", Token="${result.accessToken}"',
+            },
+          ),
+        );
+        final info = await dio.get<Map<String, dynamic>>('/System/Info');
+        final data = info.data;
+        if (data != null) {
+          serverName = data['ServerName'] as String? ?? serverName;
+          final id = data['Id'] as String?;
+          if (id != null && id.isNotEmpty) serverId = id;
+        }
+      } catch (_) {
+        // Use defaults if System/Info fails
+      }
+
+      final jellyfinData = JellyfinServerData(
+        baseUrl: baseUrl,
+        token: result.accessToken,
+        userId: result.userId,
+        serverId: serverId,
+        serverName: serverName,
+      );
+
+      final storage = await StorageService.getInstance();
+      final registry = ServerRegistry(storage);
+      await registry.addOrReplaceJellyfinServer(jellyfinData);
+      final servers = await registry.getServers();
+
+      if (!mounted) return;
+
+      final connResult = await ServerConnectionOrchestrator.connectAndInitialize(
+        servers: servers,
+        multiServerProvider: context.read<MultiServerProvider>(),
+        librariesProvider: context.read<LibrariesProvider>(),
+        syncService: context.read<OfflineWatchSyncService>(),
+        clientIdentifier: storage.getClientIdentifier(),
+      );
+
+      if (!connResult.hasConnections) {
+        setState(() {
+          _isAuthenticating = false;
+          _errorMessage = t.serverSelection.allServerConnectionsFailed;
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => MainScreen(client: connResult.firstClient!)),
+      );
+    } catch (e) {
+      appLogger.e('Jellyfin sign-in failed', error: e);
+      if (!mounted) return;
+      setState(() {
+        _isAuthenticating = false;
+        _errorMessage = t.errors.authenticationFailed(error: e);
+      });
+    }
   }
 
   void _handleDebugTap() {
@@ -389,24 +509,42 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  /// Builds the initial authentication buttons (before auth starts)
+  /// Builds the initial auth choice (Plex vs Jellyfin) or Jellyfin form
   Widget _buildInitialButtons() {
+    if (_showJellyfinForm) {
+      return _buildJellyfinForm();
+    }
+
     final isTV = PlatformDetector.isTV();
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (isTV) ...[
-          // On TV: QR is primary, browser is secondary
-          ElevatedButton(
-            autofocus: true,
+        ElevatedButton(
+          onPressed: _startAuthentication,
+          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+          child: Text(t.auth.signInWithPlex),
+        ),
+        const SizedBox(height: 12),
+        if (!isTV)
+          OutlinedButton(
             onPressed: () {
               setState(() {
-                _useQrFlow = true;
+                _showJellyfinForm = true;
+                _errorMessage = null;
               });
+            },
+            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+            child: Text(t.auth.signInWithJellyfin),
+          ),
+        if (!isTV) const SizedBox(height: 12),
+        if (isTV) ...[
+          OutlinedButton(
+            onPressed: () {
+              setState(() => _useQrFlow = true);
               _startAuthentication();
             },
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
             child: Text(t.auth.showQRCode),
           ),
           const SizedBox(height: 12),
@@ -414,24 +552,6 @@ class _AuthScreenState extends State<AuthScreen> {
             onPressed: _startAuthentication,
             style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
             child: Text(t.auth.useBrowser),
-          ),
-        ] else ...[
-          // On other platforms: Browser is primary, QR is secondary
-          ElevatedButton(
-            onPressed: _startAuthentication,
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-            child: Text(t.auth.signInWithPlex),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: () {
-              setState(() {
-                _useQrFlow = true;
-              });
-              _startAuthentication();
-            },
-            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-            child: Text(t.auth.showQRCode),
           ),
         ],
         if (kDebugMode) ...[
@@ -442,9 +562,75 @@ class _AuthScreenState extends State<AuthScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               side: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)),
             ),
-            child: Text(t.auth.debugEnterToken, style: TextStyle(fontSize: 12)),
+            child: Text(t.auth.debugEnterToken, style: const TextStyle(fontSize: 12)),
           ),
         ],
+        if (_errorMessage != null) ...[
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage!,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildJellyfinForm() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          controller: _jellyfinUrlController,
+          decoration: InputDecoration(
+            labelText: t.auth.jellyfinServerUrl,
+            hintText: t.auth.jellyfinServerUrlHint,
+            border: const OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.url,
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _jellyfinUsernameController,
+          decoration: InputDecoration(
+            labelText: t.auth.jellyfinUsername,
+            border: const OutlineInputBorder(),
+          ),
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _jellyfinPasswordController,
+          decoration: InputDecoration(
+            labelText: t.auth.jellyfinPassword,
+            border: const OutlineInputBorder(),
+          ),
+          obscureText: true,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _signInWithJellyfin(),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _isAuthenticating ? null : _signInWithJellyfin,
+          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+          child: _isAuthenticating
+              ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(t.auth.jellyfinSignIn),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton(
+          onPressed: () {
+            setState(() {
+              _showJellyfinForm = false;
+              _errorMessage = null;
+            });
+          },
+          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+          child: Text(t.common.back),
+        ),
         if (_errorMessage != null) ...[
           const SizedBox(height: 16),
           Text(

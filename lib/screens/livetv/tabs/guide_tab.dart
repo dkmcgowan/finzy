@@ -11,7 +11,7 @@ import '../../../i18n/strings.g.dart';
 import '../../../models/livetv_channel.dart';
 import '../../../models/livetv_program.dart';
 import '../../../providers/multi_server_provider.dart';
-import '../../../services/plex_client.dart';
+import '../../../services/media_server_client.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/formatters.dart';
 import '../../../utils/plex_image_helper.dart';
@@ -1105,7 +1105,7 @@ class _ChannelCell extends StatefulWidget {
   final double rowHeight;
   final double channelColumnWidth;
   final String? channelThumb;
-  final PlexClient? client;
+  final MediaServerClient? client;
   final LiveTvChannel channel;
   final ThemeData theme;
   final VoidCallback onTap;

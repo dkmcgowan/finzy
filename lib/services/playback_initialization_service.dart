@@ -1,4 +1,4 @@
-import 'plex_client.dart';
+import 'media_server_client.dart';
 import '../models/plex_media_info.dart';
 import '../models/plex_metadata.dart';
 import '../models/download_models.dart';
@@ -10,9 +10,9 @@ import 'download_storage_service.dart';
 import 'dart:io';
 import 'package:drift/drift.dart';
 
-/// Service responsible for fetching video playback data from the Plex server
+/// Service responsible for fetching video playback data from the media server
 class PlaybackInitializationService {
-  final PlexClient client;
+  final MediaServerClient client;
   final AppDatabase? database;
 
   PlaybackInitializationService({required this.client, this.database});
@@ -163,13 +163,13 @@ class PlaybackInitializationService {
     for (final plexTrack in externalTracks) {
       try {
         // Skip if no auth token is available
-        final token = client.config.token;
+        final token = client.token;
         if (token == null) {
           appLogger.w('No auth token available for external subtitles');
           continue;
         }
 
-        final url = plexTrack.getSubtitleUrl(client.config.baseUrl, token);
+        final url = plexTrack.getSubtitleUrl(client.baseUrl, token);
 
         // Skip if URL couldn't be constructed
         if (url == null) continue;

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/plex_metadata.dart';
 import '../models/play_queue_response.dart';
-import '../services/plex_client.dart';
+import '../services/media_server_client.dart';
 
 /// Playback mode types
 ///
@@ -37,7 +37,7 @@ class PlaybackStateProvider with ChangeNotifier {
   PlaybackMode? _playbackMode;
 
   // Client reference for loading more items
-  PlexClient? _client;
+  MediaServerClient? _client;
 
   /// Current playback mode (null if no queue active)
   PlaybackMode? get playbackMode => _playbackMode;
@@ -68,7 +68,7 @@ class PlaybackStateProvider with ChangeNotifier {
   }
 
   /// Set the client reference for loading more items
-  void setClient(PlexClient client) {
+  void setClient(MediaServerClient client) {
     _client = client;
   }
 

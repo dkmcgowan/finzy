@@ -12,7 +12,7 @@ import 'saf_storage_service.dart';
 import '../models/download_models.dart';
 import '../models/plex_metadata.dart';
 import '../models/plex_media_info.dart';
-import '../services/plex_client.dart';
+import '../services/media_server_client.dart';
 import '../services/download_storage_service.dart';
 import '../services/plex_api_cache.dart';
 import '../utils/app_logger.dart';
@@ -191,7 +191,7 @@ class _DownloadContext {
   final DownloadQueueItem queueItem;
   final String filePath; // Absolute path (normal) or SAF dir URI (SAF mode)
   final String extension;
-  final PlexClient client;
+  final MediaServerClient client;
   final int? showYear;
   final bool isSafMode;
   final PlexMediaInfo? mediaInfo;
@@ -229,7 +229,7 @@ class DownloadManagerService {
   final Set<String> _pendingSupplementaryDownloads = {};
 
   // Cached client for recovery and queue processing
-  PlexClient? _lastClient;
+  MediaServerClient? _lastClient;
 
   // background_downloader state
   bool _fileDownloaderInitialized = false;
@@ -346,8 +346,8 @@ class DownloadManagerService {
   }
 
   /// Resume queued downloads that have no active processing.
-  /// Call after a PlexClient becomes available (e.g. after server connect on launch).
-  void resumeQueuedDownloads(PlexClient client) {
+  /// Call after a media server client becomes available (e.g. after server connect on launch).
+  void resumeQueuedDownloads(MediaServerClient client) {
     _lastClient = client;
 
     // Attempt deferred supplementary downloads for recovered items
@@ -363,7 +363,7 @@ class DownloadManagerService {
 
   /// Attempt supplementary downloads (artwork, subtitles) for items that were
   /// recovered with a completed video but missed post-processing.
-  Future<void> _processPendingSupplementaryDownloads(PlexClient client) async {
+  Future<void> _processPendingSupplementaryDownloads(MediaServerClient client) async {
     if (_pendingSupplementaryDownloads.isEmpty) return;
 
     final keys = Set<String>.from(_pendingSupplementaryDownloads);
@@ -425,7 +425,7 @@ class DownloadManagerService {
   /// Queue a download for a media item
   Future<void> queueDownload({
     required PlexMetadata metadata,
-    required PlexClient client,
+    required MediaServerClient client,
     int priority = 0,
     bool downloadSubtitles = true,
     bool downloadArtwork = true,
@@ -471,7 +471,7 @@ class DownloadManagerService {
 
   /// Process the download queue — prepares and enqueues items with background_downloader.
   /// Non-blocking: returns after all queued items are enqueued (downloads run natively).
-  Future<void> _processQueue(PlexClient client) async {
+  Future<void> _processQueue(MediaServerClient client) async {
     if (_isProcessingQueue) return;
     _isProcessingQueue = true;
     _lastClient = client;
@@ -491,7 +491,7 @@ class DownloadManagerService {
   }
 
   /// Resolve metadata, video URL, and file path, then enqueue a background download task.
-  Future<void> _prepareAndEnqueueDownload(String globalKey, PlexClient client, DownloadQueueItem queueItem) async {
+  Future<void> _prepareAndEnqueueDownload(String globalKey, MediaServerClient client, DownloadQueueItem queueItem) async {
     try {
       appLogger.i('Preparing download for $globalKey');
       await _transitionStatus(globalKey, DownloadStatus.downloading);
@@ -867,7 +867,7 @@ class DownloadManagerService {
 
   /// Download artwork for a media item using hash-based storage
   /// Downloads all artwork types: thumb/poster, clearLogo, and background art
-  Future<void> _downloadArtwork(String globalKey, PlexMetadata metadata, PlexClient client) async {
+  Future<void> _downloadArtwork(String globalKey, PlexMetadata metadata, MediaServerClient client) async {
     if (metadata.serverId == null) return;
 
     try {
@@ -902,7 +902,7 @@ class DownloadManagerService {
   }
 
   /// Download a single artwork file if it doesn't already exist
-  Future<void> _downloadSingleArtwork(String serverId, String artworkPath, PlexClient client) async {
+  Future<void> _downloadSingleArtwork(String serverId, String artworkPath, MediaServerClient client) async {
     try {
       // Check if already downloaded (deduplication)
       if (await _storageService.artworkExists(serverId, artworkPath)) {
@@ -933,7 +933,7 @@ class DownloadManagerService {
 
   /// Download all artwork for a metadata item (public method for parent metadata)
   /// Downloads thumb/poster, clearLogo, and background art
-  Future<void> downloadArtworkForMetadata(PlexMetadata metadata, PlexClient client) async {
+  Future<void> downloadArtworkForMetadata(PlexMetadata metadata, MediaServerClient client) async {
     if (metadata.serverId == null) return;
     final serverId = metadata.serverId!;
 
@@ -954,7 +954,7 @@ class DownloadManagerService {
   }
 
   /// Download chapter thumbnail images for a media item
-  Future<void> _downloadChapterThumbnails(String serverId, String ratingKey, PlexClient client) async {
+  Future<void> _downloadChapterThumbnails(String serverId, String ratingKey, MediaServerClient client) async {
     try {
       // Get chapters from the cached API response
       final extras = await client.getPlaybackExtras(ratingKey);
@@ -979,7 +979,7 @@ class DownloadManagerService {
     String globalKey,
     PlexMetadata metadata,
     PlexMediaInfo mediaInfo,
-    PlexClient client, {
+    MediaServerClient client, {
     int? showYear,
   }) async {
     try {
@@ -991,8 +991,8 @@ class DownloadManagerService {
           continue;
         }
 
-        final baseUrl = client.config.baseUrl;
-        final token = client.config.token ?? '';
+        final baseUrl = client.baseUrl;
+        final token = client.token ?? '';
         final subtitleUrl = subtitle.getSubtitleUrl(baseUrl, token);
         if (subtitleUrl == null) continue;
 
@@ -1119,7 +1119,7 @@ class DownloadManagerService {
   }
 
   /// Resume a paused download
-  Future<void> resumeDownload(String globalKey, PlexClient client) async {
+  Future<void> resumeDownload(String globalKey, MediaServerClient client) async {
     final bgTaskId = await _database.getBgTaskId(globalKey);
 
     // Try native resume first (only works for normal-mode DownloadTask that was paused)
@@ -1144,7 +1144,7 @@ class DownloadManagerService {
   }
 
   /// Retry a failed download
-  Future<void> retryDownload(String globalKey, PlexClient client) async {
+  Future<void> retryDownload(String globalKey, MediaServerClient client) async {
     await _database.clearDownloadError(globalKey);
     await _database.updateBgTaskId(globalKey, null);
     await _transitionStatus(globalKey, DownloadStatus.queued);

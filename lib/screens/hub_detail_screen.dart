@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../models/plex_hub.dart';
 import '../models/plex_metadata.dart';
 import '../models/plex_sort.dart';
@@ -37,7 +37,7 @@ class HubDetailScreen extends StatefulWidget {
 }
 
 class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, GridFocusNodeMixin {
-  PlexClient get client => _getClientForHub();
+  MediaServerClient get client => _getClientForHub();
 
   List<PlexMetadata> _items = [];
   List<PlexMetadata> _filteredItems = [];
@@ -55,8 +55,8 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   /// Key for getting a context below OverlaySheetHost
   final GlobalKey _overlayChildKey = GlobalKey();
 
-  /// Get the correct PlexClient for this hub's server
-  PlexClient _getClientForHub() {
+  /// Get the correct MediaServerClient for this hub's server
+  MediaServerClient _getClientForHub() {
     return context.getClientForServer(widget.hub.serverId!);
   }
 

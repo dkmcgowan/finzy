@@ -66,6 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kShowHeroSection = 'show_hero_section';
   static const _kUseGlobalHubs = 'use_global_hubs';
   static const _kShowServerNameOnHubs = 'show_server_name_on_hubs';
+  static const _kShowJellyfinRecommendations = 'show_jellyfin_recommendations';
   static const _kAlwaysKeepSidebarOpen = 'always_keep_sidebar_open';
   static const _kShowUnwatchedCount = 'show_unwatched_count';
   static const _kRequireProfileSelectionOnOpen = 'require_profile_selection_on_open';
@@ -347,6 +348,20 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                 value: settingsProvider.showServerNameOnHubs,
                 onChanged: (value) async {
                   await settingsProvider.setShowServerNameOnHubs(value);
+                },
+              );
+            },
+          ),
+          Consumer<SettingsProvider>(
+            builder: (context, settingsProvider, child) {
+              return SwitchListTile(
+                focusNode: _focusTracker.get(_kShowJellyfinRecommendations),
+                secondary: const AppIcon(Symbols.recommend_rounded, fill: 1),
+                title: Text(t.settings.showJellyfinRecommendations),
+                subtitle: Text(t.settings.showJellyfinRecommendationsDescription),
+                value: settingsProvider.showJellyfinRecommendations,
+                onChanged: (value) async {
+                  await settingsProvider.setShowJellyfinRecommendations(value);
                 },
               );
             },

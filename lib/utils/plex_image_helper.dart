@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/widgets.dart';
-import '../services/plex_client.dart';
+import '../services/media_server_client.dart';
 import 'plex_url_helper.dart';
 
 /// Image types for different transcoding strategies
@@ -99,13 +99,13 @@ class PlexImageHelper {
 
   /// Builds a Plex photo transcode URL with optimized parameters
   static String buildTranscodeUrl({
-    required PlexClient client,
+    required MediaServerClient client,
     required String originalPath,
     required int width,
     int? height,
   }) {
-    final baseUrl = client.config.baseUrl;
-    final token = client.config.token;
+    final baseUrl = client.baseUrl;
+    final token = client.token;
 
     // URL encode the original path with token
     final encodedPath = Uri.encodeComponent(originalPath.withPlexToken(token));
@@ -129,7 +129,7 @@ class PlexImageHelper {
   /// Falls back to original URL if transcoding is not appropriate
   /// If client is null (offline mode), returns empty string for relative paths
   static String getOptimizedImageUrl({
-    PlexClient? client,
+    MediaServerClient? client,
     required String? thumbPath,
     required double maxWidth,
     required double maxHeight,
@@ -155,8 +155,8 @@ class PlexImageHelper {
       );
       // Don't append Plex token to the inner URL — only on the outer request
       final encodedUrl = Uri.encodeComponent(basePath);
-      final token = client.config.token;
-      return '${client.config.baseUrl}/photo/:/transcode?width=$width&height=$height&minSize=1&upscale=1&url=$encodedUrl&X-Plex-Token=$token';
+      final token = client.token;
+      return '${client.baseUrl}/photo/:/transcode?width=$width&height=$height&minSize=1&upscale=1&url=$encodedUrl&X-Plex-Token=$token';
     }
 
     // If no client (offline mode), we can't build URLs for relative paths
@@ -221,7 +221,30 @@ class PlexImageHelper {
       return false;
     }
 
+    // Jellyfin uses item IDs (GUIDs or 32-char hex) as paths; Plex /photo/:/transcode is not valid
+    if (!imagePath.contains('/')) {
+      if (_looksLikeGuid(imagePath)) return false;
+      if (_looksLikeJellyfinIdOrTag(imagePath)) return false;
+    }
+
     return true;
+  }
+
+  static bool _looksLikeGuid(String s) {
+    if (s.length < 30) return false;
+    final parts = s.split('-');
+    return parts.length == 5 &&
+        parts[0].length == 8 &&
+        parts[1].length == 4 &&
+        parts[2].length == 4 &&
+        parts[3].length == 4 &&
+        parts[4].length == 12;
+  }
+
+  /// Jellyfin item IDs or image tags can be 32-char hex (no hyphens); never send to Plex transcode.
+  static bool _looksLikeJellyfinIdOrTag(String s) {
+    if (s.length != 32) return false;
+    return s.split('').every((c) => '0123456789abcdefABCDEF'.contains(c));
   }
 
   /// Creates a consistent cache key for rounded dimensions

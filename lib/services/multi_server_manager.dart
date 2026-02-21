@@ -2,20 +2,24 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+import 'media_server_client.dart';
 import 'plex_client.dart';
+import '../models/jellyfin_config.dart';
 import '../models/plex_config.dart';
+import '../models/registered_server.dart';
 import '../utils/app_logger.dart';
 import '../utils/connection_constants.dart';
+import 'jellyfin_client.dart';
 import 'plex_auth_service.dart';
 import 'storage_service.dart';
 
-/// Manages multiple Plex server connections simultaneously
+/// Manages multiple media server connections (Plex and/or Jellyfin)
 class MultiServerManager {
-  /// Map of serverId (clientIdentifier) to PlexClient instances
-  final Map<String, PlexClient> _clients = {};
+  /// Map of serverId to client (Plex or Jellyfin)
+  final Map<String, MediaServerClient> _clients = {};
 
-  /// Map of serverId to server info
-  final Map<String, PlexServer> _servers = {};
+  /// Map of serverId to registered server info
+  final Map<String, RegisteredServer> _servers = {};
 
   /// Map of serverId to online status
   final Map<String, bool> _serverStatus = {};
@@ -48,14 +52,14 @@ class MultiServerManager {
   List<String> get offlineServerIds => _serverStatus.entries.where((e) => !e.value).map((e) => e.key).toList();
 
   /// Get client for specific server
-  PlexClient? getClient(String serverId) => _clients[serverId];
+  MediaServerClient? getClient(String serverId) => _clients[serverId];
 
   /// Get server info for specific server
-  PlexServer? getServer(String serverId) => _servers[serverId];
+  RegisteredServer? getServer(String serverId) => _servers[serverId];
 
   /// Get all online clients
-  Map<String, PlexClient> get onlineClients {
-    final result = <String, PlexClient>{};
+  Map<String, MediaServerClient> get onlineClients {
+    final result = <String, MediaServerClient>{};
     for (final serverId in onlineServerIds) {
       final client = _clients[serverId];
       if (client != null) {
@@ -66,7 +70,7 @@ class MultiServerManager {
   }
 
   /// Get all servers
-  Map<String, PlexServer> get servers => Map.unmodifiable(_servers);
+  Map<String, RegisteredServer> get servers => Map.unmodifiable(_servers);
 
   /// Check if a server is online
   bool isServerOnline(String serverId) => _serverStatus[serverId] ?? false;
@@ -121,6 +125,18 @@ class MultiServerManager {
     return client;
   }
 
+  /// Creates a JellyfinClient for the given Jellyfin server data
+  JellyfinClient _createJellyfinClient(JellyfinServerData data) {
+    final config = JellyfinConfig(
+      baseUrl: data.baseUrl,
+      token: data.token,
+      userId: data.userId,
+      serverId: data.serverId,
+      serverName: data.serverName,
+    );
+    return JellyfinClient(config, serverId: data.serverId, serverName: data.serverName);
+  }
+
   /// Continues draining the connection optimization stream in the background,
   /// switching the client to any better endpoint found.
   void _drainOptimizationStream(
@@ -159,13 +175,13 @@ class MultiServerManager {
     }();
   }
 
-  /// Connect to all available servers in parallel
+  /// Connect to all available servers in parallel (Plex and/or Jellyfin)
   /// Returns the number of successfully connected servers
   Future<int> connectToAllServers(
-    List<PlexServer> servers, {
+    List<RegisteredServer> servers, {
     String? clientIdentifier,
     Duration timeout = ConnectionTimeouts.connectAll,
-    Function(String serverId, PlexClient client)? onServerConnected,
+    Function(String serverId, MediaServerClient client)? onServerConnected,
     Function(String serverId, Object error)? onServerFailed,
   }) async {
     if (servers.isEmpty) {
@@ -175,33 +191,35 @@ class MultiServerManager {
 
     appLogger.i('Connecting to ${servers.length} servers...');
 
-    // Use provided client ID or generate a unique one for this app instance
     final effectiveClientId = clientIdentifier ?? DateTime.now().millisecondsSinceEpoch.toString();
     _clientIdentifier = effectiveClientId;
 
-    // Create connection tasks for all servers
-    final connectionFutures = servers.map((server) async {
-      final serverId = server.clientIdentifier;
+    final connectionFutures = servers.map((registered) async {
+      final serverId = registered.serverId;
+      final serverName = registered.serverName;
 
       try {
-        appLogger.d('Attempting connection to server: ${server.name}');
+        appLogger.d('Attempting connection to server: $serverName');
 
-        final client = await _createClientForServer(server: server, clientIdentifier: effectiveClientId);
+        final MediaServerClient client;
+        if (registered.isPlex) {
+          client = await _createClientForServer(server: registered.plexServer!, clientIdentifier: effectiveClientId);
+        } else {
+          client = _createJellyfinClient(registered.jellyfinData!);
+        }
 
-        // Store the client and server info
         _clients[serverId] = client;
-        _servers[serverId] = server;
+        _servers[serverId] = registered;
         _serverStatus[serverId] = true;
 
         onServerConnected?.call(serverId, client);
-        appLogger.i('Successfully connected to ${server.name}');
+        appLogger.i('Successfully connected to $serverName');
 
         return serverId;
       } catch (e, stackTrace) {
-        appLogger.e('Failed to connect to ${server.name}', error: e, stackTrace: stackTrace);
+        appLogger.e('Failed to connect to $serverName', error: e, stackTrace: stackTrace);
 
-        // Mark as offline
-        _servers[serverId] = server;
+        _servers[serverId] = registered;
         _serverStatus[serverId] = false;
 
         onServerFailed?.call(serverId, e);
@@ -209,7 +227,6 @@ class MultiServerManager {
       }
     });
 
-    // Wait for all connections with timeout
     final results = await Future.wait(
       connectionFutures.map(
         (f) => f.timeout(
@@ -222,12 +239,8 @@ class MultiServerManager {
       ),
     );
 
-    // Count successful connections
     final successCount = results.where((id) => id != null).length;
-
-    // Notify listeners of status change
     _statusController.add(Map.from(_serverStatus));
-
     appLogger.i('Connected to $successCount/${servers.length} servers successfully');
 
     // Start network monitoring if we have any connected servers
@@ -238,31 +251,33 @@ class MultiServerManager {
     return successCount;
   }
 
-  /// Add a single server connection
-  Future<bool> addServer(PlexServer server, {String? clientIdentifier}) async {
-    final serverId = server.clientIdentifier;
+  /// Add a single server connection (Plex or Jellyfin)
+  Future<bool> addServer(RegisteredServer registered, {String? clientIdentifier}) async {
+    final serverId = registered.serverId;
     final effectiveClientId = clientIdentifier ?? DateTime.now().millisecondsSinceEpoch.toString();
     _clientIdentifier ??= effectiveClientId;
 
     try {
-      appLogger.d('Adding server: ${server.name}');
+      appLogger.d('Adding server: ${registered.serverName}');
 
-      final client = await _createClientForServer(server: server, clientIdentifier: effectiveClientId);
+      final MediaServerClient client;
+      if (registered.isPlex) {
+        client = await _createClientForServer(server: registered.plexServer!, clientIdentifier: effectiveClientId);
+      } else {
+        client = _createJellyfinClient(registered.jellyfinData!);
+      }
 
-      // Store
       _clients[serverId] = client;
-      _servers[serverId] = server;
+      _servers[serverId] = registered;
       _serverStatus[serverId] = true;
-
-      // Notify
       _statusController.add(Map.from(_serverStatus));
 
-      appLogger.i('Successfully added server: ${server.name}');
+      appLogger.i('Successfully added server: ${registered.serverName}');
       return true;
     } catch (e, stackTrace) {
-      appLogger.e('Failed to add server ${server.name}', error: e, stackTrace: stackTrace);
+      appLogger.e('Failed to add server ${registered.serverName}', error: e, stackTrace: stackTrace);
 
-      _servers[serverId] = server;
+      _servers[serverId] = registered;
       _serverStatus[serverId] = false;
       _statusController.add(Map.from(_serverStatus));
 
@@ -357,25 +372,25 @@ class MultiServerManager {
   void _reoptimizeAllServers({required String reason}) {
     for (final entry in _servers.entries) {
       final serverId = entry.key;
-      final server = entry.value;
+      final registered = entry.value;
 
-      // Skip if optimization/reconnection already running for this server
       if (_activeOptimizations.containsKey(serverId)) {
-        appLogger.d('Optimization already running for ${server.name}, skipping', error: {'reason': reason});
+        appLogger.d('Optimization already running for ${registered.serverName}, skipping', error: {'reason': reason});
         continue;
       }
 
       if (!isServerOnline(serverId)) {
-        // Attempt reconnection for offline servers
-        _activeOptimizations[serverId] = _reconnectServer(serverId, server).whenComplete(() {
+        _activeOptimizations[serverId] = _reconnectServer(serverId, registered).whenComplete(() {
           _activeOptimizations.remove(serverId);
         });
-      } else {
-        // Re-optimize online servers
-        _activeOptimizations[serverId] = _reoptimizeServer(serverId: serverId, server: server, reason: reason)
-            .whenComplete(() {
-              _activeOptimizations.remove(serverId);
-            });
+      } else if (registered.isPlex) {
+        _activeOptimizations[serverId] = _reoptimizeServer(
+          serverId: serverId,
+          server: registered.plexServer!,
+          reason: reason,
+        ).whenComplete(() {
+          _activeOptimizations.remove(serverId);
+        });
       }
     }
   }
@@ -392,8 +407,9 @@ class MultiServerManager {
       await for (final connection in server.findBestWorkingConnection(preferredUri: cachedEndpoint)) {
         final newUrl = connection.uri;
 
-        // Check if this is actually a better connection than current
-        if (client != null && client.config.baseUrl == newUrl) {
+        // Check if this is actually a better connection than current (Plex-only)
+        final plexClient = client as PlexClient?;
+        if (plexClient != null && plexClient.config.baseUrl == newUrl) {
           appLogger.d('Already using optimal endpoint for ${server.name}: $newUrl');
           continue;
         }
@@ -402,9 +418,9 @@ class MultiServerManager {
         await storage.saveServerEndpoint(serverId, newUrl);
 
         // Actively switch the running client to the better endpoint
-        if (client != null) {
+        if (plexClient != null) {
           final newEndpoints = server.prioritizedEndpointUrls(preferredFirst: newUrl);
-          await client.updateEndpointPreferences(newEndpoints, switchToFirst: true);
+          await plexClient.updateEndpointPreferences(newEndpoints, switchToFirst: true);
           appLogger.i('Switched ${server.name} to better endpoint: $newUrl', error: {'type': connection.displayType});
         } else {
           appLogger.i('Updated optimal endpoint for ${server.name}: $newUrl', error: {'type': connection.displayType});
@@ -416,23 +432,27 @@ class MultiServerManager {
   }
 
   /// Attempt full reconnection for a single offline server
-  Future<void> _reconnectServer(String serverId, PlexServer server) async {
-    final clientId = _clientIdentifier;
-    if (clientId == null) {
-      appLogger.w('Cannot reconnect ${server.name}: no client identifier cached');
-      return;
-    }
-
+  Future<void> _reconnectServer(String serverId, RegisteredServer registered) async {
     try {
-      appLogger.d('Attempting reconnection for ${server.name}');
-      final client = await _createClientForServer(server: server, clientIdentifier: clientId);
+      appLogger.d('Attempting reconnection for ${registered.serverName}');
+
+      final MediaServerClient client;
+      if (registered.isPlex) {
+        final clientId = _clientIdentifier;
+        if (clientId == null) {
+          appLogger.w('Cannot reconnect ${registered.serverName}: no client identifier cached');
+          return;
+        }
+        client = await _createClientForServer(server: registered.plexServer!, clientIdentifier: clientId);
+      } else {
+        client = _createJellyfinClient(registered.jellyfinData!);
+      }
 
       _clients[serverId] = client;
       updateServerStatus(serverId, true);
-      appLogger.i('Successfully reconnected to ${server.name}');
+      appLogger.i('Successfully reconnected to ${registered.serverName}');
     } catch (e) {
-      appLogger.d('Reconnection failed for ${server.name}: $e');
-      // Leave status as offline — will retry on next trigger
+      appLogger.d('Reconnection failed for ${registered.serverName}: $e');
     }
   }
 
@@ -466,25 +486,22 @@ class MultiServerManager {
     await Future.wait(futures);
   }
 
-  /// Called when all failover endpoints are exhausted for a server.
-  /// Debounced per-server to prevent cascading reconnections from parallel failures.
+  /// Called when all failover endpoints are exhausted for a Plex server.
   void _onServerEndpointsExhausted(String serverId) {
-    // Cancel any existing debounce timer for this server
     _reconnectDebounce[serverId]?.cancel();
 
     _reconnectDebounce[serverId] = Timer(const Duration(seconds: 5), () {
       _reconnectDebounce.remove(serverId);
 
-      final server = _servers[serverId];
-      if (server == null) return;
+      final registered = _servers[serverId];
+      if (registered == null || !registered.isPlex) return;
 
       appLogger.i('All endpoints exhausted for $serverId, triggering reconnection');
       updateServerStatus(serverId, false);
 
-      // Guard with _activeOptimizations to prevent duplicate reconnections
       if (_activeOptimizations.containsKey(serverId)) return;
 
-      _activeOptimizations[serverId] = _reconnectServer(serverId, server).whenComplete(() {
+      _activeOptimizations[serverId] = _reconnectServer(serverId, registered).whenComplete(() {
         _activeOptimizations.remove(serverId);
       });
     });

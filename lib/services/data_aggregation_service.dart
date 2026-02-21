@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'plex_client.dart';
+import '../models/registered_server.dart';
 import '../models/plex_hub.dart';
 import '../models/plex_library.dart';
 import '../models/plex_metadata.dart';
 import '../utils/app_logger.dart';
+import 'media_server_client.dart';
 import 'multi_server_manager.dart';
-import 'plex_auth_service.dart';
 
 /// Service for aggregating data from multiple Plex servers
 class DataAggregationService {
@@ -83,23 +83,36 @@ class DataAggregationService {
       return [];
     }
 
-    return useGlobalHubs
-        ? _fetchGlobalHubs(clients, limit: limit, hiddenLibraryKeys: hiddenLibraryKeys)
-        : _fetchLibraryHubs(
-            clients,
-            limit: limit,
-            hiddenLibraryKeys: hiddenLibraryKeys,
-            librariesByServer: librariesByServer,
-          );
+    appLogger.i('Home hubs: useGlobalHubs=$useGlobalHubs, servers=${clients.length}');
+    if (useGlobalHubs) {
+      return _fetchGlobalHubs(clients, limit: limit, hiddenLibraryKeys: hiddenLibraryKeys);
+    }
+    // Per-library hubs + always include Next Up (next episodes for series)
+    final libraryHubs = await _fetchLibraryHubs(
+      clients,
+      limit: limit,
+      hiddenLibraryKeys: hiddenLibraryKeys,
+      librariesByServer: librariesByServer,
+    );
+    final globalHubs = await _fetchGlobalHubs(clients, limit: limit, hiddenLibraryKeys: hiddenLibraryKeys);
+    final nextUp = globalHubs.where((h) {
+      final id = h.hubIdentifier?.toLowerCase() ?? '';
+      final title = h.title.toLowerCase();
+      return id.contains('nextup') || id.contains('next_up') || title.contains('next up');
+    }).toList();
+    if (nextUp.isNotEmpty) {
+      appLogger.i('Home hubs: prepending ${nextUp.length} Next Up hub(s) to library hubs');
+    }
+    return [...nextUp, ...libraryHubs];
   }
 
   /// Fetch global hubs using /hubs endpoint (matches official Plex client)
   Future<List<PlexHub>> _fetchGlobalHubs(
-    Map<String, PlexClient> clients, {
+    Map<String, MediaServerClient> clients, {
     int? limit,
     Set<String>? hiddenLibraryKeys,
   }) async {
-    appLogger.d('Fetching global hubs from ${clients.length} servers');
+    appLogger.i('Fetching global hubs from ${clients.length} servers');
 
     // Fetch global hubs from all servers in parallel
     final hubFutures = clients.entries.map((entry) async {
@@ -108,7 +121,7 @@ class DataAggregationService {
 
       try {
         final hubs = await client.getGlobalHubs(limit: limit ?? 10);
-        appLogger.d('Fetched ${hubs.length} global hubs from server $serverId');
+        appLogger.i('Home hubs: getGlobalHubs(server $serverId) -> ${hubs.length} hub(s)${hubs.isNotEmpty ? ": ${hubs.map((h) => h.title).join(", ")}" : ""}');
 
         // Filter out items from hidden libraries if specified
         if (hiddenLibraryKeys != null && hiddenLibraryKeys.isNotEmpty) {
@@ -158,7 +171,7 @@ class DataAggregationService {
 
   /// Fetch per-library hubs using /hubs/sections/{sectionId} endpoint
   Future<List<PlexHub>> _fetchLibraryHubs(
-    Map<String, PlexClient> clients, {
+    Map<String, MediaServerClient> clients, {
     int? limit,
     Set<String>? hiddenLibraryKeys,
     Map<String, List<PlexLibrary>>? librariesByServer,
@@ -177,7 +190,7 @@ class DataAggregationService {
         // Use pre-fetched libraries for this server
         final serverLibraries = libraries[serverId] ?? <PlexLibrary>[];
         if (serverLibraries.isEmpty) {
-          appLogger.w('No libraries available for server $serverId');
+          appLogger.i('Home hubs: server $serverId has no libraries');
           return <PlexHub>[];
         }
 
@@ -196,22 +209,38 @@ class DataAggregationService {
           return true;
         }).toList();
 
+        appLogger.i('Home hubs: server $serverId has ${serverLibraries.length} lib(s), ${visibleLibraries.length} visible (movie/show); keys=${visibleLibraries.map((l) => l.key).join(",")}');
+
         // Fetch hubs from all libraries in parallel
         final libraryHubFutures = visibleLibraries.map((library) async {
           try {
-            // Hubs are now tagged with server info at the source
             final hubs = await client.getLibraryHubs(library.key);
-            appLogger.d('Fetched ${hubs.length} hubs for ${library.title} on $serverId');
-            return hubs;
+            appLogger.i('Home hubs: getLibraryHubs(${library.title}, key=${library.key}) -> ${hubs.length} hub(s)${hubs.isNotEmpty ? ", ${hubs.first.items.length} items" : ""}');
+            // Only rename "Recently Added" hubs so Plex keeps its varied hub titles (Top in Action, etc.)
+            return hubs.map((h) {
+              final isRecentlyAdded = (h.hubIdentifier?.toLowerCase().contains('recently_added') ?? false) ||
+                  h.title.toLowerCase().contains('recently added');
+              final title = isRecentlyAdded ? 'Recently Added in ${library.title}' : h.title;
+              return PlexHub(
+                hubKey: h.hubKey,
+                title: title,
+                type: h.type,
+                hubIdentifier: h.hubIdentifier,
+                size: h.size,
+                more: h.more,
+                items: h.items,
+                serverId: h.serverId,
+                serverName: h.serverName,
+              );
+            }).toList();
           } catch (e) {
-            appLogger.w('Failed to fetch hubs for library ${library.title}: $e');
+            appLogger.w('Home hubs: getLibraryHubs(${library.title}, key=${library.key}) failed: $e');
             return <PlexHub>[];
           }
         });
 
         final libraryHubResults = await Future.wait(libraryHubFutures);
 
-        // Flatten all library hubs
         final serverHubs = <PlexHub>[];
         for (final hubs in libraryHubResults) {
           serverHubs.addAll(hubs);
@@ -305,7 +334,7 @@ class DataAggregationService {
   /// Used by [_perServer] and [_perServerGrouped] for different aggregation strategies.
   Future<List<(String serverId, List<T> result)>> _perServerRaw<T>({
     required String operationName,
-    required Future<List<T>> Function(String serverId, PlexClient client, PlexServer? server) operation,
+    required Future<List<T>> Function(String serverId, MediaServerClient client, RegisteredServer? server) operation,
   }) async {
     final clients = _serverManager.onlineClients;
 
@@ -345,7 +374,7 @@ class DataAggregationService {
   /// handles errors, updates server status, and flattens results into a single list.
   Future<List<T>> _perServer<T>({
     required String operationName,
-    required Future<List<T>> Function(String serverId, PlexClient client, PlexServer? server) operation,
+    required Future<List<T>> Function(String serverId, MediaServerClient client, RegisteredServer? server) operation,
   }) async {
     final results = await _perServerRaw(operationName: operationName, operation: operation);
     return [for (final (_, items) in results) ...items];

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
 
-import '../../../../services/plex_client.dart';
+import '../../../providers/settings_provider.dart';
+import '../../../utils/library_refresh_notifier.dart';
+import '../../../../services/media_server_client.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../mixins/item_updatable.dart';
 import '../../../models/plex_hub.dart';
@@ -31,7 +34,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
   final List<GlobalKey<HubSectionState>> _hubKeys = [];
 
   @override
-  PlexClient get client => getClientForLibrary();
+  MediaServerClient get client => getClientForLibrary();
 
   @override
   void updateItemInLists(String ratingKey, PlexMetadata updatedMetadata) {
@@ -52,6 +55,9 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
 
   @override
   String get errorContext => t.libraries.tabs.recommended;
+
+  @override
+  Stream<void>? getRefreshStream() => LibraryRefreshNotifier().recommendationsStream;
 
   @override
   Future<List<PlexHub>> loadData() async {
@@ -98,8 +104,39 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
       finalHubs.add(continueWatchingHub);
     }
 
-    // Add the filtered regular hubs
-    finalHubs.addAll(filteredHubs);
+    // Add the filtered regular hubs with library-specific titles (e.g. "Recently Added in Movies")
+    final libraryTitle = widget.library.title;
+    for (final hub in filteredHubs) {
+      final isRecentlyAdded = (hub.hubIdentifier?.toLowerCase().contains('recently_added') ?? false) ||
+          hub.title.toLowerCase().contains('recently added');
+      final title = isRecentlyAdded ? 'Recently Added in $libraryTitle' : hub.title;
+      finalHubs.add(PlexHub(
+        hubKey: hub.hubKey,
+        title: title,
+        type: hub.type,
+        hubIdentifier: hub.hubIdentifier,
+        size: hub.size,
+        more: hub.more,
+        items: hub.items,
+        serverId: hub.serverId,
+        serverName: hub.serverName,
+      ));
+    }
+
+    // Jellyfin Movies only: append "Because you watched/liked X" when setting is on
+    final settingsProvider = context.read<SettingsProvider>();
+    if (client.isJellyfin &&
+        widget.library.type.toLowerCase() == 'movie' &&
+        settingsProvider.showJellyfinRecommendations) {
+      final recHubs = await client.getMovieRecommendations(
+        widget.library.key,
+        categoryLimit: 10,
+        itemLimit: 12,
+      );
+      for (final hub in recHubs) {
+        finalHubs.add(hub);
+      }
+    }
 
     return finalHubs;
   }
@@ -197,8 +234,12 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
       return Symbols.trending_up_rounded;
     } else if (title.contains('top') || title.contains('rated')) {
       return Symbols.star_rounded;
-    } else if (title.contains('recommended')) {
+    } else if (title.contains('recommended') || title.contains('because you watched') || title.contains('because you liked')) {
       return Symbols.thumb_up_rounded;
+    } else if (title.contains('from director')) {
+      return Symbols.movie_creation_rounded;
+    } else if (title.contains('with actor')) {
+      return Symbols.person_rounded;
     } else if (title.contains('unwatched')) {
       return Symbols.visibility_off_rounded;
     } else if (title.contains('genre')) {

@@ -5,12 +5,13 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import '../../../focus/dpad_navigator.dart';
-import '../../../../services/plex_client.dart';
+import '../../../../services/media_server_client.dart';
 import '../../../models/plex_metadata.dart';
 import '../../../models/plex_filter.dart';
 import '../../../models/plex_first_character.dart';
 import '../../../models/plex_sort.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../utils/app_logger.dart';
 import '../../../utils/error_message_utils.dart';
 import '../../../utils/grid_size_calculator.dart';
 import '../../../utils/layout_constants.dart';
@@ -58,7 +59,7 @@ class LibraryBrowseTab extends BaseLibraryTab<PlexMetadata> {
 class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBrowseTab>
     with ItemUpdatable, LibraryTabFocusMixin, GridFocusNodeMixin, DeletionAware {
   @override
-  PlexClient get client => getClientForLibrary();
+  MediaServerClient get client => getClientForLibrary();
 
   String _toGlobalKey(String ratingKey, {String? serverId}) =>
       '${serverId ?? widget.library.serverId ?? ''}:$ratingKey';
@@ -285,11 +286,15 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
     });
 
     try {
-      final storage = await StorageService.getInstance();
-
-      // Load filters and sorts for this library
-      final filters = await client.getLibraryFilters(widget.library.key);
-      final sorts = await client.getLibrarySorts(widget.library.key);
+      // Load storage, filters, and sorts in parallel so browse appears faster
+      final results = await Future.wait([
+        StorageService.getInstance(),
+        client.getLibraryFilters(widget.library.key),
+        client.getLibrarySorts(widget.library.key, libraryType: widget.library.type),
+      ]);
+      final storage = results[0] as StorageService;
+      final filters = results[1] as List<PlexFilter>;
+      final sorts = results[2] as List<PlexSort>;
 
       // Load saved preferences
       final savedFilters = storage.getLibraryFilters(sectionId: widget.library.globalKey);
@@ -370,6 +375,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
       if (_selectedSort != null) {
         filterParams['sort'] = _selectedSort!.getSortKey(descending: _isSortDescending);
       }
+
+      appLogger.d('Library browse: getLibraryContent key=${widget.library.key} sort=${filterParams['sort']} type=${filterParams['type']} filters=${_selectedFilters.isEmpty ? "none" : _selectedFilters}');
 
       // Items are automatically tagged with server info by PlexClient
       final loadedItems = await client.getLibraryContent(

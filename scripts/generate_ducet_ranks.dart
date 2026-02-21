@@ -1,9 +1,9 @@
-/// Generates lib/data/ducet_order.dart from Unicode allkeys.txt and CLDR FractionalUCA.txt.
-///
-/// Usage:
-///   dart run scripts/generate_ducet_ranks.dart [allkeys.txt] [FractionalUCA.txt]
-///
-/// Downloads the files automatically if not provided.
+// Generates lib/data/ducet_order.dart from Unicode allkeys.txt and CLDR FractionalUCA.txt.
+//
+// Usage:
+//   dart run scripts/generate_ducet_ranks.dart [allkeys.txt] [FractionalUCA.txt]
+//
+// Downloads the files automatically if not provided.
 import 'dart:io';
 
 // ---------------------------------------------------------------------------
@@ -60,7 +60,7 @@ bool _isKatakana(int cp) =>
 // (opposite of raw DUCET). We adjust by subtracting 6 from katakana tertiary
 // weights, placing them below hiragana tertiaries (0x000D+).
 // ---------------------------------------------------------------------------
-Map<int, _Weight> parseAllKeys(String text) {
+Map<int, _Weight> _parseAllKeys(String text) {
   final result = <int, _Weight>{};
   final weightRe = RegExp(r'\[([.*])([0-9A-Fa-f]{4})\.([0-9A-Fa-f]{4})\.([0-9A-Fa-f]{4})\]');
 
@@ -166,7 +166,7 @@ Map<int, _Weight> parseAllKeys(String text) {
 // ---------------------------------------------------------------------------
 // Build final ordered list
 // ---------------------------------------------------------------------------
-List<int> buildOrder(Map<int, _Weight> allKeys, List<int> cjkRadicalOrder) {
+List<int> _buildOrder(Map<int, _Weight> allKeys, List<int> cjkRadicalOrder) {
   final entries = allKeys.entries.toList();
   entries.sort((a, b) => a.value.compareTo(b.value));
 
@@ -200,7 +200,7 @@ List<int> buildOrder(Map<int, _Weight> allKeys, List<int> cjkRadicalOrder) {
 // Main
 // ---------------------------------------------------------------------------
 Future<void> main(List<String> args) async {
-  final allKeysPath = args.length > 0 ? args[0] : '/tmp/allkeys.txt';
+  final allKeysPath = args.isNotEmpty ? args[0] : '/tmp/allkeys.txt';
   final fracUcaPath = args.length > 1 ? args[1] : '/tmp/FractionalUCA.txt';
 
   // Download if missing
@@ -234,7 +234,7 @@ Future<void> main(List<String> args) async {
 
   stderr.writeln('Parsing allkeys.txt (with CLDR kana fix)...');
   final allKeysText = File(allKeysPath).readAsStringSync();
-  final allKeys = parseAllKeys(allKeysText);
+  final allKeys = _parseAllKeys(allKeysText);
   stderr.writeln('  ${allKeys.length} BMP entries');
 
   stderr.writeln('Parsing FractionalUCA.txt...');
@@ -246,7 +246,7 @@ Future<void> main(List<String> args) async {
   stderr.writeln('  $bmpCjk BMP CJK codepoints');
 
   stderr.writeln('Building total order...');
-  final ordered = buildOrder(allKeys, cjkOrder);
+  final ordered = _buildOrder(allKeys, cjkOrder);
   stderr.writeln('  ${ordered.length} total BMP codepoints in order');
 
   stderr.writeln('  ${ordered.length * 2} raw bytes');

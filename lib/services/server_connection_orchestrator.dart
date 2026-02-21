@@ -1,17 +1,17 @@
+import '../models/registered_server.dart';
 import '../providers/libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/connection_constants.dart';
+import 'media_server_client.dart';
 import 'offline_watch_sync_service.dart';
-import 'plex_auth_service.dart';
-import 'plex_client.dart';
 
 /// Result of a connection attempt to one or more servers.
 class ConnectionResult {
   final int connectedCount;
 
   /// The first client that connected successfully, or null if none did.
-  final PlexClient? firstClient;
+  final MediaServerClient? firstClient;
 
   ConnectionResult({required this.connectedCount, this.firstClient});
 
@@ -31,7 +31,7 @@ class ServerConnectionOrchestrator {
   /// Throws only on unexpected errors; individual server failures are
   /// handled internally (logged + counted).
   static Future<ConnectionResult> connectAndInitialize({
-    required List<PlexServer> servers,
+    required List<RegisteredServer> servers,
     required MultiServerProvider multiServerProvider,
     required LibrariesProvider librariesProvider,
     required OfflineWatchSyncService syncService,
@@ -46,7 +46,7 @@ class ServerConnectionOrchestrator {
       timeout: timeout,
     );
 
-    PlexClient? firstClient;
+    MediaServerClient? firstClient;
 
     if (connectedCount > 0) {
       appLogger.i('Successfully connected to $connectedCount servers');

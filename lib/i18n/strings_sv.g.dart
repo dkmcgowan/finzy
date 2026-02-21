@@ -94,6 +94,12 @@ class _TranslationsAuthSv implements TranslationsAuthEn {
 
 	// Translations
 	@override String get signInWithPlex => 'Logga in med Plex';
+	@override String get signInWithJellyfin => 'Logga in med Jellyfin';
+	@override String get jellyfinServerUrl => 'Server-URL';
+	@override String get jellyfinServerUrlHint => 'https://din-jellyfin.exempel.com';
+	@override String get jellyfinUsername => 'Användarnamn';
+	@override String get jellyfinPassword => 'Lösenord';
+	@override String get jellyfinSignIn => 'Logga in';
 	@override String get showQRCode => 'Visa QR-kod';
 	@override String get authenticate => 'Autentisera';
 	@override String get debugEnterToken => 'Debug: Ange Plex-token';
@@ -231,6 +237,8 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get useGlobalHubsDescription => 'Visar startsidans hubbar som den officiella Plex-klienten. När av visas rekommendationer per bibliotek istället.';
 	@override String get showServerNameOnHubs => 'Visa servernamn på hubbar';
 	@override String get showServerNameOnHubsDescription => 'Visa alltid servernamnet i hubbtitlar. När av visas endast för duplicerade hubbnamn.';
+	@override String get showJellyfinRecommendations => 'Jellyfin filmrekommendationer';
+	@override String get showJellyfinRecommendationsDescription => 'Visa "Eftersom du tittade" och liknande rekommendationsrader under fliken Rekommenderat för filmbiblioteket. Av som standard tills serverbeteendet förbättras.';
 	@override String get alwaysKeepSidebarOpen => 'Håll sidofältet alltid öppet';
 	@override String get alwaysKeepSidebarOpenDescription => 'Sidofältet förblir expanderat och innehållsytan anpassas';
 	@override String get showUnwatchedCount => 'Visa antal osedda';
@@ -694,6 +702,7 @@ class _TranslationsLibrariesSv implements TranslationsLibrariesEn {
 	@override String filtersWithCount({required Object count}) => 'Filter (${count})';
 	@override String get noRecommendations => 'Inga rekommendationer tillgängliga';
 	@override String get noCollections => 'Inga samlingar i det här biblioteket';
+	@override String get noFavorites => 'Inga favoriter i detta bibliotek';
 	@override String get noFoldersFound => 'Inga mappar hittades';
 	@override String get folders => 'mappar';
 	@override late final _TranslationsLibrariesTabsSv tabs = _TranslationsLibrariesTabsSv._(_root);
@@ -1099,6 +1108,7 @@ class _TranslationsLibrariesTabsSv implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => 'Rekommenderat';
 	@override String get browse => 'Bläddra';
+	@override String get favorites => 'Favoriter';
 	@override String get collections => 'Samlingar';
 	@override String get playlists => 'Spellistor';
 }
@@ -1232,6 +1242,12 @@ extension on TranslationsSv {
 		return switch (path) {
 			'app.title' => 'Plezy',
 			'auth.signInWithPlex' => 'Logga in med Plex',
+			'auth.signInWithJellyfin' => 'Logga in med Jellyfin',
+			'auth.jellyfinServerUrl' => 'Server-URL',
+			'auth.jellyfinServerUrlHint' => 'https://din-jellyfin.exempel.com',
+			'auth.jellyfinUsername' => 'Användarnamn',
+			'auth.jellyfinPassword' => 'Lösenord',
+			'auth.jellyfinSignIn' => 'Logga in',
 			'auth.showQRCode' => 'Visa QR-kod',
 			'auth.authenticate' => 'Autentisera',
 			'auth.debugEnterToken' => 'Debug: Ange Plex-token',
@@ -1333,6 +1349,8 @@ extension on TranslationsSv {
 			'settings.useGlobalHubsDescription' => 'Visar startsidans hubbar som den officiella Plex-klienten. När av visas rekommendationer per bibliotek istället.',
 			'settings.showServerNameOnHubs' => 'Visa servernamn på hubbar',
 			'settings.showServerNameOnHubsDescription' => 'Visa alltid servernamnet i hubbtitlar. När av visas endast för duplicerade hubbnamn.',
+			'settings.showJellyfinRecommendations' => 'Jellyfin filmrekommendationer',
+			'settings.showJellyfinRecommendationsDescription' => 'Visa "Eftersom du tittade" och liknande rekommendationsrader under fliken Rekommenderat för filmbiblioteket. Av som standard tills serverbeteendet förbättras.',
 			'settings.alwaysKeepSidebarOpen' => 'Håll sidofältet alltid öppet',
 			'settings.alwaysKeepSidebarOpenDescription' => 'Sidofältet förblir expanderat och innehållsytan anpassas',
 			'settings.showUnwatchedCount' => 'Visa antal osedda',
@@ -1674,10 +1692,12 @@ extension on TranslationsSv {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
 			'libraries.noRecommendations' => 'Inga rekommendationer tillgängliga',
 			'libraries.noCollections' => 'Inga samlingar i det här biblioteket',
+			'libraries.noFavorites' => 'Inga favoriter i detta bibliotek',
 			'libraries.noFoldersFound' => 'Inga mappar hittades',
 			'libraries.folders' => 'mappar',
 			'libraries.tabs.recommended' => 'Rekommenderat',
 			'libraries.tabs.browse' => 'Bläddra',
+			'libraries.tabs.favorites' => 'Favoriter',
 			'libraries.tabs.collections' => 'Samlingar',
 			'libraries.tabs.playlists' => 'Spellistor',
 			'libraries.groupings.all' => 'Alla',
@@ -1732,6 +1752,8 @@ extension on TranslationsSv {
 			'liveTv.noRecordings' => 'Inga inspelningar schemalagda',
 			'liveTv.noSubscriptions' => 'Inga inspelningsregler',
 			'liveTv.channelNumber' => ({required Object number}) => 'Kanal ${number}',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
 			'liveTv.premiere' => 'NY',
@@ -1742,8 +1764,6 @@ extension on TranslationsSv {
 			'liveTv.today' => 'Idag',
 			'liveTv.midnight' => 'Midnatt',
 			'liveTv.overnight' => 'Natt',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.morning' => 'Morgon',
 			'liveTv.daytime' => 'Dagtid',
 			'liveTv.evening' => 'Kväll',

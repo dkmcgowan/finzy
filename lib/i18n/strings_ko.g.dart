@@ -94,6 +94,12 @@ class _TranslationsAuthKo implements TranslationsAuthEn {
 
 	// Translations
 	@override String get signInWithPlex => 'Plex 계정으로 로그인';
+	@override String get signInWithJellyfin => 'Jellyfin으로 로그인';
+	@override String get jellyfinServerUrl => '서버 URL';
+	@override String get jellyfinServerUrlHint => 'https://your-jellyfin.example.com';
+	@override String get jellyfinUsername => '사용자 이름';
+	@override String get jellyfinPassword => '비밀번호';
+	@override String get jellyfinSignIn => '로그인';
 	@override String get showQRCode => 'QR 코드';
 	@override String get authenticate => '인증';
 	@override String get debugEnterToken => '디버깅을 위해 Plex 토큰을 입력하세요.';
@@ -231,6 +237,8 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get useGlobalHubsDescription => '공식 Plex 클라이언트처럼 홈 페이지 허브를 표시합니다. 끄면 라이브러리별 추천이 대신 표시됩니다.';
 	@override String get showServerNameOnHubs => '허브에 서버 이름 표시';
 	@override String get showServerNameOnHubsDescription => '허브 제목에 항상 서버 이름을 표시합니다. 끄면 중복된 허브 이름에만 표시됩니다.';
+	@override String get showJellyfinRecommendations => 'Jellyfin 영화 추천';
+	@override String get showJellyfinRecommendationsDescription => '영화 라이브러리 추천 탭에 "시청한 항목 기반" 등 추천 행을 표시합니다. 서버 동작이 개선될 때까지 기본적으로 꺼짐.';
 	@override String get alwaysKeepSidebarOpen => '사이드바 항상 열어두기';
 	@override String get alwaysKeepSidebarOpenDescription => '사이드바가 확장된 상태로 유지되고 콘텐츠 영역이 맞춰집니다';
 	@override String get showUnwatchedCount => '미시청 수 표시';
@@ -694,6 +702,7 @@ class _TranslationsLibrariesKo implements TranslationsLibrariesEn {
 	@override String filtersWithCount({required Object count}) => '필터 (${count})';
 	@override String get noRecommendations => '추천 없음';
 	@override String get noCollections => '이 미디어 라이브러리에는 컬렉션이 없습니다';
+	@override String get noFavorites => '이 라이브러리에 즐겨찾기가 없습니다';
 	@override String get noFoldersFound => '폴더를 찾을 수 없습니다';
 	@override String get folders => '폴더';
 	@override late final _TranslationsLibrariesTabsKo tabs = _TranslationsLibrariesTabsKo._(_root);
@@ -1099,6 +1108,7 @@ class _TranslationsLibrariesTabsKo implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => '추천';
 	@override String get browse => '찾아보기';
+	@override String get favorites => '즐겨찾기';
 	@override String get collections => '컬렉션';
 	@override String get playlists => '재생 목록';
 }
@@ -1232,6 +1242,12 @@ extension on TranslationsKo {
 		return switch (path) {
 			'app.title' => 'Plezy',
 			'auth.signInWithPlex' => 'Plex 계정으로 로그인',
+			'auth.signInWithJellyfin' => 'Jellyfin으로 로그인',
+			'auth.jellyfinServerUrl' => '서버 URL',
+			'auth.jellyfinServerUrlHint' => 'https://your-jellyfin.example.com',
+			'auth.jellyfinUsername' => '사용자 이름',
+			'auth.jellyfinPassword' => '비밀번호',
+			'auth.jellyfinSignIn' => '로그인',
 			'auth.showQRCode' => 'QR 코드',
 			'auth.authenticate' => '인증',
 			'auth.debugEnterToken' => '디버깅을 위해 Plex 토큰을 입력하세요.',
@@ -1333,6 +1349,8 @@ extension on TranslationsKo {
 			'settings.useGlobalHubsDescription' => '공식 Plex 클라이언트처럼 홈 페이지 허브를 표시합니다. 끄면 라이브러리별 추천이 대신 표시됩니다.',
 			'settings.showServerNameOnHubs' => '허브에 서버 이름 표시',
 			'settings.showServerNameOnHubsDescription' => '허브 제목에 항상 서버 이름을 표시합니다. 끄면 중복된 허브 이름에만 표시됩니다.',
+			'settings.showJellyfinRecommendations' => 'Jellyfin 영화 추천',
+			'settings.showJellyfinRecommendationsDescription' => '영화 라이브러리 추천 탭에 "시청한 항목 기반" 등 추천 행을 표시합니다. 서버 동작이 개선될 때까지 기본적으로 꺼짐.',
 			'settings.alwaysKeepSidebarOpen' => '사이드바 항상 열어두기',
 			'settings.alwaysKeepSidebarOpenDescription' => '사이드바가 확장된 상태로 유지되고 콘텐츠 영역이 맞춰집니다',
 			'settings.showUnwatchedCount' => '미시청 수 표시',
@@ -1674,10 +1692,12 @@ extension on TranslationsKo {
 			'libraries.filtersWithCount' => ({required Object count}) => '필터 (${count})',
 			'libraries.noRecommendations' => '추천 없음',
 			'libraries.noCollections' => '이 미디어 라이브러리에는 컬렉션이 없습니다',
+			'libraries.noFavorites' => '이 라이브러리에 즐겨찾기가 없습니다',
 			'libraries.noFoldersFound' => '폴더를 찾을 수 없습니다',
 			'libraries.folders' => '폴더',
 			'libraries.tabs.recommended' => '추천',
 			'libraries.tabs.browse' => '찾아보기',
+			'libraries.tabs.favorites' => '즐겨찾기',
 			'libraries.tabs.collections' => '컬렉션',
 			'libraries.tabs.playlists' => '재생 목록',
 			'libraries.groupings.all' => '전체',
@@ -1732,6 +1752,8 @@ extension on TranslationsKo {
 			'liveTv.noRecordings' => '예약된 녹화가 없습니다',
 			'liveTv.noSubscriptions' => '녹화 규칙이 없습니다',
 			'liveTv.channelNumber' => ({required Object number}) => '채널 ${number}',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.live' => '실시간',
 			'liveTv.hd' => 'HD',
 			'liveTv.premiere' => '신규',
@@ -1742,8 +1764,6 @@ extension on TranslationsKo {
 			'liveTv.today' => '오늘',
 			'liveTv.midnight' => '자정',
 			'liveTv.overnight' => '심야',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.morning' => '아침',
 			'liveTv.daytime' => '낮',
 			'liveTv.evening' => '저녁',

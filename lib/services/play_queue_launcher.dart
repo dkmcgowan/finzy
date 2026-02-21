@@ -9,7 +9,7 @@ import '../utils/app_logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/video_player_navigation.dart';
 import '../i18n/strings.g.dart';
-import 'plex_client.dart';
+import 'media_server_client.dart';
 
 /// Result type for play queue operations
 sealed class PlayQueueResult {
@@ -38,7 +38,7 @@ class PlayQueueError extends PlayQueueResult {
 /// 4. Handling errors with appropriate feedback
 class PlayQueueLauncher {
   final BuildContext context;
-  final PlexClient client;
+  final MediaServerClient client;
   final String? serverId;
   final String? serverName;
 
@@ -69,7 +69,7 @@ class PlayQueueLauncher {
 
         if (isCollection) {
           // Get machine identifier (fetch if not cached in config)
-          final machineId = client.config.machineIdentifier ?? await client.getMachineIdentifier();
+          final machineId = await client.getMachineIdentifier();
 
           if (machineId == null) {
             throw Exception('Could not get server machine identifier');
@@ -77,8 +77,35 @@ class PlayQueueLauncher {
 
           final collectionUri = 'server://$machineId/com.plexapp.plugins.library/library/collections/${item.ratingKey}';
           playQueue = await client.createPlayQueue(uri: collectionUri, type: 'video', shuffle: shuffle ? 1 : 0);
+        } else if (client.isJellyfin) {
+          // Jellyfin playlists use string IDs; build queue from playlist items
+          final items = await client.getPlaylist(item.ratingKey);
+          if (items.isEmpty) {
+            await dismissLoading();
+            return const PlayQueueEmpty();
+          }
+          final order = List<int>.generate(items.length, (i) => i);
+          if (shuffle) order.shuffle();
+          final tagged = order
+              .asMap()
+              .entries
+              .map((e) => items[e.value].copyWith(
+                    playQueueItemID: e.key,
+                    serverId: item.serverId ?? itemServerId,
+                    serverName: item.serverName ?? itemServerName,
+                  ))
+              .toList();
+          playQueue = PlayQueueResponse(
+            playQueueID: 0,
+            playQueueSelectedItemID: 0,
+            playQueueShuffled: shuffle,
+            playQueueTotalCount: tagged.length,
+            playQueueVersion: 1,
+            size: tagged.length,
+            items: tagged,
+          );
         } else {
-          // For playlists, use playlistID parameter
+          // Plex playlists use integer playlistID
           playQueue = await client.createPlayQueue(
             playlistID: int.parse(item.ratingKey),
             type: 'video',
@@ -117,11 +144,44 @@ class PlayQueueLauncher {
       showLoading: showLoadingIndicator,
       action: t.common.play,
       execute: (dismissLoading) async {
-        final playQueue = await client.createPlayQueue(
-          playlistID: int.parse(playlist.ratingKey),
-          type: 'video',
-          key: selectedItem.key,
-        );
+        PlayQueueResponse? playQueue;
+        PlexMetadata? selected;
+        if (client.isJellyfin) {
+          // Jellyfin uses string playlist IDs; build queue from playlist items.
+          final items = await client.getPlaylist(playlist.ratingKey);
+          if (items.isEmpty) {
+            await dismissLoading();
+            return const PlayQueueEmpty();
+          }
+          final selectedIndex = items.indexWhere((e) => e.ratingKey == selectedItem.ratingKey);
+          final startIndex = selectedIndex >= 0 ? selectedIndex : 0;
+          final tagged = items
+              .asMap()
+              .entries
+              .map((e) => e.value.copyWith(
+                    playQueueItemID: e.key,
+                    serverId: playlist.serverId ?? serverId,
+                    serverName: playlist.serverName ?? serverName,
+                  ))
+              .toList();
+          selected = tagged[startIndex];
+          playQueue = PlayQueueResponse(
+            playQueueID: 0,
+            playQueueSelectedItemID: startIndex,
+            playQueueShuffled: false,
+            playQueueTotalCount: tagged.length,
+            playQueueVersion: 1,
+            size: tagged.length,
+            items: tagged,
+          );
+        } else {
+          playQueue = await client.createPlayQueue(
+            playlistID: int.parse(playlist.ratingKey),
+            type: 'video',
+            key: selectedItem.key,
+          );
+          selected = playQueue?.selectedItem;
+        }
 
         // Close loading dialog before navigating to the player
         await dismissLoading();
@@ -131,7 +191,7 @@ class PlayQueueLauncher {
           ratingKey: playlist.ratingKey,
           serverId: serverId,
           serverName: serverName,
-          selectedItem: playQueue?.selectedItem,
+          selectedItem: selected,
         );
       },
     );

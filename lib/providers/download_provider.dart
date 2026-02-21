@@ -9,7 +9,7 @@ import '../models/plex_metadata.dart';
 import '../services/download_manager_service.dart';
 import '../services/download_storage_service.dart';
 import '../services/plex_api_cache.dart';
-import '../services/plex_client.dart';
+import '../services/media_server_client.dart';
 import '../utils/app_logger.dart';
 import '../utils/global_key_utils.dart';
 
@@ -603,7 +603,7 @@ class DownloadProvider extends ChangeNotifier {
   /// For movies and episodes, queues directly.
   /// For shows and seasons, fetches all child episodes and queues them.
   /// Returns the number of items queued.
-  Future<int> queueDownload(PlexMetadata metadata, PlexClient client) async {
+  Future<int> queueDownload(PlexMetadata metadata, MediaServerClient client) async {
     final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
 
     // Check if downloads are blocked on cellular
@@ -645,7 +645,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue a single movie or episode for download
-  Future<void> _queueSingleDownload(PlexMetadata metadata, PlexClient client) async {
+  Future<void> _queueSingleDownload(PlexMetadata metadata, MediaServerClient client) async {
     final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
 
     // Don't re-queue if already downloading or completed
@@ -686,7 +686,7 @@ class DownloadProvider extends ChangeNotifier {
 
   /// Fetch and store show and season metadata for an episode
   /// Also downloads artwork for show and season
-  Future<void> _fetchAndStoreParentMetadata(PlexMetadata episode, PlexClient client) async {
+  Future<void> _fetchAndStoreParentMetadata(PlexMetadata episode, MediaServerClient client) async {
     final serverId = episode.serverId;
     if (serverId == null) return;
     final storageService = DownloadStorageService.instance;
@@ -764,7 +764,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue all episodes from a TV show for download
-  Future<int> _queueShowDownload(PlexMetadata show, PlexClient client) async {
+  Future<int> _queueShowDownload(PlexMetadata show, MediaServerClient client) async {
     final globalKey = '${show.serverId}:${show.ratingKey}';
     int count = 0;
     final seasons = await client.getChildren(show.ratingKey);
@@ -800,7 +800,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue all episodes from a season for download
-  Future<int> _queueSeasonDownload(PlexMetadata season, PlexClient client) async {
+  Future<int> _queueSeasonDownload(PlexMetadata season, MediaServerClient client) async {
     final globalKey = '${season.serverId}:${season.ratingKey}';
     int count = 0;
     final episodes = await client.getChildren(season.ratingKey);
@@ -839,7 +839,7 @@ class DownloadProvider extends ChangeNotifier {
   /// Queue only the missing (not downloaded) episodes for a show/season
   /// Used for resuming partial downloads
   /// Returns the number of episodes queued
-  Future<int> queueMissingEpisodes(PlexMetadata metadata, PlexClient client) async {
+  Future<int> queueMissingEpisodes(PlexMetadata metadata, MediaServerClient client) async {
     final type = metadata.type.toLowerCase();
 
     if (type == 'show') {
@@ -852,7 +852,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue missing episodes for a show
-  Future<int> _queueMissingShowEpisodes(PlexMetadata show, PlexClient client) async {
+  Future<int> _queueMissingShowEpisodes(PlexMetadata show, MediaServerClient client) async {
     int queuedCount = 0;
 
     // Fetch all seasons
@@ -870,7 +870,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue missing episodes for a season
-  Future<int> _queueMissingSeasonEpisodes(PlexMetadata season, PlexClient client) async {
+  Future<int> _queueMissingSeasonEpisodes(PlexMetadata season, MediaServerClient client) async {
     int queuedCount = 0;
 
     // Fetch all episodes
@@ -908,7 +908,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Resume a paused download
-  Future<void> resumeDownload(String globalKey, PlexClient client) async {
+  Future<void> resumeDownload(String globalKey, MediaServerClient client) async {
     final progress = _downloads[globalKey];
     if (progress != null && progress.status == DownloadStatus.paused) {
       await _downloadManager.resumeDownload(globalKey, client);
@@ -916,7 +916,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Retry a failed download
-  Future<void> retryDownload(String globalKey, PlexClient client) async {
+  Future<void> retryDownload(String globalKey, MediaServerClient client) async {
     final progress = _downloads[globalKey];
     if (progress != null && progress.status == DownloadStatus.failed) {
       await _downloadManager.retryDownload(globalKey, client);
@@ -996,8 +996,8 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Resume queued downloads that were interrupted by app kill.
-  /// Call after a PlexClient becomes available (e.g. after server connect on launch).
-  void resumeQueuedDownloads(PlexClient client) {
+  /// Call after a media server client becomes available (e.g. after server connect on launch).
+  void resumeQueuedDownloads(MediaServerClient client) {
     _downloadManager.resumeQueuedDownloads(client);
   }
 

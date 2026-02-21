@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../models/plex_metadata.dart';
-import '../../../utils/library_refresh_notifier.dart';
 import '../../../widgets/focusable_media_card.dart';
 import '../../../i18n/strings.g.dart';
 import '../adaptive_media_grid.dart';
 import 'base_library_tab.dart';
 import 'library_grid_tab_state.dart';
 
-/// Collections tab for library screen
-/// Shows collections for the current library
-class LibraryCollectionsTab extends BaseLibraryTab<PlexMetadata> {
-  const LibraryCollectionsTab({
+/// Favorites tab for library screen (Jellyfin only; Plex returns empty list).
+/// Shows favorite movies or shows for the current library.
+class LibraryFavoritesTab extends BaseLibraryTab<PlexMetadata> {
+  const LibraryFavoritesTab({
     super.key,
     required super.library,
     super.viewMode,
@@ -23,34 +22,26 @@ class LibraryCollectionsTab extends BaseLibraryTab<PlexMetadata> {
   });
 
   @override
-  State<LibraryCollectionsTab> createState() => _LibraryCollectionsTabState();
+  State<LibraryFavoritesTab> createState() => _LibraryFavoritesTabState();
 }
 
-class _LibraryCollectionsTabState extends LibraryGridTabState<PlexMetadata, LibraryCollectionsTab> {
+class _LibraryFavoritesTabState extends LibraryGridTabState<PlexMetadata, LibraryFavoritesTab> {
   @override
-  String get focusNodeDebugLabel => 'collections_first_item';
+  String get focusNodeDebugLabel => 'favorites_first_item';
 
   @override
-  IconData get emptyIcon => Symbols.collections_rounded;
+  IconData get emptyIcon => Symbols.favorite_rounded;
 
   @override
-  String get emptyMessage => t.libraries.noCollections;
+  String get emptyMessage => t.libraries.noFavorites;
 
   @override
-  String get errorContext => t.collections.title;
-
-  @override
-  Stream<void>? getRefreshStream() => LibraryRefreshNotifier().collectionsStream;
+  String get errorContext => t.libraries.tabs.favorites;
 
   @override
   Future<List<PlexMetadata>> loadData() async {
     final client = getClientForLibrary();
-    // Jellyfin: when this is the top-level Collections library, load all BoxSets (actual collections)
-    final t = widget.library.type.toLowerCase();
-    if (client.isJellyfin && (t == 'collection' || t == 'boxsets')) {
-      return await client.getGlobalCollections();
-    }
-    return await client.getLibraryCollections(widget.library.key);
+    return await client.getLibraryFavorites(widget.library.key);
   }
 
   @override

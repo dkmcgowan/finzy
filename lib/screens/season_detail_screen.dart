@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../main.dart';
 import '../focus/focusable_wrapper.dart';
 import '../focus/key_event_utils.dart';
@@ -42,10 +42,10 @@ class SeasonDetailScreen extends StatefulWidget {
 
 class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     with ItemUpdatable, WatchStateAware, DeletionAware, RouteAware {
-  PlexClient? _client;
+  MediaServerClient? _client;
 
   @override
-  PlexClient get client => _client!;
+  MediaServerClient get client => _client!;
 
   List<PlexMetadata> _episodes = [];
   bool _isLoadingEpisodes = false;
@@ -118,8 +118,8 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     }
   }
 
-  /// Get the correct PlexClient for this season's server
-  PlexClient? _getClientForSeason(BuildContext context) {
+  /// Get the correct MediaServerClient for this season's server
+  MediaServerClient? _getClientForSeason(BuildContext context) {
     if (widget.isOffline || widget.season.serverId == null) {
       return null;
     }
@@ -317,7 +317,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
 /// Episode card widget with D-pad long-press support
 class _EpisodeCard extends StatefulWidget {
   final PlexMetadata episode;
-  final PlexClient? client;
+  final MediaServerClient? client;
   final VoidCallback onTap;
   final Future<void> Function(String)? onRefresh;
   final Future<void> Function()? onListRefresh;

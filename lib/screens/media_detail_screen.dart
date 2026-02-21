@@ -21,7 +21,7 @@ import '../widgets/media_card.dart';
 import '../i18n/strings.g.dart';
 import '../widgets/plex_optimized_image.dart';
 import '../utils/plex_image_helper.dart';
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../services/plex_api_cache.dart';
 import '../models/plex_metadata.dart';
 import '../utils/content_utils.dart';
@@ -896,9 +896,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     );
   }
 
-  /// Get the correct PlexClient for this metadata's server
+  /// Get the correct MediaServerClient for this metadata's server
   /// Returns null in offline mode or if serverId is null
-  PlexClient? _getClientForMetadata(BuildContext context) {
+  MediaServerClient? _getClientForMetadata(BuildContext context) {
     if (widget.isOffline || widget.metadata.serverId == null) {
       return null;
     }
@@ -2415,7 +2415,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 /// Season card widget with D-pad long-press support
 class _SeasonCard extends StatefulWidget {
   final PlexMetadata season;
-  final PlexClient? client;
+  final MediaServerClient? client;
   final VoidCallback onTap;
   final VoidCallback onRefresh;
   final VoidCallback? onListRefresh;

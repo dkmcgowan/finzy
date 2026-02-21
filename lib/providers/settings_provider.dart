@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../i18n/strings.g.dart';
 import '../services/settings_service.dart';
+import '../utils/library_refresh_notifier.dart';
 
 class SettingsProvider extends ChangeNotifier {
   SettingsService? _settingsService;
@@ -10,6 +11,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _showHeroSection = true;
   bool _useGlobalHubs = true;
   bool _showServerNameOnHubs = false;
+  bool _showJellyfinRecommendations = false;
   bool _alwaysKeepSidebarOpen = false;
   bool _showUnwatchedCount = true;
   bool _isInitialized = false;
@@ -34,6 +36,7 @@ class SettingsProvider extends ChangeNotifier {
     _showHeroSection = _settingsService!.getShowHeroSection();
     _useGlobalHubs = _settingsService!.getUseGlobalHubs();
     _showServerNameOnHubs = _settingsService!.getShowServerNameOnHubs();
+    _showJellyfinRecommendations = _settingsService!.getShowJellyfinRecommendations();
     _alwaysKeepSidebarOpen = _settingsService!.getAlwaysKeepSidebarOpen();
     _showUnwatchedCount = _settingsService!.getShowUnwatchedCount();
     _isInitialized = true;
@@ -54,6 +57,8 @@ class SettingsProvider extends ChangeNotifier {
   bool get useGlobalHubs => _useGlobalHubs;
 
   bool get showServerNameOnHubs => _showServerNameOnHubs;
+
+  bool get showJellyfinRecommendations => _showJellyfinRecommendations;
 
   bool get alwaysKeepSidebarOpen => _alwaysKeepSidebarOpen;
 
@@ -110,6 +115,16 @@ class SettingsProvider extends ChangeNotifier {
       _showServerNameOnHubs = value;
       await _settingsService!.setShowServerNameOnHubs(value);
       notifyListeners();
+    }
+  }
+
+  Future<void> setShowJellyfinRecommendations(bool value) async {
+    if (!_isInitialized) await _initializeSettings();
+    if (_showJellyfinRecommendations != value) {
+      _showJellyfinRecommendations = value;
+      await _settingsService!.setShowJellyfinRecommendations(value);
+      notifyListeners();
+      LibraryRefreshNotifier().notifyRecommendationsChanged();
     }
   }
 

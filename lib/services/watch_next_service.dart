@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../models/plex_metadata.dart';
 import '../utils/app_logger.dart';
-import 'plex_client.dart';
+import 'media_server_client.dart';
 import 'settings_service.dart' show EpisodePosterMode;
 
 /// Service for syncing Plex "On Deck" content to Android TV's Watch Next row.
@@ -54,7 +54,7 @@ class WatchNextService {
   /// Sync On Deck items to Watch Next row.
   Future<bool> syncFromOnDeck(
     List<PlexMetadata> onDeckItems,
-    PlexClient Function(String serverId) getClientForServerId,
+    MediaServerClient Function(String serverId) getClientForServerId,
   ) async {
     if (!Platform.isAndroid) return false;
 
@@ -111,7 +111,7 @@ class WatchNextService {
 
   Map<String, dynamic> _convertToWatchNextItem(
     PlexMetadata item,
-    PlexClient Function(String serverId) getClientForServerId,
+    MediaServerClient Function(String serverId) getClientForServerId,
   ) {
     final contentId = _buildContentId(item.serverId, item.ratingKey);
 

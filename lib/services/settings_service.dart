@@ -36,6 +36,7 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyShowHeroSection = 'show_hero_section';
   static const String _keyUseGlobalHubs = 'use_global_hubs';
   static const String _keyShowServerNameOnHubs = 'show_server_name_on_hubs';
+  static const String _keyShowJellyfinRecommendations = 'show_jellyfin_recommendations';
   static const String _keySleepTimerDuration = 'sleep_timer_duration';
   static const String _keyAudioSyncOffset = 'audio_sync_offset';
   static const String _keySubtitleSyncOffset = 'subtitle_sync_offset';
@@ -221,6 +222,15 @@ class SettingsService extends BaseSharedPreferencesService {
 
   bool getShowServerNameOnHubs() {
     return prefs.getBool(_keyShowServerNameOnHubs) ?? false; // Default: false (only show on duplicates)
+  }
+
+  // Show Jellyfin movie recommendations (Because you watched/liked X). Default off until server behavior is fixed.
+  Future<void> setShowJellyfinRecommendations(bool enabled) async {
+    await prefs.setBool(_keyShowJellyfinRecommendations, enabled);
+  }
+
+  bool getShowJellyfinRecommendations() {
+    return prefs.getBool(_keyShowJellyfinRecommendations) ?? false; // Default: off
   }
 
   // Seek Time Small (in seconds)
@@ -1134,6 +1144,7 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyUseSeasonPoster), // Legacy key
       prefs.remove(_keyEpisodePosterMode),
       prefs.remove(_keyShowHeroSection),
+      prefs.remove(_keyShowJellyfinRecommendations),
       prefs.remove(_keySeekTimeSmall),
       prefs.remove(_keySeekTimeLarge),
       prefs.remove(_keyMediaVersionPreferences),

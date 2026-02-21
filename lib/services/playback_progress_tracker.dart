@@ -2,7 +2,7 @@ import 'dart:async';
 
 import '../mpv/mpv.dart';
 
-import 'plex_client.dart';
+import 'media_server_client.dart';
 import 'offline_watch_sync_service.dart';
 import '../models/plex_metadata.dart';
 import '../utils/app_logger.dart';
@@ -16,8 +16,8 @@ import '../utils/watch_state_notifier.dart';
 /// - State change reporting (playing, paused, stopped)
 /// - Offline progress queuing for later sync
 class PlaybackProgressTracker {
-  /// Plex client for online progress updates (null when offline)
-  final PlexClient? client;
+  /// Media server client for online progress updates (null when offline)
+  final MediaServerClient? client;
 
   /// Metadata of the media being played
   final PlexMetadata metadata;

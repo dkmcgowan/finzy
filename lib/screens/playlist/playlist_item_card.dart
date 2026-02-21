@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import '../../services/plex_client.dart';
+import '../../services/media_server_client.dart';
 import '../../models/plex_metadata.dart';
 import '../../utils/formatters.dart';
 import '../../utils/provider_extensions.dart';
@@ -178,8 +178,8 @@ class PlaylistItemCard extends StatelessWidget {
     );
   }
 
-  /// Get the correct PlexClient for this item's server
-  PlexClient _getClientForItem(BuildContext context) {
+  /// Get the correct MediaServerClient for this item's server
+  MediaServerClient _getClientForItem(BuildContext context) {
     return context.getClientForServer(item.serverId!);
   }
 

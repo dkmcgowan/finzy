@@ -124,20 +124,20 @@ class UserProfileProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Fetch the user's profile settings from the API
+  /// Fetch the user's profile settings from the API (Plex only; no-op when no Plex token e.g. Jellyfin-only).
   Future<void> refreshProfileSettings() async {
     if (_authService == null || _storageService == null) {
       appLogger.w('refreshProfileSettings: Services not initialized, skipping');
       return;
     }
 
+    final currentToken = _storageService!.getPlexToken();
+    if (currentToken == null) {
+      return; // No Plex token (e.g. Jellyfin-only); skip without logging
+    }
+
     appLogger.d('Fetching user profile settings from Plex API');
     try {
-      final currentToken = _storageService!.getPlexToken();
-      if (currentToken == null) {
-        appLogger.w('refreshProfileSettings: No Plex token available, cannot fetch profile');
-        return;
-      }
 
       final profile = await _authService!.getUserProfile(currentToken);
       _profileSettings = profile;
@@ -175,14 +175,15 @@ class UserProfileProvider extends ChangeNotifier {
       return;
     }
 
+    final currentToken = _storageService!.getPlexToken();
+    if (currentToken == null) {
+      return; // No Plex token (e.g. Jellyfin-only); skip without error or log
+    }
+
     _setLoading(true);
     _clearError();
 
     try {
-      final currentToken = _storageService!.getPlexToken();
-      if (currentToken == null) {
-        throw Exception('No Plex.tv authentication token available');
-      }
       appLogger.d('loadHomeUsers: Using Plex.tv token');
 
       appLogger.d('loadHomeUsers: Fetching home users from API');
@@ -244,7 +245,8 @@ class UserProfileProvider extends ChangeNotifier {
     try {
       final currentToken = _storageService!.getPlexToken();
       if (currentToken == null) {
-        throw Exception('No Plex.tv authentication token available');
+        _setLoading(false);
+        return false; // No Plex token (e.g. Jellyfin-only)
       }
 
       // Check if user requires PIN

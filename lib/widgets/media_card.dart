@@ -775,6 +775,21 @@ class _MediaCardHelpers {
               child: MediaProgressBar(viewOffset: metadata.viewOffset!, duration: metadata.duration!),
             ),
           ),
+        // Favorite indicator (Jellyfin only; bottom-right, small red heart)
+        if (metadata.isFavorite == true)
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4)],
+              ),
+              child: AppIcon(Symbols.favorite_rounded, fill: 1, color: Colors.red.shade400, size: 14),
+            ),
+          ),
         // Progress bar for seasons (viewedLeafCount / leafCount)
         if (metadata.isSeason &&
             metadata.viewedLeafCount != null &&

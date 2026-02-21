@@ -1,7 +1,7 @@
 import 'package:os_media_controls/os_media_controls.dart';
 import 'package:rate_limiter/rate_limiter.dart';
 
-import 'plex_client.dart';
+import 'media_server_client.dart';
 import '../models/plex_metadata.dart';
 import '../utils/content_utils.dart';
 import '../utils/app_logger.dart';
@@ -36,7 +36,7 @@ class MediaControlsManager {
   /// Update media metadata displayed in OS media controls
   ///
   /// This includes title, artist, artwork, and duration.
-  Future<void> updateMetadata({required PlexMetadata metadata, PlexClient? client, Duration? duration}) async {
+  Future<void> updateMetadata({required PlexMetadata metadata, MediaServerClient? client, Duration? duration}) async {
     try {
       // Build artwork URL if client is available
       String? artworkUrl;

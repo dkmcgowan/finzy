@@ -9,7 +9,7 @@ import '../../focus/focus_theme.dart';
 import '../../focus/input_mode_tracker.dart';
 import '../../focus/key_event_utils.dart';
 import '../../mixins/tab_navigation_mixin.dart';
-import '../../../services/plex_client.dart';
+import '../../../services/media_server_client.dart';
 import '../../models/plex_library.dart';
 import '../../models/plex_metadata.dart';
 import '../../models/plex_sort.dart';
@@ -33,6 +33,7 @@ import 'state_messages.dart';
 import 'tabs/library_browse_tab.dart';
 import 'tabs/library_recommended_tab.dart';
 import 'tabs/library_collections_tab.dart';
+import 'tabs/library_favorites_tab.dart';
 import 'tabs/library_playlists_tab.dart';
 
 /// A menu action item for context menus
@@ -72,10 +73,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         FocusableTab,
         LibraryLoadable,
         ItemUpdatable,
-        SingleTickerProviderStateMixin,
+        TickerProviderStateMixin,
         TabNavigationMixin {
   @override
-  PlexClient get client {
+  MediaServerClient get client {
     final multiServerProvider = Provider.of<MultiServerProvider>(context, listen: false);
     if (!multiServerProvider.hasConnectedServers) {
       throw Exception(t.errors.noClientAvailable);
@@ -86,6 +87,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   // GlobalKeys for tabs to enable refresh
   final _recommendedTabKey = GlobalKey();
   final _browseTabKey = GlobalKey();
+  final _favoritesTabKey = GlobalKey();
   final _collectionsTabKey = GlobalKey();
   final _playlistsTabKey = GlobalKey();
 
@@ -109,22 +111,39 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   /// Track which tabs have loaded data (used to trigger focus after tab restore)
   final Set<int> _loadedTabs = {};
 
+  /// Effective number of tabs for the selected library (3 for Jellyfin movie/show, 1 for Jellyfin Collections/Playlists, 5 for Plex).
+  int _effectiveTabCount = 5;
+
   /// Key for the library dropdown popup menu button
   final _libraryDropdownKey = GlobalKey<PopupMenuButtonState<String>>();
 
-  // Focus nodes for tab chips
+  // Focus nodes for tab chips (always 5; we use first _effectiveTabCount)
   final _recommendedTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_recommended');
   final _browseTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_browse');
+  final _favoritesTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_favorites');
   final _collectionsTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_collections');
   final _playlistsTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_playlists');
 
   @override
-  List<FocusNode> get tabChipFocusNodes => [
-    _recommendedTabChipFocusNode,
-    _browseTabChipFocusNode,
-    _collectionsTabChipFocusNode,
-    _playlistsTabChipFocusNode,
-  ];
+  List<FocusNode> get tabChipFocusNodes {
+    final nodes = [
+      _recommendedTabChipFocusNode,
+      _browseTabChipFocusNode,
+      _favoritesTabChipFocusNode,
+      _collectionsTabChipFocusNode,
+      _playlistsTabChipFocusNode,
+    ];
+    return nodes.sublist(0, _effectiveTabCount);
+  }
+
+  /// Tab count for the given library and client (Jellyfin: 3 for movie/show, 1 for collection/playlist; Plex: 5).
+  int _getEffectiveTabCount(MediaServerClient client, PlexLibrary library) {
+    if (!client.isJellyfin) return 5;
+    final t = library.type.toLowerCase();
+    if (t == 'movie' || t == 'show') return 3;
+    if (t == 'collection' || t == 'playlist' || t == 'playlists') return 1;
+    return 5;
+  }
 
   // App bar action button focus
   late FocusNode _editButtonFocusNode;
@@ -292,19 +311,27 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     });
   }
 
-  /// Get the state for a tab by index
+  PlexLibrary? _getSelectedLibrary() {
+    if (_selectedLibraryGlobalKey == null) return null;
+    final list = context.read<LibrariesProvider>().libraries.where((l) => l.globalKey == _selectedLibraryGlobalKey).toList();
+    return list.isNotEmpty ? list.first : null;
+  }
+
+  /// Get the state for a tab by index (respects _effectiveTabCount; when 1 tab, index 0 is Collections or Playlists).
   State? _getTabState(int index) {
+    if (_effectiveTabCount == 1 && index == 0) {
+      final lib = _getSelectedLibrary();
+      if (lib != null) {
+        return (lib.type.toLowerCase() == 'collection' ? _collectionsTabKey : _playlistsTabKey).currentState;
+      }
+    }
     switch (index) {
-      case 0:
-        return _recommendedTabKey.currentState;
-      case 1:
-        return _browseTabKey.currentState;
-      case 2:
-        return _collectionsTabKey.currentState;
-      case 3:
-        return _playlistsTabKey.currentState;
-      default:
-        return null;
+      case 0: return _recommendedTabKey.currentState;
+      case 1: return _browseTabKey.currentState;
+      case 2: return _favoritesTabKey.currentState;
+      case 3: return _collectionsTabKey.currentState;
+      case 4: return _playlistsTabKey.currentState;
+      default: return null;
     }
   }
 
@@ -355,8 +382,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final key = event.logicalKey;
 
     if (key.isLeftKey) {
-      // Navigate back to last tab (Playlists)
-      getTabChipFocusNode(3).requestFocus();
+      getTabChipFocusNode(_effectiveTabCount - 1).requestFocus();
       return KeyEventResult.handled;
     }
     if (key.isRightKey) {
@@ -412,6 +438,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     _outerScrollController.dispose();
     _recommendedTabChipFocusNode.dispose();
     _browseTabChipFocusNode.dispose();
+    _favoritesTabChipFocusNode.dispose();
     _collectionsTabChipFocusNode.dispose();
     _playlistsTabChipFocusNode.dispose();
     _editButtonFocusNode.removeListener(_onEditFocusChange);
@@ -474,34 +501,42 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     // Get the correct client for this library's server
     final client = context.getClientForLibrary(library);
 
+    final newTabCount = _getEffectiveTabCount(client, library);
+
+    TabController? oldController;
+    if (newTabCount != _effectiveTabCount) {
+      oldController = tabController;
+      tabController = TabController(length: newTabCount, vsync: this);
+      tabController.addListener(onTabChanged);
+    }
+
     _updateState(() {
       _selectedLibraryGlobalKey = libraryGlobalKey;
       _errorMessage = null;
-      // Clear loaded tabs tracking for new library
       _loadedTabs.clear();
-      // Only clear filters when explicitly changing library (not on initial load)
-      if (isChangingLibrary) {
-        _selectedFilters.clear();
-      }
+      if (isChangingLibrary) _selectedFilters.clear();
+      if (newTabCount != _effectiveTabCount) _effectiveTabCount = newTabCount;
     });
 
-    // Mark that initial load is complete
-    if (_isInitialLoad) {
-      _isInitialLoad = false;
+    // Dispose previous controller after the frame so TabBarView has switched to the new one
+    if (oldController != null) {
+      final toDispose = oldController;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        toDispose.removeListener(onTabChanged);
+        toDispose.dispose();
+      });
     }
 
-    // Save selected library key and restore saved tab
+    if (_isInitialLoad) _isInitialLoad = false;
+
     final storage = await StorageService.getInstance();
     await storage.saveSelectedLibraryKey(libraryGlobalKey);
 
-    // Restore saved tab index for this library
     final savedTabIndex = storage.getLibraryTab(libraryGlobalKey);
-    if (savedTabIndex != null && savedTabIndex >= 0 && savedTabIndex < 4) {
-      // Set flag to prevent _onTabChanged from triggering focus
+    if (savedTabIndex != null && savedTabIndex >= 0 && savedTabIndex < newTabCount) {
       _isRestoringTab = true;
-      // Use animateTo with zero duration for instant switch without animation race conditions
       tabController.animateTo(savedTabIndex, duration: Duration.zero);
-      // Clear flag synchronously - animateTo with zero duration completes immediately
       _isRestoringTab = false;
     }
 
@@ -519,7 +554,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     _cancelToken = CancelToken();
     final currentRequestId = ++_requestId;
 
-    // Reset pagination state
     _updateState(() {
       _currentPage = 0;
       _hasMoreItems = true;
@@ -527,13 +561,12 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     });
 
     try {
-      // Load sort options for the new library
-      await _loadSortOptions(library);
-
-      final filtersWithSort = _buildFiltersWithSort();
-
-      // Load pages sequentially
-      await _loadAllPagesSequentially(library, filtersWithSort, currentRequestId, client);
+      // For Jellyfin Collections/Playlists library (single-tab view), skip browse content load
+      if (newTabCount > 1) {
+        await _loadSortOptions(library);
+        final filtersWithSort = _buildFiltersWithSort();
+        await _loadAllPagesSequentially(library, filtersWithSort, currentRequestId, client);
+      }
     } catch (e) {
       // Ignore cancellation errors
       if (e is DioException && e.type == DioExceptionType.cancel) {
@@ -551,7 +584,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     PlexLibrary library,
     Map<String, String> filtersWithSort,
     int requestId,
-    PlexClient client,
+    MediaServerClient client,
   ) async {
     while (_hasMoreItems && requestId == _requestId) {
       try {
@@ -654,13 +687,21 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     _initializeWithLibraries();
   }
 
-  // Refresh the currently active tab
   void _refreshCurrentTab() {
+    if (_effectiveTabCount == 1 && tabController.index == 0) {
+      final lib = _getSelectedLibrary();
+      if (lib != null) {
+        final key = lib.type.toLowerCase() == 'collection' ? _collectionsTabKey : _playlistsTabKey;
+        (key.currentState as dynamic)?.refresh();
+      }
+      return;
+    }
     final key = switch (tabController.index) {
       0 => _recommendedTabKey,
       1 => _browseTabKey,
-      2 => _collectionsTabKey,
-      3 => _playlistsTabKey,
+      2 => _favoritesTabKey,
+      3 => _collectionsTabKey,
+      4 => _playlistsTabKey,
       _ => null,
     };
     (key?.currentState as dynamic)?.refresh();
@@ -805,7 +846,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
   Future<void> _performLibraryAction({
     required PlexLibrary library,
-    required Future<void> Function(PlexClient client) action,
+    required Future<void> Function(MediaServerClient client) action,
     required String progressMessage,
     required String successMessage,
     required String Function(Object error) failureMessage,
@@ -979,30 +1020,163 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     );
   }
 
-  /// Build the app bar title - either dropdown on mobile or simple title on desktop
-  Widget _buildAppBarTitle(List<PlexLibrary> visibleLibraries) {
-    // No libraries or no selection
+  List<Widget> _buildTabChipsForCurrentLibrary(PlexLibrary selectedLibrary) {
+    if (_effectiveTabCount == 3) {
+      return [
+        _buildTabChip(t.libraries.tabs.recommended, 0),
+        const SizedBox(width: 8),
+        _buildTabChip(t.libraries.tabs.browse, 1),
+        const SizedBox(width: 8),
+        _buildTabChip(t.libraries.tabs.favorites, 2),
+      ];
+    }
+    if (_effectiveTabCount == 1) {
+      // Jellyfin Collections/Playlists: show only "Browse" as the tab label.
+      return [_buildTabChip(t.libraries.tabs.browse, 0)];
+    }
+    return [
+      _buildTabChip(t.libraries.tabs.recommended, 0),
+      const SizedBox(width: 8),
+      _buildTabChip(t.libraries.tabs.browse, 1),
+      const SizedBox(width: 8),
+      _buildTabChip(t.libraries.tabs.favorites, 2),
+      const SizedBox(width: 8),
+      _buildTabChip(t.libraries.tabs.collections, 3),
+      const SizedBox(width: 8),
+      _buildTabChip(t.libraries.tabs.playlists, 4),
+    ];
+  }
+
+  List<Widget> _buildTabViewChildren(PlexLibrary selectedLibrary) {
+    if (_effectiveTabCount == 3) {
+      return [
+        LibraryRecommendedTab(
+          key: _recommendedTabKey,
+          library: selectedLibrary,
+          isActive: tabController.index == 0,
+          suppressAutoFocus: suppressAutoFocus,
+          onDataLoaded: () => _handleTabDataLoaded(0),
+          onBack: focusTabBar,
+        ),
+        LibraryBrowseTab(
+          key: _browseTabKey,
+          library: selectedLibrary,
+          isActive: tabController.index == 1,
+          suppressAutoFocus: suppressAutoFocus,
+          onDataLoaded: () => _handleTabDataLoaded(1),
+          onBack: focusTabBar,
+        ),
+        LibraryFavoritesTab(
+          key: _favoritesTabKey,
+          library: selectedLibrary,
+          isActive: tabController.index == 2,
+          suppressAutoFocus: suppressAutoFocus,
+          onDataLoaded: () => _handleTabDataLoaded(2),
+          onBack: focusTabBar,
+        ),
+      ];
+    }
+    if (_effectiveTabCount == 1) {
+      final isCollection = selectedLibrary.type.toLowerCase() == 'collection';
+      return [
+        if (isCollection)
+          LibraryCollectionsTab(
+            key: _collectionsTabKey,
+            library: selectedLibrary,
+            isActive: true,
+            suppressAutoFocus: suppressAutoFocus,
+            onDataLoaded: () => _handleTabDataLoaded(0),
+            onBack: focusTabBar,
+          )
+        else
+          LibraryPlaylistsTab(
+            key: _playlistsTabKey,
+            library: selectedLibrary,
+            isActive: true,
+            suppressAutoFocus: suppressAutoFocus,
+            onDataLoaded: () => _handleTabDataLoaded(0),
+            onBack: focusTabBar,
+          ),
+      ];
+    }
+    return [
+      LibraryRecommendedTab(
+        key: _recommendedTabKey,
+        library: selectedLibrary,
+        isActive: tabController.index == 0,
+        suppressAutoFocus: suppressAutoFocus,
+        onDataLoaded: () => _handleTabDataLoaded(0),
+        onBack: focusTabBar,
+      ),
+      LibraryBrowseTab(
+        key: _browseTabKey,
+        library: selectedLibrary,
+        isActive: tabController.index == 1,
+        suppressAutoFocus: suppressAutoFocus,
+        onDataLoaded: () => _handleTabDataLoaded(1),
+        onBack: focusTabBar,
+      ),
+      LibraryFavoritesTab(
+        key: _favoritesTabKey,
+        library: selectedLibrary,
+        isActive: tabController.index == 2,
+        suppressAutoFocus: suppressAutoFocus,
+        onDataLoaded: () => _handleTabDataLoaded(2),
+        onBack: focusTabBar,
+      ),
+      LibraryCollectionsTab(
+        key: _collectionsTabKey,
+        library: selectedLibrary,
+        isActive: tabController.index == 3,
+        suppressAutoFocus: suppressAutoFocus,
+        onDataLoaded: () => _handleTabDataLoaded(3),
+        onBack: focusTabBar,
+      ),
+      LibraryPlaylistsTab(
+        key: _playlistsTabKey,
+        library: selectedLibrary,
+        isActive: tabController.index == 4,
+        suppressAutoFocus: suppressAutoFocus,
+        onDataLoaded: () => _handleTabDataLoaded(4),
+        onBack: focusTabBar,
+      ),
+    ];
+  }
+
+  /// Build the app bar title - either dropdown on mobile or tab chips on desktop
+  Widget _buildAppBarTitle(List<PlexLibrary> visibleLibraries, PlexLibrary? selectedLibrary) {
     if (visibleLibraries.isEmpty || _selectedLibraryGlobalKey == null) {
       return Text(t.libraries.title);
     }
 
-    // On desktop/TV with side nav, show tabs in app bar (library name is in side nav)
     if (PlatformDetector.shouldUseSideNavigation(context)) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      final chips = <Widget>[];
+      if (_effectiveTabCount == 3) {
+        chips.addAll([
           _buildTabChip(t.libraries.tabs.recommended, 0),
           const SizedBox(width: 8),
           _buildTabChip(t.libraries.tabs.browse, 1),
           const SizedBox(width: 8),
-          _buildTabChip(t.libraries.tabs.collections, 2),
+          _buildTabChip(t.libraries.tabs.favorites, 2),
+        ]);
+      } else if (_effectiveTabCount == 1) {
+        chips.add(_buildTabChip(t.libraries.tabs.browse, 0));
+      } else {
+        chips.addAll([
+          _buildTabChip(t.libraries.tabs.recommended, 0),
           const SizedBox(width: 8),
-          _buildTabChip(t.libraries.tabs.playlists, 3),
-        ],
-      );
+          _buildTabChip(t.libraries.tabs.browse, 1),
+          const SizedBox(width: 8),
+          _buildTabChip(t.libraries.tabs.favorites, 2),
+          const SizedBox(width: 8),
+          _buildTabChip(t.libraries.tabs.collections, 3),
+          const SizedBox(width: 8),
+          _buildTabChip(t.libraries.tabs.playlists, 4),
+        ]);
+      }
+      return Row(mainAxisSize: MainAxisSize.min, children: chips);
     }
 
-    // On mobile, show the dropdown
     return _buildLibraryDropdownTitle(visibleLibraries);
   }
 
@@ -1062,8 +1236,12 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final hiddenLibrariesProvider = context.watch<HiddenLibrariesProvider>();
     final hiddenKeys = hiddenLibrariesProvider.hiddenLibraryKeys;
 
-    // Compute visible libraries (filtered from all libraries)
     final visibleLibraries = allLibraries.where((lib) => !hiddenKeys.contains(lib.globalKey)).toList();
+    PlexLibrary? selectedLibrary;
+    if (_selectedLibraryGlobalKey != null) {
+      final list = allLibraries.where((l) => l.globalKey == _selectedLibraryGlobalKey).toList();
+      selectedLibrary = list.isNotEmpty ? list.first : null;
+    }
 
     return OverlaySheetHost(
       child: Scaffold(
@@ -1073,7 +1251,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             controller: _outerScrollController,
             slivers: [
               DesktopSliverAppBar(
-                title: _buildAppBarTitle(visibleLibraries),
+                title: _buildAppBarTitle(visibleLibraries, selectedLibrary),
                 pinned: true,
                 backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 surfaceTintColor: Colors.transparent,
@@ -1131,71 +1309,26 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                   child: EmptyStateWidget(message: t.libraries.noLibrariesFound, icon: Symbols.video_library_rounded),
                 )
               else ...[
-                // Tab selector chips (only on mobile - desktop has them in app bar)
-                if (_selectedLibraryGlobalKey != null && !PlatformDetector.shouldUseSideNavigation(context))
+                if (_selectedLibraryGlobalKey != null && selectedLibrary != null && !PlatformDetector.shouldUseSideNavigation(context))
                   SliverToBoxAdapter(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                          children: [
-                            _buildTabChip(t.libraries.tabs.recommended, 0),
-                            const SizedBox(width: 8),
-                            _buildTabChip(t.libraries.tabs.browse, 1),
-                            const SizedBox(width: 8),
-                            _buildTabChip(t.libraries.tabs.collections, 2),
-                            const SizedBox(width: 8),
-                            _buildTabChip(t.libraries.tabs.playlists, 3),
-                          ],
+                          children: _buildTabChipsForCurrentLibrary(selectedLibrary),
                         ),
                       ),
                     ),
                   ),
 
-                // Tab content
-                if (_selectedLibraryGlobalKey != null)
+                if (_selectedLibraryGlobalKey != null && selectedLibrary != null)
                   SliverFillRemaining(
                     child: TabBarView(
                       key: ValueKey(_selectedLibraryGlobalKey),
                       controller: tabController,
-                      // Disable swipe on desktop - trackpad scrolling triggers accidental tab switches
-                      // See: https://github.com/flutter/flutter/issues/11132
                       physics: PlatformDetector.isDesktop(context) ? const NeverScrollableScrollPhysics() : null,
-                      children: [
-                        LibraryRecommendedTab(
-                          key: _recommendedTabKey,
-                          library: allLibraries.firstWhere((lib) => lib.globalKey == _selectedLibraryGlobalKey),
-                          isActive: tabController.index == 0,
-                          suppressAutoFocus: suppressAutoFocus,
-                          onDataLoaded: () => _handleTabDataLoaded(0),
-                          onBack: focusTabBar,
-                        ),
-                        LibraryBrowseTab(
-                          key: _browseTabKey,
-                          library: allLibraries.firstWhere((lib) => lib.globalKey == _selectedLibraryGlobalKey),
-                          isActive: tabController.index == 1,
-                          suppressAutoFocus: suppressAutoFocus,
-                          onDataLoaded: () => _handleTabDataLoaded(1),
-                          onBack: focusTabBar,
-                        ),
-                        LibraryCollectionsTab(
-                          key: _collectionsTabKey,
-                          library: allLibraries.firstWhere((lib) => lib.globalKey == _selectedLibraryGlobalKey),
-                          isActive: tabController.index == 2,
-                          suppressAutoFocus: suppressAutoFocus,
-                          onDataLoaded: () => _handleTabDataLoaded(2),
-                          onBack: focusTabBar,
-                        ),
-                        LibraryPlaylistsTab(
-                          key: _playlistsTabKey,
-                          library: allLibraries.firstWhere((lib) => lib.globalKey == _selectedLibraryGlobalKey),
-                          isActive: tabController.index == 3,
-                          suppressAutoFocus: suppressAutoFocus,
-                          onDataLoaded: () => _handleTabDataLoaded(3),
-                          onBack: focusTabBar,
-                        ),
-                      ],
+                      children: _buildTabViewChildren(selectedLibrary),
                     ),
                   ),
               ],

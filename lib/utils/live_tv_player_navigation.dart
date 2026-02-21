@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/livetv_channel.dart';
 import '../models/plex_metadata.dart';
 import '../screens/video_player_screen.dart';
-import '../services/plex_client.dart';
+import '../services/media_server_client.dart';
 import '../utils/app_logger.dart';
 import '../utils/video_player_navigation.dart';
 
@@ -16,7 +16,7 @@ import '../utils/video_player_navigation.dart';
 /// [channels] is the full channel list for channel up/down navigation.
 Future<void> navigateToLiveTv(
   BuildContext context, {
-  required PlexClient client,
+  required MediaServerClient client,
   required String dvrKey,
   required LiveTvChannel channel,
   List<LiveTvChannel>? channels,

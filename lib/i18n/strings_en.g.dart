@@ -102,6 +102,24 @@ class TranslationsAuthEn {
 	/// en: 'Sign in with Plex'
 	String get signInWithPlex => 'Sign in with Plex';
 
+	/// en: 'Sign in with Jellyfin'
+	String get signInWithJellyfin => 'Sign in with Jellyfin';
+
+	/// en: 'Server URL'
+	String get jellyfinServerUrl => 'Server URL';
+
+	/// en: 'https://your-jellyfin.example.com'
+	String get jellyfinServerUrlHint => 'https://your-jellyfin.example.com';
+
+	/// en: 'Username'
+	String get jellyfinUsername => 'Username';
+
+	/// en: 'Password'
+	String get jellyfinPassword => 'Password';
+
+	/// en: 'Sign in'
+	String get jellyfinSignIn => 'Sign in';
+
 	/// en: 'Show QR Code'
 	String get showQRCode => 'Show QR Code';
 
@@ -440,6 +458,12 @@ class TranslationsSettingsEn {
 
 	/// en: 'Always display the server name in hub titles. When off, only shows for duplicate hub names.'
 	String get showServerNameOnHubsDescription => 'Always display the server name in hub titles. When off, only shows for duplicate hub names.';
+
+	/// en: 'Jellyfin Movie Recommendations'
+	String get showJellyfinRecommendations => 'Jellyfin Movie Recommendations';
+
+	/// en: 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab. Off by default until server behavior is improved.'
+	String get showJellyfinRecommendationsDescription => 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab. Off by default until server behavior is improved.';
 
 	/// en: 'Always Keep Sidebar Open'
 	String get alwaysKeepSidebarOpen => 'Always Keep Sidebar Open';
@@ -1540,6 +1564,9 @@ class TranslationsLibrariesEn {
 	/// en: 'No collections in this library'
 	String get noCollections => 'No collections in this library';
 
+	/// en: 'No favorites in this library'
+	String get noFavorites => 'No favorites in this library';
+
 	/// en: 'No folders found'
 	String get noFoldersFound => 'No folders found';
 
@@ -2423,6 +2450,9 @@ class TranslationsLibrariesTabsEn {
 	/// en: 'Browse'
 	String get browse => 'Browse';
 
+	/// en: 'Favorites'
+	String get favorites => 'Favorites';
+
 	/// en: 'Collections'
 	String get collections => 'Collections';
 
@@ -2725,6 +2755,12 @@ extension on Translations {
 		return switch (path) {
 			'app.title' => 'Plezy',
 			'auth.signInWithPlex' => 'Sign in with Plex',
+			'auth.signInWithJellyfin' => 'Sign in with Jellyfin',
+			'auth.jellyfinServerUrl' => 'Server URL',
+			'auth.jellyfinServerUrlHint' => 'https://your-jellyfin.example.com',
+			'auth.jellyfinUsername' => 'Username',
+			'auth.jellyfinPassword' => 'Password',
+			'auth.jellyfinSignIn' => 'Sign in',
 			'auth.showQRCode' => 'Show QR Code',
 			'auth.authenticate' => 'Authenticate',
 			'auth.debugEnterToken' => 'Debug: Enter Plex Token',
@@ -2826,6 +2862,8 @@ extension on Translations {
 			'settings.useGlobalHubsDescription' => 'Show home page hubs like the official Plex client. When off, shows per-library recommendations instead.',
 			'settings.showServerNameOnHubs' => 'Show Server Name on Hubs',
 			'settings.showServerNameOnHubsDescription' => 'Always display the server name in hub titles. When off, only shows for duplicate hub names.',
+			'settings.showJellyfinRecommendations' => 'Jellyfin Movie Recommendations',
+			'settings.showJellyfinRecommendationsDescription' => 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab. Off by default until server behavior is improved.',
 			'settings.alwaysKeepSidebarOpen' => 'Always Keep Sidebar Open',
 			'settings.alwaysKeepSidebarOpenDescription' => 'Sidebar stays expanded and content area adjusts to fit',
 			'settings.showUnwatchedCount' => 'Show Unwatched Count',
@@ -3167,10 +3205,12 @@ extension on Translations {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
 			'libraries.noRecommendations' => 'No recommendations available',
 			'libraries.noCollections' => 'No collections in this library',
+			'libraries.noFavorites' => 'No favorites in this library',
 			'libraries.noFoldersFound' => 'No folders found',
 			'libraries.folders' => 'folders',
 			'libraries.tabs.recommended' => 'Recommended',
 			'libraries.tabs.browse' => 'Browse',
+			'libraries.tabs.favorites' => 'Favorites',
 			'libraries.tabs.collections' => 'Collections',
 			'libraries.tabs.playlists' => 'Playlists',
 			'libraries.groupings.all' => 'All',
@@ -3225,6 +3265,8 @@ extension on Translations {
 			'liveTv.noRecordings' => 'No recordings scheduled',
 			'liveTv.noSubscriptions' => 'No recording rules',
 			'liveTv.channelNumber' => ({required Object number}) => 'Ch. ${number}',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
 			'liveTv.premiere' => 'NEW',
@@ -3235,8 +3277,6 @@ extension on Translations {
 			'liveTv.today' => 'Today',
 			'liveTv.midnight' => 'Midnight',
 			'liveTv.overnight' => 'Overnight',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.morning' => 'Morning',
 			'liveTv.daytime' => 'Daytime',
 			'liveTv.evening' => 'Evening',

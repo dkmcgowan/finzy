@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/plex_client.dart';
 import '../models/plex_library.dart';
+import '../services/media_server_client.dart';
 import '../utils/provider_extensions.dart';
 
 /// Mixin providing common functionality for library tab screens
@@ -9,7 +9,7 @@ mixin LibraryTabStateMixin<T extends StatefulWidget> on State<T> {
   /// The library being displayed
   PlexLibrary get library;
 
-  /// Get the correct PlexClient for this library's server
+  /// Get the correct MediaServerClient for this library's server
   /// Throws an exception if no client is available
-  PlexClient getClientForLibrary() => context.getClientForLibrary(library);
+  MediaServerClient getClientForLibrary() => context.getClientForLibrary(library);
 }

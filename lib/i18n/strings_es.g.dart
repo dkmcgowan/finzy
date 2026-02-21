@@ -94,6 +94,12 @@ class _TranslationsAuthEs implements TranslationsAuthEn {
 
 	// Translations
 	@override String get signInWithPlex => 'Inicia sesión con Plex';
+	@override String get signInWithJellyfin => 'Iniciar sesión con Jellyfin';
+	@override String get jellyfinServerUrl => 'URL del servidor';
+	@override String get jellyfinServerUrlHint => 'https://tu-jellyfin.ejemplo.com';
+	@override String get jellyfinUsername => 'Usuario';
+	@override String get jellyfinPassword => 'Contraseña';
+	@override String get jellyfinSignIn => 'Iniciar sesión';
 	@override String get showQRCode => 'Mostrar código QR';
 	@override String get authenticate => 'Autenticar';
 	@override String get debugEnterToken => 'Debug: Ingresar Token de Plex';
@@ -231,6 +237,8 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get useGlobalHubsDescription => 'Mostrar los hubs de la página de inicio como el cliente oficial de Plex. Cuando está desactivado, muestra recomendaciones por biblioteca en su lugar.';
 	@override String get showServerNameOnHubs => 'Mostrar Nombre del Servidor en los Hubs';
 	@override String get showServerNameOnHubsDescription => 'Mostrar siempre el nombre del servidor en los títulos de los hubs. Cuando está desactivado, solo se muestra para nombres de hubs duplicados.';
+	@override String get showJellyfinRecommendations => 'Recomendaciones de películas Jellyfin';
+	@override String get showJellyfinRecommendationsDescription => 'Mostrar "Porque viste" y filas de recomendaciones similares en la pestaña Recomendados de la biblioteca de películas. Desactivado por defecto hasta que mejore el comportamiento del servidor.';
 	@override String get alwaysKeepSidebarOpen => 'Mantener siempre la barra lateral abierta';
 	@override String get alwaysKeepSidebarOpenDescription => 'La barra lateral permanece expandida y el área de contenido se ajusta para adaptarse';
 	@override String get showUnwatchedCount => 'Mostrar conteo de no vistos';
@@ -694,6 +702,7 @@ class _TranslationsLibrariesEs implements TranslationsLibrariesEn {
 	@override String filtersWithCount({required Object count}) => 'Filtros (${count})';
 	@override String get noRecommendations => 'No hay recomendaciones disponibles';
 	@override String get noCollections => 'No hay colecciones en esta biblioteca';
+	@override String get noFavorites => 'No hay favoritos en esta biblioteca';
 	@override String get noFoldersFound => 'No se encontraron carpetas';
 	@override String get folders => 'carpetas';
 	@override late final _TranslationsLibrariesTabsEs tabs = _TranslationsLibrariesTabsEs._(_root);
@@ -1099,6 +1108,7 @@ class _TranslationsLibrariesTabsEs implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => 'Recomendado';
 	@override String get browse => 'Explorar';
+	@override String get favorites => 'Favoritos';
 	@override String get collections => 'Colecciones';
 	@override String get playlists => 'Listas';
 }
@@ -1232,6 +1242,12 @@ extension on TranslationsEs {
 		return switch (path) {
 			'app.title' => 'Plezy',
 			'auth.signInWithPlex' => 'Inicia sesión con Plex',
+			'auth.signInWithJellyfin' => 'Iniciar sesión con Jellyfin',
+			'auth.jellyfinServerUrl' => 'URL del servidor',
+			'auth.jellyfinServerUrlHint' => 'https://tu-jellyfin.ejemplo.com',
+			'auth.jellyfinUsername' => 'Usuario',
+			'auth.jellyfinPassword' => 'Contraseña',
+			'auth.jellyfinSignIn' => 'Iniciar sesión',
 			'auth.showQRCode' => 'Mostrar código QR',
 			'auth.authenticate' => 'Autenticar',
 			'auth.debugEnterToken' => 'Debug: Ingresar Token de Plex',
@@ -1333,6 +1349,8 @@ extension on TranslationsEs {
 			'settings.useGlobalHubsDescription' => 'Mostrar los hubs de la página de inicio como el cliente oficial de Plex. Cuando está desactivado, muestra recomendaciones por biblioteca en su lugar.',
 			'settings.showServerNameOnHubs' => 'Mostrar Nombre del Servidor en los Hubs',
 			'settings.showServerNameOnHubsDescription' => 'Mostrar siempre el nombre del servidor en los títulos de los hubs. Cuando está desactivado, solo se muestra para nombres de hubs duplicados.',
+			'settings.showJellyfinRecommendations' => 'Recomendaciones de películas Jellyfin',
+			'settings.showJellyfinRecommendationsDescription' => 'Mostrar "Porque viste" y filas de recomendaciones similares en la pestaña Recomendados de la biblioteca de películas. Desactivado por defecto hasta que mejore el comportamiento del servidor.',
 			'settings.alwaysKeepSidebarOpen' => 'Mantener siempre la barra lateral abierta',
 			'settings.alwaysKeepSidebarOpenDescription' => 'La barra lateral permanece expandida y el área de contenido se ajusta para adaptarse',
 			'settings.showUnwatchedCount' => 'Mostrar conteo de no vistos',
@@ -1674,10 +1692,12 @@ extension on TranslationsEs {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filtros (${count})',
 			'libraries.noRecommendations' => 'No hay recomendaciones disponibles',
 			'libraries.noCollections' => 'No hay colecciones en esta biblioteca',
+			'libraries.noFavorites' => 'No hay favoritos en esta biblioteca',
 			'libraries.noFoldersFound' => 'No se encontraron carpetas',
 			'libraries.folders' => 'carpetas',
 			'libraries.tabs.recommended' => 'Recomendado',
 			'libraries.tabs.browse' => 'Explorar',
+			'libraries.tabs.favorites' => 'Favoritos',
 			'libraries.tabs.collections' => 'Colecciones',
 			'libraries.tabs.playlists' => 'Listas',
 			'libraries.groupings.all' => 'Todo',
@@ -1732,6 +1752,8 @@ extension on TranslationsEs {
 			'liveTv.noRecordings' => 'No hay grabaciones programadas',
 			'liveTv.noSubscriptions' => 'No hay reglas de grabación',
 			'liveTv.channelNumber' => ({required Object number}) => 'Canal ${number}',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.live' => 'EN VIVO',
 			'liveTv.hd' => 'HD',
 			'liveTv.premiere' => 'NUEVO',
@@ -1742,8 +1764,6 @@ extension on TranslationsEs {
 			'liveTv.today' => 'Hoy',
 			'liveTv.midnight' => 'Medianoche',
 			'liveTv.overnight' => 'Madrugada',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.morning' => 'Mañana',
 			'liveTv.daytime' => 'Día',
 			'liveTv.evening' => 'Noche',

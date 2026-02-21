@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 
-import '../services/plex_client.dart';
+import '../models/registered_server.dart';
 import '../services/data_aggregation_service.dart';
+import '../services/media_server_client.dart';
 import '../services/multi_server_manager.dart';
-import '../services/plex_auth_service.dart';
+import '../services/plex_client.dart';
 import '../utils/app_logger.dart';
 
 /// Cached info about a DVR-enabled server
@@ -44,8 +45,8 @@ class MultiServerProvider extends ChangeNotifier {
   /// Get the data aggregation service
   DataAggregationService get aggregationService => _aggregationService;
 
-  /// Get client for specific server
-  PlexClient? getClientForServer(String serverId) {
+  /// Get client for specific server (Plex or Jellyfin)
+  MediaServerClient? getClientForServer(String serverId) {
     return _serverManager.getClient(serverId);
   }
 
@@ -69,13 +70,24 @@ class MultiServerProvider extends ChangeNotifier {
   /// Check if any servers are connected
   bool get hasConnectedServers => onlineServerCount > 0;
 
-  /// Update token for a specific server
+  /// True if at least one connected server is Plex (not Jellyfin). Used to hide Plex-only UI (Watch Together, Companion Remote) when only Jellyfin is connected.
+  bool get hasPlexServers {
+    for (final serverId in onlineServerIds) {
+      final client = getClientForServer(serverId);
+      if (client != null && !client.isJellyfin) return true;
+    }
+    return false;
+  }
+
+  /// Update token for a specific Plex server (no-op for Jellyfin)
   void updateTokenForServer(String serverId, String newToken) {
     final client = _serverManager.getClient(serverId);
-    if (client != null) {
+    if (client is PlexClient) {
       client.updateToken(newToken);
       appLogger.d('MultiServerProvider: Token updated for server $serverId');
       notifyListeners();
+    } else if (client != null) {
+      appLogger.d('MultiServerProvider: Server $serverId is not Plex, token update skipped');
     } else {
       appLogger.w('MultiServerProvider: Cannot update token - server $serverId not found');
     }
@@ -90,14 +102,11 @@ class MultiServerProvider extends ChangeNotifier {
   }
 
   /// Reconnect all servers after a profile switch
-  /// Clears existing connections and connects to all provided servers
-  Future<int> reconnectWithServers(List<PlexServer> servers, {String? clientIdentifier}) async {
-    // Clear existing connections first
+  Future<int> reconnectWithServers(List<RegisteredServer> servers, {String? clientIdentifier}) async {
     _serverManager.disconnectAll();
-    _aggregationService.clearCache(); // Clear cached data when servers change
+    _aggregationService.clearCache();
     appLogger.d('MultiServerProvider: Cleared connections, reconnecting to ${servers.length} servers');
 
-    // Connect with new server tokens
     final connectedCount = await _serverManager.connectToAllServers(servers, clientIdentifier: clientIdentifier);
 
     appLogger.i('MultiServerProvider: Reconnected to $connectedCount/${servers.length} servers after profile switch');

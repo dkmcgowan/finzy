@@ -60,6 +60,11 @@ class ContentTypeHelper {
         return Symbols.music_note_rounded;
       case 'photo':
         return Symbols.photo_rounded;
+      case 'collection':
+        return Symbols.collections_rounded;
+      case 'playlist':
+      case 'playlists':
+        return Symbols.playlist_play_rounded;
       default:
         return Symbols.folder_rounded;
     }

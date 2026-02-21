@@ -94,6 +94,12 @@ class _TranslationsAuthDe implements TranslationsAuthEn {
 
 	// Translations
 	@override String get signInWithPlex => 'Mit Plex anmelden';
+	@override String get signInWithJellyfin => 'Mit Jellyfin anmelden';
+	@override String get jellyfinServerUrl => 'Server-URL';
+	@override String get jellyfinServerUrlHint => 'https://dein-jellyfin.example.com';
+	@override String get jellyfinUsername => 'Benutzername';
+	@override String get jellyfinPassword => 'Passwort';
+	@override String get jellyfinSignIn => 'Anmelden';
 	@override String get showQRCode => 'QR-Code anzeigen';
 	@override String get authenticate => 'Authentifizieren';
 	@override String get debugEnterToken => 'Debug: Plex-Token eingeben';
@@ -231,6 +237,8 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get useGlobalHubsDescription => 'Zeigt Startseiten-Hubs wie der offizielle Plex-Client. Wenn deaktiviert, werden stattdessen Empfehlungen pro Bibliothek angezeigt.';
 	@override String get showServerNameOnHubs => 'Servername bei Hubs anzeigen';
 	@override String get showServerNameOnHubsDescription => 'Zeigt immer den Servernamen in Hub-Titeln an. Wenn deaktiviert, nur bei doppelten Hub-Namen.';
+	@override String get showJellyfinRecommendations => 'Jellyfin Filmempfehlungen';
+	@override String get showJellyfinRecommendationsDescription => 'Zeigt "Weil du geschaut hast" und ähnliche Empfehlungszeilen in der Film-Bibliothek. Standardmäßig aus, bis das Serververhalten verbessert wird.';
 	@override String get alwaysKeepSidebarOpen => 'Seitenleiste immer geöffnet halten';
 	@override String get alwaysKeepSidebarOpenDescription => 'Seitenleiste bleibt erweitert und Inhaltsbereich passt sich an';
 	@override String get showUnwatchedCount => 'Anzahl nicht gesehener Folgen anzeigen';
@@ -694,6 +702,7 @@ class _TranslationsLibrariesDe implements TranslationsLibrariesEn {
 	@override String filtersWithCount({required Object count}) => 'Filter (${count})';
 	@override String get noRecommendations => 'Keine Empfehlungen verfügbar';
 	@override String get noCollections => 'Keine Sammlungen in dieser Mediathek';
+	@override String get noFavorites => 'Keine Favoriten in dieser Mediathek';
 	@override String get noFoldersFound => 'Keine Ordner gefunden';
 	@override String get folders => 'Ordner';
 	@override late final _TranslationsLibrariesTabsDe tabs = _TranslationsLibrariesTabsDe._(_root);
@@ -1099,6 +1108,7 @@ class _TranslationsLibrariesTabsDe implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => 'Empfohlen';
 	@override String get browse => 'Durchsuchen';
+	@override String get favorites => 'Favoriten';
 	@override String get collections => 'Sammlungen';
 	@override String get playlists => 'Wiedergabelisten';
 }
@@ -1232,6 +1242,12 @@ extension on TranslationsDe {
 		return switch (path) {
 			'app.title' => 'Plezy',
 			'auth.signInWithPlex' => 'Mit Plex anmelden',
+			'auth.signInWithJellyfin' => 'Mit Jellyfin anmelden',
+			'auth.jellyfinServerUrl' => 'Server-URL',
+			'auth.jellyfinServerUrlHint' => 'https://dein-jellyfin.example.com',
+			'auth.jellyfinUsername' => 'Benutzername',
+			'auth.jellyfinPassword' => 'Passwort',
+			'auth.jellyfinSignIn' => 'Anmelden',
 			'auth.showQRCode' => 'QR-Code anzeigen',
 			'auth.authenticate' => 'Authentifizieren',
 			'auth.debugEnterToken' => 'Debug: Plex-Token eingeben',
@@ -1333,6 +1349,8 @@ extension on TranslationsDe {
 			'settings.useGlobalHubsDescription' => 'Zeigt Startseiten-Hubs wie der offizielle Plex-Client. Wenn deaktiviert, werden stattdessen Empfehlungen pro Bibliothek angezeigt.',
 			'settings.showServerNameOnHubs' => 'Servername bei Hubs anzeigen',
 			'settings.showServerNameOnHubsDescription' => 'Zeigt immer den Servernamen in Hub-Titeln an. Wenn deaktiviert, nur bei doppelten Hub-Namen.',
+			'settings.showJellyfinRecommendations' => 'Jellyfin Filmempfehlungen',
+			'settings.showJellyfinRecommendationsDescription' => 'Zeigt "Weil du geschaut hast" und ähnliche Empfehlungszeilen in der Film-Bibliothek. Standardmäßig aus, bis das Serververhalten verbessert wird.',
 			'settings.alwaysKeepSidebarOpen' => 'Seitenleiste immer geöffnet halten',
 			'settings.alwaysKeepSidebarOpenDescription' => 'Seitenleiste bleibt erweitert und Inhaltsbereich passt sich an',
 			'settings.showUnwatchedCount' => 'Anzahl nicht gesehener Folgen anzeigen',
@@ -1674,10 +1692,12 @@ extension on TranslationsDe {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
 			'libraries.noRecommendations' => 'Keine Empfehlungen verfügbar',
 			'libraries.noCollections' => 'Keine Sammlungen in dieser Mediathek',
+			'libraries.noFavorites' => 'Keine Favoriten in dieser Mediathek',
 			'libraries.noFoldersFound' => 'Keine Ordner gefunden',
 			'libraries.folders' => 'Ordner',
 			'libraries.tabs.recommended' => 'Empfohlen',
 			'libraries.tabs.browse' => 'Durchsuchen',
+			'libraries.tabs.favorites' => 'Favoriten',
 			'libraries.tabs.collections' => 'Sammlungen',
 			'libraries.tabs.playlists' => 'Wiedergabelisten',
 			'libraries.groupings.all' => 'Alle',
@@ -1732,6 +1752,8 @@ extension on TranslationsDe {
 			'liveTv.noRecordings' => 'Keine Aufnahmen geplant',
 			'liveTv.noSubscriptions' => 'Keine Aufnahmeregeln',
 			'liveTv.channelNumber' => ({required Object number}) => 'Kanal ${number}',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
 			'liveTv.premiere' => 'NEU',
@@ -1742,8 +1764,6 @@ extension on TranslationsDe {
 			'liveTv.today' => 'Heute',
 			'liveTv.midnight' => 'Mitternacht',
 			'liveTv.overnight' => 'Nacht',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.morning' => 'Morgen',
 			'liveTv.daytime' => 'Tagsüber',
 			'liveTv.evening' => 'Abend',
