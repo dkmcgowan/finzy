@@ -51,6 +51,9 @@ class FocusableMediaCard extends StatefulWidget {
   /// Used to track which grid item was last focused.
   final ValueChanged<bool>? onFocusChange;
 
+  /// When set, tap/select uses this instead of opening detail (e.g. show inline in library).
+  final VoidCallback? onTapOverride;
+
   const FocusableMediaCard({
     super.key,
     required this.item,
@@ -70,6 +73,7 @@ class FocusableMediaCard extends StatefulWidget {
     this.onNavigateRight,
     this.onBack,
     this.onFocusChange,
+    this.onTapOverride,
   });
 
   @override
@@ -84,7 +88,13 @@ class _FocusableMediaCardState extends State<FocusableMediaCard> {
   Widget build(BuildContext context) {
     return FocusableWrapper(
       focusNode: widget.focusNode,
-      onSelect: () => _mediaCardKey.currentState?.handleTap(),
+      onSelect: () {
+        if (widget.onTapOverride != null) {
+          widget.onTapOverride!();
+        } else {
+          _mediaCardKey.currentState?.handleTap();
+        }
+      },
       onLongPress: () => _mediaCardKey.currentState?.showContextMenu(),
       onNavigateUp: widget.onNavigateUp,
       onNavigateLeft: widget.onNavigateLeft,
@@ -107,6 +117,7 @@ class _FocusableMediaCardState extends State<FocusableMediaCard> {
         collectionId: widget.collectionId,
         isOffline: widget.isOffline,
         mixedHubContext: widget.mixedHubContext,
+        onTapOverride: widget.onTapOverride,
       ),
     );
   }

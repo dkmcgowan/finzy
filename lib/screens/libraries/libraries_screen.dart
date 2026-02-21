@@ -30,6 +30,7 @@ import '../../mixins/item_updatable.dart';
 import '../../i18n/strings.g.dart';
 import '../../utils/error_message_utils.dart';
 import 'state_messages.dart';
+import 'library_inline_list_view.dart';
 import 'tabs/library_browse_tab.dart';
 import 'tabs/library_recommended_tab.dart';
 import 'tabs/library_collections_tab.dart';
@@ -110,6 +111,9 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
   /// Track which tabs have loaded data (used to trigger focus after tab restore)
   final Set<int> _loadedTabs = {};
+
+  /// When non-null, show this playlist or collection inline (back + grid) instead of tab content.
+  dynamic _inlinePlaylistOrCollection;
 
   /// Effective number of tabs for the selected library (3 for Jellyfin movie/show, 1 for Jellyfin Collections/Playlists, 5 for Plex).
   int _effectiveTabCount = 5;
@@ -512,6 +516,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
     _updateState(() {
       _selectedLibraryGlobalKey = libraryGlobalKey;
+      _inlinePlaylistOrCollection = null;
       _errorMessage = null;
       _loadedTabs.clear();
       if (isChangingLibrary) _selectedFilters.clear();
@@ -1087,6 +1092,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             suppressAutoFocus: suppressAutoFocus,
             onDataLoaded: () => _handleTabDataLoaded(0),
             onBack: focusTabBar,
+            onCollectionTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
           )
         else
           LibraryPlaylistsTab(
@@ -1096,6 +1102,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             suppressAutoFocus: suppressAutoFocus,
             onDataLoaded: () => _handleTabDataLoaded(0),
             onBack: focusTabBar,
+            onPlaylistTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
           ),
       ];
     }
@@ -1131,6 +1138,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(3),
         onBack: focusTabBar,
+        onCollectionTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
       ),
       LibraryPlaylistsTab(
         key: _playlistsTabKey,
@@ -1139,6 +1147,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(4),
         onBack: focusTabBar,
+        onPlaylistTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
       ),
     ];
   }
@@ -1324,12 +1333,21 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
                 if (_selectedLibraryGlobalKey != null && selectedLibrary != null)
                   SliverFillRemaining(
-                    child: TabBarView(
-                      key: ValueKey(_selectedLibraryGlobalKey),
-                      controller: tabController,
-                      physics: PlatformDetector.isDesktop(context) ? const NeverScrollableScrollPhysics() : null,
-                      children: _buildTabViewChildren(selectedLibrary),
-                    ),
+                    child: _inlinePlaylistOrCollection != null
+                        ? LibraryInlineListView(
+                            library: selectedLibrary,
+                            item: _inlinePlaylistOrCollection,
+                            onBack: () {
+                              setState(() => _inlinePlaylistOrCollection = null);
+                              focusTabBar();
+                            },
+                          )
+                        : TabBarView(
+                            key: ValueKey(_selectedLibraryGlobalKey),
+                            controller: tabController,
+                            physics: PlatformDetector.isDesktop(context) ? const NeverScrollableScrollPhysics() : null,
+                            children: _buildTabViewChildren(selectedLibrary),
+                          ),
                   ),
               ],
             ],

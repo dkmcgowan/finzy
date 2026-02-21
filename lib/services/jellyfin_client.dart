@@ -26,6 +26,10 @@ import 'media_server_client.dart';
 /// Jellyfin API client implementing [MediaServerClient].
 /// Maps Jellyfin REST API to Plex-shaped DTOs for use by the existing UI.
 class JellyfinClient implements MediaServerClient {
+  /// Minimal Fields for list/grid views (thumbnails, title, watch state, duration).
+  /// Omit Overview and other heavy fields; load those on detail.
+  static const String _listFields = 'Genres,UserData,RunTimeTicks';
+
   final JellyfinConfig config;
   late final Dio _dio;
   bool _offlineMode = false;
@@ -203,40 +207,73 @@ class JellyfinClient implements MediaServerClient {
     final response = await _dio.get<Map<String, dynamic>>('/Users/${config.userId}/Views');
     final list = response.data?['Items'] as List?;
     if (list == null) return [];
-    final libraries = list
+    final all = list
         .map((e) => _viewToLibrary(e as Map<String, dynamic>))
         .toList();
 
-    // Jellyfin: Collections and Playlists are top-level libraries. Add synthetic entries only if not in Views.
-    // Match by type (collection/boxset/boxsets, playlist/playlists) or by title to avoid duplicates.
-    final hasCollectionLib = libraries.any((l) =>
-        l.type.toLowerCase() == 'collection' ||
-        l.type.toLowerCase() == 'boxset' ||
-        l.type.toLowerCase() == 'boxsets' ||
-        l.title == 'Collections');
-    final hasPlaylistLib = libraries.any((l) =>
-        l.type.toLowerCase() == 'playlist' ||
-        l.type.toLowerCase() == 'playlists' ||
-        l.title == 'Playlists');
-    if (!hasCollectionLib) {
-      libraries.add(PlexLibrary(
-        key: syntheticCollectionsKey,
-        title: 'Collections',
-        type: 'collection',
-        serverId: serverId,
-        serverName: serverName,
-      ));
+    // Split: content libraries (Movies, Shows, etc.) vs Collections/Playlists (always at bottom).
+    bool isCollectionOrPlaylist(PlexLibrary l) {
+      final t = l.type.toLowerCase();
+      return t == 'collection' || t == 'boxset' || t == 'boxsets' ||
+          t == 'playlist' || t == 'playlists' ||
+          l.title == 'Collections' || l.title == 'Playlists';
     }
-    if (!hasPlaylistLib) {
-      libraries.add(PlexLibrary(
-        key: syntheticPlaylistsKey,
-        title: 'Playlists',
-        type: 'playlist',
-        serverId: serverId,
-        serverName: serverName,
-      ));
+
+    final contentLibraries = all.where((l) => !isCollectionOrPlaylist(l)).toList();
+    final collectionPlaylistFromViews = all.where(isCollectionOrPlaylist).toList();
+
+    // Sort only content libraries alphabetically by title.
+    contentLibraries.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+    // Build final list: sorted content, then Collections, then Playlists (from Views or synthetic).
+    final hasCollectionLib = collectionPlaylistFromViews.any((l) {
+      final t = l.type.toLowerCase();
+      return t == 'collection' || t == 'boxset' || t == 'boxsets' || l.title == 'Collections';
+    });
+    final hasPlaylistLib = collectionPlaylistFromViews.any((l) {
+      final t = l.type.toLowerCase();
+      return t == 'playlist' || t == 'playlists' || l.title == 'Playlists';
+    });
+
+    final result = <PlexLibrary>[...contentLibraries];
+
+    if (hasCollectionLib) {
+      result.add(collectionPlaylistFromViews.firstWhere((l) {
+        final t = l.type.toLowerCase();
+        return t == 'collection' || t == 'boxset' || t == 'boxsets' || l.title == 'Collections';
+      }));
+    } else {
+      final collections = await getGlobalCollections();
+      if (collections.isNotEmpty) {
+        result.add(PlexLibrary(
+          key: syntheticCollectionsKey,
+          title: 'Collections',
+          type: 'collection',
+          serverId: serverId,
+          serverName: serverName,
+        ));
+      }
     }
-    return libraries;
+
+    if (hasPlaylistLib) {
+      result.add(collectionPlaylistFromViews.firstWhere((l) {
+        final t = l.type.toLowerCase();
+        return t == 'playlist' || t == 'playlists' || l.title == 'Playlists';
+      }));
+    } else {
+      final playlists = await getPlaylists(playlistType: 'video');
+      if (playlists.isNotEmpty) {
+        result.add(PlexLibrary(
+          key: syntheticPlaylistsKey,
+          title: 'Playlists',
+          type: 'playlist',
+          serverId: serverId,
+          serverName: serverName,
+        ));
+      }
+    }
+
+    return result;
   }
 
   @override
@@ -251,7 +288,7 @@ class JellyfinClient implements MediaServerClient {
     final query = <String, dynamic>{
       'ParentId': sectionId,
       'Recursive': true,
-      'Fields': 'Genres,UserData,RunTimeTicks',
+      'Fields': _listFields,
     };
     if (start != null) query['StartIndex'] = start;
     if (size != null) query['Limit'] = size;
@@ -357,7 +394,7 @@ class JellyfinClient implements MediaServerClient {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>(
       '/Users/${config.userId}/Items',
-      queryParameters: {'ParentId': ratingKey, 'Fields': 'Overview,Genres,UserData,RunTimeTicks'},
+      queryParameters: {'ParentId': ratingKey, 'Fields': _listFields},
     );
     final list = response.data?['Items'] as List?;
     if (list == null) return [];
@@ -662,7 +699,7 @@ class JellyfinClient implements MediaServerClient {
         'Limit': limit,
         'IncludeItemTypes': 'Movie,Series',
         'Recursive': true,
-        'Fields': 'Overview,UserData',
+        'Fields': _listFields,
       },
     );
     final list = response.data?['Items'] as List?;
@@ -681,7 +718,7 @@ class JellyfinClient implements MediaServerClient {
         'IncludeItemTypes': 'Movie,Episode',
         'Recursive': true,
         'Limit': limit,
-        'Fields': 'Overview,UserData,RunTimeTicks',
+        'Fields': _listFields,
       },
     );
     final list = response.data?['Items'] as List?;
@@ -695,7 +732,7 @@ class JellyfinClient implements MediaServerClient {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/Users/${config.userId}/Items/Resume',
-        queryParameters: {'Limit': 20, 'Fields': 'Overview,UserData,RunTimeTicks'},
+        queryParameters: {'Limit': 20, 'Fields': _listFields},
       );
       final list = response.data?['Items'] as List?;
       if (list == null) return [];
@@ -714,7 +751,7 @@ class JellyfinClient implements MediaServerClient {
         queryParameters: {
           'ParentId': sectionId,
           'Limit': 20,
-          'Fields': 'Overview,UserData,RunTimeTicks',
+          'Fields': _listFields,
         },
       );
       final list = response.data?['Items'] as List?;
@@ -881,7 +918,7 @@ class JellyfinClient implements MediaServerClient {
           'ParentId': sectionId,
           'CategoryLimit': categoryLimit,
           'ItemLimit': itemLimit,
-          'Fields': 'Overview,Genres,UserData,RunTimeTicks',
+          'Fields': _listFields,
         },
       );
       final list = response.data;
@@ -950,7 +987,7 @@ class JellyfinClient implements MediaServerClient {
           'SortBy': 'DateCreated',
           'SortOrder': 'Descending',
           'Limit': limit,
-          'Fields': 'Overview,Genres,UserData,RunTimeTicks',
+          'Fields': _listFields,
         },
       );
       final list = response.data?['Items'] as List? ?? [];
@@ -985,14 +1022,13 @@ class JellyfinClient implements MediaServerClient {
   Future<List<PlexHub>> getGlobalHubs({int limit = 10}) async {
     if (_offlineMode) return [];
     final perHub = limit > 0 ? limit : 12;
-    const fields = 'Overview,Genres,UserData,RunTimeTicks';
 
     // Run all three hub requests in parallel. Try both common NextUp paths.
     Future<Map<String, dynamic>?> _nextUp() async {
       try {
         final r = await _dio.get<Map<String, dynamic>>(
           '/Shows/NextUp',
-          queryParameters: {'UserId': config.userId, 'Limit': perHub, 'Fields': fields},
+          queryParameters: {'UserId': config.userId, 'Limit': perHub, 'Fields': _listFields},
         );
         if (r.data != null && (r.data!['Items'] as List?)?.isNotEmpty == true) return r.data;
       } catch (e) {
@@ -1001,7 +1037,7 @@ class JellyfinClient implements MediaServerClient {
       try {
         final r = await _dio.get<Map<String, dynamic>>(
           '/Users/${config.userId}/Shows/NextUp',
-          queryParameters: {'Limit': perHub, 'Fields': fields},
+          queryParameters: {'Limit': perHub, 'Fields': _listFields},
         );
         if (r.data != null && (r.data!['Items'] as List?)?.isNotEmpty == true) return r.data;
       } catch (_) {}
@@ -1018,7 +1054,7 @@ class JellyfinClient implements MediaServerClient {
             'SortOrder': 'Descending',
             'Limit': perHub,
             'Recursive': true,
-            'Fields': fields,
+            'Fields': _listFields,
           },
         );
         return r.data;
@@ -1038,7 +1074,7 @@ class JellyfinClient implements MediaServerClient {
             'SortOrder': 'Descending',
             'Limit': perHub,
             'Recursive': true,
-            'Fields': fields,
+            'Fields': _listFields,
           },
         );
         return r.data;
@@ -1117,7 +1153,10 @@ class JellyfinClient implements MediaServerClient {
   @override
   Future<List<PlexMetadata>> getPlaylist(String playlistId) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>('/Playlists/$playlistId/Items');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/Playlists/$playlistId/Items',
+        queryParameters: {'Fields': _listFields},
+      );
       final list = response.data?['Items'] as List?;
       if (list == null) return [];
       return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
@@ -1262,7 +1301,7 @@ class JellyfinClient implements MediaServerClient {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/Users/${config.userId}/Items',
-        queryParameters: {'ParentId': sectionId, 'IncludeItemTypes': 'BoxSet'},
+        queryParameters: {'ParentId': sectionId, 'IncludeItemTypes': 'BoxSet', 'Fields': _listFields},
       );
       final list = response.data?['Items'] as List?;
       if (list == null) return [];
@@ -1285,7 +1324,7 @@ class JellyfinClient implements MediaServerClient {
           'IncludeItemTypes': 'BoxSet',
           'SortBy': 'SortName',
           'SortOrder': 'Ascending',
-          'Fields': 'Genres,UserData,RunTimeTicks',
+          'Fields': _listFields,
         },
       );
       final list = response.data?['Items'] as List?;
@@ -1307,7 +1346,7 @@ class JellyfinClient implements MediaServerClient {
           'Recursive': true,
           'IncludeItemTypes': 'Movie,Series',
           'IsFavorite': true,
-          'Fields': 'Genres,UserData,RunTimeTicks',
+          'Fields': _listFields,
           'SortBy': 'SortName',
           'SortOrder': 'Ascending',
         },

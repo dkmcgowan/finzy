@@ -11,6 +11,9 @@ import 'library_grid_tab_state.dart';
 /// Collections tab for library screen
 /// Shows collections for the current library
 class LibraryCollectionsTab extends BaseLibraryTab<PlexMetadata> {
+  /// When set, tapping a collection shows it inline in the library (no push to detail screen).
+  final void Function(PlexMetadata)? onCollectionTap;
+
   const LibraryCollectionsTab({
     super.key,
     required super.library,
@@ -20,6 +23,7 @@ class LibraryCollectionsTab extends BaseLibraryTab<PlexMetadata> {
     super.isActive,
     super.suppressAutoFocus,
     super.onBack,
+    this.onCollectionTap,
   });
 
   @override
@@ -62,6 +66,7 @@ class _LibraryCollectionsTabState extends LibraryGridTabState<PlexMetadata, Libr
       onListRefresh: loadItems,
       onBack: widget.onBack,
       onNavigateLeft: gridContext?.isFirstColumn == true ? gridContext?.navigateToSidebar : null,
+      onTapOverride: widget.onCollectionTap != null ? () => widget.onCollectionTap!(item) : null,
     );
   }
 }

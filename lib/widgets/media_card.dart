@@ -32,6 +32,9 @@ class MediaCard extends StatefulWidget {
   final bool isOffline; // True for downloaded content without server access
   final bool mixedHubContext; // True when in a hub with mixed content (movies + episodes)
 
+  /// When set, tap uses this instead of navigating to detail (e.g. show inline in library).
+  final VoidCallback? onTapOverride;
+
   const MediaCard({
     super.key,
     required this.item,
@@ -45,6 +48,7 @@ class MediaCard extends StatefulWidget {
     this.collectionId,
     this.isOffline = false,
     this.mixedHubContext = false,
+    this.onTapOverride,
   });
 
   @override
@@ -116,6 +120,11 @@ class MediaCardState extends State<MediaCard> {
   void _handleTap(BuildContext context) async {
     // Ignore taps while context menu is open to avoid double-activating
     if (_contextMenuKey.currentState?.isContextMenuOpen == true) {
+      return;
+    }
+
+    if (widget.onTapOverride != null) {
+      widget.onTapOverride!();
       return;
     }
 

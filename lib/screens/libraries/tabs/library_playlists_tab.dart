@@ -11,6 +11,9 @@ import 'library_grid_tab_state.dart';
 /// Playlists tab for library screen
 /// Shows playlists that contain items from the current library
 class LibraryPlaylistsTab extends BaseLibraryTab<PlexPlaylist> {
+  /// When set, tapping a playlist shows it inline in the library (no push to detail screen).
+  final void Function(PlexPlaylist)? onPlaylistTap;
+
   const LibraryPlaylistsTab({
     super.key,
     required super.library,
@@ -20,6 +23,7 @@ class LibraryPlaylistsTab extends BaseLibraryTab<PlexPlaylist> {
     super.isActive,
     super.suppressAutoFocus,
     super.onBack,
+    this.onPlaylistTap,
   });
 
   @override
@@ -60,6 +64,7 @@ class _LibraryPlaylistsTabState extends LibraryGridTabState<PlexPlaylist, Librar
       onListRefresh: loadItems,
       onBack: widget.onBack,
       onNavigateLeft: gridContext?.isFirstColumn == true ? gridContext?.navigateToSidebar : null,
+      onTapOverride: widget.onPlaylistTap != null ? () => widget.onPlaylistTap!(playlist) : null,
     );
   }
 }
