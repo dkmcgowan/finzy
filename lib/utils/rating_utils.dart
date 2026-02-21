@@ -34,9 +34,9 @@ RatingInfo? parseRatingImage(String? imageUri, double? value) {
     return RatingInfo('assets/rating_icons/imdb.svg', value.toStringAsFixed(1));
   }
 
-  // TMDB
+  // TMDB / Jellyfin (0–10 scale; display as e.g. 6.5, not as percent)
   if (imageUri.startsWith('themoviedb://')) {
-    return RatingInfo('assets/rating_icons/tmdb.svg', '${(value * 10).toStringAsFixed(0)}%');
+    return RatingInfo('assets/rating_icons/tmdb.svg', value.toStringAsFixed(1));
   }
 
   return null;

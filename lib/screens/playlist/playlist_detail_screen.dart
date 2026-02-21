@@ -96,6 +96,9 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
   // Estimated item height for scroll-into-view (card + vertical margins)
   static const double _estimatedItemHeight = 114.0;
 
+  /// Fetched series metadata for show cards that lacked unwatched count (e.g. from playlist API).
+  Map<String, PlexMetadata> _enrichedShowCounts = {};
+
   @override
   void dispose() {
     _listFocusNode.dispose();
@@ -110,7 +113,11 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
 
   @override
   Future<void> loadItems() async {
+    setState(() => _enrichedShowCounts = {});
     await super.loadItems();
+
+    // Enrich show cards that lack unwatched count (playlist API often omits UserData for items).
+    if (mounted && items.isNotEmpty) await _enrichShowCounts();
 
     // Auto-focus after load if in keyboard mode
     if (mounted && items.isNotEmpty) {
@@ -145,6 +152,34 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     return context.getClientForServer(widget.playlist.serverId!);
   }
 
+  /// Fetch series metadata for show cards that lack unwatched count so the badge can display.
+  Future<void> _enrichShowCounts() async {
+    if (!mounted || widget.playlist.serverId == null) return;
+    final displayItems = _getGroupedDisplayItems();
+    final toFetch = <String>[];
+    for (final item in displayItems) {
+      if (item.mediaType != PlexMediaType.show) continue;
+      if (item.effectiveUnwatchedCount != null) continue;
+      final key = item.ratingKey;
+      if (key.isEmpty || _enrichedShowCounts.containsKey(key)) continue;
+      toFetch.add(key);
+    }
+    if (toFetch.isEmpty) return;
+    final client = _getClientForPlaylist();
+    final results = await Future.wait(
+      toFetch.map((key) => client.getMetadataWithImages(key)),
+    );
+    if (!mounted) return;
+    final Map<String, PlexMetadata> next = Map.from(_enrichedShowCounts);
+    for (var i = 0; i < toFetch.length; i++) {
+      final meta = results[i];
+      if (meta != null) next[toFetch[i]] = meta;
+    }
+    if (next.length > _enrichedShowCounts.length) {
+      setState(() => _enrichedShowCounts = next);
+    }
+  }
+
   /// Group playlist items by series so we show one card per show (and one per movie), matching Library Browse.
   /// Episodes are collapsed into their show; movies appear as-is. Order is first occurrence in playlist.
   List<PlexMetadata> _getGroupedDisplayItems() {
@@ -175,7 +210,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
           ));
         }
       } else if (item.mediaType == PlexMediaType.season) {
-        // Group season under its show
+        // Group season under its show; preserve unwatched/leaf counts so badge can show
         final showKey = item.parentRatingKey ?? item.ratingKey;
         if (showKey.isEmpty) continue;
         if (seenShowKeys.add(showKey)) {
@@ -195,6 +230,9 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
             parentThumb: null,
             parentIndex: null,
             index: null,
+            unwatchedCount: item.unwatchedCount,
+            leafCount: item.leafCount,
+            viewedLeafCount: item.viewedLeafCount,
           ));
         }
       } else if (item.mediaType == PlexMediaType.movie) {
@@ -207,7 +245,19 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
         result.add(item);
       }
     }
-    return result;
+    // Merge enriched series metadata (unwatched count) when playlist API didn't provide it
+    final merged = result.map((item) {
+      if (item.mediaType != PlexMediaType.show) return item;
+      final enriched = _enrichedShowCounts[item.ratingKey];
+      if (enriched == null) return item;
+      final m = item.copyWith(
+        unwatchedCount: enriched.unwatchedCount,
+        leafCount: enriched.leafCount,
+        viewedLeafCount: enriched.viewedLeafCount,
+      );
+      return m;
+    }).toList();
+    return merged;
   }
 
   Future<void> _deletePlaylist() async {

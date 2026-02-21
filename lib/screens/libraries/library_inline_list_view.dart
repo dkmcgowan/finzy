@@ -6,6 +6,7 @@ import '../../models/plex_library.dart';
 import '../../models/plex_metadata.dart';
 import '../../models/plex_playlist.dart';
 import '../../providers/settings_provider.dart';
+import '../../services/media_server_client.dart';
 import '../../utils/grid_size_calculator.dart';
 import '../../utils/layout_constants.dart';
 import '../../utils/provider_extensions.dart';
@@ -33,6 +34,8 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
   List<PlexMetadata> _items = [];
   bool _isLoading = true;
   String? _errorMessage;
+  /// Fetched series metadata for show cards that lacked unwatched count (playlist API often omits UserData).
+  Map<String, PlexMetadata> _enrichedShowCounts = {};
 
   String get _title {
     if (widget.item is PlexPlaylist) {
@@ -78,6 +81,9 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
               title: item.parentTitle ?? item.title,
               thumb: item.parentThumb ?? item.thumb,
               art: item.art,
+              unwatchedCount: item.unwatchedCount,
+              leafCount: item.leafCount,
+              viewedLeafCount: item.viewedLeafCount,
             ));
           }
           break;
@@ -96,6 +102,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _enrichedShowCounts = {};
     });
     try {
       final client = context.getClientForLibrary(widget.library);
@@ -113,6 +120,9 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
           _items = list;
           _isLoading = false;
         });
+        if (widget.item is PlexPlaylist && list.isNotEmpty) {
+          await _enrichShowCounts(client);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -122,6 +132,47 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
         });
       }
     }
+  }
+
+  /// Fetch series metadata for show cards that lack unwatched count so the badge can display.
+  Future<void> _enrichShowCounts(MediaServerClient client) async {
+    if (!mounted) return;
+    final toFetch = <String>[];
+    for (final item in _items) {
+      if (item.mediaType != PlexMediaType.show) continue;
+      if (item.effectiveUnwatchedCount != null) continue;
+      final key = item.ratingKey;
+      if (key.isEmpty || _enrichedShowCounts.containsKey(key)) continue;
+      toFetch.add(key);
+    }
+    if (toFetch.isEmpty) return;
+    final results = await Future.wait(
+      toFetch.map((key) => client.getMetadataWithImages(key)),
+    );
+    if (!mounted) return;
+    final next = Map<String, PlexMetadata>.from(_enrichedShowCounts);
+    for (var i = 0; i < toFetch.length; i++) {
+      final meta = results[i];
+      if (meta != null) next[toFetch[i]] = meta;
+    }
+    if (next.length > _enrichedShowCounts.length) {
+      setState(() => _enrichedShowCounts = next);
+    }
+  }
+
+  /// Items to display: merge enriched series metadata (unwatched count) when available.
+  List<PlexMetadata> get _displayItems {
+    if (_enrichedShowCounts.isEmpty) return _items;
+    return _items.map((item) {
+      if (item.mediaType != PlexMediaType.show) return item;
+      final enriched = _enrichedShowCounts[item.ratingKey];
+      if (enriched == null) return item;
+      return item.copyWith(
+        unwatchedCount: enriched.unwatchedCount,
+        leafCount: enriched.leafCount,
+        viewedLeafCount: enriched.viewedLeafCount,
+      );
+    }).toList();
   }
 
   @override
@@ -161,7 +212,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
                         child: Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                       ),
                     )
-                  : _items.isEmpty
+                  : _displayItems.isEmpty
                       ? Center(
                           child: Text(
                             'No items',
@@ -176,6 +227,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
                               builder: (context, settingsProvider, _) {
                                 final density = settingsProvider.libraryDensity;
                                 final maxCrossAxisExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, density);
+                                final displayItems = _displayItems;
                                 return GridView.builder(
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
@@ -184,9 +236,9 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
                                     mainAxisSpacing: GridLayoutConstants.mainAxisSpacing,
                                     crossAxisSpacing: GridLayoutConstants.crossAxisSpacing,
                                   ),
-                                  itemCount: _items.length,
+                                  itemCount: displayItems.length,
                                   itemBuilder: (context, index) {
-                                    final item = _items[index];
+                                    final item = displayItems[index];
                                     return FocusableMediaCard(
                                       key: Key(item.ratingKey),
                                       item: item,

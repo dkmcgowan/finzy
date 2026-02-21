@@ -224,13 +224,13 @@ class SettingsService extends BaseSharedPreferencesService {
     return prefs.getBool(_keyShowServerNameOnHubs) ?? false; // Default: false (only show on duplicates)
   }
 
-  // Show Jellyfin movie recommendations (Because you watched/liked X). Default off until server behavior is fixed.
+  // Show Jellyfin movie recommendations (Because you watched/liked X).
   Future<void> setShowJellyfinRecommendations(bool enabled) async {
     await prefs.setBool(_keyShowJellyfinRecommendations, enabled);
   }
 
   bool getShowJellyfinRecommendations() {
-    return prefs.getBool(_keyShowJellyfinRecommendations) ?? false; // Default: off
+    return prefs.getBool(_keyShowJellyfinRecommendations) ?? true; // Default: on
   }
 
   // Seek Time Small (in seconds)

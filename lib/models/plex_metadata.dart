@@ -71,6 +71,9 @@ class PlexMetadata with MultiServerFields {
   final int? viewCount;
   final int? leafCount; // Total number of episodes in a series/season
   final int? viewedLeafCount; // Number of watched episodes in a series/season
+  /// Unwatched/unplayed count when server provides it directly (e.g. Jellyfin UnplayedItemCount).
+  /// Badge can show this without needing total (leafCount).
+  final int? unwatchedCount;
   final int? childCount; // Number of items in a collection or playlist
   @JsonKey(name: 'Role')
   final List<PlexRole>? role; // Cast members
@@ -156,6 +159,7 @@ class PlexMetadata with MultiServerFields {
     this.viewCount,
     this.leafCount,
     this.viewedLeafCount,
+    this.unwatchedCount,
     this.childCount,
     this.role,
     this.audioLanguage,
@@ -210,6 +214,7 @@ class PlexMetadata with MultiServerFields {
     int? viewCount,
     int? leafCount,
     int? viewedLeafCount,
+    int? unwatchedCount,
     int? childCount,
     List<PlexRole>? role,
     String? audioLanguage,
@@ -225,6 +230,7 @@ class PlexMetadata with MultiServerFields {
     String? serverId,
     String? serverName,
     String? clearLogo,
+    bool? isFavorite,
   }) {
     return PlexMetadata(
       ratingKey: ratingKey ?? this.ratingKey,
@@ -261,6 +267,7 @@ class PlexMetadata with MultiServerFields {
       viewCount: viewCount ?? this.viewCount,
       leafCount: leafCount ?? this.leafCount,
       viewedLeafCount: viewedLeafCount ?? this.viewedLeafCount,
+      unwatchedCount: unwatchedCount ?? this.unwatchedCount,
       childCount: childCount ?? this.childCount,
       role: role ?? this.role,
       audioLanguage: audioLanguage ?? this.audioLanguage,
@@ -400,9 +407,19 @@ class PlexMetadata with MultiServerFields {
     return viewOffset! > 0 && viewOffset! < duration!;
   }
 
+  /// Unwatched count for shows/seasons: use server-provided value or leafCount - viewedLeafCount.
+  int? get effectiveUnwatchedCount {
+    if (unwatchedCount != null && unwatchedCount! > 0) return unwatchedCount;
+    if (leafCount != null && viewedLeafCount != null && leafCount! > viewedLeafCount!) {
+      return leafCount! - viewedLeafCount!;
+    }
+    return null;
+  }
+
   // Helper to determine if content is watched
   bool get isWatched {
-    // For series/seasons, check if all episodes are watched
+    // For series/seasons: unwatchedCount 0 or viewed >= total
+    if (unwatchedCount != null) return unwatchedCount! == 0;
     if (leafCount != null && viewedLeafCount != null) {
       return viewedLeafCount! >= leafCount!;
     }

@@ -9,13 +9,13 @@ import 'multi_server_manager.dart';
 import 'plex_api_cache.dart';
 import 'media_server_client.dart';
 
-/// Service for managing offline watch progress and syncing to Plex servers.
+/// Service for managing offline watch progress and syncing to media servers (Plex/Jellyfin).
 ///
 /// Handles:
 /// - Queuing progress updates when offline
 /// - Queuing manual watch/unwatch actions
 /// - Auto-marking items as watched at 90% threshold
-/// - Syncing queued actions when connectivity is restored
+/// - Syncing queued actions when connectivity is restored (updateProgress, markAsWatched, etc.)
 class OfflineWatchSyncService extends ChangeNotifier {
   final AppDatabase _database;
   final MultiServerManager _serverManager;

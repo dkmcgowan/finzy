@@ -174,6 +174,18 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
                     children: [
                       Consumer2<DownloadProvider, MultiServerProvider>(
                         builder: (context, downloadProvider, serverProvider, _) {
+                          // Only show downloads for currently configured servers (hide Plex
+                          // downloads when logged in as Jellyfin-only and vice versa).
+                          final serverIds = serverProvider.serverIds.toSet();
+                          final filteredDownloads = Map.fromEntries(
+                            downloadProvider.downloads.entries
+                                .where((e) => serverIds.contains(parseGlobalKey(e.key)?.serverId)),
+                          );
+                          final filteredMetadata = Map.fromEntries(
+                            downloadProvider.metadata.entries
+                                .where((e) => serverIds.contains(parseGlobalKey(e.key)?.serverId)),
+                          );
+
                           // Helper to get client from globalKey (serverId:ratingKey)
                           getClient(String globalKey) {
                             final serverId = parseGlobalKey(globalKey)?.serverId ?? globalKey;
@@ -181,8 +193,8 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
                           }
 
                           return DownloadTreeView(
-                            downloads: downloadProvider.downloads,
-                            metadata: downloadProvider.metadata,
+                            downloads: filteredDownloads,
+                            metadata: filteredMetadata,
                             onPause: downloadProvider.pauseDownload,
                             onResume: (globalKey) {
                               final client = getClient(globalKey);
@@ -269,11 +281,17 @@ class _DownloadsGridContentState extends State<_DownloadsGridContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<DownloadProvider, SettingsProvider>(
-      builder: (context, downloadProvider, settingsProvider, _) {
-        final List<PlexMetadata> items = widget.type == DownloadType.tvShows
-            ? downloadProvider.downloadedShows
-            : downloadProvider.downloadedMovies;
+    return Consumer3<DownloadProvider, MultiServerProvider, SettingsProvider>(
+      builder: (context, downloadProvider, serverProvider, settingsProvider, _) {
+        final serverIds = serverProvider.serverIds.toSet();
+        final shows = downloadProvider.downloadedShows
+            .where((s) => s.serverId != null && serverIds.contains(s.serverId))
+            .toList();
+        final movies = downloadProvider.downloadedMovies
+            .where((m) => m.serverId != null && serverIds.contains(m.serverId))
+            .toList();
+        final List<PlexMetadata> items =
+            widget.type == DownloadType.tvShows ? shows : movies;
 
         if (items.isEmpty) {
           return _buildEmptyState();

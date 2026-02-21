@@ -1170,6 +1170,9 @@ class PlexClient implements MediaServerClient {
     }
   }
 
+  @override
+  Future<bool?> toggleFavorite(String ratingKey, {bool? isCurrentlyFavorite}) async => null;
+
   /// Update playback progress
   @override
   Future<void> updateProgress(

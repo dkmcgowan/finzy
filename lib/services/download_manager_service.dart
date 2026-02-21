@@ -451,9 +451,10 @@ class DownloadManagerService {
       status: DownloadStatus.queued.index,
     );
 
-    // Pin the already-cached API response for offline use
-    // (getMetadataWithImages was already called by download_provider, which cached with chapters/markers)
-    await _apiCache.pinForOffline(metadata.serverId!, metadata.ratingKey);
+    // Ensure metadata is in API cache for offline use and for _prepareAndEnqueueDownload.
+    // PlexClient caches when it fetches; JellyfinClient does not — so we always cache here
+    // in a format the cache parser expects (MediaContainer.Metadata).
+    await _cacheMetadataForOffline(metadata.serverId!, metadata.ratingKey, metadata);
 
     // Add to queue
     await _database.addToQueue(

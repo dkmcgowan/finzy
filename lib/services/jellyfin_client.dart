@@ -17,6 +17,7 @@ import '../models/plex_media_info.dart';
 import '../models/plex_media_version.dart';
 import '../models/plex_metadata.dart';
 import '../models/plex_playlist.dart';
+import '../models/plex_role.dart';
 import '../models/plex_sort.dart';
 import '../models/plex_video_playback_data.dart';
 import '../utils/app_logger.dart';
@@ -27,8 +28,8 @@ import 'media_server_client.dart';
 /// Maps Jellyfin REST API to Plex-shaped DTOs for use by the existing UI.
 class JellyfinClient implements MediaServerClient {
   /// Minimal Fields for list/grid views (thumbnails, title, watch state, duration).
-  /// Omit Overview and other heavy fields; load those on detail.
-  static const String _listFields = 'Genres,UserData,RunTimeTicks';
+  /// ItemCounts ensures Series/Season get UnplayedItemCount and episode counts for unwatched badge.
+  static const String _listFields = 'Genres,UserData,RunTimeTicks,ItemCounts';
 
   final JellyfinConfig config;
   late final Dio _dio;
@@ -118,18 +119,25 @@ class JellyfinClient implements MediaServerClient {
     // List responses often omit ImageTags; using id ensures thumbnails load everywhere.
     final hasBackdrop = item['BackdropImageTags'] != null;
 
+    final leafCount = _leafCountForItem(item, type);
+    final viewedLeafCount = _viewedLeafCountForItem(item, type, userData);
+    // Unwatched badge: use unplayed count directly when API provides it (no need to fake leafCount).
+    final unwatchedCount = (type == 'show' || type == 'season') ? _toInt(userData['UnplayedItemCount']) : null;
+
     return PlexMetadata(
       ratingKey: id,
       key: id,
       guid: item['Id']?.toString(),
-      studio: (item['Studios'] as List?)?.isNotEmpty == true ? (item['Studios']![0] as Map?)?.toString() : null,
+      studio: _studioName(item['Studios']),
       type: type,
       title: name,
       titleSort: item['SortName'] as String?,
       contentRating: item['OfficialRating'] as String?,
       summary: item['Overview'] as String?,
-      rating: _toDouble(item['CommunityRating']),
-      audienceRating: _toDouble(item['CriticRating']),
+      rating: _jellyfinRating(item),
+      audienceRating: _jellyfinAudienceRating(item),
+      ratingImage: _jellyfinRating(item) != null ? 'themoviedb://' : null,
+      audienceRatingImage: _jellyfinAudienceRating(item) != null ? 'themoviedb://' : null,
       userRating: _toDouble(userData['UserRating']),
       year: _toInt(item['ProductionYear']),
       originallyAvailableAt: item['PremiereDate'] as String?,
@@ -148,14 +156,100 @@ class JellyfinClient implements MediaServerClient {
       index: _toInt(item['IndexNumber']),
       viewOffset: _positionTicksToMs(_toInt(userData['PlaybackPositionTicks'])),
       viewCount: _toInt(userData['PlayCount']),
-      leafCount: _toInt(item['ChildCount']),
-      viewedLeafCount: null,
+      leafCount: leafCount,
+      viewedLeafCount: viewedLeafCount,
+      unwatchedCount: unwatchedCount,
       childCount: _toInt(item['ChildCount']),
+      role: _peopleToRoles(item['People']),
       librarySectionID: _toInt(item['ParentId']),
       serverId: serverId,
       serverName: serverName,
       isFavorite: (userData['IsFavorite'] as bool?) == true ? true : null,
     );
+  }
+
+  /// Jellyfin rating for star chip: CriticRating, else CommunityRating (e.g. 6.5 from TMDB), else parsed CustomRating.
+  static double? _jellyfinRating(Map<String, dynamic> item) {
+    final critic = _toDouble(item['CriticRating']);
+    if (critic != null) return critic;
+    final community = _toDouble(item['CommunityRating']);
+    if (community != null) return community;
+    return _parseCustomRating(item['CustomRating']);
+  }
+
+  /// Jellyfin audience rating (people chip): only when we also have CriticRating, so both chips show.
+  static double? _jellyfinAudienceRating(Map<String, dynamic> item) {
+    final critic = _toDouble(item['CriticRating']);
+    final community = _toDouble(item['CommunityRating']);
+    if (critic != null && community != null) return community;
+    return null;
+  }
+
+  static double? _parseCustomRating(dynamic custom) {
+    if (custom == null) return null;
+    final s = custom is String ? custom.trim() : custom.toString().trim();
+    if (s.isEmpty) return null;
+    return double.tryParse(s);
+  }
+
+  /// Jellyfin Studios is array of {Name, Id}; return comma-separated names (movies/shows).
+  static String? _studioName(dynamic studios) {
+    final list = studios as List?;
+    if (list == null || list.isEmpty) return null;
+    final names = <String>[];
+    for (final s in list) {
+      if (s is Map) {
+        final name = s['Name'];
+        if (name != null) {
+          final str = name is String ? name : name.toString();
+          if (str.isNotEmpty) names.add(str);
+        }
+      } else if (s != null) {
+        names.add(s.toString());
+      }
+    }
+    return names.isEmpty ? null : names.join(', ');
+  }
+
+  /// Map Jellyfin People array to PlexRole list for cast. People: [{Name, Id, Role, Type}, ...].
+  static List<PlexRole>? _peopleToRoles(dynamic people) {
+    final list = people as List?;
+    if (list == null || list.isEmpty) return null;
+    final roles = <PlexRole>[];
+    for (final p in list) {
+      if (p is! Map) continue;
+      final name = p['Name'] as String?;
+      if (name == null || name.isEmpty) continue;
+      final characterRole = p['Role'] as String?;
+      final id = p['Id']?.toString();
+      roles.add(PlexRole(
+        tag: name,
+        role: characterRole,
+        thumb: id,
+        tagKey: id,
+      ));
+    }
+    return roles.isEmpty ? null : roles;
+  }
+
+  /// Total episode count: for Series use EpisodeCount/RecursiveItemCount; for Season use ChildCount.
+  int? _leafCountForItem(Map<String, dynamic> item, String type) {
+    if (type == 'show') {
+      return _toInt(item['EpisodeCount']) ?? _toInt(item['RecursiveItemCount']) ?? _toInt(item['ChildCount']);
+    }
+    return _toInt(item['ChildCount']);
+  }
+
+  /// Watched episode count for shows/seasons when we have total (leafCount). Unwatched = leafCount - viewedLeafCount.
+  /// When API omits ChildCount/EpisodeCount, we only set unwatchedCount from UnplayedItemCount; viewedLeafCount stays null.
+  int? _viewedLeafCountForItem(Map<String, dynamic> item, String type, Map<String, dynamic> userData) {
+    if (type != 'show' && type != 'season') return null;
+    final leafCount = _leafCountForItem(item, type);
+    final unplayed = _toInt(userData['UnplayedItemCount']);
+    if (leafCount != null && unplayed != null && leafCount >= unplayed) {
+      return leafCount - unplayed;
+    }
+    return null;
   }
 
   static int? _parseDateToEpochSeconds(dynamic v) {
@@ -339,7 +433,7 @@ class JellyfinClient implements MediaServerClient {
     if (genres.isNotEmpty) query['Genres'] = genres.join(',');
     if (years.isNotEmpty) query['Years'] = years.join(',');
 
-    appLogger.d('Jellyfin getLibraryContent: ParentId=$sectionId SortBy=$sortBy SortOrder=$sortOrder IncludeItemTypes=$includeItemTypes Genres=${genres.isEmpty ? null : genres} Years=${years.isEmpty ? null : years} StartIndex=${query['StartIndex']} Limit=${query['Limit']}');
+    appLogger.d('Jellyfin getLibraryContent: ParentId=$sectionId Fields=${query['Fields']} IncludeItemTypes=$includeItemTypes StartIndex=${query['StartIndex']} Limit=${query['Limit']}');
 
     final response = await _dio.get<Map<String, dynamic>>(
       '/Users/${config.userId}/Items',
@@ -372,7 +466,7 @@ class JellyfinClient implements MediaServerClient {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/Users/${config.userId}/Items/$ratingKey',
-        queryParameters: {'Fields': 'Overview,Genres,UserData,RunTimeTicks,Chapters,People'},
+        queryParameters: {'Fields': 'Overview,Genres,UserData,RunTimeTicks,Chapters,People,ItemCounts,CustomRating'},
       );
       final item = response.data;
       if (item == null) return null;
@@ -386,7 +480,52 @@ class JellyfinClient implements MediaServerClient {
   @override
   Future<Map<String, dynamic>> getMetadataWithImagesAndOnDeck(String ratingKey) async {
     final metadata = await getMetadataWithImages(ratingKey);
-    return {'metadata': metadata, 'onDeckEpisode': null};
+    PlexMetadata? onDeckEpisode;
+    final type = metadata?.type.toLowerCase() ?? '';
+    if (metadata != null && type == 'show' && !_offlineMode) {
+      // Try NextUp API (omit Limit to work around Jellyfin 10.9 bug; take first result for this series)
+      try {
+        final query = {
+          'UserId': config.userId,
+          'SeriesId': ratingKey,
+          'Fields': 'Overview,Genres,UserData,RunTimeTicks,Chapters,People,ItemCounts',
+        };
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Shows/NextUp',
+          queryParameters: query,
+        );
+        final data = response.data;
+        var items = data?['Items'] as List?;
+        if (items != null && items.isNotEmpty) {
+          final first = items[0] as Map<String, dynamic>;
+          onDeckEpisode = _itemToMetadata(first);
+        }
+      } catch (_) {}
+      // Fallback: if NextUp returned nothing, compute first unwatched episode from seasons
+      if (onDeckEpisode == null) {
+        try {
+          onDeckEpisode = await _getFirstUnwatchedEpisodeForShow(ratingKey);
+        } catch (_) {}
+      }
+    }
+    return {'metadata': metadata, 'onDeckEpisode': onDeckEpisode};
+  }
+
+  /// Returns the first unwatched episode for a series (by season order, then episode index).
+  Future<PlexMetadata?> _getFirstUnwatchedEpisodeForShow(String showRatingKey) async {
+    final seasons = await getChildren(showRatingKey);
+    if (seasons.isEmpty) return null;
+    seasons.sort((a, b) => (a.parentIndex ?? 0).compareTo(b.parentIndex ?? 0));
+    for (final season in seasons) {
+      if (season.type.toLowerCase() != 'season') continue;
+      final episodes = await getChildren(season.ratingKey);
+      episodes.sort((a, b) => (a.index ?? 0).compareTo(b.index ?? 0));
+      for (final ep in episodes) {
+        if (ep.type.toLowerCase() != 'episode') continue;
+        if (ep.viewCount == null || ep.viewCount! == 0) return ep;
+      }
+    }
+    return null;
   }
 
   @override
@@ -403,7 +542,36 @@ class JellyfinClient implements MediaServerClient {
 
   @override
   Future<List<PlexMetadata>> getExtras(String ratingKey) async {
-    return [];
+    if (_offlineMode) return [];
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/Users/${config.userId}/Items/$ratingKey',
+        queryParameters: {'Fields': 'RemoteTrailers'},
+      );
+      final item = response.data;
+      final trailers = item?['RemoteTrailers'] as List?;
+      if (trailers == null || trailers.isEmpty) return [];
+      final list = <PlexMetadata>[];
+      for (final t in trailers) {
+        if (t is! Map) continue;
+        final url = t['Url'] as String?;
+        if (url == null || url.isEmpty) continue;
+        final name = t['Name'] as String? ?? 'Trailer';
+        list.add(PlexMetadata(
+          ratingKey: url,
+          key: url,
+          type: 'clip',
+          title: name,
+          subtype: 'trailer',
+          serverId: serverId,
+          serverName: serverName,
+        ));
+      }
+      return list;
+    } catch (e) {
+      appLogger.e('Jellyfin getExtras failed', error: e);
+      return [];
+    }
   }
 
   @override
@@ -641,6 +809,24 @@ class JellyfinClient implements MediaServerClient {
     await _dio.delete('/Users/${config.userId}/PlayedItems/$ratingKey');
     if (metadata != null) {
       WatchStateNotifier().notifyWatched(metadata: metadata, isNowWatched: false);
+    }
+  }
+
+  @override
+  Future<bool?> toggleFavorite(String ratingKey, {bool? isCurrentlyFavorite}) async {
+    if (_offlineMode) return null;
+    try {
+      final isFavorite = isCurrentlyFavorite ?? false;
+      if (isFavorite) {
+        await _dio.delete('/Users/${config.userId}/FavoriteItems/$ratingKey');
+        return false;
+      } else {
+        await _dio.post('/Users/${config.userId}/FavoriteItems/$ratingKey');
+        return true;
+      }
+    } catch (e) {
+      appLogger.e('Jellyfin toggleFavorite failed', error: e);
+      return null;
     }
   }
 
@@ -1155,7 +1341,10 @@ class JellyfinClient implements MediaServerClient {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/Playlists/$playlistId/Items',
-        queryParameters: {'Fields': _listFields},
+        queryParameters: {
+          'UserId': config.userId,
+          'Fields': _listFields,
+        },
       );
       final list = response.data?['Items'] as List?;
       if (list == null) return [];

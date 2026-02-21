@@ -120,7 +120,7 @@
     "showServerNameOnHubs": "Show Server Name on Hubs",
     "showServerNameOnHubsDescription": "Always display the server name in hub titles. When off, only shows for duplicate hub names.",
     "showJellyfinRecommendations": "Jellyfin Movie Recommendations",
-    "showJellyfinRecommendationsDescription": "Show \"Because you watched\" and similar recommendation rows in movie library Recommend tab. Off by default until server behavior is improved.",
+    "showJellyfinRecommendationsDescription": "Show \"Because you watched\" and similar recommendation rows in movie library Recommend tab.",
     "alwaysKeepSidebarOpen": "Always Keep Sidebar Open",
     "alwaysKeepSidebarOpenDescription": "Sidebar stays expanded and content area adjusts to fit",
     "showUnwatchedCount": "Show Unwatched Count",

@@ -37,6 +37,8 @@ import '../utils/scroll_utils.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/dialogs.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../utils/video_player_navigation.dart';
 import '../widgets/app_bar_back_button.dart';
 import '../utils/desktop_window_padding.dart';
@@ -394,7 +396,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
           if (primaryTrailer != null) ...[
             IconButton.filledTonal(
               onPressed: () async {
-                await navigateToVideoPlayer(context, metadata: primaryTrailer);
+                final key = primaryTrailer.ratingKey;
+                if (key.startsWith('http://') || key.startsWith('https://')) {
+                  final uri = Uri.parse(key);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                } else {
+                  await navigateToVideoPlayer(context, metadata: primaryTrailer);
+                }
               },
               icon: const AppIcon(Symbols.theaters_rounded, fill: 1),
               tooltip: t.tooltips.playTrailer,
@@ -703,6 +713,50 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
             iconSize: 20,
             style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
           ),
+          // Favorite button (Jellyfin only)
+          if (!widget.isOffline && _getClientForMetadata(context)?.isJellyfin == true) ...[
+            const SizedBox(width: 12),
+            IconButton.filledTonal(
+              onPressed: () async {
+                final client = _getClientForMetadata(context);
+                if (client == null) return;
+                final metadata = _fullMetadata ?? widget.metadata;
+                try {
+                  final newState = await client.toggleFavorite(
+                    metadata.ratingKey,
+                    isCurrentlyFavorite: metadata.isFavorite == true,
+                  );
+                  if (mounted && newState != null) {
+                    setState(() {
+                      _fullMetadata = metadata.copyWith(isFavorite: newState);
+                      _watchStateChanged = true; // so back triggers list refresh
+                    });
+                    showSuccessSnackBar(
+                      context,
+                      newState ? 'Added to favorites' : 'Removed from favorites',
+                    );
+                  } else if (mounted) {
+                    await _loadFullMetadata();
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+                  }
+                }
+              },
+              icon: AppIcon(
+                metadata.isFavorite == true ? Symbols.favorite_rounded : Symbols.favorite_border_rounded,
+                fill: metadata.isFavorite == true ? 1 : 0,
+              ),
+              tooltip: metadata.isFavorite == true ? 'Remove from favorites' : 'Add to favorites',
+              iconSize: 20,
+              style: IconButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                maximumSize: const Size(48, 48),
+                foregroundColor: metadata.isFavorite == true ? Colors.red : null,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -745,6 +799,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
   /// Build a rating chip that shows a source icon when available,
   /// falling back to a generic Material icon.
+  /// Format is determined by ratingImage (e.g. TMDB = 6.5, RT = 65%); unknown = percent.
   Widget _buildRatingChip(String? imageUri, double value, IconData fallbackIcon) {
     final info = parseRatingImage(imageUri, value);
     if (info != null) {
@@ -777,8 +832,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       }
     }
 
-    // User rating chip (tappable)
-    if (!widget.isOffline) {
+    // User rating chip (tappable) — Plex only; hidden for Jellyfin
+    if (!widget.isOffline && _getClientForMetadata(context)?.isJellyfin != true) {
       chips.add(_buildUserRatingChip(metadata));
     }
 
@@ -1161,7 +1216,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    if (_extras != null && _extras!.isNotEmpty) {
+    if (_getClientForMetadata(context)?.isJellyfin != true &&
+        _extras != null &&
+        _extras!.isNotEmpty) {
       _extrasFocusNode.requestFocus();
       _scrollSectionIntoView(_extrasSectionKey);
       return KeyEventResult.handled;
@@ -1267,7 +1324,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       if (metadata.role != null && metadata.role!.isNotEmpty) {
         _castFocusNode.requestFocus();
         _scrollSectionIntoView(_castSectionKey);
-      } else if (_extras != null && _extras!.isNotEmpty) {
+      } else if (_getClientForMetadata(context)?.isJellyfin != true &&
+          _extras != null &&
+          _extras!.isNotEmpty) {
         _extrasFocusNode.requestFocus();
         _scrollSectionIntoView(_extrasSectionKey);
       }
@@ -1300,7 +1359,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       } else if (metadata.role != null && metadata.role!.isNotEmpty) {
         _castFocusNode.requestFocus();
         _scrollSectionIntoView(_castSectionKey);
-      } else if (_extras != null && _extras!.isNotEmpty) {
+      } else if (_getClientForMetadata(context)?.isJellyfin != true &&
+          _extras != null &&
+          _extras!.isNotEmpty) {
         _extrasFocusNode.requestFocus();
         _scrollSectionIntoView(_extrasSectionKey);
       }
@@ -1506,7 +1567,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
     // DOWN: extras (if available) → consume
     if (key.isDownKey) {
-      if (_extras != null && _extras!.isNotEmpty) {
+      if (_getClientForMetadata(context)?.isJellyfin != true &&
+          _extras != null &&
+          _extras!.isNotEmpty) {
         _extrasFocusNode.requestFocus();
         _scrollSectionIntoView(_extrasSectionKey);
       }
@@ -1997,6 +2060,12 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                                       _buildMetadataChip(formatContentRating(metadata.contentRating!)),
                                     if (metadata.duration != null)
                                       _buildMetadataChip(formatDurationTextual(metadata.duration!)),
+                                    if (isShow &&
+                                        metadata.effectiveUnwatchedCount != null &&
+                                        metadata.effectiveUnwatchedCount! > 0)
+                                      _buildMetadataChip(
+                                        '${metadata.effectiveUnwatchedCount!} ${t.accessibility.mediaCardUnwatched}',
+                                      ),
                                     ..._buildRatingChips(metadata),
                                   ],
                                 ),
@@ -2066,10 +2135,27 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
                         // Seasons (for TV shows)
                         if (isShow) ...[
-                          Text(
+                          Row(
                             key: _seasonsSectionKey,
-                            t.discover.seasons,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                t.discover.seasons,
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              if (metadata.effectiveUnwatchedCount != null &&
+                                  metadata.effectiveUnwatchedCount! > 0) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${metadata.effectiveUnwatchedCount!} ${t.accessibility.mediaCardUnwatched}',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                ),
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 12),
                           if (_isLoadingSeasons)
@@ -2105,8 +2191,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                           const SizedBox(height: 24),
                         ],
 
-                        // Trailers & Extras Section
-                        if (!widget.isOffline && _extras != null && _extras!.isNotEmpty) ...[
+                        // Trailers & Extras Section (Plex only; Jellyfin uses remote URLs, not in-app extras)
+                        if (!widget.isOffline &&
+                            _getClientForMetadata(context)?.isJellyfin != true &&
+                            _extras != null &&
+                            _extras!.isNotEmpty) ...[
                           Text(
                             key: _extrasSectionKey,
                             t.discover.extras,

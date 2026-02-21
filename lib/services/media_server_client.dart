@@ -79,6 +79,10 @@ abstract class MediaServerClient {
 
   Future<void> markAsWatched(String ratingKey, {PlexMetadata? metadata});
   Future<void> markAsUnwatched(String ratingKey, {PlexMetadata? metadata});
+
+  /// Toggle favorite for the item. [isCurrentlyFavorite] is the current state (needed for Jellyfin: POST to add, DELETE to remove).
+  /// Returns new favorite state (true/false), or null if not supported (e.g. Plex).
+  Future<bool?> toggleFavorite(String ratingKey, {bool? isCurrentlyFavorite}) async => null;
   Future<void> updateProgress(
     String ratingKey, {
     required int time,

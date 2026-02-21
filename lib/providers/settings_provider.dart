@@ -11,7 +11,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _showHeroSection = true;
   bool _useGlobalHubs = true;
   bool _showServerNameOnHubs = false;
-  bool _showJellyfinRecommendations = false;
+  bool _showJellyfinRecommendations = true;
   bool _alwaysKeepSidebarOpen = false;
   bool _showUnwatchedCount = true;
   bool _isInitialized = false;

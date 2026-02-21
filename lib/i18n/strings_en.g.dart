@@ -462,8 +462,8 @@ class TranslationsSettingsEn {
 	/// en: 'Jellyfin Movie Recommendations'
 	String get showJellyfinRecommendations => 'Jellyfin Movie Recommendations';
 
-	/// en: 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab. Off by default until server behavior is improved.'
-	String get showJellyfinRecommendationsDescription => 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab. Off by default until server behavior is improved.';
+	/// en: 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab.'
+	String get showJellyfinRecommendationsDescription => 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab.';
 
 	/// en: 'Always Keep Sidebar Open'
 	String get alwaysKeepSidebarOpen => 'Always Keep Sidebar Open';
@@ -2863,7 +2863,7 @@ extension on Translations {
 			'settings.showServerNameOnHubs' => 'Show Server Name on Hubs',
 			'settings.showServerNameOnHubsDescription' => 'Always display the server name in hub titles. When off, only shows for duplicate hub names.',
 			'settings.showJellyfinRecommendations' => 'Jellyfin Movie Recommendations',
-			'settings.showJellyfinRecommendationsDescription' => 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab. Off by default until server behavior is improved.',
+			'settings.showJellyfinRecommendationsDescription' => 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab.',
 			'settings.alwaysKeepSidebarOpen' => 'Always Keep Sidebar Open',
 			'settings.alwaysKeepSidebarOpenDescription' => 'Sidebar stays expanded and content area adjusts to fit',
 			'settings.showUnwatchedCount' => 'Show Unwatched Count',
