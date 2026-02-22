@@ -10,6 +10,7 @@ import '../../focus/input_mode_tracker.dart';
 import '../../focus/key_event_utils.dart';
 import '../../mixins/tab_navigation_mixin.dart';
 import '../../../services/media_server_client.dart';
+import '../../models/plex_hub.dart';
 import '../../models/plex_library.dart';
 import '../../models/plex_metadata.dart';
 import '../../models/plex_sort.dart';
@@ -23,16 +24,21 @@ import '../../utils/snackbar_helper.dart';
 import '../../utils/content_utils.dart';
 import '../../widgets/desktop_app_bar.dart';
 import '../../widgets/focusable_tab_chip.dart';
+import '../../widgets/hub_section.dart';
 import '../../widgets/overlay_sheet.dart';
 import '../../services/storage_service.dart';
 import '../../mixins/refreshable.dart';
 import '../../mixins/item_updatable.dart';
 import '../../i18n/strings.g.dart';
+import '../../constants/library_constants.dart';
 import '../../utils/error_message_utils.dart';
 import 'state_messages.dart';
 import 'library_inline_list_view.dart';
+import 'library_inline_genre_view.dart';
+import 'library_inline_favorites_view.dart';
 import 'tabs/library_browse_tab.dart';
 import 'tabs/library_recommended_tab.dart';
+import 'tabs/library_genre_tab.dart';
 import 'tabs/library_collections_tab.dart';
 import 'tabs/library_favorites_tab.dart';
 import 'tabs/library_playlists_tab.dart';
@@ -88,6 +94,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   // GlobalKeys for tabs to enable refresh
   final _recommendedTabKey = GlobalKey();
   final _browseTabKey = GlobalKey();
+  final _genreTabKey = GlobalKey();
   final _favoritesTabKey = GlobalKey();
   final _collectionsTabKey = GlobalKey();
   final _playlistsTabKey = GlobalKey();
@@ -115,36 +122,59 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   /// When non-null, show this playlist or collection inline (back + grid) instead of tab content.
   dynamic _inlinePlaylistOrCollection;
 
+  /// When non-null, show this genre's grid inline (Genre tab header tap). Back returns to Genre tab.
+  PlexHub? _inlineGenreHub;
+  /// When non-null, show inline "all favorites" for this hub (global Favorites sidebar, Jellyfin).
+  PlexHub? _inlineFavoritesHub;
+
   /// Effective number of tabs for the selected library (3 for Jellyfin movie/show, 1 for Jellyfin Collections/Playlists, 5 for Plex).
   int _effectiveTabCount = 5;
 
   /// Key for the library dropdown popup menu button
   final _libraryDropdownKey = GlobalKey<PopupMenuButtonState<String>>();
 
-  // Focus nodes for tab chips (always 5; we use first _effectiveTabCount)
+  // Focus nodes for tab chips (order depends on _effectiveTabCount)
   final _recommendedTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_recommended');
   final _browseTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_browse');
+  final _genreTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_genre');
   final _favoritesTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_favorites');
   final _collectionsTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_collections');
   final _playlistsTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_playlists');
 
   @override
   List<FocusNode> get tabChipFocusNodes {
-    final nodes = [
+    if (_effectiveTabCount == 4) {
+      return [
+        _recommendedTabChipFocusNode,
+        _browseTabChipFocusNode,
+        _favoritesTabChipFocusNode,
+        _genreTabChipFocusNode,
+      ];
+    }
+    if (_effectiveTabCount == 3) {
+      return [
+        _recommendedTabChipFocusNode,
+        _browseTabChipFocusNode,
+        _favoritesTabChipFocusNode,
+      ];
+    }
+    if (_effectiveTabCount == 1) {
+      return [_browseTabChipFocusNode];
+    }
+    return [
       _recommendedTabChipFocusNode,
       _browseTabChipFocusNode,
       _favoritesTabChipFocusNode,
       _collectionsTabChipFocusNode,
       _playlistsTabChipFocusNode,
     ];
-    return nodes.sublist(0, _effectiveTabCount);
   }
 
-  /// Tab count for the given library and client (Jellyfin: 3 for movie/show, 1 for collection/playlist; Plex: 5).
+  /// Tab count for the given library and client (Jellyfin: 4 for movie/show with Genre tab, 1 for collection/playlist; Plex: 5).
   int _getEffectiveTabCount(MediaServerClient client, PlexLibrary library) {
     if (!client.isJellyfin) return 5;
     final t = library.type.toLowerCase();
-    if (t == 'movie' || t == 'show') return 3;
+    if (t == 'movie' || t == 'show') return 4;
     if (t == 'collection' || t == 'playlist' || t == 'playlists') return 1;
     return 5;
   }
@@ -157,6 +187,11 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
   // Scroll controller for the outer CustomScrollView
   final ScrollController _outerScrollController = ScrollController();
+
+  /// Global Favorites view (Jellyfin only): one hub per library.
+  List<PlexHub> _globalFavoritesHubs = [];
+  bool _areGlobalFavoritesLoading = false;
+  String? _globalFavoritesError;
 
   @override
   void initState() {
@@ -195,12 +230,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final storage = await StorageService.getInstance();
     final savedLibraryKey = storage.getSelectedLibraryKey();
 
-    // Find the library by key in visible libraries
+    // Find the library by key in visible libraries (or Favorites when visible)
     String? libraryGlobalKeyToLoad;
     if (savedLibraryKey != null) {
-      // Check if saved library exists and is visible
       final libraryExists = visibleLibraries.any((lib) => lib.globalKey == savedLibraryKey);
-      if (libraryExists) {
+      final isFavoritesAndVisible = savedLibraryKey == kJellyfinFavoritesKey &&
+          !hiddenKeys.contains(kJellyfinFavoritesKey);
+      if (libraryExists || isFavoritesAndVisible) {
         libraryGlobalKeyToLoad = savedLibraryKey;
       }
     }
@@ -332,8 +368,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     switch (index) {
       case 0: return _recommendedTabKey.currentState;
       case 1: return _browseTabKey.currentState;
-      case 2: return _favoritesTabKey.currentState;
-      case 3: return _collectionsTabKey.currentState;
+      case 2: return _effectiveTabCount == 4 ? _favoritesTabKey.currentState : _favoritesTabKey.currentState;
+      case 3: return _effectiveTabCount == 4 ? _genreTabKey.currentState : _collectionsTabKey.currentState;
       case 4: return _playlistsTabKey.currentState;
       default: return null;
     }
@@ -430,7 +466,11 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       return KeyEventResult.handled;
     }
     if (key.isSelectKey) {
-      _refreshCurrentTab();
+      if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
+        _loadGlobalFavorites();
+      } else {
+        _refreshCurrentTab();
+      }
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -442,6 +482,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     _outerScrollController.dispose();
     _recommendedTabChipFocusNode.dispose();
     _browseTabChipFocusNode.dispose();
+    _genreTabChipFocusNode.dispose();
     _favoritesTabChipFocusNode.dispose();
     _collectionsTabChipFocusNode.dispose();
     _playlistsTabChipFocusNode.dispose();
@@ -485,6 +526,22 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   }
 
   Future<void> _loadLibraryContent(String libraryGlobalKey) async {
+    // Jellyfin-only: global Favorites view (sidebar "Favorites" item)
+    if (libraryGlobalKey == kJellyfinFavoritesKey) {
+      _updateState(() {
+        _selectedLibraryGlobalKey = kJellyfinFavoritesKey;
+        _inlinePlaylistOrCollection = null;
+        _inlineGenreHub = null;
+        _inlineFavoritesHub = null;
+        _errorMessage = null;
+      });
+      if (_isInitialLoad) _isInitialLoad = false;
+      final storage = await StorageService.getInstance();
+      await storage.saveSelectedLibraryKey(libraryGlobalKey);
+      _loadGlobalFavorites();
+      return;
+    }
+
     // Get libraries from provider
     final librariesProvider = context.read<LibrariesProvider>();
     final allLibraries = librariesProvider.libraries;
@@ -517,6 +574,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     _updateState(() {
       _selectedLibraryGlobalKey = libraryGlobalKey;
       _inlinePlaylistOrCollection = null;
+      _inlineGenreHub = null;
+      _inlineFavoritesHub = null;
       _errorMessage = null;
       _loadedTabs.clear();
       if (isChangingLibrary) _selectedFilters.clear();
@@ -584,6 +643,65 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     }
   }
 
+  /// Load favorites per library for the global Favorites view (Jellyfin only).
+  Future<void> _loadGlobalFavorites() async {
+    _updateState(() {
+      _areGlobalFavoritesLoading = true;
+      _globalFavoritesError = null;
+    });
+
+    try {
+      final librariesProvider = context.read<LibrariesProvider>();
+      final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
+      final allLibraries = librariesProvider.libraries;
+      final hiddenKeys = hiddenLibrariesProvider.hiddenLibraryKeys;
+      final visibleLibraries = allLibraries
+          .where((lib) => !hiddenKeys.contains(lib.globalKey))
+          .where((lib) {
+            final t = lib.type.toLowerCase();
+            return t == 'movie' || t == 'show';
+          })
+          .toList();
+
+      final hubs = <PlexHub>[];
+      for (final lib in visibleLibraries) {
+        final client = context.getClientForLibrary(lib);
+        if (!client.isJellyfin) continue;
+        try {
+          final items = await client.getLibraryFavorites(lib.key, limit: 20);
+          final tagged = items
+              .map((item) => item.copyWith(serverId: lib.serverId, serverName: lib.serverName))
+              .toList();
+          hubs.add(PlexHub(
+            hubKey: 'favorites_${lib.globalKey}',
+            title: lib.title,
+            type: lib.type,
+            size: tagged.length,
+            more: tagged.length >= 20,
+            items: tagged,
+            serverId: lib.serverId,
+            serverName: lib.serverName,
+          ));
+        } catch (e) {
+          appLogger.w('Failed to load favorites for ${lib.title}', error: e);
+        }
+      }
+
+      if (!mounted) return;
+      _updateState(() {
+        _globalFavoritesHubs = hubs;
+        _areGlobalFavoritesLoading = false;
+        _globalFavoritesError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _updateState(() {
+        _globalFavoritesError = _getErrorMessage(e, 'favorites');
+        _areGlobalFavoritesLoading = false;
+      });
+    }
+  }
+
   /// Load all pages sequentially until all items are fetched
   Future<void> _loadAllPagesSequentially(
     PlexLibrary library,
@@ -635,7 +753,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     try {
       final client = context.getClientForLibrary(library);
 
-      final sortOptions = await client.getLibrarySorts(library.key);
+      final sortOptions = await client.getLibrarySorts(library.key, libraryType: library.type);
 
       // Load saved sort preference for this library
       final storage = await StorageService.getInstance();
@@ -705,7 +823,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       0 => _recommendedTabKey,
       1 => _browseTabKey,
       2 => _favoritesTabKey,
-      3 => _collectionsTabKey,
+      3 => _effectiveTabCount == 4 ? _genreTabKey : _collectionsTabKey,
       4 => _playlistsTabKey,
       _ => null,
     };
@@ -721,6 +839,9 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       _selectedFilters.clear();
       _items.clear();
       _errorMessage = null;
+      _inlinePlaylistOrCollection = null;
+      _inlineGenreHub = null;
+      _inlineFavoritesHub = null;
     });
 
     // Reinitialize with current libraries from provider
@@ -756,6 +877,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   }
 
   List<ContextMenuItem> _getLibraryMenuItems(PlexLibrary library) {
+    // Favorites (Jellyfin synthetic entry) has no per-library menu actions
+    if (library.globalKey == kJellyfinFavoritesKey) return [];
     return [
       ContextMenuItem(
         value: 'scan',
@@ -811,10 +934,55 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     }
   }
 
+  /// Build list for Manage Libraries sheet: real libraries + synthetic Favorites (Jellyfin) in saved or default order.
+  List<PlexLibrary> _buildOrderedLibrariesForManagement(LibrariesProvider provider, bool hasJellyfin) {
+    final allLibraries = provider.libraries;
+    if (!hasJellyfin) return List.from(allLibraries);
+
+    final fakeFavorites = PlexLibrary(
+      key: kJellyfinFavoritesKey,
+      title: t.libraries.tabs.favorites,
+      type: 'favorites',
+    );
+
+    final orderKeys = provider.displayOrderKeys;
+    if (orderKeys != null && orderKeys.isNotEmpty) {
+      final libMap = {for (var l in allLibraries) l.globalKey: l};
+      final result = <PlexLibrary>[];
+      for (final key in orderKeys) {
+        if (key == kJellyfinFavoritesKey) {
+          result.add(fakeFavorites);
+        } else {
+          final lib = libMap.remove(key);
+          if (lib != null) result.add(lib);
+        }
+      }
+      result.addAll(libMap.values);
+      return result;
+    }
+
+    // Default: Movies/Shows alpha, then Favorites, then Collections/Playlists alpha
+    final primary = allLibraries
+        .where((l) => l.type.toLowerCase() == 'movie' || l.type.toLowerCase() == 'show')
+        .toList();
+    final secondary = allLibraries
+        .where((l) =>
+            l.type.toLowerCase() != 'movie' && l.type.toLowerCase() != 'show')
+        .toList();
+    primary.sort((a, b) => a.title.compareTo(b.title));
+    secondary.sort((a, b) => a.title.compareTo(b.title));
+    return [...primary, fakeFavorites, ...secondary];
+  }
+
   void _showLibraryManagementSheet() {
     final librariesProvider = context.read<LibrariesProvider>();
     final hiddenLibrariesProvider = Provider.of<HiddenLibrariesProvider>(context, listen: false);
-    final allLibraries = librariesProvider.libraries;
+    final hasJellyfin = context.read<MultiServerProvider>().hasJellyfinServers;
+    final allLibraries = _buildOrderedLibrariesForManagement(librariesProvider, hasJellyfin);
+
+    final isJellyfinLibrary = (PlexLibrary lib) =>
+        lib.globalKey == kJellyfinFavoritesKey ||
+        context.getClientForLibrary(lib)?.isJellyfin == true;
 
     if (PlatformDetector.isTV()) {
       showDialog(
@@ -830,22 +998,45 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           onToggleVisibility: _toggleLibraryVisibility,
           getLibraryMenuItems: _getLibraryMenuItems,
           onLibraryMenuAction: _handleLibraryMenuAction,
+          isJellyfinLibrary: isJellyfinLibrary,
         ),
       );
     } else {
-      OverlaySheetController.of(context).show(
-        builder: (context) => _LibraryManagementSheet(
-          allLibraries: List.from(allLibraries),
-          hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
-          onReorder: (reorderedLibraries) {
-            librariesProvider.updateLibraryOrder(reorderedLibraries);
-            _notifyLibraryOrderChanged();
-          },
-          onToggleVisibility: _toggleLibraryVisibility,
-          getLibraryMenuItems: _getLibraryMenuItems,
-          onLibraryMenuAction: _handleLibraryMenuAction,
-        ),
-      );
+      final overlay = OverlaySheetController.maybeOf(context);
+      if (overlay != null) {
+        overlay.show(
+          builder: (context) => _LibraryManagementSheet(
+            allLibraries: List.from(allLibraries),
+            hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
+            onReorder: (reorderedLibraries) {
+              librariesProvider.updateLibraryOrder(reorderedLibraries);
+              _notifyLibraryOrderChanged();
+            },
+            onToggleVisibility: _toggleLibraryVisibility,
+            getLibraryMenuItems: _getLibraryMenuItems,
+            onLibraryMenuAction: _handleLibraryMenuAction,
+            isJellyfinLibrary: isJellyfinLibrary,
+          ),
+        );
+      } else {
+        // No OverlaySheetHost in context (e.g. LibrariesScreen wraps it, so state context is above it) — use dialog
+        showDialog(
+          context: context,
+          builder: (context) => _LibraryManagementSheet(
+            isDialog: true,
+            allLibraries: List.from(allLibraries),
+            hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
+            onReorder: (reorderedLibraries) {
+              librariesProvider.updateLibraryOrder(reorderedLibraries);
+              _notifyLibraryOrderChanged();
+            },
+            onToggleVisibility: _toggleLibraryVisibility,
+            getLibraryMenuItems: _getLibraryMenuItems,
+            onLibraryMenuAction: _handleLibraryMenuAction,
+            isJellyfinLibrary: isJellyfinLibrary,
+          ),
+        );
+      }
     }
   }
 
@@ -983,11 +1174,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       focusNode: getTabChipFocusNode(index),
       onSelect: () {
         if (isSelected) {
-          // Already selected - navigate to tab content
           _focusCurrentTab();
         } else {
-          // Switch to this tab
           setState(() {
+            _inlineGenreHub = null;
             tabController.index = index;
           });
         }
@@ -996,6 +1186,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           ? () {
               final newIndex = index - 1;
               setState(() {
+                _inlineGenreHub = null;
                 suppressAutoFocus = true;
                 tabController.index = newIndex;
               });
@@ -1006,6 +1197,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           ? () {
               final newIndex = index + 1;
               setState(() {
+                _inlineGenreHub = null;
                 suppressAutoFocus = true;
                 tabController.index = newIndex;
               });
@@ -1026,6 +1218,17 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   }
 
   List<Widget> _buildTabChipsForCurrentLibrary(PlexLibrary selectedLibrary) {
+    if (_effectiveTabCount == 4) {
+      return [
+        _buildTabChip(t.libraries.tabs.recommended, 0),
+        const SizedBox(width: 8),
+        _buildTabChip(t.libraries.tabs.browse, 1),
+        const SizedBox(width: 8),
+        _buildTabChip(t.libraries.tabs.favorites, 2),
+        const SizedBox(width: 8),
+        _buildTabChip(t.libraries.tabs.genre, 3),
+      ];
+    }
     if (_effectiveTabCount == 3) {
       return [
         _buildTabChip(t.libraries.tabs.recommended, 0),
@@ -1053,6 +1256,43 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   }
 
   List<Widget> _buildTabViewChildren(PlexLibrary selectedLibrary) {
+    if (_effectiveTabCount == 4) {
+      return [
+        LibraryRecommendedTab(
+          key: _recommendedTabKey,
+          library: selectedLibrary,
+          isActive: tabController.index == 0,
+          suppressAutoFocus: suppressAutoFocus,
+          onDataLoaded: () => _handleTabDataLoaded(0),
+          onBack: focusTabBar,
+        ),
+        LibraryBrowseTab(
+          key: _browseTabKey,
+          library: selectedLibrary,
+          isActive: tabController.index == 1,
+          suppressAutoFocus: suppressAutoFocus,
+          onDataLoaded: () => _handleTabDataLoaded(1),
+          onBack: focusTabBar,
+        ),
+        LibraryFavoritesTab(
+          key: _favoritesTabKey,
+          library: selectedLibrary,
+          isActive: tabController.index == 2,
+          suppressAutoFocus: suppressAutoFocus,
+          onDataLoaded: () => _handleTabDataLoaded(2),
+          onBack: focusTabBar,
+        ),
+        LibraryGenreTab(
+          key: _genreTabKey,
+          library: selectedLibrary,
+          isActive: tabController.index == 3,
+          suppressAutoFocus: suppressAutoFocus,
+          onDataLoaded: () => _handleTabDataLoaded(3),
+          onBack: focusTabBar,
+          onGenreHeaderTap: (hub) => setState(() => _inlineGenreHub = hub),
+        ),
+      ];
+    }
     if (_effectiveTabCount == 3) {
       return [
         LibraryRecommendedTab(
@@ -1158,9 +1398,23 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       return Text(t.libraries.title);
     }
 
+    if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
+      return Text(t.libraries.tabs.favorites);
+    }
+
     if (PlatformDetector.shouldUseSideNavigation(context)) {
       final chips = <Widget>[];
-      if (_effectiveTabCount == 3) {
+      if (_effectiveTabCount == 4) {
+        chips.addAll([
+          _buildTabChip(t.libraries.tabs.recommended, 0),
+          const SizedBox(width: 8),
+          _buildTabChip(t.libraries.tabs.browse, 1),
+          const SizedBox(width: 8),
+          _buildTabChip(t.libraries.tabs.favorites, 2),
+          const SizedBox(width: 8),
+          _buildTabChip(t.libraries.tabs.genre, 3),
+        ]);
+      } else if (_effectiveTabCount == 3) {
         chips.addAll([
           _buildTabChip(t.libraries.tabs.recommended, 0),
           const SizedBox(width: 8),
@@ -1234,6 +1488,49 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     );
   }
 
+  /// Inline "all favorites" view for one library (global Favorites sidebar). Returns the widget or a placeholder if library not found.
+  Widget _buildInlineFavoritesView() {
+    if (_inlineFavoritesHub == null) return const SizedBox.shrink();
+    final key = _inlineFavoritesHub!.hubKey.replaceFirst('favorites_', '');
+    final libs = context.read<LibrariesProvider>().libraries.where((l) => l.globalKey == key).toList();
+    if (libs.isEmpty) return const SizedBox.shrink();
+    return LibraryInlineFavoritesView(
+      hub: _inlineFavoritesHub!,
+      library: libs.first,
+      onBack: () => setState(() => _inlineFavoritesHub = null),
+    );
+  }
+
+  /// Slivers for the global Favorites view (Jellyfin only): title + one row per library.
+  List<Widget> _buildGlobalFavoritesSlivers() {
+    if (_areGlobalFavoritesLoading) {
+      return [const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))];
+    }
+    if (_globalFavoritesError != null) {
+      return [
+        SliverFillRemaining(
+          child: ErrorStateWidget(
+            message: _globalFavoritesError!,
+            icon: Symbols.error_outline_rounded,
+            onRetry: _loadGlobalFavorites,
+          ),
+        ),
+      ];
+    }
+    return [
+      for (final hub in _globalFavoritesHubs)
+        SliverToBoxAdapter(
+          child: HubSection(
+            hub: hub,
+            icon: hub.type.toLowerCase() == 'movie' ? Symbols.movie_rounded : Symbols.tv_rounded,
+            onRefresh: (_) => _loadGlobalFavorites(),
+            onHeaderTap: () => setState(() => _inlineFavoritesHub = hub),
+          ),
+        ),
+      const SliverToBoxAdapter(child: SizedBox(height: 24)),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch libraries provider for updates
@@ -1294,7 +1591,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                       child: IconButton(
                         icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
                         tooltip: t.common.refresh,
-                        onPressed: _refreshCurrentTab,
+                        onPressed: () {
+                          if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
+                            _loadGlobalFavorites();
+                          } else {
+                            _refreshCurrentTab();
+                          }
+                        },
                       ),
                     ),
                   ),
@@ -1331,23 +1634,37 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                     ),
                   ),
 
-                if (_selectedLibraryGlobalKey != null && selectedLibrary != null)
+                if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey)
+                  if (_inlineFavoritesHub != null)
+                    SliverFillRemaining(child: _buildInlineFavoritesView())
+                  else
+                    ..._buildGlobalFavoritesSlivers()
+                else if (_selectedLibraryGlobalKey != null && selectedLibrary != null)
                   SliverFillRemaining(
-                    child: _inlinePlaylistOrCollection != null
-                        ? LibraryInlineListView(
+                    child: _inlineGenreHub != null
+                        ? LibraryInlineGenreView(
+                            hub: _inlineGenreHub!,
                             library: selectedLibrary,
-                            item: _inlinePlaylistOrCollection,
                             onBack: () {
-                              setState(() => _inlinePlaylistOrCollection = null);
+                              setState(() => _inlineGenreHub = null);
                               focusTabBar();
                             },
                           )
-                        : TabBarView(
-                            key: ValueKey(_selectedLibraryGlobalKey),
-                            controller: tabController,
-                            physics: PlatformDetector.isDesktop(context) ? const NeverScrollableScrollPhysics() : null,
-                            children: _buildTabViewChildren(selectedLibrary),
-                          ),
+                        : _inlinePlaylistOrCollection != null
+                            ? LibraryInlineListView(
+                                library: selectedLibrary,
+                                item: _inlinePlaylistOrCollection,
+                                onBack: () {
+                                  setState(() => _inlinePlaylistOrCollection = null);
+                                  focusTabBar();
+                                },
+                              )
+                            : TabBarView(
+                                key: ValueKey(_selectedLibraryGlobalKey),
+                                controller: tabController,
+                                physics: PlatformDetector.isDesktop(context) ? const NeverScrollableScrollPhysics() : null,
+                                children: _buildTabViewChildren(selectedLibrary),
+                              ),
                   ),
               ],
             ],
@@ -1366,6 +1683,8 @@ class _LibraryManagementSheet extends StatefulWidget {
   final Function(PlexLibrary) onToggleVisibility;
   final List<ContextMenuItem> Function(PlexLibrary) getLibraryMenuItems;
   final void Function(String action, PlexLibrary library) onLibraryMenuAction;
+  /// When true for a library, the three-dots options button is hidden (Jellyfin: no Plex-style actions).
+  final bool Function(PlexLibrary) isJellyfinLibrary;
 
   const _LibraryManagementSheet({
     this.isDialog = false,
@@ -1375,6 +1694,7 @@ class _LibraryManagementSheet extends StatefulWidget {
     required this.onToggleVisibility,
     required this.getLibraryMenuItems,
     required this.onLibraryMenuAction,
+    required this.isJellyfinLibrary,
   });
 
   @override
@@ -1525,7 +1845,12 @@ class _LibraryManagementSheetState extends State<_LibraryManagementSheet> {
         setState(() => _focusedColumn--);
         return KeyEventResult.handled;
       }
-      if (key.isRightKey && _focusedColumn < 2) {
+      final lib = _focusedIndex < _tempLibraries.length ? _tempLibraries[_focusedIndex] : null;
+      final hasOptions = lib != null &&
+          widget.getLibraryMenuItems(lib).isNotEmpty &&
+          !widget.isJellyfinLibrary(lib);
+      final maxCol = hasOptions ? 2 : 1;
+      if (key.isRightKey && _focusedColumn < maxCol) {
         setState(() => _focusedColumn++);
         return KeyEventResult.handled;
       }
@@ -1874,14 +2199,15 @@ class _LibraryManagementSheetState extends State<_LibraryManagementSheet> {
                   onPressed: () => widget.onToggleVisibility(library),
                 ),
               ),
-              Container(
-                decoration: FocusTheme.focusBackgroundDecoration(isFocused: isOptionsButtonFocused, borderRadius: 20),
-                child: IconButton(
-                  icon: const AppIcon(Symbols.more_vert_rounded, fill: 1),
-                  tooltip: t.libraries.libraryOptions,
-                  onPressed: () => _showLibraryMenuBottomSheet(context, library),
+              if (widget.getLibraryMenuItems(library).isNotEmpty && !widget.isJellyfinLibrary(library))
+                Container(
+                  decoration: FocusTheme.focusBackgroundDecoration(isFocused: isOptionsButtonFocused, borderRadius: 20),
+                  child: IconButton(
+                    icon: const AppIcon(Symbols.more_vert_rounded, fill: 1),
+                    tooltip: t.libraries.libraryOptions,
+                    onPressed: () => _showLibraryMenuBottomSheet(context, library),
+                  ),
                 ),
-              ),
             ],
           ),
         ),

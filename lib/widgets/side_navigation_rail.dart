@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/library_constants.dart';
 import '../focus/dpad_navigator.dart';
 import '../focus/focus_memory_tracker.dart';
 import '../models/plex_library.dart';
@@ -143,6 +144,9 @@ class SideNavigationRail extends StatefulWidget {
   /// Called when the user taps the reconnect button in offline mode.
   final VoidCallback? onReconnect;
 
+  /// When non-null (Jellyfin only), a "Favorites" item is shown below the library list; selecting it calls [onLibrarySelected] with this key.
+  final String? jellyfinFavoritesKey;
+
   const SideNavigationRail({
     super.key,
     required this.selectedIndex,
@@ -155,6 +159,7 @@ class SideNavigationRail extends StatefulWidget {
     required this.onLibrarySelected,
     this.onNavigateToContent,
     this.onReconnect,
+    this.jellyfinFavoritesKey,
   });
 
   @override
@@ -179,6 +184,9 @@ class SideNavigationRailState extends State<SideNavigationRail> {
   static const _kDownloads = 'downloads';
   static const _kSettings = 'settings';
   static const _kReconnect = 'reconnect';
+
+  /// Focus key for the Jellyfin-only "Favorites" sidebar item
+  static const _kFavorites = 'favorites';
 
   // Unified focus state tracker for all nav items (main + libraries)
   late final FocusMemoryTracker _focusTracker;
@@ -248,9 +256,58 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     _focusTracker.restoreFocus(fallbackKey: _kHome);
   }
 
-  /// Build the set of valid focus keys (main nav + current libraries)
-  Set<String> _buildValidFocusKeys(List<PlexLibrary> libraries) {
-    return {
+  /// Default display order keys: Movies/Shows (alpha), then Favorites, then Collections/Playlists (alpha).
+  List<String> _defaultDisplayOrderKeys(List<PlexLibrary> visibleLibraries) {
+    final primary = visibleLibraries
+        .where((l) => l.type.toLowerCase() == 'movie' || l.type.toLowerCase() == 'show')
+        .toList()
+      ..sort((a, b) => a.title.compareTo(b.title));
+    final secondary = visibleLibraries
+        .where((l) =>
+            l.type.toLowerCase() != 'movie' && l.type.toLowerCase() != 'show')
+        .toList()
+      ..sort((a, b) => a.title.compareTo(b.title));
+    return [
+      ...primary.map((l) => l.globalKey),
+      kJellyfinFavoritesKey,
+      ...secondary.map((l) => l.globalKey),
+    ];
+  }
+
+  /// Build ordered libraries and Favorites position from saved or default order.
+  /// Returns (ordered libraries, index in combined list where Favorites is shown, or -1 if hidden/not Jellyfin).
+  (List<PlexLibrary> orderedLibraries, int favoritesInsertIndex) _buildOrderedDisplay(
+    List<PlexLibrary> visibleLibraries,
+    Set<String> hiddenKeys,
+    List<String>? displayOrderKeys,
+  ) {
+    final orderKeys = displayOrderKeys ?? _defaultDisplayOrderKeys(visibleLibraries);
+    final libByKey = {for (var l in visibleLibraries) l.globalKey: l};
+    final orderedLibraries = <PlexLibrary>[];
+    int favoritesInsertIndex = -1;
+    int position = 0;
+
+    for (final key in orderKeys) {
+      if (key == kJellyfinFavoritesKey) {
+        if (widget.jellyfinFavoritesKey != null && !hiddenKeys.contains(kJellyfinFavoritesKey)) {
+          favoritesInsertIndex = position;
+          position++;
+        }
+      } else {
+        final lib = libByKey[key];
+        if (lib != null) {
+          orderedLibraries.add(lib);
+          position++;
+        }
+      }
+    }
+
+    return (orderedLibraries, favoritesInsertIndex);
+  }
+
+  /// Build the set of valid focus keys (main nav + current libraries + Favorites when shown).
+  Set<String> _buildValidFocusKeys(List<PlexLibrary> orderedLibraries, int favoritesInsertIndex) {
+    final keys = <String>{
       _kHome,
       _kLibraries,
       _kSearch,
@@ -258,18 +315,33 @@ class SideNavigationRailState extends State<SideNavigationRail> {
       _kSettings,
       _kReconnect,
       'liveTv',
-      ...libraries.map((lib) => lib.globalKey),
+      ...orderedLibraries.map((lib) => lib.globalKey),
     };
+    if (favoritesInsertIndex >= 0) keys.add(_kFavorites);
+    return keys;
   }
 
-  /// Ordered list of focusable keys matching visual top-to-bottom order.
-  List<String> _buildFocusOrder(List<PlexLibrary> visibleLibraries, {required bool hasLiveTv}) {
+  /// Ordered list of focusable keys matching visual top-to-bottom order (saved or default).
+  List<String> _buildFocusOrder(
+    List<PlexLibrary> orderedLibraries,
+    int favoritesInsertIndex, {
+    required bool hasLiveTv,
+  }) {
+    final libraryKeys = <String>[];
+    var pos = 0;
+    for (final lib in orderedLibraries) {
+      if (pos == favoritesInsertIndex) libraryKeys.add(_kFavorites);
+      libraryKeys.add(lib.globalKey);
+      pos++;
+    }
+    if (pos == favoritesInsertIndex) libraryKeys.add(_kFavorites);
+
     return [
       if (widget.isOfflineMode && widget.onReconnect != null) _kReconnect,
       if (!widget.isOfflineMode) ...[
         _kHome,
         _kLibraries,
-        if (_librariesExpanded) ...visibleLibraries.map((lib) => lib.globalKey),
+        if (_librariesExpanded) ...libraryKeys,
         if (hasLiveTv) 'liveTv',
         _kSearch,
       ],
@@ -361,16 +433,19 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     final hiddenLibrariesProvider = context.watch<HiddenLibrariesProvider>();
     final hiddenKeys = hiddenLibrariesProvider.hiddenLibraryKeys;
 
-    // Get libraries from provider and filter visible ones
+    // Get libraries from provider and filter visible ones; build ordered display (saved or default, Favorites can be hidden)
     final allLibraries = librariesProvider.libraries;
     final visibleLibraries = allLibraries.where((lib) => !hiddenKeys.contains(lib.globalKey)).toList();
+    final displayOrderKeys = librariesProvider.displayOrderKeys;
+    final (orderedLibraries, favoritesInsertIndex) =
+        _buildOrderedDisplay(visibleLibraries, hiddenKeys, displayOrderKeys);
 
     // Prune stale focus nodes when libraries change
-    _focusTracker.pruneExcept(_buildValidFocusKeys(allLibraries));
+    _focusTracker.pruneExcept(_buildValidFocusKeys(orderedLibraries, favoritesInsertIndex));
 
     final isCollapsed = !_shouldExpand;
     final hasLiveTv = context.watch<MultiServerProvider>().hasLiveTv;
-    final focusOrder = _buildFocusOrder(visibleLibraries, hasLiveTv: hasLiveTv);
+    final focusOrder = _buildFocusOrder(orderedLibraries, favoritesInsertIndex, hasLiveTv: hasLiveTv);
 
     // Listen to fullscreen changes for macOS
     return ListenableBuilder(
@@ -434,8 +509,8 @@ class SideNavigationRailState extends State<SideNavigationRail> {
 
                               const SizedBox(height: 8),
 
-                              // Libraries section
-                              _buildLibrariesSection(visibleLibraries, t, isCollapsed: isCollapsed),
+                              // Libraries section (ordered list + Favorites at saved/default position)
+                              _buildLibrariesSection(orderedLibraries, favoritesInsertIndex, t, isCollapsed: isCollapsed),
 
                               const SizedBox(height: 8),
 
@@ -624,11 +699,17 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     );
   }
 
-  Widget _buildLibrariesSection(List<PlexLibrary> visibleLibraries, dynamic t, {bool isCollapsed = false}) {
+  Widget _buildLibrariesSection(
+    List<PlexLibrary> orderedLibraries,
+    int favoritesInsertIndex,
+    dynamic t, {
+    bool isCollapsed = false,
+  }) {
     final librariesProvider = context.watch<LibrariesProvider>();
     final isLoading = librariesProvider.isLoading;
     final isLibrariesSelected = widget.selectedIndex == 1 && widget.selectedLibraryKey == null;
     final isLibrariesFocused = _focusTracker.isFocused(_kLibraries);
+    final hasItems = orderedLibraries.isNotEmpty || favoritesInsertIndex >= 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -750,7 +831,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
                       ),
                     ),
                   )
-                else if (visibleLibraries.isEmpty)
+                else if (!hasItems)
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
@@ -758,8 +839,9 @@ class SideNavigationRailState extends State<SideNavigationRail> {
                       style: TextStyle(fontSize: 12, color: t.textMuted),
                     ),
                   )
-                else
-                  _buildLibraryItems(visibleLibraries, t),
+                else ...[
+                  _buildLibraryItemsSplit(orderedLibraries, favoritesInsertIndex, t),
+                ],
               ],
             ),
           ),
@@ -775,6 +857,62 @@ class SideNavigationRailState extends State<SideNavigationRail> {
       nameCounts[lib.title] = (nameCounts[lib.title] ?? 0) + 1;
     }
     return nameCounts.entries.where((e) => e.value > 1).map((e) => e.key).toSet();
+  }
+
+  /// Build library list in saved/default order with Favorites at [favoritesInsertIndex].
+  Widget _buildLibraryItemsSplit(
+    List<PlexLibrary> orderedLibraries,
+    int favoritesInsertIndex,
+    dynamic t,
+  ) {
+    final nonUniqueNames = _getNonUniqueLibraryNames(orderedLibraries);
+    final children = <Widget>[];
+    var pos = 0;
+    final favoritesWidget = Padding(
+      padding: const EdgeInsets.only(left: 12),
+      child: NavigationRailItem(
+        icon: Symbols.favorite_rounded,
+        selectedIcon: Symbols.favorite_rounded,
+        label: Text(
+          Translations.of(context).libraries.tabs.favorites,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: (widget.selectedIndex == 1 && widget.selectedLibraryKey == widget.jellyfinFavoritesKey)
+                ? FontWeight.w600
+                : FontWeight.w400,
+            color: (widget.selectedIndex == 1 && widget.selectedLibraryKey == widget.jellyfinFavoritesKey)
+                ? t.text
+                : t.textMuted,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        isSelected: widget.selectedIndex == 1 && widget.selectedLibraryKey == widget.jellyfinFavoritesKey,
+        isFocused: _focusTracker.isFocused(_kFavorites),
+        useSimpleLayout: true,
+        onTap: () => widget.onLibrarySelected(widget.jellyfinFavoritesKey!),
+        focusNode: _focusTracker.get(_kFavorites),
+        borderRadius: BorderRadius.circular(tokens(context).radiusSm),
+        iconSize: 18,
+        onNavigateRight: widget.onNavigateToContent,
+      ),
+    );
+    for (final lib in orderedLibraries) {
+      if (pos == favoritesInsertIndex) {
+        children.add(const SizedBox(height: 4));
+        children.add(favoritesWidget);
+      }
+      final showServerName = nonUniqueNames.contains(lib.title) && lib.serverName != null;
+      children.add(_buildLibraryItem(lib, t, showServerName: showServerName));
+      pos++;
+    }
+    if (pos == favoritesInsertIndex) {
+      children.add(const SizedBox(height: 4));
+      children.add(favoritesWidget);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
   }
 
   Widget _buildLibraryItems(List<PlexLibrary> visibleLibraries, dynamic t) {

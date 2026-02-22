@@ -438,6 +438,7 @@ class _TranslationsTooltipsKo implements TranslationsTooltipsEn {
 	// Translations
 	@override String get shufflePlay => '무작위 재생';
 	@override String get playTrailer => '예고편 재생';
+	@override String get playFromStart => '처음부터 재생';
 	@override String get markAsWatched => '시청 완료로 표시';
 	@override String get markAsUnwatched => '시청 안 함으로 표시';
 }
@@ -703,6 +704,7 @@ class _TranslationsLibrariesKo implements TranslationsLibrariesEn {
 	@override String get noRecommendations => '추천 없음';
 	@override String get noCollections => '이 미디어 라이브러리에는 컬렉션이 없습니다';
 	@override String get noFavorites => '이 라이브러리에 즐겨찾기가 없습니다';
+	@override String get noGenres => '이 라이브러리에 장르가 없습니다';
 	@override String get noFoldersFound => '폴더를 찾을 수 없습니다';
 	@override String get folders => '폴더';
 	@override late final _TranslationsLibrariesTabsKo tabs = _TranslationsLibrariesTabsKo._(_root);
@@ -1108,6 +1110,7 @@ class _TranslationsLibrariesTabsKo implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => '추천';
 	@override String get browse => '찾아보기';
+	@override String get genre => '장르';
 	@override String get favorites => '즐겨찾기';
 	@override String get collections => '컬렉션';
 	@override String get playlists => '재생 목록';
@@ -1505,6 +1508,7 @@ extension on TranslationsKo {
 			'accessibility.tapToPlay' => '터치 하여 재생',
 			'tooltips.shufflePlay' => '무작위 재생',
 			'tooltips.playTrailer' => '예고편 재생',
+			'tooltips.playFromStart' => '처음부터 재생',
 			'tooltips.markAsWatched' => '시청 완료로 표시',
 			'tooltips.markAsUnwatched' => '시청 안 함으로 표시',
 			'videoControls.audioLabel' => '오디오',

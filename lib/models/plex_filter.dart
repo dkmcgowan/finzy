@@ -4,6 +4,8 @@ class PlexFilter {
   final String key;
   final String title;
   final String type;
+  /// Optional group/category for UI (e.g. "Filters", "Features"). When null, no section header.
+  final String? group;
 
   PlexFilter({
     required this.filter,
@@ -11,6 +13,7 @@ class PlexFilter {
     required this.key,
     required this.title,
     required this.type,
+    this.group,
   });
 
   factory PlexFilter.fromJson(Map<String, dynamic> json) {
@@ -20,11 +23,19 @@ class PlexFilter {
       key: json['key'] ?? '',
       title: json['title'] ?? '',
       type: json['type'] ?? 'filter',
+      group: json['group'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'filter': filter, 'filterType': filterType, 'key': key, 'title': title, 'type': type};
+    return {
+      'filter': filter,
+      'filterType': filterType,
+      'key': key,
+      'title': title,
+      'type': type,
+      if (group != null) 'group': group,
+    };
   }
 }
 

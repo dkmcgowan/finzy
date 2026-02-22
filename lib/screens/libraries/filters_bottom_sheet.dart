@@ -36,8 +36,13 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
   final Map<String, String> _tempSelectedFilters = {};
   static final Map<String, String> _filterDisplayNames = {}; // Cache for display names
   static const int _maxCachedDisplayNames = 1000;
-  late List<PlexFilter> _sortedFilters;
+  /// Groups in order. When all filters have group != null (Jellyfin), main view shows only these category rows.
+  late List<({String group, List<PlexFilter> filters})> _groupedFilters;
+  /// When set, we're in "group detail" view (e.g. Filters toggles, Features toggles).
+  ({String group, List<PlexFilter> filters})? _currentGroup;
   late final FocusNode _initialFocusNode;
+  /// True when filters use groups (Jellyfin). Main view then shows only category names; no toggles.
+  late bool _useGroupedMainView;
 
   String _cacheKey(String filter, String value) => '${widget.serverId}:${widget.libraryKey}:$filter:$value';
 
@@ -56,12 +61,22 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
   }
 
   void _sortFilters() {
-    // Separate boolean filters (toggles) from regular filters
-    final booleanFilters = widget.filters.where((f) => f.filterType == 'boolean').toList();
-    final regularFilters = widget.filters.where((f) => f.filterType != 'boolean').toList();
-
-    // Combine with boolean filters first
-    _sortedFilters = [...booleanFilters, ...regularFilters];
+    final groups = <String?, List<PlexFilter>>{};
+    for (final f in widget.filters) {
+      groups.putIfAbsent(f.group, () => []).add(f);
+    }
+    final order = <String?>[];
+    final seen = <String?>{};
+    for (final f in widget.filters) {
+      if (seen.add(f.group)) order.add(f.group);
+    }
+    // Only use grouped main view when every filter has a non-null group (Jellyfin).
+    _useGroupedMainView = widget.filters.isNotEmpty && widget.filters.every((f) => f.group != null && f.group!.isNotEmpty);
+    _groupedFilters = [
+      for (final g in order)
+        if (g != null && g.isNotEmpty)
+          (group: g, filters: groups[g]!),
+    ];
   }
 
   bool _isBooleanFilter(PlexFilter filter) {
@@ -99,6 +114,23 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     });
   }
 
+  void _goBackFromGroup() {
+    setState(() {
+      _currentGroup = null;
+    });
+  }
+
+  void _openGroup(({String group, List<PlexFilter> filters}) entry) {
+    if (entry.filters.length == 1 && entry.filters.single.filterType != 'boolean') {
+      // Single picker filter: go straight to value list
+      _loadFilterValues(entry.filters.single);
+      return;
+    }
+    setState(() {
+      _currentGroup = entry;
+    });
+  }
+
   void _applyFilters() {
     widget.onFiltersChanged(_tempSelectedFilters);
     OverlaySheetController.of(context).close();
@@ -128,41 +160,26 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
             leading: AppBarBackButton(style: BackButtonStyle.plain, onPressed: _goBack),
           ),
 
-          // Filter options list
+          // Filter options list (no "All" row; clear filter via main view Clear all)
           if (_isLoadingValues)
             const Expanded(child: Center(child: CircularProgressIndicator()))
           else
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: _filterValues.length + 1,
+                itemCount: _filterValues.length,
                 itemBuilder: (context, index) {
-                  if (index == 0) {
-                    final isSelected = !_tempSelectedFilters.containsKey(_currentFilter!.filter);
-                    return FocusableListTile(
-                      focusNode: _initialFocusNode,
-                      title: Text(t.libraries.all),
-                      selected: isSelected,
-                      onTap: () {
-                        setState(() {
-                          _tempSelectedFilters.remove(_currentFilter!.filter);
-                        });
-                        _applyFilters();
-                      },
-                    );
-                  }
-
-                  final value = _filterValues[index - 1];
+                  final value = _filterValues[index];
                   final filterValue = _extractFilterValue(value.key, _currentFilter!.filter);
                   final isSelected = _tempSelectedFilters[_currentFilter!.filter] == filterValue;
 
                   return FocusableListTile(
+                    focusNode: index == 0 ? _initialFocusNode : null,
                     title: Text(value.title),
                     selected: isSelected,
                     onTap: () {
                       setState(() {
                         _tempSelectedFilters[_currentFilter!.filter] = filterValue;
-                        // Cache the display name for this filter value
                         if (_filterDisplayNames.length > _maxCachedDisplayNames) {
                           _filterDisplayNames.clear();
                         }
@@ -178,37 +195,21 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
       );
     }
 
-    // Show main filters view
-    return Column(
-      children: [
-        // Header
-        BottomSheetHeader(
-          title: t.libraries.filters,
-          leading: const AppIcon(Symbols.filter_alt_rounded, fill: 1),
-          action: _tempSelectedFilters.isNotEmpty
-              ? TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _tempSelectedFilters.clear();
-                    });
-                    _applyFilters();
-                  },
-                  icon: const AppIcon(Symbols.clear_all_rounded, fill: 1),
-                  label: Text(t.libraries.clearAll),
-                )
-              : null,
-        ),
-
-        // All Filters (boolean toggles first, then regular filters)
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: _sortedFilters.length,
-            itemBuilder: (context, index) {
-              final filter = _sortedFilters[index];
-
-              // Handle boolean filters as switches (unwatched, inProgress, unmatched, hdr, etc.)
-              if (_isBooleanFilter(filter)) {
+    // Group detail view (toggles for Filters / Features)
+    if (_currentGroup != null) {
+      final entry = _currentGroup!;
+      return Column(
+        children: [
+          BottomSheetHeader(
+            title: entry.group,
+            leading: AppBarBackButton(style: BackButtonStyle.plain, onPressed: _goBackFromGroup),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: entry.filters.length,
+              itemBuilder: (context, index) {
+                final filter = entry.filters[index];
                 final isActive =
                     _tempSelectedFilters.containsKey(filter.filter) && _tempSelectedFilters[filter.filter] == '1';
                 return FocusableSwitchListTile(
@@ -226,40 +227,111 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                   },
                   title: Text(filter.title),
                 );
-              }
-
-              // Regular navigable filters - show selected value instead of checkmark
-              final selectedValue = _tempSelectedFilters[filter.filter];
-              String? displayValue;
-              if (selectedValue != null) {
-                // Try to get the cached display name, fall back to the value itself
-                displayValue = _filterDisplayNames[_cacheKey(filter.filter, selectedValue)] ?? selectedValue;
-              }
-
-              return FocusableListTile(
-                focusNode: index == 0 ? _initialFocusNode : null,
-                title: Text(filter.title),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (displayValue != null)
-                      Flexible(
-                        child: Text(
-                          displayValue,
-                          style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    if (displayValue != null) const SizedBox(width: 8),
-                    const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-                  ],
-                ),
-                onTap: () => _loadFilterValues(filter),
-              );
-            },
+              },
+            ),
           ),
+        ],
+      );
+    }
+
+    // Main view: either category rows only (Jellyfin) or flat list (Plex)
+    return Column(
+      children: [
+        BottomSheetHeader(
+          title: t.libraries.filters,
+          leading: const AppIcon(Symbols.filter_alt_rounded, fill: 1),
+          action: _tempSelectedFilters.isNotEmpty
+              ? TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _tempSelectedFilters.clear();
+                    });
+                    _applyFilters();
+                  },
+                  icon: const AppIcon(Symbols.clear_all_rounded, fill: 1),
+                  label: Text(t.libraries.clearAll),
+                )
+              : null,
+        ),
+        Expanded(
+          child: _useGroupedMainView ? _buildCategoryList() : _buildFlatFilterList(),
         ),
       ],
+    );
+  }
+
+  /// Main view for Jellyfin: only category rows (Filters, Features, Genres, ...), each with arrow.
+  Widget _buildCategoryList() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _groupedFilters.length,
+      itemBuilder: (context, index) {
+        final entry = _groupedFilters[index];
+        return FocusableListTile(
+          focusNode: index == 0 ? _initialFocusNode : null,
+          title: Text(entry.group),
+          trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+          onTap: () => _openGroup(entry),
+        );
+      },
+    );
+  }
+
+  /// Main view for Plex: flat list of toggles then pickers (no categories).
+  Widget _buildFlatFilterList() {
+    final booleanFilters = widget.filters.where((f) => f.filterType == 'boolean').toList();
+    final regularFilters = widget.filters.where((f) => f.filterType != 'boolean').toList();
+    final flat = [...booleanFilters, ...regularFilters];
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: flat.length,
+      itemBuilder: (context, index) {
+        final filter = flat[index];
+        if (_isBooleanFilter(filter)) {
+          final isActive =
+              _tempSelectedFilters.containsKey(filter.filter) && _tempSelectedFilters[filter.filter] == '1';
+          return FocusableSwitchListTile(
+            focusNode: index == 0 ? _initialFocusNode : null,
+            value: isActive,
+            onChanged: (value) {
+              setState(() {
+                if (value) {
+                  _tempSelectedFilters[filter.filter] = '1';
+                } else {
+                  _tempSelectedFilters.remove(filter.filter);
+                }
+              });
+              _applyFilters();
+            },
+            title: Text(filter.title),
+          );
+        }
+        final selectedValue = _tempSelectedFilters[filter.filter];
+        final displayValue = selectedValue != null
+            ? (_filterDisplayNames[_cacheKey(filter.filter, selectedValue)] ?? selectedValue)
+            : null;
+        return FocusableListTile(
+          focusNode: index == 0 ? _initialFocusNode : null,
+          title: Text(filter.title),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (displayValue != null)
+                Flexible(
+                  child: Text(
+                    displayValue,
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              if (displayValue != null) const SizedBox(width: 8),
+              const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+            ],
+          ),
+          onTap: () => _loadFilterValues(filter),
+        );
+      },
     );
   }
 }

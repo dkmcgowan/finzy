@@ -102,7 +102,7 @@ abstract class MediaServerClient {
   Future<Map<String, dynamic>> getServerPreferences();
   Future<List<dynamic>> getSessions();
 
-  Future<List<PlexFilter>> getLibraryFilters(String sectionId);
+  Future<List<PlexFilter>> getLibraryFilters(String sectionId, {String? libraryType});
   Future<List<PlexFirstCharacter>> getFirstCharacters(
     String sectionId, {
     int? type,
@@ -142,7 +142,8 @@ abstract class MediaServerClient {
   Future<List<PlexMetadata>> getGlobalCollections() async => [];
 
   /// Returns favorite items in the library (Jellyfin only; Plex returns empty).
-  Future<List<PlexMetadata>> getLibraryFavorites(String sectionId);
+  /// [start] and [limit] support pagination (Jellyfin); when [limit] is 0 all items are returned.
+  Future<List<PlexMetadata>> getLibraryFavorites(String sectionId, {int start = 0, int limit = 0});
   Future<List<PlexMetadata>> getCollectionItems(String collectionId);
   Future<bool> deleteCollection(String sectionId, String collectionId);
   Future<String?> createCollection({

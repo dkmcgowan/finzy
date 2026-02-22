@@ -438,6 +438,7 @@ class _TranslationsTooltipsEs implements TranslationsTooltipsEn {
 	// Translations
 	@override String get shufflePlay => 'Reproducción aleatoria';
 	@override String get playTrailer => 'Reproducir tráiler';
+	@override String get playFromStart => 'Reproducir desde el inicio';
 	@override String get markAsWatched => 'Marcar como visto';
 	@override String get markAsUnwatched => 'Marcar como no visto';
 }
@@ -703,6 +704,7 @@ class _TranslationsLibrariesEs implements TranslationsLibrariesEn {
 	@override String get noRecommendations => 'No hay recomendaciones disponibles';
 	@override String get noCollections => 'No hay colecciones en esta biblioteca';
 	@override String get noFavorites => 'No hay favoritos en esta biblioteca';
+	@override String get noGenres => 'No hay géneros en esta biblioteca';
 	@override String get noFoldersFound => 'No se encontraron carpetas';
 	@override String get folders => 'carpetas';
 	@override late final _TranslationsLibrariesTabsEs tabs = _TranslationsLibrariesTabsEs._(_root);
@@ -1108,6 +1110,7 @@ class _TranslationsLibrariesTabsEs implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => 'Recomendado';
 	@override String get browse => 'Explorar';
+	@override String get genre => 'Género';
 	@override String get favorites => 'Favoritos';
 	@override String get collections => 'Colecciones';
 	@override String get playlists => 'Listas';
@@ -1505,6 +1508,7 @@ extension on TranslationsEs {
 			'accessibility.tapToPlay' => 'Toca para reproducir',
 			'tooltips.shufflePlay' => 'Reproducción aleatoria',
 			'tooltips.playTrailer' => 'Reproducir tráiler',
+			'tooltips.playFromStart' => 'Reproducir desde el inicio',
 			'tooltips.markAsWatched' => 'Marcar como visto',
 			'tooltips.markAsUnwatched' => 'Marcar como no visto',
 			'videoControls.audioLabel' => 'Audio',

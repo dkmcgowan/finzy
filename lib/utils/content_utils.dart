@@ -65,6 +65,8 @@ class ContentTypeHelper {
       case 'playlist':
       case 'playlists':
         return Symbols.playlist_play_rounded;
+      case 'favorites':
+        return Symbols.favorite_rounded;
       default:
         return Symbols.folder_rounded;
     }

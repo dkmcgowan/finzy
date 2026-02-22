@@ -438,6 +438,7 @@ class _TranslationsTooltipsZh implements TranslationsTooltipsEn {
 	// Translations
 	@override String get shufflePlay => '随机播放';
 	@override String get playTrailer => '播放预告片';
+	@override String get playFromStart => '从头播放';
 	@override String get markAsWatched => '标记为已观看';
 	@override String get markAsUnwatched => '标记为未观看';
 }
@@ -703,6 +704,7 @@ class _TranslationsLibrariesZh implements TranslationsLibrariesEn {
 	@override String get noRecommendations => '暂无推荐';
 	@override String get noCollections => '此媒体库中没有合集';
 	@override String get noFavorites => '此媒体库中无收藏';
+	@override String get noGenres => '此媒体库中无类型';
 	@override String get noFoldersFound => '未找到文件夹';
 	@override String get folders => '文件夹';
 	@override late final _TranslationsLibrariesTabsZh tabs = _TranslationsLibrariesTabsZh._(_root);
@@ -1108,6 +1110,7 @@ class _TranslationsLibrariesTabsZh implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => '推荐';
 	@override String get browse => '浏览';
+	@override String get genre => '类型';
 	@override String get favorites => '收藏';
 	@override String get collections => '合集';
 	@override String get playlists => '播放列表';
@@ -1505,6 +1508,7 @@ extension on TranslationsZh {
 			'accessibility.tapToPlay' => '点击播放',
 			'tooltips.shufflePlay' => '随机播放',
 			'tooltips.playTrailer' => '播放预告片',
+			'tooltips.playFromStart' => '从头播放',
 			'tooltips.markAsWatched' => '标记为已观看',
 			'tooltips.markAsUnwatched' => '标记为未观看',
 			'videoControls.audioLabel' => '音频',

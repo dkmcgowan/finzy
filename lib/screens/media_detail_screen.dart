@@ -392,6 +392,28 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
             ),
           ),
           const SizedBox(width: 12),
+          // Restart / Play from start (Jellyfin only, when play would resume — hide if play already starts from 0)
+          if (!widget.isOffline &&
+              _getClientForMetadata(context)?.isJellyfin == true &&
+              (metadata.isMovie || metadata.isEpisode) &&
+              metadata.hasActiveProgress) ...[
+            IconButton.filledTonal(
+              onPressed: () async {
+                final fromStart = metadata.copyWith(viewOffset: 0);
+                await navigateToVideoPlayerWithRefresh(
+                  context,
+                  metadata: fromStart,
+                  isOffline: widget.isOffline,
+                  onRefresh: _loadFullMetadata,
+                );
+              },
+              icon: const AppIcon(Symbols.replay_rounded, fill: 1),
+              tooltip: t.tooltips.playFromStart,
+              iconSize: 20,
+              style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+            ),
+            const SizedBox(width: 12),
+          ],
           // Trailer button (only if trailer is available)
           if (primaryTrailer != null) ...[
             IconButton.filledTonal(
@@ -800,12 +822,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   /// Build a rating chip that shows a source icon when available,
   /// falling back to a generic Material icon.
   /// Format is determined by ratingImage (e.g. TMDB = 6.5, RT = 65%); unknown = percent.
-  Widget _buildRatingChip(String? imageUri, double value, IconData fallbackIcon) {
+  /// For Jellyfin [useReadableLabel] avoids dark SVG logos (TMDB/IMDB) and uses the fallback icon + value only.
+  Widget _buildRatingChip(String? imageUri, double value, IconData fallbackIcon, {bool useReadableLabel = false}) {
     final info = parseRatingImage(imageUri, value);
-    if (info != null) {
+    if (info != null && !useReadableLabel) {
       return _buildMetadataChip(info.formattedValue, leading: SvgPicture.asset(info.assetPath, width: 16, height: 16));
     }
-    return _buildMetadataChip('${(value * 10).toStringAsFixed(0)}%', icon: fallbackIcon);
+    final formatted = info?.formattedValue ?? value.toStringAsFixed(1);
+    return _buildMetadataChip(formatted, icon: fallbackIcon);
   }
 
   /// Build all rating chips for the metadata.
@@ -813,6 +837,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   /// they are combined into a single badge.
   List<Widget> _buildRatingChips(PlexMetadata metadata) {
     final chips = <Widget>[];
+    final isJellyfin = _getClientForMetadata(context)?.isJellyfin == true;
     final bothRT =
         metadata.rating != null &&
         metadata.audienceRating != null &&
@@ -825,15 +850,25 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       chips.add(_buildCombinedRtChip(critic, audience));
     } else {
       if (metadata.rating != null) {
-        chips.add(_buildRatingChip(metadata.ratingImage, metadata.rating!, Symbols.star_rounded));
+        chips.add(_buildRatingChip(
+          metadata.ratingImage,
+          metadata.rating!,
+          Symbols.star_rounded,
+          useReadableLabel: isJellyfin && !isRottenTomatoes(metadata.ratingImage),
+        ));
       }
       if (metadata.audienceRating != null) {
-        chips.add(_buildRatingChip(metadata.audienceRatingImage, metadata.audienceRating!, Symbols.people_rounded));
+        chips.add(_buildRatingChip(
+          metadata.audienceRatingImage,
+          metadata.audienceRating!,
+          isJellyfin ? Symbols.star_rounded : Symbols.people_rounded,
+          useReadableLabel: isJellyfin,
+        ));
       }
     }
 
     // User rating chip (tappable) — Plex only; hidden for Jellyfin
-    if (!widget.isOffline && _getClientForMetadata(context)?.isJellyfin != true) {
+    if (!widget.isOffline && !isJellyfin) {
       chips.add(_buildUserRatingChip(metadata));
     }
 

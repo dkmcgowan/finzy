@@ -262,7 +262,7 @@ class _MediaCardGrid extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
-                      item is PlexPlaylist ? (item as PlexPlaylist).title : (item as PlexMetadata).displayTitle,
+                      _MediaCardHelpers.buildTitleForCard(item),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, height: 1.1),
@@ -443,10 +443,9 @@ class _MediaCardList extends StatelessWidget {
           }
         }
 
-        // Add year
-        if (metadata.year != null) {
-          parts.add('${metadata.year}');
-        }
+        // Add year (shows: "2025 - 2026" or "2025 - Present" when endYear/seriesStatus from Jellyfin)
+        final yearStr = metadata.yearForDisplay;
+        if (yearStr != null) parts.add(yearStr);
 
         // Add duration
         if (metadata.duration != null) {
@@ -468,6 +467,20 @@ class _MediaCardList extends StatelessWidget {
     return parts.join(' • ');
   }
 
+  /// For episodes with season/episode numbers: "S1:E1 - 7:00 A.M." (series and episode count + title).
+  /// Otherwise returns displayTitle (e.g. show name for episodes, title for movies).
+  String _buildTitleText() {
+    if (item is PlexPlaylist) return (item as PlexPlaylist).title;
+    if (item is! PlexMetadata) return '$item';
+    final metadata = item as PlexMetadata;
+    if (metadata.mediaType == PlexMediaType.episode &&
+        metadata.parentIndex != null &&
+        metadata.index != null) {
+      return 'S${metadata.parentIndex}:E${metadata.index} - ${metadata.title}';
+    }
+    return metadata.displayTitle;
+  }
+
   String? _buildSubtitleText() {
     if (item is PlexPlaylist) {
       // Playlists don't have subtitles
@@ -475,7 +488,14 @@ class _MediaCardList extends StatelessWidget {
     } else if (item is PlexMetadata) {
       final metadata = item as PlexMetadata;
 
-      // For TV episodes, show S#E# format
+      // For TV episodes with S#:E# in title, show show name as subtitle
+      if (metadata.mediaType == PlexMediaType.episode &&
+          metadata.parentIndex != null &&
+          metadata.index != null &&
+          metadata.grandparentTitle != null) {
+        return metadata.grandparentTitle;
+      }
+      // For TV episodes without numbers, show S#E# format
       if (metadata.parentIndex != null && metadata.index != null) {
         return 'S${metadata.parentIndex} E${metadata.index}';
       }
@@ -530,9 +550,9 @@ class _MediaCardList extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    // Title
+                    // Title (episodes: "S1:E1 - 7:00 A.M.", else displayTitle)
                     Text(
-                      item.displayTitle,
+                      _buildTitleText(),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: _titleFontSize, height: 1.2),
@@ -661,6 +681,19 @@ class _PosterOverlay extends StatelessWidget {
 
 /// Helper methods for building media card metadata and subtitles
 class _MediaCardHelpers {
+  /// Title for card: episodes with season/episode get "S1:E1 - Episode Title", else displayTitle.
+  static String buildTitleForCard(dynamic item) {
+    if (item is PlexPlaylist) return item.title;
+    if (item is! PlexMetadata) return '$item';
+    final metadata = item as PlexMetadata;
+    if (metadata.mediaType == PlexMediaType.episode &&
+        metadata.parentIndex != null &&
+        metadata.index != null) {
+      return 'S${metadata.parentIndex}:E${metadata.index} - ${metadata.title}';
+    }
+    return metadata.displayTitle;
+  }
+
   /// Builds playlist metadata (item count)
   static Widget buildPlaylistMeta(BuildContext context, PlexPlaylist playlist) {
     if (playlist.leafCount != null && playlist.leafCount! > 0) {
@@ -693,6 +726,21 @@ class _MediaCardHelpers {
       }
     }
 
+    // For episodes with S#:E# in title, show show name as subtitle
+    if (metadata.mediaType == PlexMediaType.episode &&
+        metadata.parentIndex != null &&
+        metadata.index != null &&
+        metadata.grandparentTitle != null) {
+      return Text(
+        metadata.grandparentTitle!,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: tokens(context).textMuted, fontSize: 11, height: 1.1),
+      );
+    }
+
     // For other media types, show subtitle/parent/year
     if (metadata.displaySubtitle != null) {
       return Text(
@@ -712,9 +760,9 @@ class _MediaCardHelpers {
           context,
         ).textTheme.bodySmall?.copyWith(color: tokens(context).textMuted, fontSize: 11, height: 1.1),
       );
-    } else if (metadata.year != null) {
+    } else if (metadata.yearForDisplay != null) {
       return Text(
-        '${metadata.year}',
+        metadata.yearForDisplay!,
         style: Theme.of(
           context,
         ).textTheme.bodySmall?.copyWith(color: tokens(context).textMuted, fontSize: 11, height: 1.1),

@@ -29,7 +29,10 @@ import 'media_server_client.dart';
 class JellyfinClient implements MediaServerClient {
   /// Minimal Fields for list/grid views (thumbnails, title, watch state, duration).
   /// ItemCounts ensures Series/Season get UnplayedItemCount and episode counts for unwatched badge.
-  static const String _listFields = 'Genres,UserData,RunTimeTicks,ItemCounts';
+  /// EndDate,Status for series year range (e.g. 2025 - 2026 or 2025 - Present).
+  static const String _listFields = 'Genres,UserData,RunTimeTicks,ItemCounts,EndDate,Status';
+  /// Like _listFields plus ImageTags; use for BoxSet/collection lists so we only request thumb when server has an image (avoids 404s).
+  static const String _collectionListFields = 'Genres,UserData,RunTimeTicks,ItemCounts,EndDate,Status,ImageTags';
 
   final JellyfinConfig config;
   late final Dio _dio;
@@ -100,6 +103,15 @@ class JellyfinClient implements MediaServerClient {
     return null;
   }
 
+  /// Parse year from Jellyfin EndDate (e.g. "2026-05-15" or "2026") for series end year.
+  static int? _yearFromDate(dynamic v) {
+    if (v == null) return null;
+    final s = v is String ? v.trim() : v.toString().trim();
+    if (s.isEmpty) return null;
+    if (s.length >= 4) return int.tryParse(s.substring(0, 4));
+    return int.tryParse(s);
+  }
+
   /// Safely parse dynamic (num or String) to double.
   static double? _toDouble(dynamic v) {
     if (v == null) return null;
@@ -117,6 +129,12 @@ class JellyfinClient implements MediaServerClient {
     final userData = item['UserData'] as Map<String, dynamic>? ?? {};
     // Always use item id for thumb/art: Jellyfin serves at /Items/{Id}/Images/Primary (and Backdrop).
     // List responses often omit ImageTags; using id ensures thumbnails load everywhere.
+    // For collections (BoxSet): only set thumb when the API reports a Primary image, so we don't request and get 404.
+    final bool hasPrimaryImage = (item['ImageTags'] as Map<String, dynamic>?)?['Primary'] != null;
+    final bool isCollection = type == 'collection';
+    final thumbForItem = id.isEmpty
+        ? null
+        : (isCollection ? (hasPrimaryImage ? id : null) : id);
     final hasBackdrop = item['BackdropImageTags'] != null;
 
     final leafCount = _leafCountForItem(item, type);
@@ -136,12 +154,14 @@ class JellyfinClient implements MediaServerClient {
       summary: item['Overview'] as String?,
       rating: _jellyfinRating(item),
       audienceRating: _jellyfinAudienceRating(item),
-      ratingImage: _jellyfinRating(item) != null ? 'themoviedb://' : null,
-      audienceRatingImage: _jellyfinAudienceRating(item) != null ? 'themoviedb://' : null,
+      ratingImage: _jellyfinRatingImage(item),
+      audienceRatingImage: _jellyfinAudienceRatingImage(item),
       userRating: _toDouble(userData['UserRating']),
       year: _toInt(item['ProductionYear']),
+      endYear: _yearFromDate(item['EndDate']),
+      seriesStatus: item['Status'] as String?,
       originallyAvailableAt: item['PremiereDate'] as String?,
-      thumb: id.isNotEmpty ? id : null,
+      thumb: thumbForItem,
       art: hasBackdrop ? id : null,
       duration: _ticksToMs(_toInt(item['RunTimeTicks'])),
       addedAt: item['DateCreated'] != null ? _parseDateToEpochSeconds(item['DateCreated']) : null,
@@ -168,21 +188,44 @@ class JellyfinClient implements MediaServerClient {
     );
   }
 
-  /// Jellyfin rating for star chip: CriticRating, else CommunityRating (e.g. 6.5 from TMDB), else parsed CustomRating.
-  static double? _jellyfinRating(Map<String, dynamic> item) {
-    final critic = _toDouble(item['CriticRating']);
-    if (critic != null) return critic;
-    final community = _toDouble(item['CommunityRating']);
-    if (community != null) return community;
-    return _parseCustomRating(item['CustomRating']);
+  /// Normalize to 0–10 scale. Jellyfin/plugins may send CommunityRating or CriticRating as 0–100 (e.g. 94 for IMDB).
+  static double _normalizeRating(double value) {
+    if (value > 10) return value / 10;
+    return value;
   }
 
-  /// Jellyfin audience rating (people chip): only when we also have CriticRating, so both chips show.
+  /// Jellyfin rating (first chip): CriticRating (Rotten Tomatoes, show as %) else CommunityRating (TMDB, show as X.X).
+  /// Values > 10 normalized to 0–10 (e.g. 83 → 8.3 for RT 83%, 94 → 9.4 for TMDB).
+  static double? _jellyfinRating(Map<String, dynamic> item) {
+    final critic = _toDouble(item['CriticRating']);
+    if (critic != null) return _normalizeRating(critic);
+    final community = _toDouble(item['CommunityRating']);
+    if (community != null) return _normalizeRating(community);
+    final custom = _parseCustomRating(item['CustomRating']);
+    return custom != null ? _normalizeRating(custom) : null;
+  }
+
+  /// Jellyfin audience rating (second chip): CommunityRating from TMDB when we also have CriticRating.
+  /// Normalized to 0–10 (e.g. 6.1 stays 6.1, 94 → 9.4).
   static double? _jellyfinAudienceRating(Map<String, dynamic> item) {
     final critic = _toDouble(item['CriticRating']);
     final community = _toDouble(item['CommunityRating']);
-    if (critic != null && community != null) return community;
+    if (critic != null && community != null) return _normalizeRating(community);
     return null;
+  }
+
+  /// First chip source: Rotten Tomatoes when CriticRating present, else TMDB for CommunityRating.
+  static String? _jellyfinRatingImage(Map<String, dynamic> item) {
+    if (_toDouble(item['CriticRating']) != null) return 'rottentomatoes://image.rating.ripe';
+    if (_toDouble(item['CommunityRating']) != null) return 'themoviedb://';
+    return _parseCustomRating(item['CustomRating']) != null ? 'themoviedb://' : null;
+  }
+
+  /// Second chip source: TMDB (community) when both critic and community present.
+  static String? _jellyfinAudienceRatingImage(Map<String, dynamic> item) {
+    final critic = _toDouble(item['CriticRating']);
+    final community = _toDouble(item['CommunityRating']);
+    return (critic != null && community != null) ? 'themoviedb://' : null;
   }
 
   static double? _parseCustomRating(dynamic custom) {
@@ -388,17 +431,22 @@ class JellyfinClient implements MediaServerClient {
     if (size != null) query['Limit'] = size;
 
     // Parse app-level sort/type/filters into Jellyfin API params (do not pass raw Plex keys)
-    final rest = <String, String>{};
+    final itemFilters = <String>[];
     String? sortBy;
     String? sortOrder;
     String? includeItemTypes;
     final genres = <String>[];
     final years = <int>[];
+    final officialRatings = <String>[];
+    final tagsList = <String>[];
+    final videoTypesList = <String>[];
+    String? seriesStatusValue;
 
     for (final e in (filters ?? {}).entries) {
-      switch (e.key) {
+      final k = e.key;
+      final v = e.value;
+      switch (k) {
         case 'sort':
-          final v = e.value;
           if (v.contains(':')) {
             final parts = v.split(':');
             sortBy = parts[0];
@@ -411,27 +459,60 @@ class JellyfinClient implements MediaServerClient {
           }
           break;
         case 'type':
-          includeItemTypes = _plexTypeIdToJellyfin(e.value);
+          includeItemTypes = _plexTypeIdToJellyfin(v);
           break;
         case 'genre':
         case 'Genre':
-          if (e.value.isNotEmpty) genres.add(e.value);
+          if (v.isNotEmpty) genres.add(v);
           break;
         case 'year':
         case 'Year':
-          final y = int.tryParse(e.value);
+          final y = int.tryParse(v);
           if (y != null) years.add(y);
           break;
+        case 'IsPlayed':
+        case 'IsUnplayed':
+        case 'IsResumable':
+        case 'IsFavorite':
+          if (v == '1') itemFilters.add(k);
+          break;
+        case 'HasSubtitles':
+        case 'HasTrailer':
+        case 'HasSpecialFeature':
+        case 'HasThemeSong':
+        case 'HasThemeVideo':
+          if (v == '1') query[k] = true;
+          break;
+        case 'SeriesStatus':
+          if (v.isNotEmpty) seriesStatusValue = v;
+          break;
+        case 'OfficialRating':
+          if (v.isNotEmpty) officialRatings.add(v);
+          break;
+        case 'tags':
+          if (v.isNotEmpty) tagsList.add(v);
+          break;
+        case 'VideoTypes':
+          if (v.isNotEmpty) videoTypesList.add(v);
+          break;
         default:
-          rest[e.key] = e.value;
+          // Ignore unknown keys (e.g. from Plex-shaped UI)
+          break;
       }
     }
 
+    if (itemFilters.isNotEmpty) query['Filters'] = itemFilters.join(',');
     if (sortBy != null) query['SortBy'] = sortBy;
     if (sortOrder != null) query['SortOrder'] = sortOrder;
     if (includeItemTypes != null) query['IncludeItemTypes'] = includeItemTypes;
     if (genres.isNotEmpty) query['Genres'] = genres.join(',');
     if (years.isNotEmpty) query['Years'] = years.join(',');
+    if (officialRatings.isNotEmpty) query['OfficialRatings'] = officialRatings.join(',');
+    if (tagsList.isNotEmpty) query['Tags'] = tagsList.join(',');
+    if (videoTypesList.isNotEmpty) query['VideoTypes'] = videoTypesList.join(',');
+    if (seriesStatusValue != null && seriesStatusValue.isNotEmpty) {
+      query['SeriesStatus'] = seriesStatusValue;
+    }
 
     appLogger.d('Jellyfin getLibraryContent: ParentId=$sectionId Fields=${query['Fields']} IncludeItemTypes=$includeItemTypes StartIndex=${query['StartIndex']} Limit=${query['Limit']}');
 
@@ -998,25 +1079,100 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexFilter>> getLibraryFilters(String sectionId) async {
+  Future<List<PlexFilter>> getLibraryFilters(String sectionId, {String? libraryType}) async {
     if (_offlineMode) return [];
-    // Key encodes sectionId so getFilterValues can scope to this library
-    return [
+    final t = (libraryType ?? '').toLowerCase();
+    final sectionPrefix = '$sectionId'; // used in key for getFilterValues
+
+    const filtersGroup = 'Filters';
+    const featuresGroup = 'Features';
+    const statusGroup = 'Status';
+    const genresGroup = 'Genres';
+    const parentalGroup = 'Parental Ratings';
+    const tagsGroup = 'Tags';
+    const videoTypesGroup = 'Video Types';
+    const yearsGroup = 'Years';
+
+    final filters = <PlexFilter>[];
+
+    // Top-level group: Filters → Played, Unplayed, Resumable, Favorites
+    filters.addAll([
+      PlexFilter(filter: 'IsPlayed', filterType: 'boolean', key: 'IsPlayed', title: 'Played', type: 'filter', group: filtersGroup),
+      PlexFilter(filter: 'IsUnplayed', filterType: 'boolean', key: 'IsUnplayed', title: 'Unplayed', type: 'filter', group: filtersGroup),
+      PlexFilter(filter: 'IsResumable', filterType: 'boolean', key: 'IsResumable', title: 'Resumable', type: 'filter', group: filtersGroup),
+      PlexFilter(filter: 'IsFavorite', filterType: 'boolean', key: 'IsFavorite', title: 'Favorites', type: 'filter', group: filtersGroup),
+    ]);
+
+    // Top-level group: Status (Shows only, before Features)
+    if (t == 'show') {
+      filters.add(PlexFilter(
+        filter: 'SeriesStatus',
+        filterType: 'string',
+        key: 'seriesStatus:$sectionPrefix',
+        title: 'Status',
+        type: 'filter',
+        group: statusGroup,
+      ));
+    }
+
+    // Top-level group: Features → Subtitles, Trailer, Special Features, Theme Song, Theme Video
+    filters.addAll([
+      PlexFilter(filter: 'HasSubtitles', filterType: 'boolean', key: 'HasSubtitles', title: 'Subtitles', type: 'filter', group: featuresGroup),
+      PlexFilter(filter: 'HasTrailer', filterType: 'boolean', key: 'HasTrailer', title: 'Trailer', type: 'filter', group: featuresGroup),
+      PlexFilter(filter: 'HasSpecialFeature', filterType: 'boolean', key: 'HasSpecialFeature', title: 'Special Features', type: 'filter', group: featuresGroup),
+      PlexFilter(filter: 'HasThemeSong', filterType: 'boolean', key: 'HasThemeSong', title: 'Theme Song', type: 'filter', group: featuresGroup),
+      PlexFilter(filter: 'HasThemeVideo', filterType: 'boolean', key: 'HasThemeVideo', title: 'Theme Video', type: 'filter', group: featuresGroup),
+    ]);
+
+    // Top-level groups: Genres, Parental Ratings, Tags, Video Types (Movies only), Years
+    filters.addAll([
       PlexFilter(
         filter: 'genre',
         filterType: 'string',
-        key: 'genre:$sectionId',
-        title: 'Genre',
+        key: 'genre:$sectionPrefix',
+        title: 'Genres',
         type: 'filter',
+        group: genresGroup,
       ),
       PlexFilter(
-        filter: 'year',
+        filter: 'OfficialRating',
         filterType: 'string',
-        key: 'year:$sectionId',
-        title: 'Year',
+        key: 'officialRating:$sectionPrefix',
+        title: 'Parental Ratings',
         type: 'filter',
+        group: parentalGroup,
       ),
-    ];
+      PlexFilter(
+        filter: 'tags',
+        filterType: 'string',
+        key: 'tags:$sectionPrefix',
+        title: 'Tags',
+        type: 'filter',
+        group: tagsGroup,
+      ),
+    ]);
+
+    if (t == 'movie') {
+      filters.add(PlexFilter(
+        filter: 'VideoTypes',
+        filterType: 'string',
+        key: 'videoType:',
+        title: 'Video Types',
+        type: 'filter',
+        group: videoTypesGroup,
+      ));
+    }
+
+    filters.add(PlexFilter(
+      filter: 'year',
+      filterType: 'string',
+      key: 'year:$sectionPrefix',
+      title: 'Years',
+      type: 'filter',
+      group: yearsGroup,
+    ));
+
+    return filters;
   }
 
   @override
@@ -1032,12 +1188,13 @@ class JellyfinClient implements MediaServerClient {
   Future<List<PlexFilterValue>> getFilterValues(String filterKey) async {
     if (_offlineMode) return [];
     if (!filterKey.contains(':')) return [];
-    final parts = filterKey.split(':');
-    final kind = parts[0];
-    final sectionId = parts.sublist(1).join(':');
-    if (sectionId.isEmpty) return [];
+    final colonIndex = filterKey.indexOf(':');
+    final kind = filterKey.substring(0, colonIndex);
+    final sectionId = filterKey.length > colonIndex + 1 ? filterKey.substring(colonIndex + 1) : '';
+    // sectionId can be empty for videoType (key is "videoType:")
 
     if (kind == 'genre') {
+      if (sectionId.isEmpty) return [];
       try {
         final response = await _dio.get<Map<String, dynamic>>(
           '/Genres',
@@ -1062,6 +1219,7 @@ class JellyfinClient implements MediaServerClient {
     }
 
     if (kind == 'year') {
+      if (sectionId.isEmpty) return [];
       try {
         final response = await _dio.get<Map<String, dynamic>>(
           '/Years',
@@ -1084,45 +1242,132 @@ class JellyfinClient implements MediaServerClient {
       }
     }
 
+    if (kind == 'officialRating') {
+      if (sectionId.isEmpty) return [];
+      try {
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Users/${config.userId}/Items',
+          queryParameters: {
+            'ParentId': sectionId,
+            'Recursive': true,
+            'Fields': 'OfficialRating',
+            'IncludeItemTypes': 'Movie,Series',
+            'Limit': 500,
+          },
+        );
+        final list = response.data?['Items'] as List? ?? [];
+        final seen = <String>{};
+        final values = <PlexFilterValue>[];
+        for (final e in list) {
+          final rating = (e as Map<String, dynamic>)['OfficialRating']?.toString()?.trim();
+          if (rating != null && rating.isNotEmpty && seen.add(rating)) {
+            values.add(PlexFilterValue(key: rating, title: rating, type: 'rating'));
+          }
+        }
+        values.sort((a, b) => a.title.compareTo(b.title));
+        return values.isNotEmpty ? values : _defaultOfficialRatingValues();
+      } catch (e) {
+        appLogger.d('Jellyfin getFilterValues(officialRating) failed: $e');
+        return _defaultOfficialRatingValues();
+      }
+    }
+
+    if (kind == 'tags') {
+      if (sectionId.isEmpty) return [];
+      try {
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Users/${config.userId}/Items',
+          queryParameters: {
+            'ParentId': sectionId,
+            'Recursive': true,
+            'Fields': 'Tags',
+            'IncludeItemTypes': 'Movie,Series',
+            'Limit': 500,
+          },
+        );
+        final list = response.data?['Items'] as List? ?? [];
+        final seen = <String>{};
+        for (final e in list) {
+          final tags = e['Tags'] as List?;
+          if (tags != null) {
+            for (final t in tags) {
+              final tag = t?.toString().trim();
+              if (tag != null && tag.isNotEmpty) seen.add(tag);
+            }
+          }
+        }
+        return (seen.toList()..sort())
+            .map((s) => PlexFilterValue(key: s, title: s, type: 'tag'))
+            .toList();
+      } catch (e) {
+        appLogger.d('Jellyfin getFilterValues(tags) failed: $e');
+        return [];
+      }
+    }
+
+    if (kind == 'videoType') {
+      // Match Jellyfin web: BD, DVD, HD, 4K, SD, 3D (video quality/format)
+      return [
+        PlexFilterValue(key: 'BluRay', title: 'BD', type: 'videoType'),
+        PlexFilterValue(key: 'Dvd', title: 'DVD', type: 'videoType'),
+        PlexFilterValue(key: 'Hd', title: 'HD', type: 'videoType'),
+        PlexFilterValue(key: '4K', title: '4K', type: 'videoType'),
+        PlexFilterValue(key: 'Sd', title: 'SD', type: 'videoType'),
+        PlexFilterValue(key: 'ThreeD', title: '3D', type: 'videoType'),
+      ];
+    }
+
+    if (kind == 'seriesStatus') {
+      return [
+        PlexFilterValue(key: 'Continuing', title: 'Continuing', type: 'seriesStatus'),
+        PlexFilterValue(key: 'Ended', title: 'Ended', type: 'seriesStatus'),
+        PlexFilterValue(key: 'NotYetReleased', title: 'Not yet released', type: 'seriesStatus'),
+      ];
+    }
+
     return [];
+  }
+
+  static List<PlexFilterValue> _defaultOfficialRatingValues() {
+    return [
+      'G', 'PG', 'PG-13', 'R', 'NC-17',
+      'TV-Y', 'TV-G', 'TV-PG', 'TV-14', 'TV-MA', 'NR', 'Unrated',
+    ].map((s) => PlexFilterValue(key: s, title: s, type: 'rating')).toList();
   }
 
   @override
   Future<List<PlexSort>> getLibrarySorts(String sectionId, {String? libraryType}) async {
-    // All options from Jellyfin API ItemSortBy enum (OpenAPI spec). No server endpoint returns this list.
-    final sorts = [
-      PlexSort(key: 'SortName', title: 'Name', defaultDirection: 'asc'),
-      PlexSort(key: 'Name', title: 'Title', defaultDirection: 'asc'),
-      PlexSort(key: 'DateCreated', descKey: 'DateCreated:desc', title: 'Date added', defaultDirection: 'desc'),
-      PlexSort(key: 'PremiereDate', descKey: 'PremiereDate:desc', title: 'Premiere date', defaultDirection: 'desc'),
-      PlexSort(key: 'ProductionYear', descKey: 'ProductionYear:desc', title: 'Production year', defaultDirection: 'desc'),
-      PlexSort(key: 'DatePlayed', descKey: 'DatePlayed:desc', title: 'Last played', defaultDirection: 'desc'),
-      PlexSort(key: 'CommunityRating', descKey: 'CommunityRating:desc', title: 'Community rating', defaultDirection: 'desc'),
-      PlexSort(key: 'CriticRating', descKey: 'CriticRating:desc', title: 'Critic rating', defaultDirection: 'desc'),
-      PlexSort(key: 'OfficialRating', title: 'Official rating', defaultDirection: 'asc'),
-      PlexSort(key: 'Runtime', descKey: 'Runtime:desc', title: 'Runtime', defaultDirection: 'desc'),
-      PlexSort(key: 'PlayCount', descKey: 'PlayCount:desc', title: 'Play count', defaultDirection: 'desc'),
-      PlexSort(key: 'Random', title: 'Random', defaultDirection: 'asc'),
-      PlexSort(key: 'Default', title: 'Default', defaultDirection: 'asc'),
-      PlexSort(key: 'Album', title: 'Album', defaultDirection: 'asc'),
-      PlexSort(key: 'AlbumArtist', title: 'Album artist', defaultDirection: 'asc'),
-      PlexSort(key: 'Artist', title: 'Artist', defaultDirection: 'asc'),
-      PlexSort(key: 'StartDate', descKey: 'StartDate:desc', title: 'Start date', defaultDirection: 'desc'),
-      PlexSort(key: 'SeriesSortName', title: 'Series name', defaultDirection: 'asc'),
-      PlexSort(key: 'VideoBitRate', descKey: 'VideoBitRate:desc', title: 'Video bit rate', defaultDirection: 'desc'),
-      PlexSort(key: 'AirTime', title: 'Air time', defaultDirection: 'asc'),
-      PlexSort(key: 'Studio', title: 'Studio', defaultDirection: 'asc'),
-      PlexSort(key: 'IsFavoriteOrLiked', descKey: 'IsFavoriteOrLiked:desc', title: 'Favorite', defaultDirection: 'desc'),
-      PlexSort(key: 'DateLastContentAdded', descKey: 'DateLastContentAdded:desc', title: 'Date last content added', defaultDirection: 'desc'),
-      PlexSort(key: 'SeriesDatePlayed', descKey: 'SeriesDatePlayed:desc', title: 'Series last played', defaultDirection: 'desc'),
-      PlexSort(key: 'AiredEpisodeOrder', title: 'Aired episode order', defaultDirection: 'asc'),
-      PlexSort(key: 'ParentIndexNumber', title: 'Season', defaultDirection: 'asc'),
-      PlexSort(key: 'IndexNumber', title: 'Index number', defaultDirection: 'asc'),
-      PlexSort(key: 'IsFolder', title: 'Is folder', defaultDirection: 'asc'),
-      PlexSort(key: 'IsUnplayed', descKey: 'IsUnplayed:desc', title: 'Unplayed', defaultDirection: 'desc'),
-      PlexSort(key: 'IsPlayed', descKey: 'IsPlayed:desc', title: 'Played', defaultDirection: 'desc'),
-    ];
-    return sorts;
+    final t = (libraryType ?? '').toLowerCase();
+    // Movies: match Jellyfin web UI sort list and order.
+    if (t == 'movie') {
+      return [
+        PlexSort(key: 'SortName', title: 'Name', defaultDirection: 'asc'),
+        PlexSort(key: 'Random', title: 'Random', defaultDirection: 'asc'),
+        PlexSort(key: 'CommunityRating', descKey: 'CommunityRating:desc', title: 'Community Rating', defaultDirection: 'desc'),
+        PlexSort(key: 'CriticRating', descKey: 'CriticRating:desc', title: 'Critics Rating', defaultDirection: 'desc'),
+        PlexSort(key: 'DateCreated', descKey: 'DateCreated:desc', title: 'Date Added', defaultDirection: 'desc'),
+        PlexSort(key: 'DatePlayed', descKey: 'DatePlayed:desc', title: 'Date Played', defaultDirection: 'desc'),
+        PlexSort(key: 'OfficialRating', title: 'Parental Rating', defaultDirection: 'asc'),
+        PlexSort(key: 'PlayCount', descKey: 'PlayCount:desc', title: 'Play Count', defaultDirection: 'desc'),
+        PlexSort(key: 'PremiereDate', descKey: 'PremiereDate:desc', title: 'Release Date', defaultDirection: 'desc'),
+        PlexSort(key: 'Runtime', descKey: 'Runtime:desc', title: 'Runtime', defaultDirection: 'desc'),
+      ];
+    }
+    // Shows: match Jellyfin web UI sort list and order.
+    if (t == 'show') {
+      return [
+        PlexSort(key: 'SortName', title: 'Name', defaultDirection: 'asc'),
+        PlexSort(key: 'Random', title: 'Random', defaultDirection: 'asc'),
+        PlexSort(key: 'CommunityRating', descKey: 'CommunityRating:desc', title: 'Community Rating', defaultDirection: 'desc'),
+        PlexSort(key: 'DateCreated', descKey: 'DateCreated:desc', title: 'Date Show Added', defaultDirection: 'desc'),
+        PlexSort(key: 'DateLastContentAdded', descKey: 'DateLastContentAdded:desc', title: 'Date Episode Added', defaultDirection: 'desc'),
+        PlexSort(key: 'DatePlayed', descKey: 'DatePlayed:desc', title: 'Date Played', defaultDirection: 'desc'),
+        PlexSort(key: 'OfficialRating', title: 'Parental Rating', defaultDirection: 'asc'),
+        PlexSort(key: 'PremiereDate', descKey: 'PremiereDate:desc', title: 'Release Date', defaultDirection: 'desc'),
+      ];
+    }
+    // Other library types (e.g. collection): use movie list as fallback.
+    return getLibrarySorts(sectionId, libraryType: 'movie');
   }
 
   /// Jellyfin GET /Movies/Recommendations returns categories (Because you watched X, Because you liked X, etc.).
@@ -1399,15 +1644,17 @@ class JellyfinClient implements MediaServerClient {
       if (list == null) return [];
       return list.map((e) {
         final m = e as Map<String, dynamic>;
+        final id = m['Id']?.toString() ?? '';
         return PlexPlaylist(
-          ratingKey: m['Id']?.toString() ?? '',
-          key: m['Id']?.toString() ?? '',
+          ratingKey: id,
+          key: id,
           type: 'playlist',
           title: m['Name'] as String? ?? 'Playlist',
           summary: m['Overview'] as String?,
           smart: false,
           playlistType: playlistType,
           leafCount: _toInt(m['ChildCount']),
+          thumb: id.isNotEmpty ? id : null,
           serverId: serverId,
           serverName: serverName,
         );
@@ -1423,15 +1670,17 @@ class JellyfinClient implements MediaServerClient {
       final response = await _dio.get<Map<String, dynamic>>('/Playlists/$playlistId');
       final m = response.data;
       if (m == null) return null;
+      final id = m['Id']?.toString() ?? playlistId;
       return PlexPlaylist(
-        ratingKey: m['Id']?.toString() ?? playlistId,
-        key: m['Id']?.toString() ?? playlistId,
+        ratingKey: id,
+        key: id,
         type: 'playlist',
         title: m['Name'] as String? ?? 'Playlist',
         summary: m['Overview'] as String?,
         smart: false,
         playlistType: 'video',
         leafCount: _toInt(m['ChildCount']),
+        thumb: id.isNotEmpty ? id : null,
         serverId: serverId,
         serverName: serverName,
       );
@@ -1446,13 +1695,15 @@ class JellyfinClient implements MediaServerClient {
       final response = await _dio.post<Map<String, dynamic>>('/Playlists', data: {'Name': title});
       final m = response.data;
       if (m == null) return null;
+      final id = m['Id']?.toString() ?? '';
       return PlexPlaylist(
-        ratingKey: m['Id']?.toString() ?? '',
-        key: m['Id']?.toString() ?? '',
+        ratingKey: id,
+        key: id,
         type: 'playlist',
         title: title,
         smart: false,
         playlistType: 'video',
+        thumb: id.isNotEmpty ? id : null,
         serverId: serverId,
         serverName: serverName,
       );
@@ -1523,7 +1774,7 @@ class JellyfinClient implements MediaServerClient {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/Users/${config.userId}/Items',
-        queryParameters: {'ParentId': sectionId, 'IncludeItemTypes': 'BoxSet', 'Fields': _listFields},
+        queryParameters: {'ParentId': sectionId, 'IncludeItemTypes': 'BoxSet', 'Fields': _collectionListFields},
       );
       final list = response.data?['Items'] as List?;
       if (list == null) return [];
@@ -1546,7 +1797,7 @@ class JellyfinClient implements MediaServerClient {
           'IncludeItemTypes': 'BoxSet',
           'SortBy': 'SortName',
           'SortOrder': 'Ascending',
-          'Fields': _listFields,
+          'Fields': _collectionListFields,
         },
       );
       final list = response.data?['Items'] as List?;
@@ -1558,20 +1809,25 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getLibraryFavorites(String sectionId) async {
+  Future<List<PlexMetadata>> getLibraryFavorites(String sectionId, {int start = 0, int limit = 0}) async {
     if (_offlineMode) return [];
     try {
+      final queryParams = <String, dynamic>{
+        'ParentId': sectionId,
+        'Recursive': true,
+        'IncludeItemTypes': 'Movie,Series',
+        'IsFavorite': true,
+        'Fields': _listFields,
+        'SortBy': 'SortName',
+        'SortOrder': 'Ascending',
+      };
+      if (limit > 0) {
+        queryParams['StartIndex'] = start;
+        queryParams['Limit'] = limit;
+      }
       final response = await _dio.get<Map<String, dynamic>>(
         '/Users/${config.userId}/Items',
-        queryParameters: {
-          'ParentId': sectionId,
-          'Recursive': true,
-          'IncludeItemTypes': 'Movie,Series',
-          'IsFavorite': true,
-          'Fields': _listFields,
-          'SortBy': 'SortName',
-          'SortOrder': 'Ascending',
-        },
+        queryParameters: queryParams,
       );
       final list = response.data?['Items'] as List?;
       if (list == null) return [];

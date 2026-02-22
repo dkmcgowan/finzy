@@ -79,6 +79,15 @@ class MultiServerProvider extends ChangeNotifier {
     return false;
   }
 
+  /// True if at least one connected server is Jellyfin. Used to show Jellyfin-only UI (e.g. global Favorites in library sidebar).
+  bool get hasJellyfinServers {
+    for (final serverId in onlineServerIds) {
+      final client = getClientForServer(serverId);
+      if (client != null && client.isJellyfin) return true;
+    }
+    return false;
+  }
+
   /// Update token for a specific Plex server (no-op for Jellyfin)
   void updateTokenForServer(String serverId, String newToken) {
     final client = _serverManager.getClient(serverId);

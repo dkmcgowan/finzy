@@ -291,6 +291,7 @@
   "tooltips": {
     "shufflePlay": "Shuffle play",
     "playTrailer": "Play trailer",
+    "playFromStart": "Play from start",
     "markAsWatched": "Mark as watched",
     "markAsUnwatched": "Mark as unwatched"
   },
@@ -499,11 +500,13 @@
     "noRecommendations": "No recommendations available",
     "noCollections": "No collections in this library",
     "noFavorites": "No favorites in this library",
+    "noGenres": "No genres in this library",
     "noFoldersFound": "No folders found",
     "folders": "folders",
     "tabs": {
       "recommended": "Recommended",
       "browse": "Browse",
+      "genre": "Genre",
       "favorites": "Favorites",
       "collections": "Collections",
       "playlists": "Playlists"

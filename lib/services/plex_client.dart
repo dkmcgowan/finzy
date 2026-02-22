@@ -1271,7 +1271,7 @@ class PlexClient implements MediaServerClient {
 
   /// Get available filters for a library section
   @override
-  Future<List<PlexFilter>> getLibraryFilters(String sectionId) async {
+  Future<List<PlexFilter>> getLibraryFilters(String sectionId, {String? libraryType}) async {
     final response = await _dio.get('/library/sections/$sectionId/filters');
     return _extractDirectoryList(response, PlexFilter.fromJson);
   }
@@ -1678,7 +1678,7 @@ class PlexClient implements MediaServerClient {
   Future<List<PlexMetadata>> getGlobalCollections() async => [];
 
   @override
-  Future<List<PlexMetadata>> getLibraryFavorites(String sectionId) async {
+  Future<List<PlexMetadata>> getLibraryFavorites(String sectionId, {int start = 0, int limit = 0}) async {
     return [];
   }
 

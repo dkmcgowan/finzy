@@ -34,6 +34,7 @@ import '../services/server_registry.dart';
 import '../services/storage_service.dart';
 import '../services/companion_remote/companion_remote_receiver.dart';
 import '../providers/companion_remote_provider.dart';
+import '../constants/library_constants.dart';
 import '../utils/desktop_window_padding.dart';
 import '../widgets/side_navigation_rail.dart';
 import '../focus/dpad_navigator.dart';
@@ -1011,6 +1012,9 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
                             isSidebarFocused: _isSidebarFocused,
                             alwaysExpanded: alwaysExpanded,
                             isReconnecting: _isReconnecting,
+                            jellyfinFavoritesKey: context.watch<MultiServerProvider>().hasJellyfinServers
+                                ? kJellyfinFavoritesKey
+                                : null,
                             onDestinationSelected: (index) {
                               _selectTab(index);
                               _focusContent();

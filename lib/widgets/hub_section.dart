@@ -53,6 +53,10 @@ class HubSection extends StatefulWidget {
   /// Used to navigate focus to the sidebar.
   final VoidCallback? onNavigateToSidebar;
 
+  /// When set, header tap and "View All" tap call this instead of navigating to [HubDetailScreen].
+  /// Used by Genre tab to show genre grid inline (Browse style) instead of pushing a route.
+  final VoidCallback? onHeaderTap;
+
   const HubSection({
     super.key,
     required this.hub,
@@ -65,6 +69,7 @@ class HubSection extends StatefulWidget {
     this.onBack,
     this.onNavigateUp,
     this.onNavigateToSidebar,
+    this.onHeaderTap,
   });
 
   @override
@@ -292,7 +297,11 @@ class HubSectionState extends State<HubSection> {
 
   void _activateCurrentItem() {
     if (_focusedIndex == widget.hub.items.length && widget.hub.more) {
-      _navigateToHubDetail(context);
+      if (widget.onHeaderTap != null) {
+        widget.onHeaderTap!();
+      } else {
+        _navigateToHubDetail(context);
+      }
       return;
     }
     if (_focusedIndex >= widget.hub.items.length) return;
@@ -328,7 +337,13 @@ class HubSectionState extends State<HubSection> {
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
           child: ExcludeFocus(
             child: InkWell(
-              onTap: widget.hub.more ? () => _navigateToHubDetail(context) : null,
+              onTap: (widget.hub.more || widget.onHeaderTap != null) ? () {
+                if (widget.onHeaderTap != null) {
+                  widget.onHeaderTap!();
+                } else {
+                  _navigateToHubDetail(context);
+                }
+              } : null,
               borderRadius: BorderRadius.circular(tokens(context).radiusSm),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -361,7 +376,7 @@ class HubSectionState extends State<HubSection> {
                         ),
                       ),
                     ],
-                    if (widget.hub.more && !isKeyboardMode) ...[
+                    if ((widget.hub.more || widget.onHeaderTap != null) && !isKeyboardMode) ...[
                       const SizedBox(width: 4),
                       const AppIcon(Symbols.chevron_right_rounded, fill: 1, size: 20),
                     ],
@@ -448,7 +463,11 @@ class HubSectionState extends State<HubSection> {
                               isFocused: isItemFocused,
                               onTap: () {
                                 _onItemTapped(index);
-                                _navigateToHubDetail(context);
+                                if (widget.onHeaderTap != null) {
+                                  widget.onHeaderTap!();
+                                } else {
+                                  _navigateToHubDetail(context);
+                                }
                               },
                               child: SizedBox(
                                 width: 80,

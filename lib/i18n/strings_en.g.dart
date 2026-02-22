@@ -935,6 +935,9 @@ class TranslationsTooltipsEn {
 	/// en: 'Play trailer'
 	String get playTrailer => 'Play trailer';
 
+	/// en: 'Play from start'
+	String get playFromStart => 'Play from start';
+
 	/// en: 'Mark as watched'
 	String get markAsWatched => 'Mark as watched';
 
@@ -1566,6 +1569,9 @@ class TranslationsLibrariesEn {
 
 	/// en: 'No favorites in this library'
 	String get noFavorites => 'No favorites in this library';
+
+	/// en: 'No genres in this library'
+	String get noGenres => 'No genres in this library';
 
 	/// en: 'No folders found'
 	String get noFoldersFound => 'No folders found';
@@ -2450,6 +2456,9 @@ class TranslationsLibrariesTabsEn {
 	/// en: 'Browse'
 	String get browse => 'Browse';
 
+	/// en: 'Genre'
+	String get genre => 'Genre';
+
 	/// en: 'Favorites'
 	String get favorites => 'Favorites';
 
@@ -3018,6 +3027,7 @@ extension on Translations {
 			'accessibility.tapToPlay' => 'Tap to play',
 			'tooltips.shufflePlay' => 'Shuffle play',
 			'tooltips.playTrailer' => 'Play trailer',
+			'tooltips.playFromStart' => 'Play from start',
 			'tooltips.markAsWatched' => 'Mark as watched',
 			'tooltips.markAsUnwatched' => 'Mark as unwatched',
 			'videoControls.audioLabel' => 'Audio',
@@ -3206,10 +3216,12 @@ extension on Translations {
 			'libraries.noRecommendations' => 'No recommendations available',
 			'libraries.noCollections' => 'No collections in this library',
 			'libraries.noFavorites' => 'No favorites in this library',
+			'libraries.noGenres' => 'No genres in this library',
 			'libraries.noFoldersFound' => 'No folders found',
 			'libraries.folders' => 'folders',
 			'libraries.tabs.recommended' => 'Recommended',
 			'libraries.tabs.browse' => 'Browse',
+			'libraries.tabs.genre' => 'Genre',
 			'libraries.tabs.favorites' => 'Favorites',
 			'libraries.tabs.collections' => 'Collections',
 			'libraries.tabs.playlists' => 'Playlists',

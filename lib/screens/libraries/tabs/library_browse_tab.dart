@@ -244,6 +244,16 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
   /// Height of the chips bar (padding + chip + padding)
   static const double _chipsBarHeight = 48.0;
 
+  /// For Jellyfin we hide the grouping chip (Movies/Folders, Shows/Seasons/Episodes/Folders).
+  bool get _isGroupingChipVisible => !client.isJellyfin;
+
+  /// First chip in the bar (grouping, or filters, or sort when grouping is hidden).
+  FocusNode get _firstChipFocusNode {
+    if (_isGroupingChipVisible) return _groupingChipFocusNode;
+    if (_isFiltersChipVisible) return _filtersChipFocusNode;
+    return _sortChipFocusNode;
+  }
+
   /// Focus the chips bar (for navigating from tab bar to content).
   /// Called by libraries screen when pressing DOWN on tab bar.
   void focusChipsBar() {
@@ -252,10 +262,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
       focusFirstItem();
       return;
     }
-
-    // With Stack layout, chips are always visible on top of the grid.
-    // No need to scroll - just focus the chip.
-    _groupingChipFocusNode.requestFocus();
+    _firstChipFocusNode.requestFocus();
   }
 
   Future<void> _loadContent() async {
@@ -289,7 +296,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
       // Load storage, filters, and sorts in parallel so browse appears faster
       final results = await Future.wait([
         StorageService.getInstance(),
-        client.getLibraryFilters(widget.library.key),
+        client.getLibraryFilters(widget.library.key, libraryType: widget.library.type),
         client.getLibrarySorts(widget.library.key, libraryType: widget.library.type),
       ]);
       final storage = results[0] as StorageService;
@@ -309,7 +316,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
         _filters = filters;
         _sortOptions = sorts;
         _selectedFilters = Map.from(savedFilters);
-        _selectedGrouping = savedGrouping ?? _getDefaultGrouping();
+        // Jellyfin: no grouping chip (Movies/Folders, Shows/Seasons/Episodes) — always show all items
+        _selectedGrouping = client.isJellyfin ? 'all' : (savedGrouping ?? _getDefaultGrouping());
 
         // Restore sort
         if (savedSort != null) {
@@ -363,8 +371,16 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
       // Build filter params
       final filterParams = Map<String, String>.from(_selectedFilters);
 
-      // Add grouping type filter (but not for 'all' or 'folders')
-      if (_selectedGrouping != 'all' && _selectedGrouping != 'folders') {
+      // Jellyfin: always restrict to library type (Movie or Series) so we don't get the virtual
+      // library folder as first item. Plex: add type only when grouping is not 'all'/'folders'.
+      if (client.isJellyfin) {
+        final t = widget.library.type.toLowerCase();
+        if (t == 'movie') {
+          filterParams['type'] = '1';
+        } else if (t == 'show') {
+          filterParams['type'] = '2';
+        }
+      } else if (_selectedGrouping != 'all' && _selectedGrouping != 'folders') {
         final typeId = _getGroupingTypeId();
         if (typeId.isNotEmpty) {
           filterParams['type'] = typeId;
@@ -640,7 +656,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
 
   /// Navigate focus from grid up to the grouping chip
   void _navigateToChips() {
-    _groupingChipFocusNode.requestFocus();
+    _firstChipFocusNode.requestFocus();
   }
 
   /// Navigate focus to the sidebar
@@ -815,8 +831,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
-    // For folders mode, use FolderTreeView instead of grid/list
-    if (_selectedGrouping == 'folders') {
+    // For folders mode, use FolderTreeView instead of grid/list (Jellyfin: grouping not used, so never folders)
+    if (!client.isJellyfin && _selectedGrouping == 'folders') {
       return OverlaySheetHost(
         child: Column(
           children: [
@@ -920,19 +936,21 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Grouping chip
-          FocusableFilterChip(
-            focusNode: _groupingChipFocusNode,
-            icon: Symbols.category_rounded,
-            label: _getGroupingLabel(_selectedGrouping),
-            onPressed: _showGroupingBottomSheet,
-            onNavigateDown: _navigateToGrid,
-            onNavigateUp: widget.onBack,
-            onNavigateLeft: _navigateToSidebar,
-            onNavigateRight: groupingNavigateRight,
-            onBack: widget.onBack,
-          ),
-          const SizedBox(width: 8),
+          // Grouping chip (hidden for Jellyfin — no Movies/Folders or Shows/Seasons/Episodes/Folders toggle)
+          if (_isGroupingChipVisible) ...[
+            FocusableFilterChip(
+              focusNode: _groupingChipFocusNode,
+              icon: Symbols.category_rounded,
+              label: _getGroupingLabel(_selectedGrouping),
+              onPressed: _showGroupingBottomSheet,
+              onNavigateDown: _navigateToGrid,
+              onNavigateUp: widget.onBack,
+              onNavigateLeft: _navigateToSidebar,
+              onNavigateRight: groupingNavigateRight,
+              onBack: widget.onBack,
+            ),
+            const SizedBox(width: 8),
+          ],
           // Filters chip
           if (_isFiltersChipVisible)
             FocusableFilterChip(
@@ -944,7 +962,9 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
               onPressed: _showFiltersBottomSheet,
               onNavigateDown: _navigateToGrid,
               onNavigateUp: widget.onBack,
-              onNavigateLeft: () => _groupingChipFocusNode.requestFocus(),
+              onNavigateLeft: _isGroupingChipVisible
+                  ? () => _groupingChipFocusNode.requestFocus()
+                  : _navigateToSidebar,
               onNavigateRight: _isSortChipVisible ? () => _sortChipFocusNode.requestFocus() : null,
               onBack: widget.onBack,
             ),
@@ -960,7 +980,9 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
               onNavigateUp: widget.onBack,
               onNavigateLeft: _isFiltersChipVisible
                   ? () => _filtersChipFocusNode.requestFocus()
-                  : () => _groupingChipFocusNode.requestFocus(),
+                  : _isGroupingChipVisible
+                      ? () => _groupingChipFocusNode.requestFocus()
+                      : _navigateToSidebar,
               onBack: widget.onBack,
             ),
         ],

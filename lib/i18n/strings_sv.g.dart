@@ -438,6 +438,7 @@ class _TranslationsTooltipsSv implements TranslationsTooltipsEn {
 	// Translations
 	@override String get shufflePlay => 'Blanda uppspelning';
 	@override String get playTrailer => 'Spela trailer';
+	@override String get playFromStart => 'Spela från början';
 	@override String get markAsWatched => 'Markera som sedd';
 	@override String get markAsUnwatched => 'Markera som osedd';
 }
@@ -703,6 +704,7 @@ class _TranslationsLibrariesSv implements TranslationsLibrariesEn {
 	@override String get noRecommendations => 'Inga rekommendationer tillgängliga';
 	@override String get noCollections => 'Inga samlingar i det här biblioteket';
 	@override String get noFavorites => 'Inga favoriter i detta bibliotek';
+	@override String get noGenres => 'Inga genrer i detta bibliotek';
 	@override String get noFoldersFound => 'Inga mappar hittades';
 	@override String get folders => 'mappar';
 	@override late final _TranslationsLibrariesTabsSv tabs = _TranslationsLibrariesTabsSv._(_root);
@@ -1108,6 +1110,7 @@ class _TranslationsLibrariesTabsSv implements TranslationsLibrariesTabsEn {
 	// Translations
 	@override String get recommended => 'Rekommenderat';
 	@override String get browse => 'Bläddra';
+	@override String get genre => 'Genre';
 	@override String get favorites => 'Favoriter';
 	@override String get collections => 'Samlingar';
 	@override String get playlists => 'Spellistor';
@@ -1505,6 +1508,7 @@ extension on TranslationsSv {
 			'accessibility.tapToPlay' => 'Tryck för att spela',
 			'tooltips.shufflePlay' => 'Blanda uppspelning',
 			'tooltips.playTrailer' => 'Spela trailer',
+			'tooltips.playFromStart' => 'Spela från början',
 			'tooltips.markAsWatched' => 'Markera som sedd',
 			'tooltips.markAsUnwatched' => 'Markera som osedd',
 			'videoControls.audioLabel' => 'Ljud',

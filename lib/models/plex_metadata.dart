@@ -103,6 +103,14 @@ class PlexMetadata with MultiServerFields {
   @JsonKey(includeFromJson: false, includeToJson: false)
   final bool? isFavorite;
 
+  /// End year for TV series (Jellyfin only; from EndDate). Enables "2025 - 2026" display.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final int? endYear;
+
+  /// Series status e.g. "Continuing" or "Ended" (Jellyfin only). When "Continuing", show "year - Present".
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final String? seriesStatus;
+
   /// Global unique identifier across all servers (serverId:ratingKey)
   String get globalKey => serverId != null ? '$serverId:$ratingKey' : ratingKey;
 
@@ -176,6 +184,8 @@ class PlexMetadata with MultiServerFields {
     this.serverName,
     this.clearLogo,
     this.isFavorite,
+    this.endYear,
+    this.seriesStatus,
   });
 
   /// Create a copy of this metadata with optional field overrides
@@ -231,6 +241,8 @@ class PlexMetadata with MultiServerFields {
     String? serverName,
     String? clearLogo,
     bool? isFavorite,
+    int? endYear,
+    String? seriesStatus,
   }) {
     return PlexMetadata(
       ratingKey: ratingKey ?? this.ratingKey,
@@ -284,6 +296,8 @@ class PlexMetadata with MultiServerFields {
       serverName: serverName ?? this.serverName,
       clearLogo: clearLogo ?? this.clearLogo,
       isFavorite: isFavorite ?? this.isFavorite,
+      endYear: endYear ?? this.endYear,
+      seriesStatus: seriesStatus ?? this.seriesStatus,
     );
   }
 
@@ -311,6 +325,18 @@ class PlexMetadata with MultiServerFields {
       json['clearLogo'] = clearLogoUrl;
     }
     return PlexMetadata.fromJson(json);
+  }
+
+  /// Year string for display: single year, or "2024 - 2026" (ended) / "2024 - Present" (continuing) for shows (Jellyfin).
+  /// End year is only shown when the show is not continuing.
+  String? get yearForDisplay {
+    if (year == null) return null;
+    if (mediaType == PlexMediaType.show) {
+      final isContinuing = seriesStatus != null && seriesStatus!.toLowerCase() == 'continuing';
+      if (isContinuing) return '$year - Present';
+      if (endYear != null) return '$year - $endYear';
+    }
+    return '$year';
   }
 
   // Helper to get the display title (show name for episodes/seasons, title otherwise)
