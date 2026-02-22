@@ -21,7 +21,7 @@ jobs:
         run: |
           VERSION="${{ github.event.release.tag_name || github.ref_name }}"
           curl -L -o plezy-macos.dmg \
-            "https://github.com/edde746/plezy/releases/download/$VERSION/plezy-macos.dmg"
+            "https://github.com/${{ github.repository }}/releases/download/$VERSION/plezy-macos.dmg"
           SHA256=$(shasum -a 256 plezy-macos.dmg | cut -d' ' -f1)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
