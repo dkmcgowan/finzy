@@ -194,29 +194,34 @@ jobs:
         run: flutter build macos --release --dart-define=ENABLE_UPDATE_CHECK=true
 
       - name: Import Code Signing Certificate
-        if: secrets.MACOS_CERTIFICATE_BASE64 != ''
+        id: import-cert
         env:
           MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # Create temporary keychain
-          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          if [ -n "$MACOS_CERTIFICATE_BASE64" ]; then
+            # Create temporary keychain
+            KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+            security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+            security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-          # Import certificate to keychain
-          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
-          echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-          security import $CERTIFICATE_PATH -k $KEYCHAIN_PATH -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+            # Import certificate to keychain
+            CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+            echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+            security import $CERTIFICATE_PATH -k $KEYCHAIN_PATH -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-          # Add keychain to search list
-          security list-keychains -d user -s $KEYCHAIN_PATH login.keychain
+            # Add keychain to search list
+            security list-keychains -d user -s $KEYCHAIN_PATH login.keychain
+            echo "imported=true" >> $GITHUB_OUTPUT
+          else
+            echo "imported=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Sign Application
-        if: secrets.MACOS_CERTIFICATE_BASE64 != ''
+        if: steps.import-cert.outputs.imported == 'true'
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
@@ -237,7 +242,7 @@ jobs:
           codesign --force --sign "$IDENTITY" --timestamp --options runtime --entitlements macos/Runner/Release.entitlements "$APP_PATH"
 
       - name: Verify Signature
-        if: secrets.MACOS_CERTIFICATE_BASE64 != ''
+        if: steps.import-cert.outputs.imported == 'true'
         run: |
           APP_PATH="build/macos/Build/Products/Release/Plezy.app"
           echo "Verifying signature..."
@@ -245,7 +250,7 @@ jobs:
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
       - name: Notarize Application
-        if: secrets.MACOS_CERTIFICATE_BASE64 != ''
+        if: steps.import-cert.outputs.imported == 'true'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
