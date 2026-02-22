@@ -25,6 +25,7 @@ import '../providers/libraries_provider.dart';
 import '../providers/playback_state_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/user_profile_provider.dart';
+import '../providers/jellyfin_profile_provider.dart';
 import '../services/offline_watch_sync_service.dart';
 import '../services/settings_service.dart';
 import '../providers/offline_mode_provider.dart';
@@ -157,6 +158,11 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
         // Set up data invalidation callback for profile switching
         userProfileProvider.setDataInvalidationCallback(_invalidateAllScreens);
+
+        // Jellyfin: refresh profile list and set callback for switch profile
+        final jellyfinProfileProvider = context.read<JellyfinProfileProvider>();
+        await jellyfinProfileProvider.refresh();
+        jellyfinProfileProvider.onAfterSwitch = _invalidateAllScreensForJellyfinSwitch;
 
         // Ensure first login (or any unset profile state) requires explicit selection.
         await _promptForInitialProfileSelection(userProfileProvider);
@@ -846,6 +852,50 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     }
 
     // Sidebar automatically updates since it watches LibrariesProvider
+  }
+
+  /// Called when Jellyfin user is switched; reconnects with current server list and refreshes.
+  Future<void> _invalidateAllScreensForJellyfinSwitch() async {
+    appLogger.d('Invalidating all screen data due to Jellyfin profile switch');
+
+    final multiServerProvider = context.read<MultiServerProvider>();
+    final serverStateProvider = context.read<ServerStateProvider>();
+    final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
+    final librariesProvider = context.read<LibrariesProvider>();
+    final playbackStateProvider = context.read<PlaybackStateProvider>();
+
+    librariesProvider.clear();
+
+    final storage = await StorageService.getInstance();
+    final registry = ServerRegistry(storage);
+    final registeredServers = await registry.getServers();
+
+    if (registeredServers.isNotEmpty) {
+      final clientId = storage.getClientIdentifier();
+      final connectedCount = await multiServerProvider.reconnectWithServers(registeredServers, clientIdentifier: clientId);
+      appLogger.d('Reconnected to $connectedCount/${registeredServers.length} servers after Jellyfin profile switch');
+
+      if (connectedCount > 0) {
+        if (!mounted) return;
+        context.read<OfflineWatchSyncService>().onServersConnected();
+        librariesProvider.initialize(multiServerProvider.aggregationService);
+        await librariesProvider.refresh();
+      }
+    }
+
+    serverStateProvider.reset();
+    hiddenLibrariesProvider.refresh();
+    playbackStateProvider.clearShuffle();
+
+    if (_discoverKey.currentState case final FullRefreshable refreshable) {
+      refreshable.fullRefresh();
+    }
+    if (_librariesKey.currentState case final FullRefreshable refreshable) {
+      refreshable.fullRefresh();
+    }
+    if (_searchKey.currentState case final FullRefreshable refreshable) {
+      refreshable.fullRefresh();
+    }
   }
 
   void _selectTab(int index) {

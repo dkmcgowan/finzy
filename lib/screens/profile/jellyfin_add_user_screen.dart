@@ -1,0 +1,513 @@
+import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
+
+import '../../models/jellyfin_public_user.dart';
+import '../../models/registered_server.dart';
+import '../../providers/libraries_provider.dart';
+import '../../providers/multi_server_provider.dart';
+import '../../services/jellyfin_auth_service.dart';
+import '../../services/offline_watch_sync_service.dart';
+import '../../services/server_connection_orchestrator.dart';
+import '../../services/server_registry.dart';
+import '../../services/storage_service.dart';
+import '../../theme/mono_tokens.dart';
+import '../../utils/platform_detector.dart';
+import '../../i18n/strings.g.dart';
+
+/// Screen to add another Jellyfin user on the same server (from Switch profile).
+/// Reuses the same UX as auth: user grid → Quick Connect or Manual → save user and pop.
+class JellyfinAddUserScreen extends StatefulWidget {
+  const JellyfinAddUserScreen({super.key, required this.baseUrl});
+
+  final String baseUrl;
+
+  @override
+  State<JellyfinAddUserScreen> createState() => _JellyfinAddUserScreenState();
+}
+
+class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
+  List<JellyfinPublicUser>? _publicUsers;
+  String _step = 'users'; // users | manual | quick_connect
+  JellyfinPublicUser? _selectedUser;
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String? _quickConnectCode;
+  String? _quickConnectSecret;
+  Timer? _quickConnectPollTimer;
+  String? _errorMessage;
+  bool _isAuthenticating = false;
+  bool _loadingUsers = true;
+
+  String get _baseUrl => widget.baseUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPublicUsers();
+  }
+
+  @override
+  void dispose() {
+    _quickConnectPollTimer?.cancel();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadPublicUsers() async {
+    setState(() {
+      _loadingUsers = true;
+      _errorMessage = null;
+    });
+    try {
+      final users = await JellyfinAuthService.getPublicUsers(_baseUrl);
+      if (mounted) {
+        setState(() {
+          _publicUsers = users;
+          _loadingUsers = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _publicUsers = [];
+          _loadingUsers = false;
+          _errorMessage = 'Failed to load users';
+        });
+      }
+    }
+  }
+
+  Future<void> _completeAddUser({
+    required JellyfinAuthResult result,
+    required String userName,
+    String? primaryImageTag,
+  }) async {
+    String serverId = result.serverId ?? _baseUrl.hashCode.abs().toString();
+    String serverName = result.serverName ?? 'Jellyfin';
+    try {
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: _baseUrl,
+          headers: {
+            'Authorization':
+                'MediaBrowser Client="Plezy", Device="Plezy", DeviceId="plezy-jellyfin", Version="1.0.0", Token="${result.accessToken}"',
+          },
+        ),
+      );
+      final info = await dio.get<Map<String, dynamic>>('/System/Info');
+      final data = info.data;
+      if (data != null) {
+        serverName = data['ServerName'] as String? ?? serverName;
+        final id = data['Id'] as String?;
+        if (id != null && id.isNotEmpty) serverId = id;
+      }
+    } catch (_) {}
+
+    final storedUser = JellyfinStoredUser(
+      userId: result.userId,
+      accessToken: result.accessToken,
+      userName: userName,
+      primaryImageTag: primaryImageTag,
+    );
+
+    final storage = await StorageService.getInstance();
+    final registry = ServerRegistry(storage);
+    final added = await registry.addOrUpdateJellyfinUserAndSetCurrent(storedUser);
+    if (!added || !mounted) return;
+
+    final allServers = await registry.getServers();
+    final connResult = await ServerConnectionOrchestrator.connectAndInitialize(
+      servers: allServers,
+      multiServerProvider: context.read<MultiServerProvider>(),
+      librariesProvider: context.read<LibrariesProvider>(),
+      syncService: context.read<OfflineWatchSyncService>(),
+      clientIdentifier: storage.getClientIdentifier(),
+    );
+    if (!connResult.hasConnections || !mounted) return;
+
+    Navigator.of(context).pop(true);
+  }
+
+  void _goToManual([JellyfinPublicUser? user]) {
+    setState(() {
+      _selectedUser = user;
+      _step = 'manual';
+      if (user != null) {
+        _usernameController.text = user.name;
+      } else {
+        _usernameController.clear();
+      }
+      _passwordController.clear();
+      _errorMessage = null;
+    });
+  }
+
+  void _backToUsers() {
+    setState(() {
+      _step = 'users';
+      _selectedUser = null;
+      _errorMessage = null;
+    });
+  }
+
+  Future<void> _signInManual() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
+    if (username.isEmpty) {
+      setState(() => _errorMessage = 'Please enter username');
+      return;
+    }
+    setState(() {
+      _isAuthenticating = true;
+      _errorMessage = null;
+    });
+    try {
+      final result = await JellyfinAuthService.authenticateByName(
+        baseUrl: _baseUrl,
+        username: username,
+        password: password,
+      );
+      final userName = _selectedUser?.name ?? username;
+      final primaryImageTag = _selectedUser?.primaryImageTag;
+      await _completeAddUser(
+        result: result,
+        userName: userName,
+        primaryImageTag: primaryImageTag,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isAuthenticating = false;
+          _errorMessage = t.errors.authenticationFailed(error: e);
+        });
+      }
+    }
+  }
+
+  Future<void> _startQuickConnect([JellyfinPublicUser? user]) async {
+    setState(() {
+      _isAuthenticating = true;
+      _errorMessage = null;
+      _selectedUser = user;
+    });
+    try {
+      final state = await JellyfinAuthService.quickConnectInitiate(_baseUrl);
+      if (!mounted) return;
+      setState(() {
+        _quickConnectCode = state.code;
+        _quickConnectSecret = state.secret;
+        _step = 'quick_connect';
+        _isAuthenticating = false;
+      });
+      _startPolling();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isAuthenticating = false;
+          _errorMessage = 'Quick Connect failed. It may be disabled on the server.';
+        });
+      }
+    }
+  }
+
+  void _startPolling() {
+    _quickConnectPollTimer?.cancel();
+    final secret = _quickConnectSecret!;
+    void checkOnce() async {
+      try {
+        final state = await JellyfinAuthService.quickConnectGetState(_baseUrl, secret);
+        if (!mounted) return;
+        if (state.authenticated) {
+          _quickConnectPollTimer?.cancel();
+          final result = await JellyfinAuthService.authenticateWithQuickConnect(_baseUrl, secret);
+          if (!mounted) return;
+          final userName = _selectedUser?.name ?? result.userId;
+          final primaryImageTag = _selectedUser?.primaryImageTag;
+          await _completeAddUser(
+            result: result,
+            userName: userName,
+            primaryImageTag: primaryImageTag,
+          );
+        }
+      } catch (_) {}
+    }
+    checkOnce();
+    _quickConnectPollTimer = Timer.periodic(const Duration(seconds: 3), (_) => checkOnce());
+  }
+
+  void _cancelQuickConnect() {
+    _quickConnectPollTimer?.cancel();
+    setState(() {
+      _step = 'users';
+      _quickConnectCode = null;
+      _quickConnectSecret = null;
+    });
+  }
+
+  void _showUserOptions(JellyfinPublicUser user) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Symbols.link_rounded),
+              title: const Text('Quick Connect'),
+              subtitle: const Text('Pair with your phone or another device'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _startQuickConnect(user);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Symbols.lock_rounded),
+              title: const Text('Manual login'),
+              subtitle: Text('Password for ${user.name}'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _goToManual(user);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserCard({
+    required String label,
+    String? subtitle,
+    String? imageUrl,
+    IconData? icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      borderRadius: BorderRadius.circular(tokens(context).radiusMd),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens(context).radiusMd),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (imageUrl != null && imageUrl.isNotEmpty)
+                ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Icon(icon ?? Symbols.person_rounded, size: 40),
+                    errorWidget: (_, __, ___) => Icon(icon ?? Symbols.person_rounded, size: 40),
+                  ),
+                )
+              else
+                Icon(icon ?? Symbols.person_rounded, size: 40),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+              if (subtitle != null)
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_step == 'quick_connect') {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Add user')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Enter this code on your server or another device',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(tokens(context).radiusMd),
+                  ),
+                  child: Text(
+                    _quickConnectCode ?? '',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                          letterSpacing: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton(onPressed: _cancelQuickConnect, child: Text(t.common.cancel)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_step == 'manual') {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Add user')),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_selectedUser != null)
+                Text(
+                  'Sign in as ${_selectedUser!.name}',
+                  style: Theme.of(context).textTheme.titleSmall,
+                )
+              else
+                Text(
+                  'Manual login',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: t.auth.jellyfinUsername,
+                  border: const OutlineInputBorder(),
+                ),
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: t.auth.jellyfinPassword,
+                  border: const OutlineInputBorder(),
+                ),
+                obscureText: true,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _signInManual(),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isAuthenticating ? null : _signInManual,
+                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                child: _isAuthenticating
+                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                    : Text(t.auth.jellyfinSignIn),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: _backToUsers,
+                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+                child: Text(t.common.back),
+              ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    // users step
+    final users = _publicUsers ?? [];
+    final isTV = PlatformDetector.isTV();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add user'),
+      ),
+      body: _loadingUsers
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Select a user or sign in manually',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: GridView.builder(
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: isTV ? 140 : 120,
+                        childAspectRatio: 0.85,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                      ),
+                      itemCount: users.length + 2,
+                      itemBuilder: (context, index) {
+                        if (index == users.length) {
+                          return _buildUserCard(
+                            label: 'Manual login',
+                            subtitle: 'Enter username & password',
+                            icon: Symbols.edit_rounded,
+                            onTap: () => _goToManual(null),
+                          );
+                        }
+                        if (index == users.length + 1) {
+                          return _buildUserCard(
+                            label: t.common.back,
+                            icon: Symbols.arrow_back_rounded,
+                            onTap: () => Navigator.of(context).pop(),
+                          );
+                        }
+                        final user = users[index];
+                        final imageUrl = user.primaryImageTag != null ? user.imageUrl(_baseUrl) : null;
+                        return _buildUserCard(
+                          label: user.name,
+                          imageUrl: imageUrl,
+                          onTap: () => _showUserOptions(user),
+                        );
+                      },
+                    ),
+                  ),
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _errorMessage!,
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+    );
+  }
+}

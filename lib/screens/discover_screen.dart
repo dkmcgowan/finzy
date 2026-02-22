@@ -20,7 +20,9 @@ import '../providers/playback_state_provider.dart';
 import 'profile/user_avatar_widget.dart';
 import '../widgets/hub_section.dart';
 import 'profile/profile_switch_screen.dart';
+import 'profile/jellyfin_profile_switch_screen.dart';
 import '../providers/user_profile_provider.dart';
+import '../providers/jellyfin_profile_provider.dart';
 import '../providers/settings_provider.dart';
 import '../mixins/refreshable.dart';
 import '../mixins/tab_visibility_aware.dart';
@@ -515,7 +517,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     // SELECT: Show user menu
     if (key.isSelectKey) {
       final userProvider = context.read<UserProfileProvider>();
-      _showUserMenu(context, userProvider);
+      final jellyfinProvider = context.read<JellyfinProfileProvider>();
+      _showUserMenu(context, userProvider, jellyfinProvider);
       return KeyEventResult.handled;
     }
 
@@ -1001,8 +1004,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileSwitchScreen()));
   }
 
+  void _handleJellyfinSwitchProfile(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const JellyfinProfileSwitchScreen()));
+  }
+
   /// Show user menu programmatically (for D-pad select)
-  void _showUserMenu(BuildContext context, UserProfileProvider userProvider) {
+  void _showUserMenu(BuildContext context, UserProfileProvider userProvider, JellyfinProfileProvider jellyfinProvider) {
+    final isJellyfin = jellyfinProvider.currentUser != null;
+    final showSwitch = isJellyfin ? true : userProvider.hasMultipleUsers;
     final RenderBox? button = _userButtonFocusNode.context?.findRenderObject() as RenderBox?;
     if (button == null) return;
 
@@ -1019,7 +1028,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       context: context,
       position: position,
       items: [
-        if (userProvider.hasMultipleUsers)
+        if (showSwitch)
           PopupMenuItem(
             value: 'switch_profile',
             child: Row(
@@ -1034,7 +1043,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     ).then((value) {
       if (!context.mounted) return;
       if (value == 'switch_profile') {
-        _handleSwitchProfile(context);
+        if (isJellyfin) {
+          _handleJellyfinSwitchProfile(context);
+        } else {
+          _handleSwitchProfile(context);
+        }
       } else if (value == 'logout') {
         _handleLogout();
       }
@@ -1196,8 +1209,31 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   );
                 },
               ),
-              Consumer<UserProfileProvider>(
-                builder: (context, userProvider, child) {
+              Consumer2<UserProfileProvider, JellyfinProfileProvider>(
+                builder: (context, userProvider, jellyfinProvider, child) {
+                  final isJellyfin = jellyfinProvider.currentUser != null;
+                  final showSwitch = isJellyfin ? true : userProvider.hasMultipleUsers;
+                  Widget avatar;
+                  if (isJellyfin) {
+                    final jUser = jellyfinProvider.currentUser!;
+                    final imageUrl = jellyfinProvider.imageUrlFor(jUser);
+                    avatar = imageUrl.isNotEmpty
+                        ? ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: imageUrl,
+                              width: 32,
+                              height: 32,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
+                              errorWidget: (_, __, ___) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
+                            ),
+                          )
+                        : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white);
+                  } else {
+                    avatar = userProvider.currentUser?.thumb != null
+                        ? UserAvatarWidget(user: userProvider.currentUser!, size: 32, showIndicators: false)
+                        : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white);
+                  }
                   return Focus(
                     focusNode: _userButtonFocusNode,
                     onKeyEvent: _handleUserKeyEvent,
@@ -1207,19 +1243,20 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         borderRadius: const BorderRadius.all(Radius.circular(20)),
                       ),
                       child: PopupMenuButton<String>(
-                        icon: userProvider.currentUser?.thumb != null
-                            ? UserAvatarWidget(user: userProvider.currentUser!, size: 32, showIndicators: false)
-                            : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
+                        icon: avatar,
                         onSelected: (value) {
                           if (value == 'switch_profile') {
-                            _handleSwitchProfile(context);
+                            if (isJellyfin) {
+                              _handleJellyfinSwitchProfile(context);
+                            } else {
+                              _handleSwitchProfile(context);
+                            }
                           } else if (value == 'logout') {
                             _handleLogout();
                           }
                         },
                         itemBuilder: (context) => [
-                          // Only show Switch Profile if multiple users available
-                          if (userProvider.hasMultipleUsers)
+                          if (showSwitch)
                             PopupMenuItem(
                               value: 'switch_profile',
                               child: Row(

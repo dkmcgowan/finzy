@@ -64,6 +64,7 @@ class ServerRegistry {
   }
 
   /// Add a Jellyfin server (e.g. after sign-in). Replaces existing if same serverId.
+  /// For one-server multi-user: if a Jellyfin server already exists, adds or updates this user and sets as current.
   Future<void> addOrReplaceJellyfinServer(JellyfinServerData data) async {
     final servers = await getServers();
     final index = servers.indexWhere((s) => s.isJellyfin && s.serverId == data.serverId);
@@ -75,6 +76,50 @@ class ServerRegistry {
       appLogger.d('Added Jellyfin server: ${data.serverName}');
     }
     await saveServers(servers);
+  }
+
+  /// Add or update a user on the existing Jellyfin server and set as current user.
+  /// If no Jellyfin server exists, returns false (caller should use addOrReplaceJellyfinServer with full data).
+  Future<bool> addOrUpdateJellyfinUserAndSetCurrent(JellyfinStoredUser user) async {
+    final servers = await getServers();
+    final index = servers.indexWhere((s) => s.isJellyfin);
+    if (index < 0) return false;
+    final reg = servers[index];
+    final data = reg.jellyfinData!;
+    final existing = data.users.where((u) => u.userId == user.userId).toList();
+    final newUsers = existing.isEmpty
+        ? [...data.users, user]
+        : data.users.map((u) => u.userId == user.userId ? user : u).toList();
+    final newData = JellyfinServerData(
+      baseUrl: data.baseUrl,
+      serverId: data.serverId,
+      serverName: data.serverName,
+      users: newUsers,
+      currentUserId: user.userId,
+    );
+    servers[index] = RegisteredServer.jellyfin(newData);
+    await saveServers(servers);
+    appLogger.d('Added/updated Jellyfin user: ${user.userName}');
+    return true;
+  }
+
+  /// Set the current Jellyfin user (for switch profile). [userId] must be in the server's users list.
+  Future<bool> setCurrentJellyfinUser(String userId) async {
+    final servers = await getServers();
+    final index = servers.indexWhere((s) => s.isJellyfin);
+    if (index < 0) return false;
+    final data = servers[index].jellyfinData!;
+    if (!data.users.any((u) => u.userId == userId)) return false;
+    final newData = JellyfinServerData(
+      baseUrl: data.baseUrl,
+      serverId: data.serverId,
+      serverName: data.serverName,
+      users: data.users,
+      currentUserId: userId,
+    );
+    servers[index] = RegisteredServer.jellyfin(newData);
+    await saveServers(servers);
+    return true;
   }
 
   /// Remove a server

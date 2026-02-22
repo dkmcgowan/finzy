@@ -14,6 +14,7 @@ import 'utils/platform_detector.dart';
 import 'services/discord_rpc_service.dart';
 import 'services/gamepad_service.dart';
 import 'providers/user_profile_provider.dart';
+import 'providers/jellyfin_profile_provider.dart';
 import 'providers/multi_server_provider.dart';
 import 'providers/server_state_provider.dart';
 import 'providers/theme_provider.dart';
@@ -304,6 +305,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
         ),
         // Existing providers
         ChangeNotifierProvider(create: (context) => UserProfileProvider()),
+        ChangeNotifierProvider(create: (context) => JellyfinProfileProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => SettingsProvider(), lazy: true),
         ChangeNotifierProvider(create: (context) => HiddenLibrariesProvider(), lazy: true),

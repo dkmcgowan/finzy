@@ -672,16 +672,18 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           final tagged = items
               .map((item) => item.copyWith(serverId: lib.serverId, serverName: lib.serverName))
               .toList();
-          hubs.add(PlexHub(
-            hubKey: 'favorites_${lib.globalKey}',
-            title: lib.title,
-            type: lib.type,
-            size: tagged.length,
-            more: tagged.length >= 20,
-            items: tagged,
-            serverId: lib.serverId,
-            serverName: lib.serverName,
-          ));
+          if (tagged.isNotEmpty) {
+            hubs.add(PlexHub(
+              hubKey: 'favorites_${lib.globalKey}',
+              title: lib.title,
+              type: lib.type,
+              size: tagged.length,
+              more: tagged.length >= 20,
+              items: tagged,
+              serverId: lib.serverId,
+              serverName: lib.serverName,
+            ));
+          }
         } catch (e) {
           appLogger.w('Failed to load favorites for ${lib.title}', error: e);
         }
@@ -1513,6 +1515,18 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             message: _globalFavoritesError!,
             icon: Symbols.error_outline_rounded,
             onRetry: _loadGlobalFavorites,
+          ),
+        ),
+      ];
+    }
+    if (_globalFavoritesHubs.isEmpty) {
+      return [
+        SliverFillRemaining(
+          child: Center(
+            child: EmptyStateWidget(
+              message: t.libraries.noFavorites,
+              icon: Symbols.favorite_rounded,
+            ),
           ),
         ),
       ];

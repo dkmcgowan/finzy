@@ -8,37 +8,100 @@ enum BackendType {
   jellyfin,
 }
 
-/// Data required to connect to a Jellyfin server.
-class JellyfinServerData {
-  final String baseUrl;
-  final String token;
+/// One stored Jellyfin user (token + display info for switch profile).
+class JellyfinStoredUser {
   final String userId;
-  final String serverId;
-  final String serverName;
+  final String accessToken;
+  final String userName;
+  final String? primaryImageTag;
 
-  JellyfinServerData({
-    required this.baseUrl,
-    required this.token,
+  JellyfinStoredUser({
     required this.userId,
-    required this.serverId,
-    required this.serverName,
+    required this.accessToken,
+    required this.userName,
+    this.primaryImageTag,
   });
 
   Map<String, dynamic> toJson() => {
-        'baseUrl': baseUrl,
-        'token': token,
         'userId': userId,
+        'accessToken': accessToken,
+        'userName': userName,
+        if (primaryImageTag != null) 'primaryImageTag': primaryImageTag,
+      };
+
+  factory JellyfinStoredUser.fromJson(Map<String, dynamic> json) {
+    return JellyfinStoredUser(
+      userId: json['userId'] as String? ?? '',
+      accessToken: json['accessToken'] as String? ?? '',
+      userName: json['userName'] as String? ?? '',
+      primaryImageTag: json['primaryImageTag'] as String?,
+    );
+  }
+}
+
+/// Data required to connect to a Jellyfin server.
+/// Supports multiple users on one server; [currentUserId] selects the active user.
+class JellyfinServerData {
+  final String baseUrl;
+  final String serverId;
+  final String serverName;
+  /// Stored users (at least one). Current user is selected by [currentUserId].
+  final List<JellyfinStoredUser> users;
+  final String currentUserId;
+
+  JellyfinServerData({
+    required this.baseUrl,
+    required this.serverId,
+    required this.serverName,
+    required this.users,
+    required this.currentUserId,
+  });
+
+  /// Token for the currently selected user.
+  String get token {
+    final u = currentUser;
+    return u?.accessToken ?? (users.isNotEmpty ? users.first.accessToken : '');
+  }
+
+  /// User id for the currently selected user.
+  String get userId => currentUserId;
+
+  /// Current user's display name and optional image tag for avatar.
+  JellyfinStoredUser? get currentUser {
+    for (final u in users) if (u.userId == currentUserId) return u;
+    return users.isNotEmpty ? users.first : null;
+  }
+
+  Map<String, dynamic> toJson() => {
+        'baseUrl': baseUrl,
         'serverId': serverId,
         'serverName': serverName,
+        'users': users.map((u) => u.toJson()).toList(),
+        'currentUserId': currentUserId,
       };
 
   factory JellyfinServerData.fromJson(Map<String, dynamic> json) {
+    final usersJson = json['users'] as List<dynamic>?;
+    List<JellyfinStoredUser> usersList;
+    String currentUserId;
+    if (usersJson != null && usersJson.isNotEmpty) {
+      usersList = usersJson.map((e) => JellyfinStoredUser.fromJson(e as Map<String, dynamic>)).toList();
+      currentUserId = json['currentUserId'] as String? ?? usersList.first.userId;
+    } else {
+      // Legacy: single token/userId
+      final token = json['token'] as String? ?? '';
+      final userId = json['userId'] as String? ?? '';
+      usersList = token.isNotEmpty && userId.isNotEmpty
+          ? [JellyfinStoredUser(userId: userId, accessToken: token, userName: '')]
+          : [];
+      currentUserId = userId;
+    }
     return JellyfinServerData(
       baseUrl: json['baseUrl'] as String,
-      token: json['token'] as String,
-      userId: json['userId'] as String,
       serverId: json['serverId'] as String,
       serverName: json['serverName'] as String? ?? 'Jellyfin',
+      users: usersList,
+      currentUserId: currentUserId,
     );
   }
 }
