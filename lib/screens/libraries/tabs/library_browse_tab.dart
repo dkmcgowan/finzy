@@ -424,6 +424,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
 
   void _handleLoadError(dynamic error, int currentRequestId) {
     if (currentRequestId != _requestId) return;
+    if (!mounted) return;
 
     setState(() {
       errorMessage = _getErrorMessage(error);
