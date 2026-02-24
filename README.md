@@ -1,4 +1,9 @@
-# Finzy
+<p align="center">
+ <img src="assets/finzy.png" alt="Finzy Logo" width="128" height="128">
+ <br>
+ <strong style="font-size: 2em;">Finzy</strong>
+ <br>
+</p>
 
 A modern Jellyfin client for desktop and mobile. Built with Flutter for native performance and a clean interface.
 
@@ -9,22 +14,42 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 ### 🔐 Authentication
 - Sign in with Jellyfin (server URL + username/password or Quick Connect)
 - Multi-user support with profile switching
+- Multi-server support
 
 ### 📚 Media Browsing
 - Browse libraries with rich metadata
 - Advanced search across all media
 - Collections and playlists
+- "More Like This" similar items on detail screens
+- Genre, favorites, and recommended tabs
 
 ### 🎬 Playback
 - Wide codec support (HEVC, AV1, VP9, and more)
 - HDR and Dolby Vision (iOS, macOS, Windows)
-- Full ASS/SSA subtitle support
+- Full ASS/SSA subtitle support with custom styling
+- External subtitles (load on demand)
+- Trickplay timeline thumbnails
+- Chapter images and chapter navigation
 - Progress sync and resume
 - Auto-play next episode
+
+### ⏭️ Media Segments
+- Skip Intro, Skip Outro, Skip Recap, Skip Preview, Skip Ads
+- Individual auto-skip toggles for each segment type
+- Configurable auto-skip delay
+- Manual skip button always available during playback
 
 ### 📥 Downloads
 - Download media for offline viewing
 - Background downloads with queue management
+
+### ⚙️ Customization
+- Keyboard shortcuts (fully configurable)
+- External player support
+- Sleep timer
+- Rotation lock
+- Performance overlay
+- 9 languages supported
 
 ## Building from Source
 
