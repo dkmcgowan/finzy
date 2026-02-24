@@ -1,12 +1,23 @@
-<img src="assets/finzy.png" alt="Finzy Logo" width="96" height="96" align="left">
-
-### Finzy
-
-<br clear="left">
+<h1>
+  <img src="assets/finzy.png" alt="Finzy Logo" height="24" style="vertical-align: middle;" />
+  Finzy
+</h1>
 
 A modern Jellyfin client for desktop and mobile. Built with Flutter for native performance and a clean interface.
 
 Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-platform Plex client built with Flutter, adapted for [Jellyfin](https://jellyfin.org) instead of Plex.
+
+<p align="center">
+  <img src="assets/screenshots/macos-home.png" alt="Finzy macOS Home Screen" width="800" />
+</p>
+
+*More screenshots in the [screenshots folder](assets/screenshots/#readme)*
+
+## Download
+
+- [Windows (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest)
+- [macOS (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest)
+- [Linux (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest) - .deb, .rpm, .pkg.tar.zst, and portable tar.gz available
 
 ## Features
 
