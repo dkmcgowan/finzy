@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import '../models/plex_file_info.dart';
+import '../models/file_info.dart';
 import '../i18n/strings.g.dart';
 import 'bottom_sheet_header.dart';
 
 class FileInfoBottomSheet extends StatefulWidget {
-  final PlexFileInfo fileInfo;
+  final FileInfo fileInfo;
   final String title;
 
   const FileInfoBottomSheet({super.key, required this.fileInfo, required this.title});

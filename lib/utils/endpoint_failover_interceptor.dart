@@ -142,7 +142,7 @@ class EndpointFailoverInterceptor extends Interceptor {
     _isSwitching = true;
     try {
       appLogger.i(
-        'Switching Plex endpoint after request failure',
+        'Switching server endpoint after request failure',
         error: {'from': failedEndpoint, 'to': nextBaseUrl, 'path': err.requestOptions.path},
       );
       await _onEndpointSwitch(nextBaseUrl);

@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.edde746" "\0"
-            VALUE "FileDescription", "Plezy" "\0"
+            VALUE "CompanyName", "finzy" "\0"
+            VALUE "FileDescription", "Finzy" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "Plezy" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 edde746. All rights reserved." "\0"
-            VALUE "OriginalFilename", "Plezy.exe" "\0"
-            VALUE "ProductName", "Plezy" "\0"
+            VALUE "InternalName", "Finzy" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 Finzy." "\0"
+            VALUE "OriginalFilename", "Finzy.exe" "\0"
+            VALUE "ProductName", "Finzy" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

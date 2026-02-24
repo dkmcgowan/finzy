@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import '../../services/media_server_client.dart';
+import '../../services/jellyfin_client.dart';
 import '../../services/play_queue_launcher.dart';
-import '../../models/plex_playlist.dart';
-import '../../models/plex_metadata.dart';
+import '../../models/playlist.dart';
+import '../../models/media_metadata.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/provider_extensions.dart';
 import '../../widgets/app_icon.dart';
@@ -23,7 +23,7 @@ import '../../mixins/grid_focus_node_mixin.dart';
 
 /// Screen to display the contents of a playlist
 class PlaylistDetailScreen extends StatefulWidget {
-  final PlexPlaylist playlist;
+  final Playlist playlist;
 
   const PlaylistDetailScreen({super.key, required this.playlist});
 
@@ -91,13 +91,13 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
   // Move mode state
   int? _movingIndex;
   int? _originalIndex;
-  List<PlexMetadata>? _originalOrder;
+  List<MediaMetadata>? _originalOrder;
 
   // Estimated item height for scroll-into-view (card + vertical margins)
   static const double _estimatedItemHeight = 114.0;
 
   /// Fetched series metadata for show cards that lacked unwatched count (e.g. from playlist API).
-  Map<String, PlexMetadata> _enrichedShowCounts = {};
+  Map<String, MediaMetadata> _enrichedShowCounts = {};
 
   @override
   void dispose() {
@@ -107,7 +107,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
   }
 
   @override
-  Future<List<PlexMetadata>> fetchItems() async {
+  Future<List<MediaMetadata>> fetchItems() async {
     return await client.getPlaylist(widget.playlist.ratingKey);
   }
 
@@ -147,8 +147,8 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     super.navigateToGrid();
   }
 
-  /// Get the correct MediaServerClient for this playlist's server
-  MediaServerClient _getClientForPlaylist() {
+  /// Get the correct JellyfinClient for this playlist's server
+  JellyfinClient _getClientForPlaylist() {
     return context.getClientForServer(widget.playlist.serverId!);
   }
 
@@ -158,7 +158,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     final displayItems = _getGroupedDisplayItems();
     final toFetch = <String>[];
     for (final item in displayItems) {
-      if (item.mediaType != PlexMediaType.show) continue;
+      if (item.mediaType != MediaType.show) continue;
       if (item.effectiveUnwatchedCount != null) continue;
       final key = item.ratingKey;
       if (key.isEmpty || _enrichedShowCounts.containsKey(key)) continue;
@@ -170,7 +170,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
       toFetch.map((key) => client.getMetadataWithImages(key)),
     );
     if (!mounted) return;
-    final Map<String, PlexMetadata> next = Map.from(_enrichedShowCounts);
+    final Map<String, MediaMetadata> next = Map.from(_enrichedShowCounts);
     for (var i = 0; i < toFetch.length; i++) {
       final meta = results[i];
       if (meta != null) next[toFetch[i]] = meta;
@@ -182,11 +182,11 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
 
   /// Group playlist items by series so we show one card per show (and one per movie), matching Library Browse.
   /// Episodes are collapsed into their show; movies appear as-is. Order is first occurrence in playlist.
-  List<PlexMetadata> _getGroupedDisplayItems() {
+  List<MediaMetadata> _getGroupedDisplayItems() {
     final seenShowKeys = <String>{};
-    final result = <PlexMetadata>[];
+    final result = <MediaMetadata>[];
     for (final item in items) {
-      if (item.mediaType == PlexMediaType.episode || item.mediaType == PlexMediaType.clip) {
+      if (item.mediaType == MediaType.episode || item.mediaType == MediaType.clip) {
         final showKey = item.grandparentRatingKey ?? item.parentRatingKey ?? item.ratingKey;
         if (showKey.isEmpty) continue;
         if (seenShowKeys.add(showKey)) {
@@ -209,7 +209,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
             index: null,
           ));
         }
-      } else if (item.mediaType == PlexMediaType.season) {
+      } else if (item.mediaType == MediaType.season) {
         // Group season under its show; preserve unwatched/leaf counts so badge can show
         final showKey = item.parentRatingKey ?? item.ratingKey;
         if (showKey.isEmpty) continue;
@@ -235,11 +235,11 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
             viewedLeafCount: item.viewedLeafCount,
           ));
         }
-      } else if (item.mediaType == PlexMediaType.movie) {
+      } else if (item.mediaType == MediaType.movie) {
         result.add(item);
       }
       // Other types (e.g. show already in playlist) add as-is
-      else if (item.mediaType == PlexMediaType.show) {
+      else if (item.mediaType == MediaType.show) {
         if (seenShowKeys.add(item.ratingKey)) result.add(item);
       } else {
         result.add(item);
@@ -247,7 +247,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     }
     // Merge enriched series metadata (unwatched count) when playlist API didn't provide it
     final merged = result.map((item) {
-      if (item.mediaType != PlexMediaType.show) return item;
+      if (item.mediaType != MediaType.show) return item;
       final enriched = _enrichedShowCounts[item.ratingKey];
       if (enriched == null) return item;
       final m = item.copyWith(
@@ -449,11 +449,11 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     final mediaType = item.mediaType;
 
     // For episode or clip, start playback from this item in the playlist
-    if (mediaType == PlexMediaType.episode || mediaType == PlexMediaType.clip) {
-      final plexClient = _getClientForPlaylist();
+    if (mediaType == MediaType.episode || mediaType == MediaType.clip) {
+      final client = _getClientForPlaylist();
       final launcher = PlayQueueLauncher(
         context: context,
-        client: plexClient,
+        client: client,
         serverId: widget.playlist.serverId,
         serverName: widget.playlist.serverName,
       );

@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import '../../services/media_server_client.dart';
+import '../../services/jellyfin_client.dart';
 import '../main.dart';
 import '../focus/focusable_wrapper.dart';
 import '../focus/key_event_utils.dart';
@@ -14,8 +14,8 @@ import '../focus/input_mode_tracker.dart';
 import '../models/download_models.dart';
 import '../providers/download_provider.dart';
 import '../services/download_storage_service.dart';
-import '../widgets/plex_optimized_image.dart';
-import '../models/plex_metadata.dart';
+import '../widgets/optimized_image.dart';
+import '../models/media_metadata.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/video_player_navigation.dart';
 import '../utils/formatters.dart';
@@ -31,7 +31,7 @@ import '../theme/mono_tokens.dart';
 import '../i18n/strings.g.dart';
 
 class SeasonDetailScreen extends StatefulWidget {
-  final PlexMetadata season;
+  final MediaMetadata season;
   final bool isOffline;
 
   const SeasonDetailScreen({super.key, required this.season, this.isOffline = false});
@@ -42,12 +42,12 @@ class SeasonDetailScreen extends StatefulWidget {
 
 class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     with ItemUpdatable, WatchStateAware, DeletionAware, RouteAware {
-  MediaServerClient? _client;
+  JellyfinClient? _client;
 
   @override
-  MediaServerClient get client => _client!;
+  JellyfinClient get client => _client!;
 
-  List<PlexMetadata> _episodes = [];
+  List<MediaMetadata> _episodes = [];
   bool _isLoadingEpisodes = false;
   bool _watchStateChanged = false;
   // Capture keyboard mode once at init to avoid rebuild dependency
@@ -118,8 +118,8 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     }
   }
 
-  /// Get the correct MediaServerClient for this season's server
-  MediaServerClient? _getClientForSeason(BuildContext context) {
+  /// Get the correct JellyfinClient for this season's server
+  JellyfinClient? _getClientForSeason(BuildContext context) {
     if (widget.isOffline || widget.season.serverId == null) {
       return null;
     }
@@ -150,7 +150,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     }
 
     try {
-      // Episodes are automatically tagged with server info by PlexClient
+      // Episodes are automatically tagged with server info by JellyfinClient
       final episodes = await _client!.getChildren(widget.season.ratingKey);
 
       if (!mounted) return;
@@ -190,7 +190,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
   }
 
   @override
-  void updateItemInLists(String ratingKey, PlexMetadata updatedMetadata) {
+  void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata) {
     final index = _episodes.indexWhere((item) => item.ratingKey == ratingKey);
     if (index != -1) {
       _episodes[index] = updatedMetadata;
@@ -316,8 +316,8 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
 
 /// Episode card widget with D-pad long-press support
 class _EpisodeCard extends StatefulWidget {
-  final PlexMetadata episode;
-  final MediaServerClient? client;
+  final MediaMetadata episode;
+  final JellyfinClient? client;
   final VoidCallback onTap;
   final Future<void> Function(String)? onRefresh;
   final Future<void> Function()? onListRefresh;
@@ -661,7 +661,7 @@ class _EpisodeCardState extends State<_EpisodeCard> {
       );
     }
     if (widget.episode.thumb != null) {
-      return PlexOptimizedImage.thumb(
+      return OptimizedImage.thumb(
         client: widget.client,
         imagePath: widget.episode.thumb,
         filterQuality: FilterQuality.medium,

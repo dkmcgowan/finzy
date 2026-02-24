@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../utils/desktop_window_padding.dart';
 import '../services/fullscreen_state_manager.dart';
@@ -10,6 +10,7 @@ import 'app_bar_back_button.dart';
 class DesktopAppBarConfig {
   final Widget? title;
   final List<Widget>? actions;
+  final double? toolbarHeight;
   final double? elevation;
   final Color? backgroundColor;
   final Color? surfaceTintColor;
@@ -24,6 +25,7 @@ class DesktopAppBarConfig {
   const DesktopAppBarConfig({
     this.title,
     this.actions,
+    this.toolbarHeight,
     this.elevation,
     this.backgroundColor,
     this.surfaceTintColor,
@@ -93,6 +95,7 @@ class DesktopAppBarSections {
 class DesktopSliverAppBar extends StatelessWidget {
   final Widget? title;
   final List<Widget>? actions;
+  final double? toolbarHeight;
   final Widget? leading;
   final bool automaticallyImplyLeading;
   final double? elevation;
@@ -110,6 +113,7 @@ class DesktopSliverAppBar extends StatelessWidget {
     super.key,
     this.title,
     this.actions,
+    this.toolbarHeight,
     this.leading,
     this.automaticallyImplyLeading = true,
     this.elevation,
@@ -138,6 +142,7 @@ class DesktopSliverAppBar extends StatelessWidget {
       leading: effectiveLeading,
       leadingWidth: DesktopAppBarSections.calculateLeadingWidthForSection(leading: effectiveLeading, context: context),
       automaticallyImplyLeading: false, // Always false since we handle it manually
+      toolbarHeight: toolbarHeight ?? kToolbarHeight,
       elevation: elevation,
       backgroundColor: backgroundColor,
       surfaceTintColor: surfaceTintColor,
@@ -190,6 +195,7 @@ class DesktopTopBar extends StatelessWidget {
           key: ValueKey('desktop_top_bar_$isFullscreen'),
           title: config.title,
           actions: config.actions,
+        toolbarHeight: config.toolbarHeight,
           leading: effectiveLeading,
           automaticallyImplyLeading: false,
           elevation: config.elevation,
@@ -223,6 +229,7 @@ class CustomAppBar extends StatelessWidget {
   final double? scrolledUnderElevation;
   final bool floating;
   final bool pinned;
+  final double? toolbarHeight;
   final double? expandedHeight;
   final Widget? flexibleSpace;
   final PreferredSizeWidget? bottom;
@@ -240,6 +247,7 @@ class CustomAppBar extends StatelessWidget {
     this.scrolledUnderElevation,
     this.floating = false,
     this.pinned = false,
+    this.toolbarHeight,
     this.expandedHeight,
     this.flexibleSpace,
     this.bottom,
@@ -252,6 +260,7 @@ class CustomAppBar extends StatelessWidget {
       config: DesktopAppBarConfig(
         title: title,
         actions: actions,
+        toolbarHeight: toolbarHeight,
         elevation: elevation,
         backgroundColor: backgroundColor,
         surfaceTintColor: surfaceTintColor,

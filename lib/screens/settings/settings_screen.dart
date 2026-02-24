@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../models/hotkey_model.dart';
 import 'package:provider/provider.dart';
@@ -14,12 +14,12 @@ import '../../focus/input_mode_tracker.dart';
 import '../../i18n/strings.g.dart';
 import '../main_screen.dart';
 import '../../mixins/refreshable.dart';
-import '../../services/discord_rpc_service.dart';
-import '../../services/download_storage_service.dart';
-import '../../services/saf_storage_service.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_profile_provider.dart';
+
+import '../../services/download_storage_service.dart';
+import '../../services/saf_storage_service.dart';
 import '../../services/keyboard_shortcuts_service.dart';
 import '../../services/settings_service.dart' as settings;
 import '../../services/update_service.dart';
@@ -28,9 +28,6 @@ import '../../utils/platform_detector.dart';
 import '../../widgets/desktop_app_bar.dart';
 import '../../widgets/tv_number_spinner.dart';
 import 'hotkey_recorder_widget.dart';
-import '../../providers/companion_remote_provider.dart';
-import '../../screens/companion_remote/mobile_remote_screen.dart';
-import '../../widgets/companion_remote/remote_session_dialog.dart';
 import 'about_screen.dart';
 import 'external_player_screen.dart';
 import 'logs_screen.dart';
@@ -82,11 +79,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kLargeSkipDuration = 'large_skip_duration';
   static const _kDefaultSleepTimer = 'default_sleep_timer';
   static const _kMaxVolume = 'max_volume';
-  static const _kDiscordRichPresence = 'discord_rich_presence';
+
   static const _kRememberTrackSelections = 'remember_track_selections';
   static const _kClickVideoTogglesPlayback = 'click_video_toggles_playback';
   static const _kAutoSkipIntro = 'auto_skip_intro';
-  static const _kAutoSkipCredits = 'auto_skip_credits';
+  static const _kAutoSkipOutro = 'auto_skip_outro';
+  static const _kAutoSkipRecap = 'auto_skip_recap';
+  static const _kAutoSkipPreview = 'auto_skip_preview';
+  static const _kAutoSkipCommercial = 'auto_skip_commercial';
+  static const _kEnableExternalSubtitles = 'enable_external_subtitles';
+  static const _kEnableTrickplay = 'enable_trickplay';
+  static const _kEnableChapterImages = 'enable_chapter_images';
   static const _kAutoSkipDelay = 'auto_skip_delay';
   static const _kDownloadLocation = 'download_location';
   static const _kDownloadOnWifiOnly = 'download_on_wifi_only';
@@ -111,12 +114,18 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   bool _rememberTrackSelections = true;
   bool _clickVideoTogglesPlayback = false;
   bool _autoSkipIntro = false;
-  bool _autoSkipCredits = false;
+  bool _autoSkipOutro = false;
+  bool _autoSkipRecap = false;
+  bool _autoSkipPreview = false;
+  bool _autoSkipCommercial = false;
+  bool _enableExternalSubtitles = false;
+  bool _enableTrickplay = false;
+  bool _enableChapterImages = false;
   int _autoSkipDelay = 5;
   bool _downloadOnWifiOnly = false;
   bool _videoPlayerNavigationEnabled = false;
   int _maxVolume = 100;
-  bool _enableDiscordRPC = false;
+
   bool _matchContentFrameRate = false;
   bool _useExoPlayer = true; // Android only: ExoPlayer vs MPV
   bool _requireProfileSelectionOnOpen = false;
@@ -185,12 +194,18 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       _rememberTrackSelections = _settingsService.getRememberTrackSelections();
       _clickVideoTogglesPlayback = _settingsService.getClickVideoTogglesPlayback();
       _autoSkipIntro = _settingsService.getAutoSkipIntro();
-      _autoSkipCredits = _settingsService.getAutoSkipCredits();
+      _autoSkipOutro = _settingsService.getAutoSkipOutro();
+      _autoSkipRecap = _settingsService.getAutoSkipRecap();
+      _autoSkipPreview = _settingsService.getAutoSkipPreview();
+      _autoSkipCommercial = _settingsService.getAutoSkipCommercial();
+      _enableExternalSubtitles = _settingsService.getEnableExternalSubtitles();
+      _enableTrickplay = _settingsService.getEnableTrickplay();
+      _enableChapterImages = _settingsService.getEnableChapterImages();
       _autoSkipDelay = _settingsService.getAutoSkipDelay();
       _downloadOnWifiOnly = _settingsService.getDownloadOnWifiOnly();
       _videoPlayerNavigationEnabled = _settingsService.getVideoPlayerNavigationEnabled();
       _maxVolume = _settingsService.getMaxVolume();
-      _enableDiscordRPC = _settingsService.getEnableDiscordRPC();
+
       _matchContentFrameRate = _settingsService.getMatchContentFrameRate();
       _useExoPlayer = _settingsService.getUseExoPlayer();
       _requireProfileSelectionOnOpen = _settingsService.getRequireProfileSelectionOnOpen();
@@ -212,7 +227,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
         onKeyEvent: _handleKeyEvent,
         child: CustomScrollView(
           slivers: [
-            CustomAppBar(title: Text(t.settings.title), pinned: true),
+            CustomAppBar(
+              title: Text(t.settings.title),
+              pinned: true,
+              toolbarHeight: 72,
+            ),
             SliverPadding(
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
@@ -224,8 +243,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                   _buildDownloadsSection(),
                   const SizedBox(height: 24),
                   if (_keyboardShortcutsSupported) ...[_buildKeyboardShortcutsSection(), const SizedBox(height: 24)],
-                  _buildCompanionRemoteSection(),
-                  const SizedBox(height: 24),
                   _buildAdvancedSection(),
                   const SizedBox(height: 24),
                   if (UpdateService.isUpdateCheckEnabled) ...[_buildUpdateSection(), const SizedBox(height: 24)],
@@ -513,6 +530,45 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const SubtitleStylingScreen()));
             },
           ),
+          SwitchListTile(
+            focusNode: _focusTracker.get(_kEnableExternalSubtitles),
+            secondary: const AppIcon(Symbols.subtitles_rounded, fill: 1),
+            title: Text(t.settings.enableExternalSubtitles),
+            subtitle: Text(t.settings.enableExternalSubtitlesDescription),
+            value: _enableExternalSubtitles,
+            onChanged: (value) async {
+              setState(() {
+                _enableExternalSubtitles = value;
+              });
+              await _settingsService.setEnableExternalSubtitles(value);
+            },
+          ),
+          SwitchListTile(
+            focusNode: _focusTracker.get(_kEnableTrickplay),
+            secondary: const AppIcon(Symbols.view_timeline_rounded, fill: 1),
+            title: Text(t.settings.enableTrickplay),
+            subtitle: Text(t.settings.enableTrickplayDescription),
+            value: _enableTrickplay,
+            onChanged: (value) async {
+              setState(() {
+                _enableTrickplay = value;
+              });
+              await _settingsService.setEnableTrickplay(value);
+            },
+          ),
+          SwitchListTile(
+            focusNode: _focusTracker.get(_kEnableChapterImages),
+            secondary: const AppIcon(Symbols.photo_library_rounded, fill: 1),
+            title: Text(t.settings.enableChapterImages),
+            subtitle: Text(t.settings.enableChapterImagesDescription),
+            value: _enableChapterImages,
+            onChanged: (value) async {
+              setState(() {
+                _enableChapterImages = value;
+              });
+              await _settingsService.setEnableChapterImages(value);
+            },
+          ),
           // MPV Config is only available when using MPV player backend
           if (!Platform.isAndroid || !_useExoPlayer)
             ListTile(
@@ -557,19 +613,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
             trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
             onTap: () => _showMaxVolumeDialog(),
           ),
-          if (DiscordRPCService.isAvailable)
-            SwitchListTile(
-              focusNode: _focusTracker.get(_kDiscordRichPresence),
-              secondary: const AppIcon(Symbols.chat_rounded, fill: 1),
-              title: Text(t.settings.discordRichPresence),
-              subtitle: Text(t.settings.discordRichPresenceDescription),
-              value: _enableDiscordRPC,
-              onChanged: (value) async {
-                setState(() => _enableDiscordRPC = value);
-                await _settingsService.setEnableDiscordRPC(value);
-                await DiscordRPCService.instance.setEnabled(value);
-              },
-            ),
           SwitchListTile(
             focusNode: _focusTracker.get(_kRememberTrackSelections),
             secondary: const AppIcon(Symbols.bookmark_rounded, fill: 1),
@@ -615,23 +658,52 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
             subtitle: Text(t.settings.autoSkipIntroDescription),
             value: _autoSkipIntro,
             onChanged: (value) async {
-              setState(() {
-                _autoSkipIntro = value;
-              });
+              setState(() => _autoSkipIntro = value);
               await _settingsService.setAutoSkipIntro(value);
             },
           ),
           SwitchListTile(
-            focusNode: _focusTracker.get(_kAutoSkipCredits),
+            focusNode: _focusTracker.get(_kAutoSkipOutro),
             secondary: const AppIcon(Symbols.skip_next_rounded, fill: 1),
-            title: Text(t.settings.autoSkipCredits),
-            subtitle: Text(t.settings.autoSkipCreditsDescription),
-            value: _autoSkipCredits,
+            title: Text(t.settings.autoSkipOutro),
+            subtitle: Text(t.settings.autoSkipOutroDescription),
+            value: _autoSkipOutro,
             onChanged: (value) async {
-              setState(() {
-                _autoSkipCredits = value;
-              });
-              await _settingsService.setAutoSkipCredits(value);
+              setState(() => _autoSkipOutro = value);
+              await _settingsService.setAutoSkipOutro(value);
+            },
+          ),
+          SwitchListTile(
+            focusNode: _focusTracker.get(_kAutoSkipRecap),
+            secondary: const AppIcon(Symbols.replay_rounded, fill: 1),
+            title: Text(t.settings.autoSkipRecap),
+            subtitle: Text(t.settings.autoSkipRecapDescription),
+            value: _autoSkipRecap,
+            onChanged: (value) async {
+              setState(() => _autoSkipRecap = value);
+              await _settingsService.setAutoSkipRecap(value);
+            },
+          ),
+          SwitchListTile(
+            focusNode: _focusTracker.get(_kAutoSkipPreview),
+            secondary: const AppIcon(Symbols.preview_rounded, fill: 1),
+            title: Text(t.settings.autoSkipPreview),
+            subtitle: Text(t.settings.autoSkipPreviewDescription),
+            value: _autoSkipPreview,
+            onChanged: (value) async {
+              setState(() => _autoSkipPreview = value);
+              await _settingsService.setAutoSkipPreview(value);
+            },
+          ),
+          SwitchListTile(
+            focusNode: _focusTracker.get(_kAutoSkipCommercial),
+            secondary: const AppIcon(Symbols.ad_group_rounded, fill: 1),
+            title: Text(t.settings.autoSkipCommercial),
+            subtitle: Text(t.settings.autoSkipCommercialDescription),
+            value: _autoSkipCommercial,
+            onChanged: (value) async {
+              setState(() => _autoSkipCommercial = value);
+              await _settingsService.setAutoSkipCommercial(value);
             },
           ),
           ListTile(
@@ -838,51 +910,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildCompanionRemoteSection() {
-    return Consumer<CompanionRemoteProvider>(
-      builder: (context, companionRemote, child) {
-        return Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  t.companionRemote.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-              if (PlatformDetector.isDesktop(context))
-                ListTile(
-                  leading: const AppIcon(Symbols.phone_android_rounded, fill: 1),
-                  title: Text(t.companionRemote.hostRemoteSession),
-                  subtitle: companionRemote.isConnected
-                      ? Text(t.companionRemote.connectedTo(name: companionRemote.connectedDevice?.name ?? ''))
-                      : Text(t.companionRemote.controlThisDevice),
-                  trailing: companionRemote.isConnected
-                      ? const AppIcon(Symbols.check_circle_rounded, fill: 1, color: Colors.green)
-                      : const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-                  onTap: () => RemoteSessionDialog.show(context),
-                )
-              else
-                ListTile(
-                  leading: const AppIcon(Symbols.phone_android_rounded, fill: 1),
-                  title: Text(t.companionRemote.remoteControl),
-                  subtitle: companionRemote.isConnected
-                      ? Text(t.companionRemote.connectedTo(name: companionRemote.connectedDevice?.name ?? ''))
-                      : Text(t.companionRemote.controlDesktop),
-                  trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const MobileRemoteScreen()));
-                  },
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 

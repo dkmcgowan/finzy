@@ -1,4 +1,4 @@
-/// Parses Plex ratingImage / audienceRatingImage URIs and returns
+/// Parses server ratingImage / audienceRatingImage URIs and returns
 /// the corresponding local asset path and a display-formatted value.
 library;
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
@@ -49,7 +49,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 24),
-                    Image.asset('assets/plezy.png', width: 80, height: 80),
+                    Image.asset('assets/finzy.png', width: 80, height: 80),
                     const SizedBox(height: 16),
                     Text(
                       appName,

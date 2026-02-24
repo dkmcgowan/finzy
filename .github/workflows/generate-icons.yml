@@ -1,0 +1,37 @@
+# Generate finzy PNGs from assets/finzy.svg (no local image software needed).
+# Run manually: Actions → "Generate icon PNGs" → Run workflow → download artifact.
+name: Generate icon PNGs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    name: Generate PNGs from SVG
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Install Python deps
+        run: pip install Pillow
+
+      - name: Generate PNGs
+        run: python scripts/generate_finzy_pngs.py
+
+      - name: Upload icon PNGs
+        uses: actions/upload-artifact@v4
+        with:
+          name: finzy-icon-pngs
+          path: |
+            assets/finzy.png
+            assets/finzy_android_foreground.png
+            assets/finzy_monochrome.png

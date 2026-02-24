@@ -4,22 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/external_player_models.dart';
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../utils/app_logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../i18n/strings.g.dart';
-import 'media_server_client.dart';
+import 'jellyfin_client.dart';
 import 'settings_service.dart';
 
-const _externalPlayerChannel = MethodChannel('app.plezy/external_player');
+const _externalPlayerChannel = MethodChannel('app.finzy/external_player');
 
 class ExternalPlayerService {
   /// Launch an external player with either a pre-resolved [videoUrl] (e.g. local
   /// file path for downloaded content) or by fetching the streaming URL from [client].
   static Future<bool> launch({
     required BuildContext context,
-    PlexMetadata? metadata,
-    MediaServerClient? client,
+    MediaMetadata? metadata,
+    JellyfinClient? client,
     int mediaIndex = 0,
     String? videoUrl,
   }) async {

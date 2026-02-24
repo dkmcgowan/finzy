@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/play_queue_response.dart';
-import '../models/plex_metadata.dart';
-import '../models/plex_playlist.dart';
+import '../models/media_metadata.dart';
+import '../models/playlist.dart';
 import '../providers/playback_state_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/video_player_navigation.dart';
 import '../i18n/strings.g.dart';
-import 'media_server_client.dart';
+import 'jellyfin_client.dart';
 
 /// Result type for play queue operations
 sealed class PlayQueueResult {
@@ -38,7 +38,7 @@ class PlayQueueError extends PlayQueueResult {
 /// 4. Handling errors with appropriate feedback
 class PlayQueueLauncher {
   final BuildContext context;
-  final MediaServerClient client;
+  final JellyfinClient client;
   final String? serverId;
   final String? serverName;
 
@@ -46,12 +46,12 @@ class PlayQueueLauncher {
 
   /// Launch playback from a collection or playlist.
   Future<PlayQueueResult> launchFromCollectionOrPlaylist({
-    required dynamic item, // PlexMetadata (collection) or PlexPlaylist
+    required dynamic item, // MediaMetadata (collection) or Playlist
     required bool shuffle,
     bool showLoadingIndicator = true,
   }) async {
-    final isCollection = item is PlexMetadata;
-    final isPlaylist = item is PlexPlaylist;
+    final isCollection = item is MediaMetadata;
+    final isPlaylist = item is Playlist;
 
     if (!isCollection && !isPlaylist) {
       return PlayQueueError(Exception('Item must be either a collection or playlist'));
@@ -68,18 +68,8 @@ class PlayQueueLauncher {
         PlayQueueResponse? playQueue;
 
         if (isCollection) {
-          // Get machine identifier (fetch if not cached in config)
-          final machineId = await client.getMachineIdentifier();
-
-          if (machineId == null) {
-            throw Exception('Could not get server machine identifier');
-          }
-
-          final collectionUri = 'server://$machineId/com.plexapp.plugins.library/library/collections/${item.ratingKey}';
-          playQueue = await client.createPlayQueue(uri: collectionUri, type: 'video', shuffle: shuffle ? 1 : 0);
-        } else if (client.isJellyfin) {
-          // Jellyfin playlists use string IDs; build queue from playlist items
-          final items = await client.getPlaylist(item.ratingKey);
+          // Build queue from collection items (Jellyfin has no server-side play queue API)
+          final items = await client.getCollectionItems(item.ratingKey);
           if (items.isEmpty) {
             await dismissLoading();
             return const PlayQueueEmpty();
@@ -105,11 +95,31 @@ class PlayQueueLauncher {
             items: tagged,
           );
         } else {
-          // Plex playlists use integer playlistID
-          playQueue = await client.createPlayQueue(
-            playlistID: int.parse(item.ratingKey),
-            type: 'video',
-            shuffle: shuffle ? 1 : 0,
+          // Playlists: build queue from playlist items
+          final items = await client.getPlaylist(item.ratingKey);
+          if (items.isEmpty) {
+            await dismissLoading();
+            return const PlayQueueEmpty();
+          }
+          final order = List<int>.generate(items.length, (i) => i);
+          if (shuffle) order.shuffle();
+          final tagged = order
+              .asMap()
+              .entries
+              .map((e) => items[e.value].copyWith(
+                    playQueueItemID: e.key,
+                    serverId: item.serverId ?? itemServerId,
+                    serverName: item.serverName ?? itemServerName,
+                  ))
+              .toList();
+          playQueue = PlayQueueResponse(
+            playQueueID: 0,
+            playQueueSelectedItemID: 0,
+            playQueueShuffled: shuffle,
+            playQueueTotalCount: tagged.length,
+            playQueueVersion: 1,
+            size: tagged.length,
+            items: tagged,
           );
         }
 
@@ -136,8 +146,8 @@ class PlayQueueLauncher {
 
   /// Launch playback from a playlist starting at a specific item.
   Future<PlayQueueResult> launchFromPlaylistItem({
-    required PlexPlaylist playlist,
-    required PlexMetadata selectedItem,
+    required Playlist playlist,
+    required MediaMetadata selectedItem,
     bool showLoadingIndicator = true,
   }) async {
     return _executeWithLoading(
@@ -145,43 +155,34 @@ class PlayQueueLauncher {
       action: t.common.play,
       execute: (dismissLoading) async {
         PlayQueueResponse? playQueue;
-        PlexMetadata? selected;
-        if (client.isJellyfin) {
-          // Jellyfin uses string playlist IDs; build queue from playlist items.
-          final items = await client.getPlaylist(playlist.ratingKey);
-          if (items.isEmpty) {
-            await dismissLoading();
-            return const PlayQueueEmpty();
-          }
-          final selectedIndex = items.indexWhere((e) => e.ratingKey == selectedItem.ratingKey);
-          final startIndex = selectedIndex >= 0 ? selectedIndex : 0;
-          final tagged = items
-              .asMap()
-              .entries
-              .map((e) => e.value.copyWith(
-                    playQueueItemID: e.key,
-                    serverId: playlist.serverId ?? serverId,
-                    serverName: playlist.serverName ?? serverName,
-                  ))
-              .toList();
-          selected = tagged[startIndex];
-          playQueue = PlayQueueResponse(
-            playQueueID: 0,
-            playQueueSelectedItemID: startIndex,
-            playQueueShuffled: false,
-            playQueueTotalCount: tagged.length,
-            playQueueVersion: 1,
-            size: tagged.length,
-            items: tagged,
-          );
-        } else {
-          playQueue = await client.createPlayQueue(
-            playlistID: int.parse(playlist.ratingKey),
-            type: 'video',
-            key: selectedItem.key,
-          );
-          selected = playQueue?.selectedItem;
+        MediaMetadata? selected;
+        // Build queue from playlist items
+        final items = await client.getPlaylist(playlist.ratingKey);
+        if (items.isEmpty) {
+          await dismissLoading();
+          return const PlayQueueEmpty();
         }
+        final selectedIndex = items.indexWhere((e) => e.ratingKey == selectedItem.ratingKey);
+        final startIndex = selectedIndex >= 0 ? selectedIndex : 0;
+        final tagged = items
+            .asMap()
+            .entries
+            .map((e) => e.value.copyWith(
+                  playQueueItemID: e.key,
+                  serverId: playlist.serverId ?? serverId,
+                  serverName: playlist.serverName ?? serverName,
+                ))
+            .toList();
+        selected = tagged[startIndex];
+        playQueue = PlayQueueResponse(
+          playQueueID: 0,
+          playQueueSelectedItemID: startIndex,
+          playQueueShuffled: false,
+          playQueueTotalCount: tagged.length,
+          playQueueVersion: 1,
+          size: tagged.length,
+          items: tagged,
+        );
 
         // Close loading dialog before navigating to the player
         await dismissLoading();
@@ -198,10 +199,10 @@ class PlayQueueLauncher {
   }
 
   /// Launch shuffled playback for a show or season.
-  Future<PlayQueueResult> launchShuffledShow({required PlexMetadata metadata, bool showLoadingIndicator = true}) async {
+  Future<PlayQueueResult> launchShuffledShow({required MediaMetadata metadata, bool showLoadingIndicator = true}) async {
     final mediaType = metadata.mediaType;
 
-    if (mediaType != PlexMediaType.show && mediaType != PlexMediaType.season) {
+    if (mediaType != MediaType.show && mediaType != MediaType.season) {
       return PlayQueueError(Exception('Shuffle play only works for shows and seasons'));
     }
 
@@ -211,7 +212,7 @@ class PlayQueueLauncher {
       execute: (dismissLoading) async {
         // Determine the rating key for the play queue
         String showRatingKey;
-        if (mediaType == PlexMediaType.show) {
+        if (mediaType == MediaType.show) {
           showRatingKey = metadata.ratingKey;
         } else {
           // For seasons, we need the show's rating key
@@ -243,7 +244,7 @@ class PlayQueueLauncher {
     required String ratingKey,
     String? serverId,
     String? serverName,
-    PlexMetadata? selectedItem,
+    MediaMetadata? selectedItem,
     bool copyServerInfo = false,
   }) async {
     if (playQueue == null || playQueue.items == null || playQueue.items!.isEmpty) {

@@ -20,23 +20,23 @@ jobs:
         id: release
         run: |
           VERSION="${{ github.event.release.tag_name || github.ref_name }}"
-          curl -L -o plezy-macos.dmg \
-            "https://github.com/${{ github.repository }}/releases/download/$VERSION/plezy-macos.dmg"
-          SHA256=$(shasum -a 256 plezy-macos.dmg | cut -d' ' -f1)
+          curl -L -o finzy-macos.dmg \
+            "https://github.com/${{ github.repository }}/releases/download/$VERSION/finzy-macos.dmg"
+          SHA256=$(shasum -a 256 finzy-macos.dmg | cut -d' ' -f1)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
 
       - name: Update cask
         run: |
-          sed -i '' "s/version \".*\"/version \"${{ steps.release.outputs.version }}\"/" Casks/plezy.rb
-          sed -i '' "s/sha256 \".*\"/sha256 \"${{ steps.release.outputs.sha256 }}\"/" Casks/plezy.rb
+          sed -i '' "s/version \".*\"/version \"${{ steps.release.outputs.version }}\"/" Casks/finzy.rb
+          sed -i '' "s/sha256 \".*\"/sha256 \"${{ steps.release.outputs.sha256 }}\"/" Casks/finzy.rb
 
       - name: Commit
         run: |
           BRANCH="${{ github.event.repository.default_branch }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Casks/plezy.rb
+          git add Casks/finzy.rb
           if ! git diff --staged --quiet; then
             git commit -m "chore: update cask to ${{ steps.release.outputs.version }}"
             git push origin "HEAD:$BRANCH"

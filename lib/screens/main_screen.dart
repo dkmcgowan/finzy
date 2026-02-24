@@ -6,12 +6,12 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
-import '../../services/media_server_client.dart';
+import '../../services/jellyfin_client.dart';
 import '../i18n/strings.g.dart';
 import '../services/update_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/dialogs.dart';
-import '../utils/provider_extensions.dart';
+
 import '../utils/platform_detector.dart';
 import '../utils/video_player_navigation.dart';
 import '../main.dart';
@@ -24,17 +24,13 @@ import '../providers/hidden_libraries_provider.dart';
 import '../providers/libraries_provider.dart';
 import '../providers/playback_state_provider.dart';
 import '../providers/settings_provider.dart';
-import '../providers/user_profile_provider.dart';
 import '../providers/jellyfin_profile_provider.dart';
 import '../services/offline_watch_sync_service.dart';
 import '../services/settings_service.dart';
 import '../providers/offline_mode_provider.dart';
-import '../models/registered_server.dart';
-import '../services/plex_auth_service.dart';
+
 import '../services/server_registry.dart';
 import '../services/storage_service.dart';
-import '../services/companion_remote/companion_remote_receiver.dart';
-import '../providers/companion_remote_provider.dart';
 import '../constants/library_constants.dart';
 import '../utils/desktop_window_padding.dart';
 import '../widgets/side_navigation_rail.dart';
@@ -46,10 +42,10 @@ import 'livetv/live_tv_screen.dart';
 import 'search_screen.dart';
 import 'downloads/downloads_screen.dart';
 import 'settings/settings_screen.dart';
-import 'video_player_screen.dart';
-import 'profile/profile_switch_screen.dart';
+
+import 'profile/jellyfin_profile_switch_screen.dart';
 import '../services/watch_next_service.dart';
-import '../watch_together/watch_together.dart';
+
 
 /// Provides access to the main screen's focus control.
 class MainScreenFocusScope extends InheritedWidget {
@@ -76,7 +72,7 @@ class MainScreenFocusScope extends InheritedWidget {
 }
 
 class MainScreen extends StatefulWidget {
-  final MediaServerClient? client;
+  final JellyfinClient? client;
   final bool isOfflineMode;
 
   const MainScreen({super.key, this.client, this.isOfflineMode = false});
@@ -143,29 +139,18 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
     _screens = _buildScreens(_isOffline);
 
-    // Set up Watch Together callbacks immediately (must be synchronous to catch early messages)
+    // Set up Watch Next deep link handling
     if (!_isOffline) {
-      _setupWatchTogetherCallback();
       _setupWatchNextDeepLink();
     }
 
-    // Set up data invalidation callback for profile switching (skip in offline mode)
+    // Set up Jellyfin profile and data invalidation (skip in offline mode)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!_isOffline) {
-        // Initialize UserProfileProvider to ensure it's ready after sign-in
-        final userProfileProvider = context.userProfile;
-        await userProfileProvider.initialize();
-
-        // Set up data invalidation callback for profile switching
-        userProfileProvider.setDataInvalidationCallback(_invalidateAllScreens);
-
         // Jellyfin: refresh profile list and set callback for switch profile
         final jellyfinProfileProvider = context.read<JellyfinProfileProvider>();
         await jellyfinProfileProvider.refresh();
         jellyfinProfileProvider.onAfterSwitch = _invalidateAllScreensForJellyfinSwitch;
-
-        // Ensure first login (or any unset profile state) requires explicit selection.
-        await _promptForInitialProfileSelection(userProfileProvider);
       }
 
       // Focus content initially (replaces autofocus which caused focus stealing issues)
@@ -177,23 +162,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       // Check for updates on startup
       _checkForUpdatesOnStartup();
     });
-  }
-
-  Future<void> _promptForInitialProfileSelection(UserProfileProvider userProfileProvider) async {
-    if (!mounted || _isShowingProfileSelection) return;
-
-    final needsInitial = userProfileProvider.needsInitialProfileSelection;
-    final settingsService = await SettingsService.getInstance();
-    if (!mounted) return;
-    final requireOnOpen = settingsService.getRequireProfileSelectionOnOpen() && userProfileProvider.hasMultipleUsers;
-
-    if (!needsInitial && !requireOnOpen) return;
-
-    _isShowingProfileSelection = true;
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const ProfileSwitchScreen(requireSelection: true)));
-    _isShowingProfileSelection = false;
   }
 
   Future<void> _checkForUpdatesOnStartup() async {
@@ -271,35 +239,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     );
   }
 
-  /// Set up the Watch Together navigation callback for guests
-  void _setupWatchTogetherCallback() {
-    try {
-      final watchTogether = context.read<WatchTogetherProvider>();
-      watchTogether.onMediaSwitched = (ratingKey, serverId, mediaTitle) async {
-        appLogger.d('WatchTogether: Media switch received - navigating to $mediaTitle');
-        await _navigateToWatchTogetherMedia(ratingKey, serverId);
-      };
-      watchTogether.onHostExitedPlayer = () {
-        appLogger.d('WatchTogether: Host exited player - exiting player for guest');
-        // Use rootNavigator to ensure we pop the video player even if nested
-        if (!mounted) return;
-        final navigator = Navigator.of(context, rootNavigator: true);
-        bool isVideoPlayerOnTop = false;
-        navigator.popUntil((route) {
-          if (route.isCurrent) {
-            isVideoPlayerOnTop = route.settings.name == kVideoPlayerRouteName;
-          }
-          return true;
-        });
-        if (isVideoPlayerOnTop && navigator.canPop()) {
-          navigator.pop();
-        }
-      };
-    } catch (e) {
-      appLogger.w('Could not set up Watch Together callback', error: e);
-    }
-  }
-
   /// Set up Watch Next deep link handling for Android TV launcher taps
   void _setupWatchNextDeepLink() {
     if (!Platform.isAndroid) return;
@@ -353,39 +292,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     }
   }
 
-  /// Navigate to media when host switches content in Watch Together session
-  Future<void> _navigateToWatchTogetherMedia(String ratingKey, String serverId) async {
-    if (!mounted) return; // Check before any context usage
-
-    try {
-      final multiServer = context.read<MultiServerProvider>();
-      final client = multiServer.getClientForServer(serverId);
-
-      if (client == null) {
-        appLogger.w('WatchTogether: Server $serverId not available');
-        return;
-      }
-
-      // Fetch the metadata for the new media
-      final metadata = await client.getMetadataWithImages(ratingKey);
-
-      if (metadata == null || !mounted) return;
-
-      // Use push to preserve WatchTogetherScreen in navigation stack
-      // VideoPlayerScreen handles its own replacement via onPlayerMediaSwitched
-      Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          settings: const RouteSettings(name: kVideoPlayerRouteName),
-          builder: (_) => VideoPlayerScreen(metadata: metadata),
-        ),
-      );
-    } catch (e) {
-      appLogger.e('WatchTogether: Failed to navigate to media', error: e);
-    }
-  }
-
-  bool _companionRemoteSetup = false;
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -410,70 +316,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       _multiServerProvider!.addListener(_handleLiveTvChanged);
     }
 
-    // Wire up Companion Remote command routing (desktop only, once)
-    if (!_companionRemoteSetup && PlatformDetector.isDesktop(context)) {
-      _companionRemoteSetup = true;
-      _setupCompanionRemote();
-    }
-
     routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
-  }
-
-  void _setupCompanionRemote() {
-    final companionRemote = context.read<CompanionRemoteProvider>();
-    companionRemote.onCommandReceived = (command) {
-      if (mounted) {
-        CompanionRemoteReceiver.instance.handleCommand(command, context);
-      }
-    };
-
-    final receiver = CompanionRemoteReceiver.instance;
-
-    receiver.onTabNext = () {
-      final tabCount = _getVisibleTabs(_isOffline).length;
-      _selectTab((_currentIndex + 1) % tabCount);
-    };
-    receiver.onTabPrevious = () {
-      final tabCount = _getVisibleTabs(_isOffline).length;
-      _selectTab((_currentIndex - 1 + tabCount) % tabCount);
-    };
-    receiver.onTabDiscover = () {
-      final idx = NavigationTab.indexFor(NavigationTabId.discover, isOffline: _isOffline, hasLiveTv: _hasLiveTv);
-      if (idx >= 0) _selectTab(idx);
-    };
-    receiver.onTabLibraries = () {
-      final idx = NavigationTab.indexFor(NavigationTabId.libraries, isOffline: _isOffline, hasLiveTv: _hasLiveTv);
-      if (idx >= 0) _selectTab(idx);
-    };
-    receiver.onTabSearch = () {
-      final idx = NavigationTab.indexFor(NavigationTabId.search, isOffline: _isOffline, hasLiveTv: _hasLiveTv);
-      if (idx >= 0) _selectTab(idx);
-    };
-    receiver.onTabDownloads = () {
-      final idx = NavigationTab.indexFor(NavigationTabId.downloads, isOffline: _isOffline, hasLiveTv: _hasLiveTv);
-      if (idx >= 0) _selectTab(idx);
-    };
-    receiver.onTabSettings = () {
-      final idx = NavigationTab.indexFor(NavigationTabId.settings, isOffline: _isOffline, hasLiveTv: _hasLiveTv);
-      if (idx >= 0) _selectTab(idx);
-    };
-    receiver.onHome = () {
-      final idx = NavigationTab.indexFor(NavigationTabId.discover, isOffline: _isOffline, hasLiveTv: _hasLiveTv);
-      if (idx >= 0) _selectTab(idx);
-    };
-    receiver.onSearchAction = (query) {
-      final idx = NavigationTab.indexFor(NavigationTabId.search, isOffline: _isOffline, hasLiveTv: _hasLiveTv);
-      if (idx >= 0) {
-        _selectTab(idx);
-        if (query != null && query.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_searchKey.currentState case final SearchInputFocusable searchable) {
-              searchable.setSearchQuery(query);
-            }
-          });
-        }
-      }
-    };
   }
 
   @override
@@ -488,20 +331,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     _multiServerProvider?.removeListener(_handleLiveTvChanged);
     _sidebarFocusScope.dispose();
     _contentFocusScope.dispose();
-
-    // Clean up companion remote callbacks
-    if (_companionRemoteSetup) {
-      final receiver = CompanionRemoteReceiver.instance;
-      receiver.onTabNext = null;
-      receiver.onTabPrevious = null;
-      receiver.onTabDiscover = null;
-      receiver.onTabLibraries = null;
-      receiver.onTabSearch = null;
-      receiver.onTabDownloads = null;
-      receiver.onTabSettings = null;
-      receiver.onHome = null;
-      receiver.onSearchAction = null;
-    }
 
     super.dispose();
   }
@@ -523,13 +352,13 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     if (!settingsService.getRequireProfileSelectionOnOpen()) return;
     if (!mounted) return;
 
-    final userProfileProvider = context.read<UserProfileProvider>();
-    if (!userProfileProvider.hasMultipleUsers) return;
+    final jellyfinProfileProvider = context.read<JellyfinProfileProvider>();
+    if (!jellyfinProfileProvider.hasMultipleUsers) return;
 
     _isShowingProfileSelection = true;
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const ProfileSwitchScreen(requireSelection: true)));
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const JellyfinProfileSwitchScreen()),
+    );
     _isShowingProfileSelection = false;
   }
 
@@ -640,13 +469,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       _sideNavKey.currentState?.focusActiveItem();
     });
 
-    // Ensure profile provider is initialized when coming back online
-    if (!_isOffline) {
-      final userProfileProvider = context.userProfile;
-      userProfileProvider.initialize().then((_) {
-        userProfileProvider.setDataInvalidationCallback(_invalidateAllScreens);
-      });
-    }
   }
 
   void _focusSidebar() {
@@ -791,67 +613,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
   void _onLibraryOrderChanged() {
     // Refresh side navigation when library order changes
     _sideNavKey.currentState?.reloadLibraries();
-  }
-
-  /// Invalidate all cached data across all screens when profile is switched.
-  /// Receives the list of Plex servers with new profile tokens; merges with any Jellyfin servers from registry.
-  Future<void> _invalidateAllScreens(List<PlexServer> servers) async {
-    appLogger.d('Invalidating all screen data due to profile switch with ${servers.length} Plex servers');
-
-    final multiServerProvider = context.read<MultiServerProvider>();
-    final serverStateProvider = context.read<ServerStateProvider>();
-    final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
-    final librariesProvider = context.read<LibrariesProvider>();
-    final playbackStateProvider = context.read<PlaybackStateProvider>();
-
-    librariesProvider.clear();
-
-    final storage = await StorageService.getInstance();
-    final registry = ServerRegistry(storage);
-    final existing = await registry.getServers();
-    final jellyfinServers = existing.where((s) => s.isJellyfin).toList();
-    final registeredServers = [...jellyfinServers, ...servers.map((s) => RegisteredServer.plex(s))];
-
-    if (registeredServers.isNotEmpty) {
-      final clientId = storage.getClientIdentifier();
-
-      final connectedCount = await multiServerProvider.reconnectWithServers(registeredServers, clientIdentifier: clientId);
-      appLogger.d('Reconnected to $connectedCount/${registeredServers.length} servers after profile switch');
-
-      // Trigger watch state sync now that servers are connected
-      if (connectedCount > 0) {
-        if (!mounted) return;
-        context.read<OfflineWatchSyncService>().onServersConnected();
-
-        // Reload libraries after reconnection
-        librariesProvider.initialize(multiServerProvider.aggregationService);
-        await librariesProvider.refresh();
-      }
-    }
-
-    // Reset other provider states
-    serverStateProvider.reset();
-    hiddenLibrariesProvider.refresh();
-    playbackStateProvider.clearShuffle();
-
-    appLogger.d('Cleared all provider states for profile switch');
-
-    // Full refresh discover screen (reload all content for new profile)
-    if (_discoverKey.currentState case final FullRefreshable refreshable) {
-      refreshable.fullRefresh();
-    }
-
-    // Full refresh libraries screen (clear filters and reload for new profile)
-    if (_librariesKey.currentState case final FullRefreshable refreshable) {
-      refreshable.fullRefresh();
-    }
-
-    // Full refresh search screen (clear search for new profile)
-    if (_searchKey.currentState case final FullRefreshable refreshable) {
-      refreshable.fullRefresh();
-    }
-
-    // Sidebar automatically updates since it watches LibrariesProvider
   }
 
   /// Called when Jellyfin user is switched; reconnects with current server list and refreshes.
@@ -1062,7 +823,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
                             isSidebarFocused: _isSidebarFocused,
                             alwaysExpanded: alwaysExpanded,
                             isReconnecting: _isReconnecting,
-                            jellyfinFavoritesKey: context.watch<MultiServerProvider>().hasJellyfinServers
+                            jellyfinFavoritesKey: context.watch<MultiServerProvider>().hasConnectedServers
                                 ? kJellyfinFavoritesKey
                                 : null,
                             onDestinationSelected: (index) {

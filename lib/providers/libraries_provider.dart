@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../constants/library_constants.dart';
-import '../models/plex_library.dart';
+import '../models/media_library.dart';
 import '../services/data_aggregation_service.dart';
 import '../services/storage_service.dart';
 import '../utils/app_logger.dart';
@@ -15,16 +15,16 @@ enum LibrariesLoadState { initial, loading, loaded, error }
 /// instead of independently fetching library data.
 class LibrariesProvider extends ChangeNotifier {
   DataAggregationService? _aggregationService;
-  List<PlexLibrary> _libraries = [];
+  List<MediaLibrary> _libraries = [];
   /// Full display order keys from storage (includes [kJellyfinFavoritesKey] when present).
   List<String> _savedOrderKeys = [];
   LibrariesLoadState _loadState = LibrariesLoadState.initial;
   String? _errorMessage;
 
   /// Unmodifiable list of all libraries (filtered for supported types, ordered)
-  List<PlexLibrary> get libraries => List.unmodifiable(_libraries);
+  List<MediaLibrary> get libraries => List.unmodifiable(_libraries);
 
-  /// Order of keys for sidebar/sheet display (includes Favorites key for Jellyfin). Null if not yet loaded.
+  /// Order of keys for sidebar/sheet display (includes Favorites key). Null if not yet loaded.
   List<String>? get displayOrderKeys =>
       _savedOrderKeys.isEmpty ? null : List.unmodifiable(_savedOrderKeys);
 
@@ -105,7 +105,7 @@ class LibrariesProvider extends ChangeNotifier {
   /// Update the library order and persist it.
   /// [orderedLibraries] may include a synthetic Favorites item (globalKey == [kJellyfinFavoritesKey]);
   /// only real libraries are stored in [_libraries]; full key list (including Favorites) is persisted.
-  Future<void> updateLibraryOrder(List<PlexLibrary> orderedLibraries) async {
+  Future<void> updateLibraryOrder(List<MediaLibrary> orderedLibraries) async {
     final realLibraries = orderedLibraries
         .where((lib) => lib.globalKey != kJellyfinFavoritesKey)
         .toList();
@@ -132,9 +132,9 @@ class LibrariesProvider extends ChangeNotifier {
   }
 
   /// Default order: Movies and Shows first (alpha by title), then Collections/Playlists (alpha by title).
-  List<PlexLibrary> _applyDefaultOrder(List<PlexLibrary> libraries) {
-    final primary = <PlexLibrary>[];
-    final secondary = <PlexLibrary>[];
+  List<MediaLibrary> _applyDefaultOrder(List<MediaLibrary> libraries) {
+    final primary = <MediaLibrary>[];
+    final secondary = <MediaLibrary>[];
     for (final lib in libraries) {
       final t = lib.type.toLowerCase();
       if (t == 'movie' || t == 'show') {
@@ -149,14 +149,14 @@ class LibrariesProvider extends ChangeNotifier {
   }
 
   /// Apply saved library order to a list of libraries. Skips keys that are not libraries (e.g. [kJellyfinFavoritesKey]).
-  List<PlexLibrary> _applyLibraryOrder(List<PlexLibrary> libraries, List<String>? savedOrder) {
+  List<MediaLibrary> _applyLibraryOrder(List<MediaLibrary> libraries, List<String>? savedOrder) {
     if (savedOrder == null || savedOrder.isEmpty) {
       return _applyDefaultOrder(libraries);
     }
 
     final libraryMap = {for (var lib in libraries) lib.globalKey: lib};
 
-    final orderedLibraries = <PlexLibrary>[];
+    final orderedLibraries = <MediaLibrary>[];
     for (final key in savedOrder) {
       if (key == kJellyfinFavoritesKey) continue;
       final lib = libraryMap.remove(key);

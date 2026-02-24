@@ -4,7 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../utils/formatters.dart';
 import 'settings_service.dart';
 import 'saf_storage_service.dart';
@@ -61,7 +61,7 @@ class DownloadStorageService {
   }
 
   /// Format episode filename base: S{XX}E{XX} - {Title}
-  String _formatEpisodeFileName(PlexMetadata episode) {
+  String _formatEpisodeFileName(MediaMetadata episode) {
     final season = padNumber(episode.parentIndex ?? 0, 2);
     final ep = padNumber(episode.index ?? 0, 2);
     final episodeName = _sanitizeFileName(episode.title);
@@ -149,7 +149,7 @@ class DownloadStorageService {
     return artworkDir;
   }
 
-  /// Get artwork file path from Plex thumb path (synchronous, requires initialization)
+  /// Get artwork file path from server thumb path (synchronous, requires initialization)
   /// Returns path to cached artwork file using hash of the thumb URL
   /// Example: artwork/a1b2c3d4e5f6.jpg
   String getArtworkPathSync(String serverId, String thumbPath) {
@@ -161,7 +161,7 @@ class DownloadStorageService {
     return path.join(_artworkDirectoryPath!, '$hash.jpg');
   }
 
-  /// Get artwork file path from Plex thumb path (async version)
+  /// Get artwork file path from server thumb path (async version)
   Future<String> getArtworkPathFromThumb(String serverId, String thumbPath) async {
     final artworkDir = await getArtworkDirectory();
     final hash = _hashArtworkPath(serverId, thumbPath);
@@ -240,34 +240,34 @@ class DownloadStorageService {
   }
 
   /// Get the folder name for a movie: "Movie Name (YYYY)"
-  String _getMovieFolderName(PlexMetadata movie) {
+  String _getMovieFolderName(MediaMetadata movie) {
     return _formatTitleWithYear(movie.title, movie.year);
   }
 
   /// Get the folder name for a TV show: "Show Name (YYYY)"
   /// [showYear]: Pass explicitly for episodes (episode.year may differ from show's year)
-  String _getShowFolderName(PlexMetadata metadata, {int? showYear}) {
+  String _getShowFolderName(MediaMetadata metadata, {int? showYear}) {
     final title = metadata.grandparentTitle ?? metadata.title;
     final year = showYear ?? metadata.year;
     return _formatTitleWithYear(title, year);
   }
 
   /// Get movie directory: downloads/Movies/{Movie Name} ({Year})/
-  Future<Directory> getMovieDirectory(PlexMetadata movie) async {
+  Future<Directory> getMovieDirectory(MediaMetadata movie) async {
     final baseDir = await getDownloadsDirectory();
     final movieFolder = _getMovieFolderName(movie);
     return _ensureDirectoryExists(Directory(path.join(baseDir.path, 'Movies', movieFolder)));
   }
 
   /// Get movie video file path: .../Movie Name (YYYY)/Movie Name (YYYY).{ext}
-  Future<String> getMovieVideoPath(PlexMetadata movie, String extension) async {
+  Future<String> getMovieVideoPath(MediaMetadata movie, String extension) async {
     final movieDir = await getMovieDirectory(movie);
     final fileName = _getMovieFolderName(movie);
     return path.join(movieDir.path, '$fileName.$extension');
   }
 
   /// Get movie artwork path: .../Movie Name (YYYY)/{artworkType}.jpg
-  Future<String> getMovieArtworkPath(PlexMetadata movie, String artworkType) async {
+  Future<String> getMovieArtworkPath(MediaMetadata movie, String artworkType) async {
     final movieDir = await getMovieDirectory(movie);
     return path.join(movieDir.path, '$artworkType.jpg');
   }
@@ -275,35 +275,35 @@ class DownloadStorageService {
   /// Get show directory: downloads/TV Shows/{Show Name} ({Year})/
   /// [showYear]: Pass the show's premiere year explicitly (for episodes, the episode's
   /// year may differ from the show's year). If not provided, uses metadata.year.
-  Future<Directory> getShowDirectory(PlexMetadata metadata, {int? showYear}) async {
+  Future<Directory> getShowDirectory(MediaMetadata metadata, {int? showYear}) async {
     final baseDir = await getDownloadsDirectory();
     final showFolder = _getShowFolderName(metadata, showYear: showYear);
     return _ensureDirectoryExists(Directory(path.join(baseDir.path, 'TV Shows', showFolder)));
   }
 
   /// Get show artwork path: downloads/TV Shows/{Show}/poster.jpg
-  Future<String> getShowArtworkPath(PlexMetadata metadata, String artworkType, {int? showYear}) async {
+  Future<String> getShowArtworkPath(MediaMetadata metadata, String artworkType, {int? showYear}) async {
     final showDir = await getShowDirectory(metadata, showYear: showYear);
     return path.join(showDir.path, '$artworkType.jpg');
   }
 
   /// Get season directory: .../TV Shows/{Show}/Season {XX}/
   /// [showYear]: Pass the show's premiere year (not episode or season year)
-  Future<Directory> getSeasonDirectory(PlexMetadata metadata, {int? showYear}) async {
+  Future<Directory> getSeasonDirectory(MediaMetadata metadata, {int? showYear}) async {
     final showDir = await getShowDirectory(metadata, showYear: showYear);
     final seasonNum = padNumber(metadata.parentIndex ?? 0, 2);
     return _ensureDirectoryExists(Directory(path.join(showDir.path, 'Season $seasonNum')));
   }
 
   /// Get season artwork path: .../Season XX/poster.jpg
-  Future<String> getSeasonArtworkPath(PlexMetadata metadata, String artworkType, {int? showYear}) async {
+  Future<String> getSeasonArtworkPath(MediaMetadata metadata, String artworkType, {int? showYear}) async {
     final seasonDir = await getSeasonDirectory(metadata, showYear: showYear);
     return path.join(seasonDir.path, '$artworkType.jpg');
   }
 
   /// Get base path info for episode files (season directory path and formatted filename).
   /// [showYear]: Pass the show's premiere year (not episode year)
-  Future<({String seasonDirPath, String fileName})> _getEpisodeBasePath(PlexMetadata episode, {int? showYear}) async {
+  Future<({String seasonDirPath, String fileName})> _getEpisodeBasePath(MediaMetadata episode, {int? showYear}) async {
     final seasonDir = await getSeasonDirectory(episode, showYear: showYear);
     final fileName = _formatEpisodeFileName(episode);
     return (seasonDirPath: seasonDir.path, fileName: fileName);
@@ -311,41 +311,41 @@ class DownloadStorageService {
 
   /// Get episode video file path: .../Season XX/S{XX}E{XX} - {Title}.{ext}
   /// [showYear]: Pass the show's premiere year (not episode year)
-  Future<String> getEpisodeVideoPath(PlexMetadata episode, String extension, {int? showYear}) async {
+  Future<String> getEpisodeVideoPath(MediaMetadata episode, String extension, {int? showYear}) async {
     final base = await _getEpisodeBasePath(episode, showYear: showYear);
     return path.join(base.seasonDirPath, '${base.fileName}.$extension');
   }
 
   /// Get episode thumbnail path: .../Season XX/S{XX}E{XX} - {Title}.jpg
   /// [showYear]: Pass the show's premiere year (not episode year)
-  Future<String> getEpisodeThumbnailPath(PlexMetadata episode, {int? showYear}) async {
+  Future<String> getEpisodeThumbnailPath(MediaMetadata episode, {int? showYear}) async {
     final base = await _getEpisodeBasePath(episode, showYear: showYear);
     return path.join(base.seasonDirPath, '${base.fileName}.jpg');
   }
 
   /// Get subtitles directory for episode: .../Season XX/S{XX}E{XX} - {Title}_subs/
   /// [showYear]: Pass the show's premiere year (not episode year)
-  Future<Directory> getEpisodeSubtitlesDirectory(PlexMetadata episode, {int? showYear}) async {
+  Future<Directory> getEpisodeSubtitlesDirectory(MediaMetadata episode, {int? showYear}) async {
     final base = await _getEpisodeBasePath(episode, showYear: showYear);
     return _ensureDirectoryExists(Directory(path.join(base.seasonDirPath, '${base.fileName}_subs')));
   }
 
   /// Get episode subtitle path
   /// [showYear]: Pass the show's premiere year (not episode year)
-  Future<String> getEpisodeSubtitlePath(PlexMetadata episode, int trackId, String extension, {int? showYear}) async {
+  Future<String> getEpisodeSubtitlePath(MediaMetadata episode, int trackId, String extension, {int? showYear}) async {
     final subsDir = await getEpisodeSubtitlesDirectory(episode, showYear: showYear);
     return path.join(subsDir.path, '$trackId.$extension');
   }
 
   /// Get subtitles directory for movie
-  Future<Directory> getMovieSubtitlesDirectory(PlexMetadata movie) async {
+  Future<Directory> getMovieSubtitlesDirectory(MediaMetadata movie) async {
     final movieDir = await getMovieDirectory(movie);
     final baseName = _getMovieFolderName(movie);
     return _ensureDirectoryExists(Directory(path.join(movieDir.path, '${baseName}_subs')));
   }
 
   /// Get movie subtitle path
-  Future<String> getMovieSubtitlePath(PlexMetadata movie, int trackId, String extension) async {
+  Future<String> getMovieSubtitlePath(MediaMetadata movie, int trackId, String extension) async {
     final subsDir = await getMovieSubtitlesDirectory(movie);
     return path.join(subsDir.path, '$trackId.$extension');
   }
@@ -520,24 +520,24 @@ class DownloadStorageService {
 
   /// Get path components for SAF based on media type
   /// Returns list of directory names to create under the SAF base
-  List<String> getMovieSafPathComponents(PlexMetadata movie) {
+  List<String> getMovieSafPathComponents(MediaMetadata movie) {
     return ['Movies', _getMovieFolderName(movie)];
   }
 
   /// Get path components for episode SAF storage
-  List<String> getEpisodeSafPathComponents(PlexMetadata episode, {int? showYear}) {
+  List<String> getEpisodeSafPathComponents(MediaMetadata episode, {int? showYear}) {
     final showFolder = _getShowFolderName(episode, showYear: showYear);
     final seasonNum = padNumber(episode.parentIndex ?? 0, 2);
     return ['TV Shows', showFolder, 'Season $seasonNum'];
   }
 
   /// Get SAF file name for a movie
-  String getMovieSafFileName(PlexMetadata movie, String extension) {
+  String getMovieSafFileName(MediaMetadata movie, String extension) {
     return '${_getMovieFolderName(movie)}.$extension';
   }
 
   /// Get SAF file name for an episode
-  String getEpisodeSafFileName(PlexMetadata episode, String extension) {
+  String getEpisodeSafFileName(MediaMetadata episode, String extension) {
     final fileName = _formatEpisodeFileName(episode);
     return '$fileName.$extension';
   }

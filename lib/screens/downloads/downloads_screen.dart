@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import '../../models/plex_metadata.dart';
+import '../../models/media_metadata.dart';
 import '../../providers/download_provider.dart';
+import '../../providers/hidden_libraries_provider.dart';
 import '../../providers/multi_server_provider.dart';
+import '../../providers/playback_state_provider.dart';
+import '../../providers/server_state_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../utils/global_key_utils.dart';
+import '../../utils/dialogs.dart';
 import '../../mixins/tab_navigation_mixin.dart';
 import '../../utils/grid_size_calculator.dart';
 import '../../utils/platform_detector.dart';
-import '../../widgets/desktop_app_bar.dart';
+import '../../widgets/profile_app_bar_button.dart';
 import '../../widgets/focusable_tab_chip.dart';
 import '../../widgets/focusable_media_card.dart';
 import '../../widgets/media_grid_delegate.dart';
 import '../../widgets/download_tree_view.dart';
+import '../auth_screen.dart';
 import '../main_screen.dart';
+import '../profile/jellyfin_profile_switch_screen.dart';
 import '../libraries/state_messages.dart';
 import '../../i18n/strings.g.dart';
 
@@ -132,19 +139,75 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
     return Text(t.downloads.title);
   }
 
+  void _handleJellyfinSwitchProfile(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const JellyfinProfileSwitchScreen()));
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showConfirmDialog(
+      context,
+      title: t.common.logout,
+      message: t.messages.logoutConfirm,
+      confirmText: t.common.logout,
+      isDestructive: true,
+    );
+    if (confirm && mounted) {
+      final userProfileProvider = context.read<UserProfileProvider>();
+      final multiServerProvider = context.read<MultiServerProvider>();
+      final serverStateProvider = context.read<ServerStateProvider>();
+      final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
+      final playbackStateProvider = context.read<PlaybackStateProvider>();
+      await userProfileProvider.logout();
+      multiServerProvider.clearAllConnections();
+      serverStateProvider.reset();
+      await hiddenLibrariesProvider.refresh();
+      playbackStateProvider.clearShuffle();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          DesktopSliverAppBar(
-            title: _buildAppBarTitle(),
-            floating: true,
+          // Match Home/Libraries app bar: statusBar + 8 top, 16 L/R, 8 bottom, 72px content row
+          SliverAppBar(
             pinned: true,
+            toolbarHeight: MediaQuery.of(context).padding.top + 72,
+            title: null,
+            leading: null,
+            leadingWidth: 0,
+            automaticallyImplyLeading: false,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             surfaceTintColor: Colors.transparent,
             shadowColor: Colors.transparent,
             scrolledUnderElevation: 0,
+            flexibleSpace: Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top,
+                left: 16,
+                right: 16,
+                bottom: 8,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(child: _buildAppBarTitle()),
+                    ProfileAppBarButton(
+                      onSwitchProfile: () => _handleJellyfinSwitchProfile(context),
+                      onLogout: _handleLogout,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
           SliverFillRemaining(
             child: Column(
@@ -174,7 +237,7 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
                     children: [
                       Consumer2<DownloadProvider, MultiServerProvider>(
                         builder: (context, downloadProvider, serverProvider, _) {
-                          // Only show downloads for currently configured servers (hide Plex
+                          // Only show downloads for currently configured servers (hide legacy
                           // downloads when logged in as Jellyfin-only and vice versa).
                           final serverIds = serverProvider.serverIds.toSet();
                           final filteredDownloads = Map.fromEntries(
@@ -290,7 +353,7 @@ class _DownloadsGridContentState extends State<_DownloadsGridContent> {
         final movies = downloadProvider.downloadedMovies
             .where((m) => m.serverId != null && serverIds.contains(m.serverId))
             .toList();
-        final List<PlexMetadata> items =
+        final List<MediaMetadata> items =
             widget.type == DownloadType.tvShows ? shows : movies;
 
         if (items.isEmpty) {

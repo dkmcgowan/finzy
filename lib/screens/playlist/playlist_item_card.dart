@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import '../../services/media_server_client.dart';
-import '../../models/plex_metadata.dart';
+import '../../services/jellyfin_client.dart';
+import '../../models/media_metadata.dart';
 import '../../utils/formatters.dart';
 import '../../utils/provider_extensions.dart';
 import '../../i18n/strings.g.dart';
 import '../../widgets/media_context_menu.dart';
 import '../../widgets/media_progress_bar.dart';
-import '../../widgets/plex_optimized_image.dart';
+import '../../widgets/optimized_image.dart';
 
 /// Custom list item widget for playlist items
 /// Shows drag handle, poster, title/metadata, duration, and remove button
 class PlaylistItemCard extends StatelessWidget {
-  final PlexMetadata item;
+  final MediaMetadata item;
   final int index;
   final VoidCallback onRemove;
   final VoidCallback? onTap;
@@ -178,8 +178,8 @@ class PlaylistItemCard extends StatelessWidget {
     );
   }
 
-  /// Get the correct MediaServerClient for this item's server
-  MediaServerClient _getClientForItem(BuildContext context) {
+  /// Get the correct JellyfinClient for this item's server
+  JellyfinClient _getClientForItem(BuildContext context) {
     return context.getClientForServer(item.serverId!);
   }
 
@@ -187,7 +187,7 @@ class PlaylistItemCard extends StatelessWidget {
     final posterUrl = item.posterThumb();
     return ClipRRect(
       borderRadius: const BorderRadius.all(Radius.circular(6)),
-      child: PlexOptimizedImage.poster(
+      child: OptimizedImage.poster(
         client: _getClientForItem(context),
         imagePath: posterUrl,
         width: 60,

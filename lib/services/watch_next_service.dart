@@ -2,14 +2,14 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../utils/app_logger.dart';
-import 'media_server_client.dart';
+import 'jellyfin_client.dart';
 import 'settings_service.dart' show EpisodePosterMode;
 
-/// Service for syncing Plex "On Deck" content to Android TV's Watch Next row.
+/// Service for syncing Jellyfin "Continue Watching" content to Android TV's Watch Next row.
 class WatchNextService {
-  static const MethodChannel _channel = MethodChannel('app.plezy/watch_next');
+  static const MethodChannel _channel = MethodChannel('app.finzy/watch_next');
 
   static final WatchNextService _instance = WatchNextService._internal();
   factory WatchNextService() => _instance;
@@ -53,8 +53,8 @@ class WatchNextService {
 
   /// Sync On Deck items to Watch Next row.
   Future<bool> syncFromOnDeck(
-    List<PlexMetadata> onDeckItems,
-    MediaServerClient Function(String serverId) getClientForServerId,
+    List<MediaMetadata> onDeckItems,
+    JellyfinClient Function(String serverId) getClientForServerId,
   ) async {
     if (!Platform.isAndroid) return false;
 
@@ -96,22 +96,22 @@ class WatchNextService {
     }
   }
 
-  /// Build a content ID. Format: plezy_{serverId}_{ratingKey}
+  /// Build a content ID. Format: finzy_{serverId}_{ratingKey}
   static String _buildContentId(String? serverId, String ratingKey) {
-    return 'plezy_${serverId ?? 'unknown'}_$ratingKey';
+    return 'finzy_${serverId ?? 'unknown'}_$ratingKey';
   }
 
   /// Parse a content ID back to (serverId, ratingKey), or null if invalid.
   static (String serverId, String ratingKey)? parseContentId(String contentId) {
-    if (!contentId.startsWith('plezy_')) return null;
+    if (!contentId.startsWith('finzy_')) return null;
     final parts = contentId.substring(6).split('_');
     if (parts.length < 2) return null;
     return (parts.first, parts.sublist(1).join('_'));
   }
 
   Map<String, dynamic> _convertToWatchNextItem(
-    PlexMetadata item,
-    MediaServerClient Function(String serverId) getClientForServerId,
+    MediaMetadata item,
+    JellyfinClient Function(String serverId) getClientForServerId,
   ) {
     final contentId = _buildContentId(item.serverId, item.ratingKey);
 
@@ -130,7 +130,7 @@ class WatchNextService {
 
     final String title;
     final String? episodeTitle;
-    if (item.mediaType == PlexMediaType.episode && item.grandparentTitle != null) {
+    if (item.mediaType == MediaType.episode && item.grandparentTitle != null) {
       title = item.grandparentTitle!;
       episodeTitle = item.title;
     } else {

@@ -1,6 +1,6 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(plezy LANGUAGES CXX)
+project(finzy LANGUAGES CXX)
 
 # Download and extract mpv-dev (architecture-dependent)
 set(MPV_VERSION "20260120")
@@ -52,7 +52,7 @@ endif()
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "plezy")
+set(BINARY_NAME "finzy")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -79,6 +79,12 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
+
+# Avoid C1041 when multiple CL.EXE write to the same .pdb (e.g. SDL3-static in parallel builds)
+if(MSVC)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+endif()
 
 # Compilation settings that should be applied to most targets.
 #

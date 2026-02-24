@@ -5,11 +5,11 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import '../../../focus/dpad_navigator.dart';
-import '../../../../services/media_server_client.dart';
-import '../../../models/plex_metadata.dart';
-import '../../../models/plex_filter.dart';
-import '../../../models/plex_first_character.dart';
-import '../../../models/plex_sort.dart';
+import '../../../../services/jellyfin_client.dart';
+import '../../../models/media_metadata.dart';
+import '../../../models/library_filter.dart';
+import '../../../models/first_character.dart';
+import '../../../models/library_sort.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/error_message_utils.dart';
@@ -40,7 +40,7 @@ import 'base_library_tab.dart';
 
 /// Browse tab for library screen
 /// Shows library items with grouping, filtering, and sorting
-class LibraryBrowseTab extends BaseLibraryTab<PlexMetadata> {
+class LibraryBrowseTab extends BaseLibraryTab<MediaMetadata> {
   const LibraryBrowseTab({
     super.key,
     required super.library,
@@ -56,10 +56,10 @@ class LibraryBrowseTab extends BaseLibraryTab<PlexMetadata> {
   State<LibraryBrowseTab> createState() => _LibraryBrowseTabState();
 }
 
-class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBrowseTab>
+class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryBrowseTab>
     with ItemUpdatable, LibraryTabFocusMixin, GridFocusNodeMixin, DeletionAware {
   @override
-  MediaServerClient get client => getClientForLibrary();
+  JellyfinClient get client => getClientForLibrary();
 
   String _toGlobalKey(String ratingKey, {String? serverId}) =>
       '${serverId ?? widget.library.serverId ?? ''}:$ratingKey';
@@ -123,7 +123,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
   int get itemCount => items.length;
 
   @override
-  void updateItemInLists(String ratingKey, PlexMetadata updatedMetadata) {
+  void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata) {
     setState(() {
       final index = items.indexWhere((item) => item.ratingKey == ratingKey);
       if (index != -1) {
@@ -133,15 +133,15 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
   }
 
   // Browse-specific state (not in base class)
-  List<PlexFilter> _filters = [];
-  List<PlexSort> _sortOptions = [];
+  List<LibraryFilter> _filters = [];
+  List<LibrarySort> _sortOptions = [];
   Map<String, String> _selectedFilters = {};
-  PlexSort? _selectedSort;
+  LibrarySort? _selectedSort;
   bool _isSortDescending = false;
   String _selectedGrouping = 'all'; // all, seasons, episodes, folders
 
   // Alpha jump bar state
-  List<PlexFirstCharacter> _firstCharacters = [];
+  List<FirstCharacter> _firstCharacters = [];
   AlphaJumpHelper _alphaHelper = AlphaJumpHelper(const []);
   int _currentFirstVisibleIndex = 0;
   int _currentColumnCount = 1;
@@ -198,7 +198,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
 
   // Override loadData to use our custom _loadContent
   @override
-  Future<List<PlexMetadata>> loadData() async {
+  Future<List<MediaMetadata>> loadData() async {
     // This is called by base class loadItems(), but we override loadItems() entirely
     // So this just returns empty - actual loading is done in _loadContent
     return [];
@@ -222,7 +222,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
 
   // Override buildContent - not used since we override build()
   @override
-  Widget buildContent(List<PlexMetadata> items) => const SizedBox.shrink();
+  Widget buildContent(List<MediaMetadata> items) => const SizedBox.shrink();
 
   /// Focus the first item in the grid/list (for tab activation)
   @override
@@ -244,8 +244,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
   /// Height of the chips bar (padding + chip + padding)
   static const double _chipsBarHeight = 48.0;
 
-  /// For Jellyfin we hide the grouping chip (Movies/Folders, Shows/Seasons/Episodes/Folders).
-  bool get _isGroupingChipVisible => !client.isJellyfin;
+  /// Grouping chip is not used; always show filters/sort only.
+  bool get _isGroupingChipVisible => false;
 
   /// First chip in the bar (grouping, or filters, or sort when grouping is hidden).
   FocusNode get _firstChipFocusNode {
@@ -300,13 +300,12 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
         client.getLibrarySorts(widget.library.key, libraryType: widget.library.type),
       ]);
       final storage = results[0] as StorageService;
-      final filters = results[1] as List<PlexFilter>;
-      final sorts = results[2] as List<PlexSort>;
+      final filters = results[1] as List<LibraryFilter>;
+      final sorts = results[2] as List<LibrarySort>;
 
       // Load saved preferences
       final savedFilters = storage.getLibraryFilters(sectionId: widget.library.globalKey);
       final savedSort = storage.getLibrarySort(widget.library.globalKey);
-      final savedGrouping = storage.getLibraryGrouping(widget.library.globalKey);
 
       // Check if request was cancelled
       if (currentRequestId != _requestId) return;
@@ -316,8 +315,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
         _filters = filters;
         _sortOptions = sorts;
         _selectedFilters = Map.from(savedFilters);
-        // Jellyfin: no grouping chip (Movies/Folders, Shows/Seasons/Episodes) — always show all items
-        _selectedGrouping = client.isJellyfin ? 'all' : (savedGrouping ?? _getDefaultGrouping());
+        _selectedGrouping = 'all';
 
         // Restore sort
         if (savedSort != null) {
@@ -371,20 +369,11 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
       // Build filter params
       final filterParams = Map<String, String>.from(_selectedFilters);
 
-      // Jellyfin: always restrict to library type (Movie or Series) so we don't get the virtual
-      // library folder as first item. Plex: add type only when grouping is not 'all'/'folders'.
-      if (client.isJellyfin) {
-        final t = widget.library.type.toLowerCase();
-        if (t == 'movie') {
-          filterParams['type'] = '1';
-        } else if (t == 'show') {
-          filterParams['type'] = '2';
-        }
-      } else if (_selectedGrouping != 'all' && _selectedGrouping != 'folders') {
-        final typeId = _getGroupingTypeId();
-        if (typeId.isNotEmpty) {
-          filterParams['type'] = typeId;
-        }
+      final t = widget.library.type.toLowerCase();
+      if (t == 'movie') {
+        filterParams['type'] = '1';
+      } else if (t == 'show') {
+        filterParams['type'] = '2';
       }
 
       // Add sort
@@ -394,7 +383,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
 
       appLogger.d('Library browse: getLibraryContent key=${widget.library.key} sort=${filterParams['sort']} type=${filterParams['type']} filters=${_selectedFilters.isEmpty ? "none" : _selectedFilters}');
 
-      // Items are automatically tagged with server info by PlexClient
+      // Items are automatically tagged with server info by JellyfinClient
       final loadedItems = await client.getLibraryContent(
         widget.library.key,
         start: _currentPage * _pageSize,
@@ -577,7 +566,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
     SelectKeyUpSuppressor.suppressSelectUntilKeyUp();
     // Track pending state in local variables so the callbacks don't trigger
     // setState/_loadItems while the sheet is open (which would steal focus).
-    PlexSort? pendingSort = _selectedSort;
+    LibrarySort? pendingSort = _selectedSort;
     bool pendingDescending = _isSortDescending;
     bool pendingCleared = false;
     OverlaySheetController.of(context)
@@ -831,27 +820,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
-    // For folders mode, use FolderTreeView instead of grid/list (Jellyfin: grouping not used, so never folders)
-    if (!client.isJellyfin && _selectedGrouping == 'folders') {
-      return OverlaySheetHost(
-        child: Column(
-          children: [
-            _buildChipsBar(),
-            Expanded(
-              child: FolderTreeView(
-                libraryKey: widget.library.key,
-                serverId: widget.library.serverId,
-                onRefresh: updateItem,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // For list/grid modes, use Stack with chips layered on top of grid.
-    // This allows the grid to use Clip.none for focus decorations while
-    // the chips bar (with background) covers any overflow at the top.
     return OverlaySheetHost(
       child: Stack(
         children: [
@@ -936,7 +904,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<PlexMetadata, LibraryBr
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Grouping chip (hidden for Jellyfin — no Movies/Folders or Shows/Seasons/Episodes/Folders toggle)
+          // Grouping chip not used; filters and sort only
           if (_isGroupingChipVisible) ...[
             FocusableFilterChip(
               focusNode: _groupingChipFocusNode,

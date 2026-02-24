@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/bottom_sheet_header.dart';
+import 'package:finzy/widgets/bottom_sheet_header.dart';
 
 /// Shared header widget for video control sheets
 ///

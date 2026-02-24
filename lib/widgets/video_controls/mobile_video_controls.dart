@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../mpv/mpv.dart';
-import '../../models/plex_media_info.dart';
-import '../../models/plex_metadata.dart';
+import '../../models/media_info.dart';
+import '../../models/media_metadata.dart';
 import '../../utils/desktop_window_padding.dart';
 import '../../i18n/strings.g.dart';
 import 'widgets/circular_control_button.dart';
@@ -12,7 +12,7 @@ import 'widgets/play_pause_stream_builder.dart';
 import 'widgets/video_controls_header.dart';
 import 'widgets/video_timeline_bar.dart';
 
-/// Mobile video controls layout for Plex video player
+/// Mobile video controls layout for video player
 ///
 /// Displays a full-screen overlay with:
 /// - Top bar: Back button, title, and track/chapter controls
@@ -20,8 +20,8 @@ import 'widgets/video_timeline_bar.dart';
 /// - Bottom bar: Timeline slider with chapter markers and timestamps
 class MobileVideoControls extends StatelessWidget {
   final Player player;
-  final PlexMetadata metadata;
-  final List<PlexChapter> chapters;
+  final MediaMetadata metadata;
+  final List<Chapter> chapters;
   final bool chaptersLoaded;
   final int seekTimeSmall;
   final Widget trackChapterControls;

@@ -9,7 +9,9 @@
 #include <flutter/standard_method_codec.h>
 
 #include <memory>
+#include <mutex>
 #include <optional>
+#include <queue>
 
 #include "mpv_core.h"
 #include "mpv_player.h"
@@ -33,6 +35,7 @@ class MpvPlayerPlugin : public flutter::Plugin {
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
   void SendEvent(const flutter::EncodableValue& event);
+  void DrainEventQueue();
 
   HWND GetWindow();
   HWND GetChildWindow();
@@ -46,6 +49,9 @@ class MpvPlayerPlugin : public flutter::Plugin {
 
   std::unique_ptr<MpvPlayer> player_;
   std::optional<int32_t> proc_id_;
+  std::optional<int32_t> event_proc_id_;
+  std::mutex event_mutex_;
+  std::queue<flutter::EncodableValue> event_queue_;
 };
 
 }  // namespace mpv

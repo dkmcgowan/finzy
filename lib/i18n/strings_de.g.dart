@@ -69,7 +69,6 @@ class TranslationsDe with BaseTranslations<AppLocale, Translations> implements T
 	@override late final _TranslationsDownloadsDe downloads = _TranslationsDownloadsDe._(_root);
 	@override late final _TranslationsPlaylistsDe playlists = _TranslationsPlaylistsDe._(_root);
 	@override late final _TranslationsCollectionsDe collections = _TranslationsCollectionsDe._(_root);
-	@override late final _TranslationsWatchTogetherDe watchTogether = _TranslationsWatchTogetherDe._(_root);
 	@override late final _TranslationsShadersDe shaders = _TranslationsShadersDe._(_root);
 	@override late final _TranslationsCompanionRemoteDe companionRemote = _TranslationsCompanionRemoteDe._(_root);
 	@override late final _TranslationsVideoSettingsDe videoSettings = _TranslationsVideoSettingsDe._(_root);
@@ -83,7 +82,7 @@ class _TranslationsAppDe implements TranslationsAppEn {
 	final TranslationsDe _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Plezy';
+	@override String get title => 'Finzy';
 }
 
 // Path: auth
@@ -93,7 +92,6 @@ class _TranslationsAuthDe implements TranslationsAuthEn {
 	final TranslationsDe _root; // ignore: unused_field
 
 	// Translations
-	@override String get signInWithPlex => 'Mit Plex anmelden';
 	@override String get signInWithJellyfin => 'Mit Jellyfin anmelden';
 	@override String get jellyfinServerUrl => 'Server-URL';
 	@override String get jellyfinServerUrlHint => 'https://dein-jellyfin.example.com';
@@ -102,9 +100,9 @@ class _TranslationsAuthDe implements TranslationsAuthEn {
 	@override String get jellyfinSignIn => 'Anmelden';
 	@override String get showQRCode => 'QR-Code anzeigen';
 	@override String get authenticate => 'Authentifizieren';
-	@override String get debugEnterToken => 'Debug: Plex-Token eingeben';
-	@override String get plexTokenLabel => 'Plex-Auth-Token';
-	@override String get plexTokenHint => 'Plex.tv-Token eingeben';
+	@override String get debugEnterToken => 'Debug: Jellyfin-Token eingeben';
+	@override String get authTokenLabel => 'Jellyfin-Auth-Token';
+	@override String get authTokenHint => 'Token eingeben';
 	@override String get authenticationTimeout => 'Authentifizierung abgelaufen. Bitte erneut versuchen.';
 	@override String get scanQRToSignIn => 'QR-Code scannen zum Anmelden';
 	@override String get waitingForAuth => 'Warte auf Authentifizierung...\nBitte Anmeldung im Browser abschließen.';
@@ -233,11 +231,11 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get listView => 'Liste';
 	@override String get listViewDescription => 'Elemente in Listenansicht anzeigen';
 	@override String get showHeroSection => 'Hero-Bereich anzeigen';
-	@override String get useGlobalHubs => 'Plex-Startseiten-Layout verwenden';
-	@override String get useGlobalHubsDescription => 'Zeigt Startseiten-Hubs wie der offizielle Plex-Client. Wenn deaktiviert, werden stattdessen Empfehlungen pro Bibliothek angezeigt.';
+	@override String get useGlobalHubs => 'Startseiten-Layout verwenden';
+	@override String get useGlobalHubsDescription => 'Zeigt Startseiten-Hubs wie der offizielle Jellyfin-Client. Wenn deaktiviert, werden stattdessen Empfehlungen pro Bibliothek angezeigt.';
 	@override String get showServerNameOnHubs => 'Servername bei Hubs anzeigen';
 	@override String get showServerNameOnHubsDescription => 'Zeigt immer den Servernamen in Hub-Titeln an. Wenn deaktiviert, nur bei doppelten Hub-Namen.';
-	@override String get showJellyfinRecommendations => 'Jellyfin Filmempfehlungen';
+	@override String get showJellyfinRecommendations => 'Filmempfehlungen';
 	@override String get showJellyfinRecommendationsDescription => 'Zeigt "Weil du geschaut hast" und ähnliche Empfehlungszeilen in der Film-Bibliothek. Standardmäßig aus, bis das Serververhalten verbessert wird.';
 	@override String get alwaysKeepSidebarOpen => 'Seitenleiste immer geöffnet halten';
 	@override String get alwaysKeepSidebarOpenDescription => 'Seitenleiste bleibt erweitert und Inhaltsbereich passt sich an';
@@ -291,8 +289,20 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get autoSkip => 'Automatisches Überspringen';
 	@override String get autoSkipIntro => 'Intro automatisch überspringen';
 	@override String get autoSkipIntroDescription => 'Intro-Marker nach wenigen Sekunden automatisch überspringen';
-	@override String get autoSkipCredits => 'Abspann automatisch überspringen';
-	@override String get autoSkipCreditsDescription => 'Abspann automatisch überspringen und nächste Episode abspielen';
+	@override String get enableExternalSubtitles => 'Enable External Subtitles';
+	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get enableTrickplay => 'Enable Trickplay Thumbnails';
+	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
+	@override String get enableChapterImages => 'Enable Chapter Images';
+	@override String get enableChapterImagesDescription => 'Show thumbnail images for chapters in the chapter list.';
+	@override String get autoSkipOutro => 'Outro automatisch überspringen';
+	@override String get autoSkipOutroDescription => 'Outro-Segmente automatisch überspringen';
+	@override String get autoSkipRecap => 'Rückblick automatisch überspringen';
+	@override String get autoSkipRecapDescription => 'Rückblick-Segmente automatisch überspringen';
+	@override String get autoSkipPreview => 'Vorschau automatisch überspringen';
+	@override String get autoSkipPreviewDescription => 'Vorschau-Segmente automatisch überspringen';
+	@override String get autoSkipCommercial => 'Werbung automatisch überspringen';
+	@override String get autoSkipCommercialDescription => 'Werbesegmente automatisch überspringen';
 	@override String get autoSkipDelay => 'Verzögerung für automatisches Überspringen';
 	@override String autoSkipDelayDescription({required Object seconds}) => '${seconds} Sekunden vor dem automatischen Überspringen warten';
 	@override String get downloads => 'Downloads';
@@ -312,8 +322,6 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get maxVolume => 'Maximale Lautstärke';
 	@override String get maxVolumeDescription => 'Lautstärke über 100% für leise Medien erlauben';
 	@override String maxVolumePercent({required Object percent}) => '${percent}%';
-	@override String get discordRichPresence => 'Discord Rich Presence';
-	@override String get discordRichPresenceDescription => 'Zeige auf Discord, was du gerade schaust';
 	@override String get matchContentFrameRate => 'Inhalts-Bildrate anpassen';
 	@override String get matchContentFrameRateDescription => 'Bildwiederholfrequenz des Displays an den Videoinhalt anpassen, reduziert Ruckeln und spart Akku';
 	@override String get requireProfileSelectionOnOpen => 'Profil beim Öffnen abfragen';
@@ -551,9 +559,6 @@ class _TranslationsMessagesDe implements TranslationsMessagesEn {
 	@override String get failedToCreatePlayQueueNoItems => 'Wiedergabewarteschlange konnte nicht erstellt werden – keine Elemente';
 	@override String failedPlayback({required Object action, required Object error}) => 'Wiedergabe für ${action} fehlgeschlagen: ${error}';
 	@override String get switchingToCompatiblePlayer => 'Wechsle zu kompatiblem Player...';
-	@override String get logsUploaded => 'Logs uploaded';
-	@override String get logsUploadFailed => 'Failed to upload logs';
-	@override String get logId => 'Log ID';
 }
 
 // Path: subtitlingStyling
@@ -631,6 +636,7 @@ class _TranslationsDiscoverDe implements TranslationsDiscoverEn {
 	@override String playEpisode({required Object season, required Object episode}) => 'S${season}E${episode}';
 	@override String get overview => 'Übersicht';
 	@override String get cast => 'Besetzung';
+	@override String get moreLikeThis => 'Mehr davon';
 	@override String get extras => 'Trailer & Extras';
 	@override String get seasons => 'Staffeln';
 	@override String get studio => 'Studio';
@@ -651,7 +657,7 @@ class _TranslationsErrorsDe implements TranslationsErrorsEn {
 	// Translations
 	@override String searchFailed({required Object error}) => 'Suche fehlgeschlagen: ${error}';
 	@override String connectionTimeout({required Object context}) => 'Zeitüberschreitung beim Laden von ${context}';
-	@override String get connectionFailed => 'Verbindung zum Plex-Server fehlgeschlagen';
+	@override String get connectionFailed => 'Verbindung zum Jellyfin-Server fehlgeschlagen';
 	@override String failedToLoad({required Object context, required Object error}) => 'Fehler beim Laden von ${context}: ${error}';
 	@override String get noClientAvailable => 'Kein Client verfügbar';
 	@override String authenticationFailed({required Object error}) => 'Authentifizierung fehlgeschlagen: ${error}';
@@ -721,7 +727,7 @@ class _TranslationsAboutDe implements TranslationsAboutEn {
 	@override String get title => 'Über';
 	@override String get openSourceLicenses => 'Open-Source-Lizenzen';
 	@override String versionLabel({required Object version}) => 'Version ${version}';
-	@override String get appDescription => 'Ein schöner Plex-Client für Flutter';
+	@override String get appDescription => 'Ein schöner Jellyfin-Client für Flutter';
 	@override String get viewLicensesDescription => 'Lizenzen von Drittanbieter-Bibliotheken anzeigen';
 }
 
@@ -760,7 +766,6 @@ class _TranslationsLogsDe implements TranslationsLogsEn {
 	// Translations
 	@override String get clearLogs => 'Protokolle löschen';
 	@override String get copyLogs => 'Protokolle kopieren';
-	@override String get uploadLogs => 'Upload Logs';
 	@override String get error => 'Fehler:';
 	@override String get stackTrace => 'Stacktrace:';
 }
@@ -929,61 +934,6 @@ class _TranslationsCollectionsDe implements TranslationsCollectionsEn {
 	@override String removeFromCollectionError({required Object error}) => 'Fehler beim Entfernen aus der Sammlung: ${error}';
 }
 
-// Path: watchTogether
-class _TranslationsWatchTogetherDe implements TranslationsWatchTogetherEn {
-	_TranslationsWatchTogetherDe._(this._root);
-
-	final TranslationsDe _root; // ignore: unused_field
-
-	// Translations
-	@override String get title => 'Gemeinsam Schauen';
-	@override String get description => 'Inhalte synchron mit Freunden und Familie schauen';
-	@override String get createSession => 'Sitzung Erstellen';
-	@override String get creating => 'Erstellen...';
-	@override String get joinSession => 'Sitzung Beitreten';
-	@override String get joining => 'Beitreten...';
-	@override String get controlMode => 'Steuerungsmodus';
-	@override String get controlModeQuestion => 'Wer kann die Wiedergabe steuern?';
-	@override String get hostOnly => 'Nur Host';
-	@override String get anyone => 'Alle';
-	@override String get hostingSession => 'Sitzung Hosten';
-	@override String get inSession => 'In Sitzung';
-	@override String get sessionCode => 'Sitzungscode';
-	@override String get hostControlsPlayback => 'Host steuert die Wiedergabe';
-	@override String get anyoneCanControl => 'Alle können die Wiedergabe steuern';
-	@override String get hostControls => 'Host steuert';
-	@override String get anyoneControls => 'Alle steuern';
-	@override String get participants => 'Teilnehmer';
-	@override String get host => 'Host';
-	@override String get hostBadge => 'HOST';
-	@override String get youAreHost => 'Du bist der Host';
-	@override String get watchingWithOthers => 'Mit anderen schauen';
-	@override String get endSession => 'Sitzung Beenden';
-	@override String get leaveSession => 'Sitzung Verlassen';
-	@override String get endSessionQuestion => 'Sitzung Beenden?';
-	@override String get leaveSessionQuestion => 'Sitzung Verlassen?';
-	@override String get endSessionConfirm => 'Dies beendet die Sitzung für alle Teilnehmer.';
-	@override String get leaveSessionConfirm => 'Du wirst aus der Sitzung entfernt.';
-	@override String get endSessionConfirmOverlay => 'Dies beendet die Schausitzung für alle Teilnehmer.';
-	@override String get leaveSessionConfirmOverlay => 'Du wirst von der Schausitzung getrennt.';
-	@override String get end => 'Beenden';
-	@override String get leave => 'Verlassen';
-	@override String get syncing => 'Synchronisieren...';
-	@override String get joinWatchSession => 'Schausitzung Beitreten';
-	@override String get enterCodeHint => '8-stelligen Code eingeben';
-	@override String get pasteFromClipboard => 'Aus Zwischenablage einfügen';
-	@override String get pleaseEnterCode => 'Bitte gib einen Sitzungscode ein';
-	@override String get codeMustBe8Chars => 'Sitzungscode muss 8 Zeichen haben';
-	@override String get joinInstructions => 'Gib den vom Host geteilten Sitzungscode ein, um seiner Schausitzung beizutreten.';
-	@override String get failedToCreate => 'Sitzung konnte nicht erstellt werden';
-	@override String get failedToJoin => 'Sitzung konnte nicht beigetreten werden';
-	@override String get sessionCodeCopied => 'Sitzungscode in Zwischenablage kopiert';
-	@override String get relayUnreachable => 'Der Relay-Server ist nicht erreichbar. Möglicherweise blockiert dein Internetanbieter die Verbindung. Du kannst es trotzdem versuchen, aber Watch Together funktioniert eventuell nicht.';
-	@override String get reconnectingToHost => 'Verbindung zum Host wird wiederhergestellt...';
-	@override String participantJoined({required Object name}) => '${name} ist beigetreten';
-	@override String participantLeft({required Object name}) => '${name} hat die Sitzung verlassen';
-}
-
 // Path: shaders
 class _TranslationsShadersDe implements TranslationsShadersEn {
 	_TranslationsShadersDe._(this._root);
@@ -1095,7 +1045,7 @@ class _TranslationsVideoControlsPipErrorsDe implements TranslationsVideoControls
 
 	// Translations
 	@override String get androidVersion => 'Erfordert Android 8.0 oder neuer';
-	@override String get permissionDisabled => 'Bild-in-Bild-Berechtigung ist deaktiviert. Aktiviere sie unter Einstellungen > Apps > Plezy > Bild-in-Bild';
+	@override String get permissionDisabled => 'Bild-in-Bild-Berechtigung ist deaktiviert. Aktiviere sie unter Einstellungen > Apps > Finzy > Bild-in-Bild';
 	@override String get notSupported => 'Dieses Gerät unterstützt den Bild-in-Bild-Modus nicht';
 	@override String get failed => 'Bild-in-Bild konnte nicht gestartet werden';
 	@override String unknown({required Object error}) => 'Ein Fehler ist aufgetreten: ${error}';
@@ -1174,7 +1124,7 @@ class _TranslationsCompanionRemotePairingDe implements TranslationsCompanionRemo
 	@override String get pinHint => '6-stellige PIN eingeben';
 	@override String get connecting => 'Verbinde...';
 	@override String get tips => 'Tipps';
-	@override String get tipDesktop => 'Öffne Plezy auf deinem Desktop und aktiviere Companion Remote in den Einstellungen oder im Menü';
+	@override String get tipDesktop => 'Öffne Finzy auf deinem Desktop und aktiviere Companion Remote in den Einstellungen oder im Menü';
 	@override String get tipScan => 'Verwende den Scannen-Tab, um dich schnell per QR-Code auf deinem Desktop zu koppeln';
 	@override String get tipWifi => 'Stelle sicher, dass beide Geräte im selben WiFi-Netzwerk sind';
 	@override String get cameraPermissionRequired => 'Kameraberechtigung wird zum Scannen von QR-Codes benötigt.\nBitte erteile den Kamerazugriff in den Geräteeinstellungen.';
@@ -1243,8 +1193,7 @@ class _TranslationsCompanionRemoteRemoteDe implements TranslationsCompanionRemot
 extension on TranslationsDe {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
-			'app.title' => 'Plezy',
-			'auth.signInWithPlex' => 'Mit Plex anmelden',
+			'app.title' => 'Finzy',
 			'auth.signInWithJellyfin' => 'Mit Jellyfin anmelden',
 			'auth.jellyfinServerUrl' => 'Server-URL',
 			'auth.jellyfinServerUrlHint' => 'https://dein-jellyfin.example.com',
@@ -1253,9 +1202,9 @@ extension on TranslationsDe {
 			'auth.jellyfinSignIn' => 'Anmelden',
 			'auth.showQRCode' => 'QR-Code anzeigen',
 			'auth.authenticate' => 'Authentifizieren',
-			'auth.debugEnterToken' => 'Debug: Plex-Token eingeben',
-			'auth.plexTokenLabel' => 'Plex-Auth-Token',
-			'auth.plexTokenHint' => 'Plex.tv-Token eingeben',
+			'auth.debugEnterToken' => 'Debug: Jellyfin-Token eingeben',
+			'auth.authTokenLabel' => 'Jellyfin-Auth-Token',
+			'auth.authTokenHint' => 'Token eingeben',
 			'auth.authenticationTimeout' => 'Authentifizierung abgelaufen. Bitte erneut versuchen.',
 			'auth.scanQRToSignIn' => 'QR-Code scannen zum Anmelden',
 			'auth.waitingForAuth' => 'Warte auf Authentifizierung...\nBitte Anmeldung im Browser abschließen.',
@@ -1348,11 +1297,11 @@ extension on TranslationsDe {
 			'settings.listView' => 'Liste',
 			'settings.listViewDescription' => 'Elemente in Listenansicht anzeigen',
 			'settings.showHeroSection' => 'Hero-Bereich anzeigen',
-			'settings.useGlobalHubs' => 'Plex-Startseiten-Layout verwenden',
-			'settings.useGlobalHubsDescription' => 'Zeigt Startseiten-Hubs wie der offizielle Plex-Client. Wenn deaktiviert, werden stattdessen Empfehlungen pro Bibliothek angezeigt.',
+			'settings.useGlobalHubs' => 'Startseiten-Layout verwenden',
+			'settings.useGlobalHubsDescription' => 'Zeigt Startseiten-Hubs wie der offizielle Jellyfin-Client. Wenn deaktiviert, werden stattdessen Empfehlungen pro Bibliothek angezeigt.',
 			'settings.showServerNameOnHubs' => 'Servername bei Hubs anzeigen',
 			'settings.showServerNameOnHubsDescription' => 'Zeigt immer den Servernamen in Hub-Titeln an. Wenn deaktiviert, nur bei doppelten Hub-Namen.',
-			'settings.showJellyfinRecommendations' => 'Jellyfin Filmempfehlungen',
+			'settings.showJellyfinRecommendations' => 'Filmempfehlungen',
 			'settings.showJellyfinRecommendationsDescription' => 'Zeigt "Weil du geschaut hast" und ähnliche Empfehlungszeilen in der Film-Bibliothek. Standardmäßig aus, bis das Serververhalten verbessert wird.',
 			'settings.alwaysKeepSidebarOpen' => 'Seitenleiste immer geöffnet halten',
 			'settings.alwaysKeepSidebarOpenDescription' => 'Seitenleiste bleibt erweitert und Inhaltsbereich passt sich an',
@@ -1406,8 +1355,20 @@ extension on TranslationsDe {
 			'settings.autoSkip' => 'Automatisches Überspringen',
 			'settings.autoSkipIntro' => 'Intro automatisch überspringen',
 			'settings.autoSkipIntroDescription' => 'Intro-Marker nach wenigen Sekunden automatisch überspringen',
-			'settings.autoSkipCredits' => 'Abspann automatisch überspringen',
-			'settings.autoSkipCreditsDescription' => 'Abspann automatisch überspringen und nächste Episode abspielen',
+			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
+			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
+			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
+			'settings.enableChapterImages' => 'Enable Chapter Images',
+			'settings.enableChapterImagesDescription' => 'Show thumbnail images for chapters in the chapter list.',
+			'settings.autoSkipOutro' => 'Outro automatisch überspringen',
+			'settings.autoSkipOutroDescription' => 'Outro-Segmente automatisch überspringen',
+			'settings.autoSkipRecap' => 'Rückblick automatisch überspringen',
+			'settings.autoSkipRecapDescription' => 'Rückblick-Segmente automatisch überspringen',
+			'settings.autoSkipPreview' => 'Vorschau automatisch überspringen',
+			'settings.autoSkipPreviewDescription' => 'Vorschau-Segmente automatisch überspringen',
+			'settings.autoSkipCommercial' => 'Werbung automatisch überspringen',
+			'settings.autoSkipCommercialDescription' => 'Werbesegmente automatisch überspringen',
 			'settings.autoSkipDelay' => 'Verzögerung für automatisches Überspringen',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => '${seconds} Sekunden vor dem automatischen Überspringen warten',
 			'settings.downloads' => 'Downloads',
@@ -1427,8 +1388,6 @@ extension on TranslationsDe {
 			'settings.maxVolume' => 'Maximale Lautstärke',
 			'settings.maxVolumeDescription' => 'Lautstärke über 100% für leise Medien erlauben',
 			'settings.maxVolumePercent' => ({required Object percent}) => '${percent}%',
-			'settings.discordRichPresence' => 'Discord Rich Presence',
-			'settings.discordRichPresenceDescription' => 'Zeige auf Discord, was du gerade schaust',
 			'settings.matchContentFrameRate' => 'Inhalts-Bildrate anpassen',
 			'settings.matchContentFrameRateDescription' => 'Bildwiederholfrequenz des Displays an den Videoinhalt anpassen, reduziert Ruckeln und spart Akku',
 			'settings.requireProfileSelectionOnOpen' => 'Profil beim Öffnen abfragen',
@@ -1558,7 +1517,7 @@ extension on TranslationsDe {
 			'videoControls.endsAt' => ({required Object time}) => 'Endet um ${time}',
 			'videoControls.pipFailed' => 'Bild-in-Bild konnte nicht gestartet werden',
 			'videoControls.pipErrors.androidVersion' => 'Erfordert Android 8.0 oder neuer',
-			'videoControls.pipErrors.permissionDisabled' => 'Bild-in-Bild-Berechtigung ist deaktiviert. Aktiviere sie unter Einstellungen > Apps > Plezy > Bild-in-Bild',
+			'videoControls.pipErrors.permissionDisabled' => 'Bild-in-Bild-Berechtigung ist deaktiviert. Aktiviere sie unter Einstellungen > Apps > Finzy > Bild-in-Bild',
 			'videoControls.pipErrors.notSupported' => 'Dieses Gerät unterstützt den Bild-in-Bild-Modus nicht',
 			'videoControls.pipErrors.failed' => 'Bild-in-Bild konnte nicht gestartet werden',
 			'videoControls.pipErrors.unknown' => ({required Object error}) => 'Ein Fehler ist aufgetreten: ${error}',
@@ -1598,9 +1557,6 @@ extension on TranslationsDe {
 			'messages.failedToCreatePlayQueueNoItems' => 'Wiedergabewarteschlange konnte nicht erstellt werden – keine Elemente',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => 'Wiedergabe für ${action} fehlgeschlagen: ${error}',
 			'messages.switchingToCompatiblePlayer' => 'Wechsle zu kompatiblem Player...',
-			'messages.logsUploaded' => 'Logs uploaded',
-			'messages.logsUploadFailed' => 'Failed to upload logs',
-			'messages.logId' => 'Log ID',
 			'subtitlingStyling.stylingOptions' => 'Stiloptionen',
 			'subtitlingStyling.fontSize' => 'Schriftgröße',
 			'subtitlingStyling.textColor' => 'Textfarbe',
@@ -1642,6 +1598,7 @@ extension on TranslationsDe {
 			'discover.playEpisode' => ({required Object season, required Object episode}) => 'S${season}E${episode}',
 			'discover.overview' => 'Übersicht',
 			'discover.cast' => 'Besetzung',
+			'discover.moreLikeThis' => 'Mehr davon',
 			'discover.extras' => 'Trailer & Extras',
 			'discover.seasons' => 'Staffeln',
 			'discover.studio' => 'Studio',
@@ -1653,7 +1610,7 @@ extension on TranslationsDe {
 			'discover.minutesLeft' => ({required Object minutes}) => '${minutes} Min übrig',
 			'errors.searchFailed' => ({required Object error}) => 'Suche fehlgeschlagen: ${error}',
 			'errors.connectionTimeout' => ({required Object context}) => 'Zeitüberschreitung beim Laden von ${context}',
-			'errors.connectionFailed' => 'Verbindung zum Plex-Server fehlgeschlagen',
+			'errors.connectionFailed' => 'Verbindung zum Jellyfin-Server fehlgeschlagen',
 			'errors.failedToLoad' => ({required Object context, required Object error}) => 'Fehler beim Laden von ${context}: ${error}',
 			'errors.noClientAvailable' => 'Kein Client verfügbar',
 			'errors.authenticationFailed' => ({required Object error}) => 'Authentifizierung fehlgeschlagen: ${error}',
@@ -1697,10 +1654,12 @@ extension on TranslationsDe {
 			'libraries.noRecommendations' => 'Keine Empfehlungen verfügbar',
 			'libraries.noCollections' => 'Keine Sammlungen in dieser Mediathek',
 			'libraries.noFavorites' => 'Keine Favoriten in dieser Mediathek',
+			'libraries.noGenres' => 'Keine Genres in dieser Mediathek',
 			'libraries.noFoldersFound' => 'Keine Ordner gefunden',
 			'libraries.folders' => 'Ordner',
 			'libraries.tabs.recommended' => 'Empfohlen',
 			'libraries.tabs.browse' => 'Durchsuchen',
+			'libraries.tabs.genre' => 'Genre',
 			'libraries.tabs.favorites' => 'Favoriten',
 			'libraries.tabs.collections' => 'Sammlungen',
 			'libraries.tabs.playlists' => 'Wiedergabelisten',
@@ -1713,7 +1672,7 @@ extension on TranslationsDe {
 			'about.title' => 'Über',
 			'about.openSourceLicenses' => 'Open-Source-Lizenzen',
 			'about.versionLabel' => ({required Object version}) => 'Version ${version}',
-			'about.appDescription' => 'Ein schöner Plex-Client für Flutter',
+			'about.appDescription' => 'Ein schöner Jellyfin-Client für Flutter',
 			'about.viewLicensesDescription' => 'Lizenzen von Drittanbieter-Bibliotheken anzeigen',
 			'serverSelection.allServerConnectionsFailed' => 'Verbindung zu allen Servern fehlgeschlagen. Bitte Netzwerk prüfen und erneut versuchen.',
 			'serverSelection.noServersFoundForAccount' => ({required Object username, required Object email}) => 'Keine Server gefunden für ${username} (${email})',
@@ -1725,7 +1684,6 @@ extension on TranslationsDe {
 			'hubDetail.noItemsFound' => 'Keine Elemente gefunden',
 			'logs.clearLogs' => 'Protokolle löschen',
 			'logs.copyLogs' => 'Protokolle kopieren',
-			'logs.uploadLogs' => 'Upload Logs',
 			'logs.error' => 'Fehler:',
 			'logs.stackTrace' => 'Stacktrace:',
 			'licenses.relatedPackages' => 'Verwandte Pakete',
@@ -1747,6 +1705,8 @@ extension on TranslationsDe {
 			'liveTv.loading' => 'Kanäle werden geladen...',
 			'liveTv.nowPlaying' => 'Läuft gerade',
 			'liveTv.record' => 'Aufnehmen',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordSeries' => 'Serie aufnehmen',
 			'liveTv.cancelRecording' => 'Aufnahme abbrechen',
 			'liveTv.deleteSubscription' => 'Aufnahmeregel löschen',
@@ -1756,8 +1716,6 @@ extension on TranslationsDe {
 			'liveTv.noRecordings' => 'Keine Aufnahmen geplant',
 			'liveTv.noSubscriptions' => 'Keine Aufnahmeregeln',
 			'liveTv.channelNumber' => ({required Object number}) => 'Kanal ${number}',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
 			'liveTv.premiere' => 'NEU',
@@ -1840,52 +1798,6 @@ extension on TranslationsDe {
 			'collections.removedFromCollection' => 'Aus Sammlung entfernt',
 			'collections.removeFromCollectionFailed' => 'Entfernen aus Sammlung fehlgeschlagen',
 			'collections.removeFromCollectionError' => ({required Object error}) => 'Fehler beim Entfernen aus der Sammlung: ${error}',
-			'watchTogether.title' => 'Gemeinsam Schauen',
-			'watchTogether.description' => 'Inhalte synchron mit Freunden und Familie schauen',
-			'watchTogether.createSession' => 'Sitzung Erstellen',
-			'watchTogether.creating' => 'Erstellen...',
-			'watchTogether.joinSession' => 'Sitzung Beitreten',
-			'watchTogether.joining' => 'Beitreten...',
-			'watchTogether.controlMode' => 'Steuerungsmodus',
-			'watchTogether.controlModeQuestion' => 'Wer kann die Wiedergabe steuern?',
-			'watchTogether.hostOnly' => 'Nur Host',
-			'watchTogether.anyone' => 'Alle',
-			'watchTogether.hostingSession' => 'Sitzung Hosten',
-			'watchTogether.inSession' => 'In Sitzung',
-			'watchTogether.sessionCode' => 'Sitzungscode',
-			'watchTogether.hostControlsPlayback' => 'Host steuert die Wiedergabe',
-			'watchTogether.anyoneCanControl' => 'Alle können die Wiedergabe steuern',
-			'watchTogether.hostControls' => 'Host steuert',
-			'watchTogether.anyoneControls' => 'Alle steuern',
-			'watchTogether.participants' => 'Teilnehmer',
-			'watchTogether.host' => 'Host',
-			'watchTogether.hostBadge' => 'HOST',
-			'watchTogether.youAreHost' => 'Du bist der Host',
-			'watchTogether.watchingWithOthers' => 'Mit anderen schauen',
-			'watchTogether.endSession' => 'Sitzung Beenden',
-			'watchTogether.leaveSession' => 'Sitzung Verlassen',
-			'watchTogether.endSessionQuestion' => 'Sitzung Beenden?',
-			'watchTogether.leaveSessionQuestion' => 'Sitzung Verlassen?',
-			'watchTogether.endSessionConfirm' => 'Dies beendet die Sitzung für alle Teilnehmer.',
-			'watchTogether.leaveSessionConfirm' => 'Du wirst aus der Sitzung entfernt.',
-			'watchTogether.endSessionConfirmOverlay' => 'Dies beendet die Schausitzung für alle Teilnehmer.',
-			'watchTogether.leaveSessionConfirmOverlay' => 'Du wirst von der Schausitzung getrennt.',
-			'watchTogether.end' => 'Beenden',
-			'watchTogether.leave' => 'Verlassen',
-			'watchTogether.syncing' => 'Synchronisieren...',
-			'watchTogether.joinWatchSession' => 'Schausitzung Beitreten',
-			'watchTogether.enterCodeHint' => '8-stelligen Code eingeben',
-			'watchTogether.pasteFromClipboard' => 'Aus Zwischenablage einfügen',
-			'watchTogether.pleaseEnterCode' => 'Bitte gib einen Sitzungscode ein',
-			'watchTogether.codeMustBe8Chars' => 'Sitzungscode muss 8 Zeichen haben',
-			'watchTogether.joinInstructions' => 'Gib den vom Host geteilten Sitzungscode ein, um seiner Schausitzung beizutreten.',
-			'watchTogether.failedToCreate' => 'Sitzung konnte nicht erstellt werden',
-			'watchTogether.failedToJoin' => 'Sitzung konnte nicht beigetreten werden',
-			'watchTogether.sessionCodeCopied' => 'Sitzungscode in Zwischenablage kopiert',
-			'watchTogether.relayUnreachable' => 'Der Relay-Server ist nicht erreichbar. Möglicherweise blockiert dein Internetanbieter die Verbindung. Du kannst es trotzdem versuchen, aber Watch Together funktioniert eventuell nicht.',
-			'watchTogether.reconnectingToHost' => 'Verbindung zum Host wird wiederhergestellt...',
-			'watchTogether.participantJoined' => ({required Object name}) => '${name} ist beigetreten',
-			'watchTogether.participantLeft' => ({required Object name}) => '${name} hat die Sitzung verlassen',
 			'shaders.title' => 'Shader',
 			'shaders.noShaderDescription' => 'Keine Videoverbesserung',
 			'shaders.nvscalerDescription' => 'NVIDIA-Bildskalierung für schärferes Video',
@@ -1926,7 +1838,7 @@ extension on TranslationsDe {
 			'companionRemote.pairing.pinHint' => '6-stellige PIN eingeben',
 			'companionRemote.pairing.connecting' => 'Verbinde...',
 			'companionRemote.pairing.tips' => 'Tipps',
-			'companionRemote.pairing.tipDesktop' => 'Öffne Plezy auf deinem Desktop und aktiviere Companion Remote in den Einstellungen oder im Menü',
+			'companionRemote.pairing.tipDesktop' => 'Öffne Finzy auf deinem Desktop und aktiviere Companion Remote in den Einstellungen oder im Menü',
 			'companionRemote.pairing.tipScan' => 'Verwende den Scannen-Tab, um dich schnell per QR-Code auf deinem Desktop zu koppeln',
 			'companionRemote.pairing.tipWifi' => 'Stelle sicher, dass beide Geräte im selben WiFi-Netzwerk sind',
 			'companionRemote.pairing.cameraPermissionRequired' => 'Kameraberechtigung wird zum Scannen von QR-Codes benötigt.\nBitte erteile den Kamerazugriff in den Geräteeinstellungen.',

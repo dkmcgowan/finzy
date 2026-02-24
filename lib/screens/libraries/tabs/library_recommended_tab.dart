@@ -4,18 +4,18 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/settings_provider.dart';
 import '../../../utils/library_refresh_notifier.dart';
-import '../../../../services/media_server_client.dart';
+import '../../../../services/jellyfin_client.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../mixins/item_updatable.dart';
-import '../../../models/plex_hub.dart';
-import '../../../models/plex_metadata.dart';
+import '../../../models/hub.dart';
+import '../../../models/media_metadata.dart';
 import '../../../widgets/hub_section.dart';
 import '../../main_screen.dart';
 import 'base_library_tab.dart';
 
 /// Recommended tab for library screen
 /// Shows library-specific hubs and recommendations, including dedicated Continue Watching
-class LibraryRecommendedTab extends BaseLibraryTab<PlexHub> {
+class LibraryRecommendedTab extends BaseLibraryTab<Hub> {
   const LibraryRecommendedTab({
     super.key,
     required super.library,
@@ -29,15 +29,15 @@ class LibraryRecommendedTab extends BaseLibraryTab<PlexHub> {
   State<LibraryRecommendedTab> createState() => _LibraryRecommendedTabState();
 }
 
-class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRecommendedTab> with ItemUpdatable {
+class _LibraryRecommendedTabState extends BaseLibraryTabState<Hub, LibraryRecommendedTab> with ItemUpdatable {
   /// GlobalKeys for each hub section to enable vertical navigation
   final List<GlobalKey<HubSectionState>> _hubKeys = [];
 
   @override
-  MediaServerClient get client => getClientForLibrary();
+  JellyfinClient get client => getClientForLibrary();
 
   @override
-  void updateItemInLists(String ratingKey, PlexMetadata updatedMetadata) {
+  void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata) {
     // Update the item in any hub that contains it
     for (final hub in items) {
       final itemIndex = hub.items.indexWhere((item) => item.ratingKey == ratingKey);
@@ -60,7 +60,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
   Stream<void>? getRefreshStream() => LibraryRefreshNotifier().recommendationsStream;
 
   @override
-  Future<List<PlexHub>> loadData() async {
+  Future<List<Hub>> loadData() async {
     // Clear hub keys before loading new hubs to prevent stale references
     _hubKeys.clear();
 
@@ -73,8 +73,8 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
       client.getLibraryHubs(widget.library.key, limit: 12),
     ]);
 
-    final continueWatchingItems = results.first as List<PlexMetadata>;
-    final hubs = results[1] as List<PlexHub>;
+    final continueWatchingItems = results.first as List<MediaMetadata>;
+    final hubs = results[1] as List<Hub>;
 
     // Filter out any existing Continue Watching hubs since we're adding our own
     final filteredHubs = hubs.where((hub) {
@@ -86,11 +86,11 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
           !hubId.contains('continue');
     }).toList();
 
-    final finalHubs = <PlexHub>[];
+    final finalHubs = <Hub>[];
 
     // Add Continue Watching as the first hub if there are items
     if (continueWatchingItems.isNotEmpty) {
-      final continueWatchingHub = PlexHub(
+      final continueWatchingHub = Hub(
         hubKey: 'library_continue_watching_${widget.library.key}',
         title: t.discover.continueWatching,
         type: 'mixed',
@@ -110,7 +110,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
       final isRecentlyAdded = (hub.hubIdentifier?.toLowerCase().contains('recently_added') ?? false) ||
           hub.title.toLowerCase().contains('recently added');
       final title = isRecentlyAdded ? 'Recently Added in $libraryTitle' : hub.title;
-      finalHubs.add(PlexHub(
+      finalHubs.add(Hub(
         hubKey: hub.hubKey,
         title: title,
         type: hub.type,
@@ -123,10 +123,9 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
       ));
     }
 
-    // Jellyfin Movies only: append "Because you watched/liked X" when setting is on
+    // Append "Because you watched/liked X" when setting is on (movies only)
     final settingsProvider = context.read<SettingsProvider>();
-    if (client.isJellyfin &&
-        widget.library.type.toLowerCase() == 'movie' &&
+    if (widget.library.type.toLowerCase() == 'movie' &&
         settingsProvider.showJellyfinRecommendations) {
       final recHubs = await client.getMovieRecommendations(
         widget.library.key,
@@ -190,7 +189,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
   static const double _focusDecorationPadding = 8.0;
 
   @override
-  Widget buildContent(List<PlexHub> items) {
+  Widget buildContent(List<Hub> items) {
     _ensureHubKeys(items.length);
 
     return ListView.builder(
@@ -224,7 +223,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<PlexHub, LibraryRe
     loadItems();
   }
 
-  IconData _getHubIcon(PlexHub hub) {
+  IconData _getHubIcon(Hub hub) {
     final title = hub.title.toLowerCase();
     if (title.contains('continue watching') || title.contains('on deck')) {
       return Symbols.play_circle_rounded;

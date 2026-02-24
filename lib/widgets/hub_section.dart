@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../focus/dpad_navigator.dart';
@@ -13,7 +13,7 @@ import '../services/settings_service.dart' show EpisodePosterMode, LibraryDensit
 import '../theme/mono_tokens.dart';
 import '../utils/layout_constants.dart';
 import '../focus/locked_hub_controller.dart';
-import '../models/plex_hub.dart';
+import '../models/hub.dart';
 import '../screens/hub_detail_screen.dart';
 import '../utils/media_navigation_helper.dart';
 import 'focus_builders.dart';
@@ -31,7 +31,7 @@ import '../i18n/strings.g.dart';
 /// - Children render focus visuals based on the passed index
 /// - Focus never "escapes" to random elements
 class HubSection extends StatefulWidget {
-  final PlexHub hub;
+  final Hub hub;
   final IconData icon;
   final void Function(String)? onRefresh;
   final VoidCallback? onRemoveFromContinueWatching;

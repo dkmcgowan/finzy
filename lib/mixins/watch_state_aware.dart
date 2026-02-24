@@ -10,7 +10,7 @@ import '../utils/watch_state_notifier.dart';
 /// Example usage:
 /// ```dart
 /// class _MyScreenState extends State<MyScreen> with WatchStateAware {
-///   List<PlexMetadata> _items = [];
+///   List<MediaMetadata> _items = [];
 ///
 ///   @override
 ///   Set<String>? get watchedRatingKeys =>

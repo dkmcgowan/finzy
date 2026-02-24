@@ -2,21 +2,21 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
-import 'package:plezy/utils/content_utils.dart';
+import 'package:finzy/utils/content_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/download_models.dart';
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../services/download_manager_service.dart';
 import '../services/download_storage_service.dart';
-import '../services/plex_api_cache.dart';
-import '../services/media_server_client.dart';
+import '../services/api_cache.dart';
+import '../services/jellyfin_client.dart';
 import '../utils/app_logger.dart';
 import '../utils/global_key_utils.dart';
 
-/// Holds Plex thumb path reference for downloaded artwork.
+/// Holds server thumb path reference for downloaded artwork.
 /// The actual file path is computed from the hash of serverId + thumb path.
 class DownloadedArtwork {
-  /// The Plex thumb path (e.g., /library/metadata/12345/thumb/1234567890)
+  /// The server thumb path (e.g., Items/12345 for Jellyfin; used with getThumbnailUrl)
   final String? thumbPath;
 
   const DownloadedArtwork({this.thumbPath});
@@ -39,9 +39,9 @@ class DownloadProvider extends ChangeNotifier {
   final Map<String, DownloadProgress> _downloads = {};
 
   // Store metadata for display
-  final Map<String, PlexMetadata> _metadata = {};
+  final Map<String, MediaMetadata> _metadata = {};
 
-  // Store Plex thumb paths for offline display (actual file path computed from hash)
+  // Store server thumb paths for offline display (actual file path computed from hash)
   final Map<String, DownloadedArtwork> _artworkPaths = {};
 
   // Track items currently being queued (building download queue)
@@ -82,7 +82,7 @@ class DownloadProvider extends ChangeNotifier {
       _totalEpisodeCounts.clear();
 
       final storageService = DownloadStorageService.instance;
-      final apiCache = PlexApiCache.instance;
+      final apiCache = ApiCache.instance;
 
       // Initialize artwork directory path for synchronous access
       await storageService.getArtworkDirectory();
@@ -102,7 +102,7 @@ class DownloadProvider extends ChangeNotifier {
           totalBytes: item.totalBytes ?? 0,
         );
 
-        // Store Plex thumb path reference (file path computed from hash when needed)
+        // Store server thumb path reference (file path computed from hash when needed)
         _artworkPaths[item.globalKey] = DownloadedArtwork(thumbPath: item.thumbPath);
 
         // Look up metadata from the bulk-loaded map (O(1) instead of DB query per item)
@@ -165,7 +165,7 @@ class DownloadProvider extends ChangeNotifier {
 
   /// Load parent (show and season) metadata from a pre-loaded map (no DB I/O).
   /// Used during bulk initialization to avoid per-item DB queries.
-  void _loadParentMetadataFromMap(PlexMetadata episode, Map<String, PlexMetadata> allMetadata) {
+  void _loadParentMetadataFromMap(MediaMetadata episode, Map<String, MediaMetadata> allMetadata) {
     final serverId = episode.serverId;
     if (serverId == null) return;
 
@@ -226,7 +226,7 @@ class DownloadProvider extends ChangeNotifier {
   Map<String, DownloadProgress> get downloads => Map.unmodifiable(_downloads);
 
   /// All metadata for downloads
-  Map<String, PlexMetadata> get metadata => Map.unmodifiable(_metadata);
+  Map<String, MediaMetadata> get metadata => Map.unmodifiable(_metadata);
 
   /// Get all queued/downloading items (for Queue tab)
   List<DownloadProgress> get queuedDownloads {
@@ -246,7 +246,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Get completed TV episode downloads (individual episodes)
-  List<PlexMetadata> get downloadedEpisodes {
+  List<MediaMetadata> get downloadedEpisodes {
     return _metadata.entries
         .where((entry) {
           final progress = _downloads[entry.key];
@@ -258,8 +258,8 @@ class DownloadProvider extends ChangeNotifier {
 
   /// Get unique TV shows that have downloaded episodes
   /// Returns stored show metadata, or synthesizes from episode metadata as fallback
-  List<PlexMetadata> get downloadedShows {
-    final Map<String, PlexMetadata> shows = {};
+  List<MediaMetadata> get downloadedShows {
+    final Map<String, MediaMetadata> shows = {};
 
     for (final entry in _metadata.entries) {
       final globalKey = entry.key;
@@ -278,9 +278,9 @@ class DownloadProvider extends ChangeNotifier {
             shows[showRatingKey] = storedShow;
           } else {
             // Fallback: synthesize from episode metadata (missing year, summary)
-            shows[showRatingKey] = PlexMetadata(
+            shows[showRatingKey] = MediaMetadata(
               ratingKey: showRatingKey,
-              key: '/library/metadata/$showRatingKey',
+              key: '${ApiCache.itemPrefix}$showRatingKey',
               type: 'show',
               title: meta.grandparentTitle ?? 'Unknown Show',
               thumb: meta.grandparentThumb,
@@ -296,7 +296,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Get completed movie downloads
-  List<PlexMetadata> get downloadedMovies {
+  List<MediaMetadata> get downloadedMovies {
     return _metadata.entries
         .where((entry) {
           final progress = _downloads[entry.key];
@@ -307,7 +307,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Get metadata for a specific download
-  PlexMetadata? getMetadata(String globalKey) => _metadata[globalKey];
+  MediaMetadata? getMetadata(String globalKey) => _metadata[globalKey];
 
   /// Get artwork paths for a specific download (for offline display)
   DownloadedArtwork? getArtworkPaths(String globalKey) => _artworkPaths[globalKey];
@@ -320,7 +320,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Get downloaded episodes for a specific show (by grandparentRatingKey)
-  List<PlexMetadata> getDownloadedEpisodesForShow(String showRatingKey) {
+  List<MediaMetadata> getDownloadedEpisodesForShow(String showRatingKey) {
     return _metadata.entries
         .where((entry) {
           final progress = _downloads[entry.key];
@@ -603,7 +603,7 @@ class DownloadProvider extends ChangeNotifier {
   /// For movies and episodes, queues directly.
   /// For shows and seasons, fetches all child episodes and queues them.
   /// Returns the number of items queued.
-  Future<int> queueDownload(PlexMetadata metadata, MediaServerClient client) async {
+  Future<int> queueDownload(MediaMetadata metadata, JellyfinClient client) async {
     final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
 
     // Check if downloads are blocked on cellular
@@ -645,7 +645,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue a single movie or episode for download
-  Future<void> _queueSingleDownload(PlexMetadata metadata, MediaServerClient client) async {
+  Future<void> _queueSingleDownload(MediaMetadata metadata, JellyfinClient client) async {
     final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
 
     // Don't re-queue if already downloading or completed
@@ -658,7 +658,7 @@ class DownloadProvider extends ChangeNotifier {
 
     // Fetch full metadata to get year, summary, clearLogo
     // The metadata from getChildren() is summarized and missing these fields
-    PlexMetadata metadataToStore = metadata;
+    MediaMetadata metadataToStore = metadata;
     try {
       final fullMetadata = await client.getMetadataWithImages(metadata.ratingKey);
       if (fullMetadata != null) {
@@ -686,7 +686,7 @@ class DownloadProvider extends ChangeNotifier {
 
   /// Fetch and store show and season metadata for an episode
   /// Also downloads artwork for show and season
-  Future<void> _fetchAndStoreParentMetadata(PlexMetadata episode, MediaServerClient client) async {
+  Future<void> _fetchAndStoreParentMetadata(MediaMetadata episode, JellyfinClient client) async {
     final serverId = episode.serverId;
     if (serverId == null) return;
     final storageService = DownloadStorageService.instance;
@@ -697,7 +697,7 @@ class DownloadProvider extends ChangeNotifier {
       final showGlobalKey = '$serverId:$showRatingKey';
 
       // Try to use existing metadata (set when queueing an entire show)
-      PlexMetadata? showMetadata = _metadata[showGlobalKey];
+      MediaMetadata? showMetadata = _metadata[showGlobalKey];
 
       // If not already cached, fetch full metadata with images
       if (showMetadata == null) {
@@ -732,7 +732,7 @@ class DownloadProvider extends ChangeNotifier {
     final seasonRatingKey = episode.parentRatingKey;
     if (seasonRatingKey != null) {
       final seasonGlobalKey = '$serverId:$seasonRatingKey';
-      PlexMetadata? seasonMetadata = _metadata[seasonGlobalKey];
+      MediaMetadata? seasonMetadata = _metadata[seasonGlobalKey];
 
       if (seasonMetadata == null) {
         try {
@@ -764,7 +764,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue all episodes from a TV show for download
-  Future<int> _queueShowDownload(PlexMetadata show, MediaServerClient client) async {
+  Future<int> _queueShowDownload(MediaMetadata show, JellyfinClient client) async {
     final globalKey = '${show.serverId}:${show.ratingKey}';
     int count = 0;
     final seasons = await client.getChildren(show.ratingKey);
@@ -800,7 +800,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue all episodes from a season for download
-  Future<int> _queueSeasonDownload(PlexMetadata season, MediaServerClient client) async {
+  Future<int> _queueSeasonDownload(MediaMetadata season, JellyfinClient client) async {
     final globalKey = '${season.serverId}:${season.ratingKey}';
     int count = 0;
     final episodes = await client.getChildren(season.ratingKey);
@@ -839,7 +839,7 @@ class DownloadProvider extends ChangeNotifier {
   /// Queue only the missing (not downloaded) episodes for a show/season
   /// Used for resuming partial downloads
   /// Returns the number of episodes queued
-  Future<int> queueMissingEpisodes(PlexMetadata metadata, MediaServerClient client) async {
+  Future<int> queueMissingEpisodes(MediaMetadata metadata, JellyfinClient client) async {
     final type = metadata.type.toLowerCase();
 
     if (type == 'show') {
@@ -852,7 +852,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue missing episodes for a show
-  Future<int> _queueMissingShowEpisodes(PlexMetadata show, MediaServerClient client) async {
+  Future<int> _queueMissingShowEpisodes(MediaMetadata show, JellyfinClient client) async {
     int queuedCount = 0;
 
     // Fetch all seasons
@@ -870,7 +870,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Queue missing episodes for a season
-  Future<int> _queueMissingSeasonEpisodes(PlexMetadata season, MediaServerClient client) async {
+  Future<int> _queueMissingSeasonEpisodes(MediaMetadata season, JellyfinClient client) async {
     int queuedCount = 0;
 
     // Fetch all episodes
@@ -908,7 +908,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Resume a paused download
-  Future<void> resumeDownload(String globalKey, MediaServerClient client) async {
+  Future<void> resumeDownload(String globalKey, JellyfinClient client) async {
     final progress = _downloads[globalKey];
     if (progress != null && progress.status == DownloadStatus.paused) {
       await _downloadManager.resumeDownload(globalKey, client);
@@ -916,7 +916,7 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Retry a failed download
-  Future<void> retryDownload(String globalKey, MediaServerClient client) async {
+  Future<void> retryDownload(String globalKey, JellyfinClient client) async {
     final progress = _downloads[globalKey];
     if (progress != null && progress.status == DownloadStatus.failed) {
       await _downloadManager.retryDownload(globalKey, client);
@@ -997,7 +997,7 @@ class DownloadProvider extends ChangeNotifier {
 
   /// Resume queued downloads that were interrupted by app kill.
   /// Call after a media server client becomes available (e.g. after server connect on launch).
-  void resumeQueuedDownloads(MediaServerClient client) {
+  void resumeQueuedDownloads(JellyfinClient client) {
     _downloadManager.resumeQueuedDownloads(client);
   }
 
@@ -1006,7 +1006,7 @@ class DownloadProvider extends ChangeNotifier {
   /// This is more lightweight than full refresh() - only updates metadata
   /// without reloading download progress from database.
   Future<void> refreshMetadataFromCache() async {
-    final apiCache = PlexApiCache.instance;
+    final apiCache = ApiCache.instance;
     int updatedCount = 0;
 
     for (final globalKey in _metadata.keys.toList()) {

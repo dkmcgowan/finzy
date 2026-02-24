@@ -38,7 +38,7 @@
     <uses-feature android:name="android.hardware.type.automotive" android:required="false" />
 
     <application
-        android:label="Plezy"
+        android:label="Finzy"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/tv_banner"
@@ -74,13 +74,13 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="plezy" android:host="play"/>
+                <data android:scheme="finzy" android:host="play"/>
             </intent-filter>
         </activity>
         <!-- FileProvider for sharing downloaded files with external players -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.edde746.plezy.fileprovider"
+            android:authorities="com.dkmcgowan.finzy.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

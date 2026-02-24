@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import '../../models/plex_filter.dart';
+import '../../models/library_filter.dart';
 import '../../widgets/app_bar_back_button.dart';
 import '../../widgets/bottom_sheet_header.dart';
 import '../../widgets/focusable_list_tile.dart';
@@ -10,7 +10,7 @@ import '../../utils/provider_extensions.dart';
 import '../../i18n/strings.g.dart';
 
 class FiltersBottomSheet extends StatefulWidget {
-  final List<PlexFilter> filters;
+  final List<LibraryFilter> filters;
   final Map<String, String> selectedFilters;
   final Function(Map<String, String>) onFiltersChanged;
   final String serverId;
@@ -30,16 +30,16 @@ class FiltersBottomSheet extends StatefulWidget {
 }
 
 class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
-  PlexFilter? _currentFilter;
-  List<PlexFilterValue> _filterValues = [];
+  LibraryFilter? _currentFilter;
+  List<LibraryFilterValue> _filterValues = [];
   bool _isLoadingValues = false;
   final Map<String, String> _tempSelectedFilters = {};
   static final Map<String, String> _filterDisplayNames = {}; // Cache for display names
   static const int _maxCachedDisplayNames = 1000;
   /// Groups in order. When all filters have group != null (Jellyfin), main view shows only these category rows.
-  late List<({String group, List<PlexFilter> filters})> _groupedFilters;
+  late List<({String group, List<LibraryFilter> filters})> _groupedFilters;
   /// When set, we're in "group detail" view (e.g. Filters toggles, Features toggles).
-  ({String group, List<PlexFilter> filters})? _currentGroup;
+  ({String group, List<LibraryFilter> filters})? _currentGroup;
   late final FocusNode _initialFocusNode;
   /// True when filters use groups (Jellyfin). Main view then shows only category names; no toggles.
   late bool _useGroupedMainView;
@@ -61,7 +61,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
   }
 
   void _sortFilters() {
-    final groups = <String?, List<PlexFilter>>{};
+    final groups = <String?, List<LibraryFilter>>{};
     for (final f in widget.filters) {
       groups.putIfAbsent(f.group, () => []).add(f);
     }
@@ -79,11 +79,11 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     ];
   }
 
-  bool _isBooleanFilter(PlexFilter filter) {
+  bool _isBooleanFilter(LibraryFilter filter) {
     return filter.filterType == 'boolean';
   }
 
-  Future<void> _loadFilterValues(PlexFilter filter) async {
+  Future<void> _loadFilterValues(LibraryFilter filter) async {
     setState(() {
       _currentFilter = filter;
       _isLoadingValues = true;
@@ -120,7 +120,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     });
   }
 
-  void _openGroup(({String group, List<PlexFilter> filters}) entry) {
+  void _openGroup(({String group, List<LibraryFilter> filters}) entry) {
     if (entry.filters.length == 1 && entry.filters.single.filterType != 'boolean') {
       // Single picker filter: go straight to value list
       _loadFilterValues(entry.filters.single);
@@ -234,7 +234,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
       );
     }
 
-    // Main view: either category rows only (Jellyfin) or flat list (Plex)
+    // Main view: either category rows only (Jellyfin) or flat list (legacy)
     return Column(
       children: [
         BottomSheetHeader(
@@ -277,7 +277,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     );
   }
 
-  /// Main view for Plex: flat list of toggles then pickers (no categories).
+  /// Main view: flat list of toggles then pickers (no categories).
   Widget _buildFlatFilterList() {
     final booleanFilters = widget.filters.where((f) => f.filterType == 'boolean').toList();
     final regularFilters = widget.filters.where((f) => f.filterType != 'boolean').toList();

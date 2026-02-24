@@ -1,9 +1,14 @@
 #include "mpv_plugin.h"
 
 #include <fstream>
+#include <vector>
 
 #include "mpv_container.h"
 #include "mpv_core.h"
+
+namespace {
+constexpr UINT kMpvPluginDrainEventsMessage = WM_APP + 0x100;
+}  // namespace
 
 static void LogToFile(const char* message) {
   std::ofstream log("C:\\Users\\admin\\mpv_debug.log", std::ios::app);
@@ -39,7 +44,7 @@ MpvPlayerPlugin::MpvPlayerPlugin(flutter::PluginRegistrarWindows* registrar)
   // Create method channel.
   method_channel_ =
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          registrar->messenger(), "com.plezy/mpv_player",
+          registrar->messenger(), "com.finzy/mpv_player",
           &flutter::StandardMethodCodec::GetInstance());
 
   LogToFile("MpvPlayerPlugin: Method channel created");
@@ -56,7 +61,7 @@ MpvPlayerPlugin::MpvPlayerPlugin(flutter::PluginRegistrarWindows* registrar)
   // Create event channel.
   event_channel_ =
       std::make_unique<flutter::EventChannel<flutter::EncodableValue>>(
-          registrar->messenger(), "com.plezy/mpv_player/events",
+          registrar->messenger(), "com.finzy/mpv_player/events",
           &flutter::StandardMethodCodec::GetInstance());
 
   auto handler = std::make_unique<
@@ -76,9 +81,24 @@ MpvPlayerPlugin::MpvPlayerPlugin(flutter::PluginRegistrarWindows* registrar)
       });
 
   event_channel_->SetStreamHandler(std::move(handler));
+
+  // Register a window proc delegate to drain the event queue on the platform
+  // thread (required: platform channel messages must be sent on platform thread).
+  event_proc_id_ = registrar_->RegisterTopLevelWindowProcDelegate(
+      [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+        if (message == kMpvPluginDrainEventsMessage) {
+          DrainEventQueue();
+          return std::optional<HRESULT>(0);
+        }
+        return std::optional<HRESULT>(std::nullopt);
+      });
 }
 
 MpvPlayerPlugin::~MpvPlayerPlugin() {
+  if (event_proc_id_) {
+    registrar_->UnregisterTopLevelWindowProcDelegate(event_proc_id_.value());
+    event_proc_id_ = std::nullopt;
+  }
   // Unregister window proc delegate.
   if (proc_id_) {
     registrar_->UnregisterTopLevelWindowProcDelegate(proc_id_.value());
@@ -413,8 +433,29 @@ void MpvPlayerPlugin::HandleMethodCall(
 }
 
 void MpvPlayerPlugin::SendEvent(const flutter::EncodableValue& event) {
-  if (event_sink_) {
-    event_sink_->Success(event);
+  {
+    std::lock_guard<std::mutex> lock(event_mutex_);
+    event_queue_.push(event);
+  }
+  HWND window = GetWindow();
+  if (window) {
+    ::PostMessage(window, kMpvPluginDrainEventsMessage, 0, 0);
+  }
+}
+
+void MpvPlayerPlugin::DrainEventQueue() {
+  std::vector<flutter::EncodableValue> to_send;
+  {
+    std::lock_guard<std::mutex> lock(event_mutex_);
+    while (!event_queue_.empty()) {
+      to_send.push_back(event_queue_.front());
+      event_queue_.pop();
+    }
+  }
+  for (const auto& event : to_send) {
+    if (event_sink_) {
+      event_sink_->Success(event);
+    }
   }
 }
 

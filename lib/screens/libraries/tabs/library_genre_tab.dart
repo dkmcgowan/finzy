@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../i18n/strings.g.dart';
-import '../../../models/plex_filter.dart' show PlexFilterValue;
-import '../../../models/plex_hub.dart';
-import '../../../models/plex_metadata.dart';
+import '../../../models/library_filter.dart' show LibraryFilterValue;
+import '../../../models/hub.dart';
+import '../../../models/media_metadata.dart';
 import '../../../widgets/hub_section.dart';
 import '../../main_screen.dart';
 import 'base_library_tab.dart';
 
-/// Genre tab for library screen (Jellyfin only).
+/// Genre tab for library screen.
 /// Shows library content grouped by genre — one section per genre with items.
-class LibraryGenreTab extends BaseLibraryTab<PlexHub> {
+class LibraryGenreTab extends BaseLibraryTab<Hub> {
   /// When set, tapping a genre header shows that genre's grid inline (Browse style) instead of pushing a route.
-  final void Function(PlexHub hub)? onGenreHeaderTap;
+  final void Function(Hub hub)? onGenreHeaderTap;
 
   const LibraryGenreTab({
     super.key,
@@ -29,7 +29,7 @@ class LibraryGenreTab extends BaseLibraryTab<PlexHub> {
   State<LibraryGenreTab> createState() => _LibraryGenreTabState();
 }
 
-class _LibraryGenreTabState extends BaseLibraryTabState<PlexHub, LibraryGenreTab> {
+class _LibraryGenreTabState extends BaseLibraryTabState<Hub, LibraryGenreTab> {
   final List<GlobalKey<HubSectionState>> _hubKeys = [];
 
   static const int _itemsPerGenre = 20;
@@ -44,7 +44,7 @@ class _LibraryGenreTabState extends BaseLibraryTabState<PlexHub, LibraryGenreTab
   String get errorContext => t.libraries.tabs.genre;
 
   @override
-  Future<List<PlexHub>> loadData() async {
+  Future<List<Hub>> loadData() async {
     final client = getClientForLibrary();
     final sectionId = widget.library.key;
     final type = widget.library.type.toLowerCase();
@@ -53,7 +53,7 @@ class _LibraryGenreTabState extends BaseLibraryTabState<PlexHub, LibraryGenreTab
     final genreValues = await client.getFilterValues('genre:$sectionId');
     if (genreValues.isEmpty) return [];
 
-    final hubs = <PlexHub>[];
+    final hubs = <Hub>[];
     for (final g in genreValues) {
       final genreName = g.title.isNotEmpty ? g.title : g.key;
       final filters = <String, String>{
@@ -66,7 +66,7 @@ class _LibraryGenreTabState extends BaseLibraryTabState<PlexHub, LibraryGenreTab
         filters: filters,
       );
       if (items.isEmpty) continue;
-      hubs.add(PlexHub(
+      hubs.add(Hub(
         hubKey: 'genre_${sectionId}_${g.key}',
         title: genreName,
         type: type,
@@ -114,7 +114,7 @@ class _LibraryGenreTabState extends BaseLibraryTabState<PlexHub, LibraryGenreTab
   static const double _focusDecorationPadding = 8.0;
 
   @override
-  Widget buildContent(List<PlexHub> items) {
+  Widget buildContent(List<Hub> items) {
     _ensureHubKeys(items.length);
 
     return ListView.builder(

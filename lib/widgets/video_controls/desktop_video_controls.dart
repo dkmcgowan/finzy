@@ -1,15 +1,15 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 
 import '../../focus/dpad_navigator.dart';
 import '../../mpv/mpv.dart';
-import '../../models/plex_media_info.dart';
-import '../../models/plex_media_version.dart';
-import '../../models/plex_metadata.dart';
+import '../../models/media_info.dart';
+import '../../models/media_version.dart';
+import '../../models/media_metadata.dart';
 import '../../services/fullscreen_state_manager.dart';
 import '../../utils/desktop_window_padding.dart';
 import '../../utils/formatters.dart';
@@ -26,10 +26,10 @@ import 'widgets/track_chapter_controls.dart';
 /// Desktop-specific video controls layout with top bar and bottom controls
 class DesktopVideoControls extends StatefulWidget {
   final Player player;
-  final PlexMetadata metadata;
+  final MediaMetadata metadata;
   final VoidCallback? onNext;
   final VoidCallback? onPrevious;
-  final List<PlexChapter> chapters;
+  final List<Chapter> chapters;
   final bool chaptersLoaded;
   final int seekTimeSmall;
   final VoidCallback onSeekToPreviousChapter;
@@ -51,7 +51,7 @@ class DesktopVideoControls extends StatefulWidget {
   final VoidCallback? onHideControls;
 
   // Track chapter controls parameters
-  final List<PlexMediaVersion> availableVersions;
+  final List<MediaVersion> availableVersions;
   final int selectedMediaIndex;
   final int boxFitMode;
   final int audioSyncOffset;
@@ -65,6 +65,13 @@ class DesktopVideoControls extends StatefulWidget {
   final Function(int)? onSwitchVersion;
   final Function(AudioTrack)? onAudioTrackChanged;
   final Function(SubtitleTrack)? onSubtitleTrackChanged;
+
+  /// External subtitle tracks (shown when setting is on; load on demand when user selects)
+  final List<SubtitleTrack> availableExternalSubtitles;
+
+  /// Called when user selects an external subtitle track
+  final Future<void> Function(SubtitleTrack)? onExternalSubtitleSelected;
+
   final VoidCallback? onLoadSeekTimes;
   final VoidCallback? onCancelAutoHide;
   final VoidCallback? onStartAutoHide;
@@ -129,6 +136,8 @@ class DesktopVideoControls extends StatefulWidget {
     this.onSwitchVersion,
     this.onAudioTrackChanged,
     this.onSubtitleTrackChanged,
+    this.availableExternalSubtitles = const [],
+    this.onExternalSubtitleSelected,
     this.onLoadSeekTimes,
     this.onCancelAutoHide,
     this.onStartAutoHide,
@@ -681,6 +690,8 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                 onSwitchVersion: widget.onSwitchVersion,
                 onAudioTrackChanged: widget.onAudioTrackChanged,
                 onSubtitleTrackChanged: widget.onSubtitleTrackChanged,
+                availableExternalSubtitles: widget.availableExternalSubtitles,
+                onExternalSubtitleSelected: widget.onExternalSubtitleSelected,
                 onLoadSeekTimes: widget.onLoadSeekTimes,
                 onCancelAutoHide: widget.onCancelAutoHide,
                 onStartAutoHide: widget.onStartAutoHide,

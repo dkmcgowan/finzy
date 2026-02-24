@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
 
-/// Key-value cache table for Plex API responses.
+/// Key-value cache table for API responses.
 /// Used for offline support - stores raw JSON responses.
 class ApiCache extends Table {
-  /// Composite key: serverId:endpoint (e.g., "abc123:/library/metadata/12345")
+  /// Composite key: serverId:endpoint (e.g., "abc123:/items/12345")
   TextColumn get cacheKey => text()();
 
   /// JSON response data
@@ -53,7 +53,7 @@ class DownloadedMedia extends Table {
 /// Queue for offline watch progress and manual watch actions.
 ///
 /// Stores watch progress updates and manual watch/unwatch actions
-/// that need to be synced to the Plex server when back online.
+/// that need to be synced to the server when back online.
 @DataClassName('OfflineWatchProgressItem')
 class OfflineWatchProgress extends Table {
   /// Auto-incrementing primary key

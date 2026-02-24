@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 32 358.32 399.86" role="img" aria-label="Finzy app icon">
+  <defs>
+    <linearGradient id="finzy-gradient" x1="22.67" y1="425.72" x2="201.83" y2="115.4" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B6E73"/>
+      <stop offset="0.55" stop-color="#19A7A5"/>
+      <stop offset="1" stop-color="#6FE7D5"/>
+    </linearGradient>
+    <linearGradient id="swoop-gradient" x1="40" y1="340" x2="310" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B7FFF2" stop-opacity="0.15"/>
+      <stop offset="0.5" stop-color="#E6FFFB" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.28"/>
+    </linearGradient>
+    <filter id="strokeShadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.5" result="blur"/>
+      <feOffset in="blur" dx="0" dy="2" result="offset"/>
+      <feColorMatrix in="offset" type="matrix"
+        values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.25 0" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="tri-clip">
+      <path d="M335.65,192.66L68.01,38.14C37.78,20.69,0,42.5,0,77.41v309.04c0,34.91,37.78,56.72,68.01,39.27l267.64-154.52c30.23-17.45,30.23-61.08,0-78.54Z"/>
+    </clipPath>
+  </defs>
+  <path d="M335.65,192.66L68.01,38.14C37.78,20.69,0,42.5,0,77.41v309.04c0,34.91,37.78,56.72,68.01,39.27l267.64-154.52c30.23-17.45,30.23-61.08,0-78.54Z" fill="url(#finzy-gradient)"/>
+  <g clip-path="url(#tri-clip)">
+    <path d="M34,270 C74,238 112,218 154,210 C198,202 240,212 290,236" fill="none" stroke="#053C40" stroke-opacity="0.22" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" filter="url(#strokeShadow)"/>
+    <path d="M52,324 C92,292 132,276 176,274 C218,272 254,286 304,312" fill="none" stroke="#053C40" stroke-opacity="0.18" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" filter="url(#strokeShadow)"/>
+    <path d="M34,270 C74,238 112,218 154,210 C198,202 240,212 290,236" fill="none" stroke="url(#swoop-gradient)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M52,324 C92,292 132,276 176,274 C218,272 254,286 304,312" fill="none" stroke="url(#swoop-gradient)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

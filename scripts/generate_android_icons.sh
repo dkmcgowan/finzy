@@ -7,7 +7,7 @@
 set -e
 
 # Configuration
-SVG_SOURCE="assets/plezy.svg"
+SVG_SOURCE="assets/finzy.svg"
 ANDROID_RES="android/app/src/main/res"
 TEMP_DIR="/tmp/android_icons_$$"
 

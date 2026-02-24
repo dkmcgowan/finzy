@@ -3,7 +3,7 @@ import 'package:rate_limiter/rate_limiter.dart';
 
 import '../mpv/mpv.dart';
 
-import '../models/plex_media_version.dart';
+import '../models/media_version.dart';
 import '../utils/app_logger.dart';
 import 'ambient_lighting_service.dart';
 
@@ -17,7 +17,7 @@ import 'ambient_lighting_service.dart';
 /// - Ambient-lighting-friendly reset to contain mode
 class VideoFilterManager {
   final Player player;
-  final List<PlexMediaVersion> availableVersions;
+  final List<MediaVersion> availableVersions;
   final int selectedMediaIndex;
 
   /// BoxFit mode state: 0=contain (letterbox), 1=cover (fill screen), 2=fill (stretch)

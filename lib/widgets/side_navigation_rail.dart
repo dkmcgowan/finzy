@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 import '../constants/library_constants.dart';
 import '../focus/dpad_navigator.dart';
 import '../focus/focus_memory_tracker.dart';
-import '../models/plex_library.dart';
+import '../models/media_library.dart';
 import '../navigation/navigation_tabs.dart';
 import '../providers/hidden_libraries_provider.dart';
 import '../providers/libraries_provider.dart';
@@ -257,7 +257,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
   }
 
   /// Default display order keys: Movies/Shows (alpha), then Favorites, then Collections/Playlists (alpha).
-  List<String> _defaultDisplayOrderKeys(List<PlexLibrary> visibleLibraries) {
+  List<String> _defaultDisplayOrderKeys(List<MediaLibrary> visibleLibraries) {
     final primary = visibleLibraries
         .where((l) => l.type.toLowerCase() == 'movie' || l.type.toLowerCase() == 'show')
         .toList()
@@ -276,14 +276,14 @@ class SideNavigationRailState extends State<SideNavigationRail> {
 
   /// Build ordered libraries and Favorites position from saved or default order.
   /// Returns (ordered libraries, index in combined list where Favorites is shown, or -1 if hidden/not Jellyfin).
-  (List<PlexLibrary> orderedLibraries, int favoritesInsertIndex) _buildOrderedDisplay(
-    List<PlexLibrary> visibleLibraries,
+  (List<MediaLibrary> orderedLibraries, int favoritesInsertIndex) _buildOrderedDisplay(
+    List<MediaLibrary> visibleLibraries,
     Set<String> hiddenKeys,
     List<String>? displayOrderKeys,
   ) {
     final orderKeys = displayOrderKeys ?? _defaultDisplayOrderKeys(visibleLibraries);
     final libByKey = {for (var l in visibleLibraries) l.globalKey: l};
-    final orderedLibraries = <PlexLibrary>[];
+    final orderedLibraries = <MediaLibrary>[];
     int favoritesInsertIndex = -1;
     int position = 0;
 
@@ -306,7 +306,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
   }
 
   /// Build the set of valid focus keys (main nav + current libraries + Favorites when shown).
-  Set<String> _buildValidFocusKeys(List<PlexLibrary> orderedLibraries, int favoritesInsertIndex) {
+  Set<String> _buildValidFocusKeys(List<MediaLibrary> orderedLibraries, int favoritesInsertIndex) {
     final keys = <String>{
       _kHome,
       _kLibraries,
@@ -323,7 +323,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
 
   /// Ordered list of focusable keys matching visual top-to-bottom order (saved or default).
   List<String> _buildFocusOrder(
-    List<PlexLibrary> orderedLibraries,
+    List<MediaLibrary> orderedLibraries,
     int favoritesInsertIndex, {
     required bool hasLiveTv,
   }) {
@@ -700,7 +700,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
   }
 
   Widget _buildLibrariesSection(
-    List<PlexLibrary> orderedLibraries,
+    List<MediaLibrary> orderedLibraries,
     int favoritesInsertIndex,
     dynamic t, {
     bool isCollapsed = false,
@@ -851,7 +851,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
   }
 
   /// Get set of library names that appear more than once (not globally unique)
-  Set<String> _getNonUniqueLibraryNames(List<PlexLibrary> libraries) {
+  Set<String> _getNonUniqueLibraryNames(List<MediaLibrary> libraries) {
     final nameCounts = <String, int>{};
     for (final lib in libraries) {
       nameCounts[lib.title] = (nameCounts[lib.title] ?? 0) + 1;
@@ -861,7 +861,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
 
   /// Build library list in saved/default order with Favorites at [favoritesInsertIndex].
   Widget _buildLibraryItemsSplit(
-    List<PlexLibrary> orderedLibraries,
+    List<MediaLibrary> orderedLibraries,
     int favoritesInsertIndex,
     dynamic t,
   ) {
@@ -915,7 +915,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     );
   }
 
-  Widget _buildLibraryItems(List<PlexLibrary> visibleLibraries, dynamic t) {
+  Widget _buildLibraryItems(List<MediaLibrary> visibleLibraries, dynamic t) {
     // Find which library names are not unique
     final nonUniqueNames = _getNonUniqueLibraryNames(visibleLibraries);
 
@@ -928,7 +928,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     );
   }
 
-  Widget _buildLibraryItem(PlexLibrary library, dynamic t, {bool showServerName = false}) {
+  Widget _buildLibraryItem(MediaLibrary library, dynamic t, {bool showServerName = false}) {
     final isSelected = widget.selectedIndex == 1 && widget.selectedLibraryKey == library.globalKey;
     final isFocused = _focusTracker.isFocused(library.globalKey);
     final focusNode = _focusTracker.get(library.globalKey);

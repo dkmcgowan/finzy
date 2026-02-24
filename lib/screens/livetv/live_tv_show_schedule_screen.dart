@@ -9,13 +9,13 @@ import '../../models/livetv_program.dart';
 import '../../providers/multi_server_provider.dart';
 import '../../theme/mono_tokens.dart';
 import '../../utils/live_tv_player_navigation.dart';
-import '../../utils/plex_image_helper.dart';
+import '../../utils/media_image_helper.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import '../../widgets/overlay_sheet.dart';
 import 'program_details_sheet.dart';
 
-/// Shows all upcoming airings of a show, matching the Plex "upcoming episodes" view.
+/// Shows all upcoming airings of a show, matching the "upcoming episodes" view.
 class LiveTvShowScheduleScreen extends StatefulWidget {
   /// The show title to filter for (grandparentTitle for episodes, title for movies).
   final String showTitle;
@@ -106,12 +106,12 @@ class _LiveTvShowScheduleScreenState extends State<LiveTvShowScheduleScreen> {
     final client = multiServer.getClientForServer(widget.serverId);
     String? posterUrl;
     if (program.thumb != null && client != null) {
-      posterUrl = PlexImageHelper.getOptimizedImageUrl(
+      posterUrl = MediaImageHelper.getOptimizedImageUrl(
         client: client,
         thumbPath: program.thumb,
         maxWidth: 80,
         maxHeight: 120,
-        devicePixelRatio: PlexImageHelper.effectiveDevicePixelRatio(context),
+        devicePixelRatio: MediaImageHelper.effectiveDevicePixelRatio(context),
         imageType: ImageType.poster,
       );
     }

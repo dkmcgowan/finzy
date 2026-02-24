@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../mpv/mpv.dart';
-import '../../../models/plex_media_info.dart';
+import '../../../models/media_info.dart';
 import '../../../utils/formatters.dart';
 import 'timeline_slider.dart';
 
@@ -12,7 +12,7 @@ import 'timeline_slider.dart';
 /// layout (timestamps beside slider) and vertical layout (timestamps below slider).
 class VideoTimelineBar extends StatelessWidget {
   final Player player;
-  final List<PlexChapter> chapters;
+  final List<Chapter> chapters;
   final bool chaptersLoaded;
   final ValueChanged<Duration> onSeek;
   final ValueChanged<Duration> onSeekEnd;

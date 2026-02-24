@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../i18n/strings.g.dart';
 import '../../../mpv/mpv.dart';
-import '../../../services/media_server_client.dart';
+import '../../../services/jellyfin_client.dart';
 import '../../../services/download_storage_service.dart';
-import '../../../models/plex_media_info.dart';
+import '../../../models/media_info.dart';
 import '../../../utils/formatters.dart';
 import '../../../utils/provider_extensions.dart';
 import '../../../widgets/focusable_list_tile.dart';
 import '../../../widgets/overlay_sheet.dart';
 import 'base_video_control_sheet.dart';
-import '../../plex_optimized_image.dart';
+import '../../optimized_image.dart';
 
 /// Bottom sheet for selecting chapters
 class ChapterSheet extends StatefulWidget {
   final Player player;
-  final List<PlexChapter> chapters;
+  final List<Chapter> chapters;
   final bool chaptersLoaded;
   final String? serverId; // Server ID for the metadata these chapters belong to
 
@@ -35,8 +35,8 @@ class ChapterSheet extends StatefulWidget {
 
 class _ChapterSheetState extends State<ChapterSheet> {
 
-  /// Get the MediaServerClient for chapters, or null if unavailable (offline mode)
-  MediaServerClient? _tryGetClientForChapters(BuildContext context) {
+  /// Get the JellyfinClient for chapters, or null if unavailable (offline mode)
+  JellyfinClient? _tryGetClientForChapters(BuildContext context) {
     if (widget.serverId == null) return null;
     try {
       return context.getClientForServer(widget.serverId!);
@@ -96,7 +96,7 @@ class _ChapterSheetState extends State<ChapterSheet> {
                           children: [
                             ClipRRect(
                               borderRadius: const BorderRadius.all(Radius.circular(4)),
-                              child: PlexOptimizedImage.thumb(
+                              child: OptimizedImage.thumb(
                                 client: _tryGetClientForChapters(context),
                                 imagePath: chapter.thumb,
                                 localFilePath: localThumbPath,

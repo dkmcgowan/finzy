@@ -11,7 +11,7 @@ import 'services/macos_titlebar_service.dart';
 import 'services/fullscreen_state_manager.dart';
 import 'services/settings_service.dart';
 import 'utils/platform_detector.dart';
-import 'services/discord_rpc_service.dart';
+
 import 'services/gamepad_service.dart';
 import 'providers/user_profile_provider.dart';
 import 'providers/jellyfin_profile_provider.dart';
@@ -26,8 +26,7 @@ import 'providers/download_provider.dart';
 import 'providers/offline_mode_provider.dart';
 import 'providers/offline_watch_provider.dart';
 import 'providers/shader_provider.dart';
-import 'providers/companion_remote_provider.dart';
-import 'watch_together/watch_together.dart';
+
 import 'services/multi_server_manager.dart';
 import 'services/offline_watch_sync_service.dart';
 import 'services/server_connection_orchestrator.dart';
@@ -37,7 +36,7 @@ import 'services/server_registry.dart';
 import 'services/download_manager_service.dart';
 import 'services/pip_service.dart';
 import 'services/download_storage_service.dart';
-import 'services/plex_api_cache.dart';
+import 'services/api_cache.dart';
 import 'database/app_database.dart';
 import 'utils/app_logger.dart';
 import 'utils/orientation_helper.dart';
@@ -121,7 +120,6 @@ void main() async {
   // Initialize gamepad service for desktop platforms
   if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
     GamepadService.instance.start();
-    DiscordRPCService.instance.initialize();
   }
 
   // DTD service is available for MCP tooling connection if needed
@@ -213,7 +211,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     _appDatabase = AppDatabase();
 
     // Initialize API cache with database
-    PlexApiCache.initialize(_appDatabase);
+    ApiCache.initialize(_appDatabase);
 
     _downloadManager = DownloadManagerService(database: _appDatabase, storageService: DownloadStorageService.instance);
     _downloadManager.recoveryFuture = _downloadManager.recoverInterruptedDownloads();
@@ -292,14 +290,14 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
           create: (context) => OfflineWatchProvider(
             syncService: _offlineWatchSyncService,
             downloadProvider: context.read<DownloadProvider>(),
-            apiCache: PlexApiCache.instance,
+            apiCache: ApiCache.instance,
           ),
           update: (_, syncService, downloadProvider, previous) {
             return previous ??
                 OfflineWatchProvider(
                   syncService: syncService,
                   downloadProvider: downloadProvider,
-                  apiCache: PlexApiCache.instance,
+                  apiCache: ApiCache.instance,
                 );
           },
         ),
@@ -311,9 +309,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (context) => HiddenLibrariesProvider(), lazy: true),
         ChangeNotifierProvider(create: (context) => LibrariesProvider()),
         ChangeNotifierProvider(create: (context) => PlaybackStateProvider()),
-        ChangeNotifierProvider(create: (context) => WatchTogetherProvider()),
+
         ChangeNotifierProvider(create: (context) => ShaderProvider()),
-        ChangeNotifierProvider(create: (context) => CompanionRemoteProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -377,9 +374,6 @@ class _SetupScreenState extends State<SetupScreen> {
   Future<void> _loadSavedCredentials() async {
     final storage = await StorageService.getInstance();
     final registry = ServerRegistry(storage);
-
-    // Refresh servers from API to get updated connection info (IPs may change)
-    await registry.refreshServersFromApi();
 
     // Load all configured servers
     final servers = await registry.getServers();

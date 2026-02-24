@@ -1,8 +1,8 @@
 import 'package:os_media_controls/os_media_controls.dart';
 import 'package:rate_limiter/rate_limiter.dart';
 
-import 'media_server_client.dart';
-import '../models/plex_metadata.dart';
+import 'jellyfin_client.dart';
+import '../models/media_metadata.dart' as finzy_models;
 import '../utils/content_utils.dart';
 import '../utils/app_logger.dart';
 
@@ -36,7 +36,7 @@ class MediaControlsManager {
   /// Update media metadata displayed in OS media controls
   ///
   /// This includes title, artist, artwork, and duration.
-  Future<void> updateMetadata({required PlexMetadata metadata, MediaServerClient? client, Duration? duration}) async {
+  Future<void> updateMetadata({required finzy_models.MediaMetadata metadata, JellyfinClient? client, Duration? duration}) async {
     try {
       // Build artwork URL if client is available
       String? artworkUrl;
@@ -158,7 +158,7 @@ class MediaControlsManager {
   /// For episodes: "Show Name - Season X Episode Y"
   /// For movies: Director or studio
   /// For other content: Fallback to year or empty
-  String _buildArtist(PlexMetadata metadata) {
+  String _buildArtist(finzy_models.MediaMetadata metadata) {
     if (metadata.isEpisode) {
       final parts = <String>[];
 
@@ -177,7 +177,7 @@ class MediaControlsManager {
       return parts.join(' • ');
     } else if (metadata.isMovie) {
       // For movies, use director or studio
-      // Note: These fields may need to be added to PlexMetadata model
+      // Note: These fields may need to be added to MediaMetadata model
       if (metadata.year != null) {
         return metadata.year.toString();
       }

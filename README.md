@@ -1,38 +1,14 @@
-<h1>
-  <img src="assets/plezy.png" alt="Plezy Logo" height="24" style="vertical-align: middle;" />
-  Plezy
-</h1>
+# Finzy
 
-A modern Plex client for desktop and mobile. Built with Flutter for native performance and a clean interface.
+A modern Jellyfin client for desktop and mobile. Built with Flutter for native performance and a clean interface.
 
-<p align="center">
-  <img src="assets/screenshots/macos-home.png" alt="Plezy macOS Home Screen" width="800" />
-</p>
-
-*More screenshots in the [screenshots folder](assets/screenshots/#readme)*
-
-## Download
-
-<a href='https://apps.apple.com/us/app/id6754315964'><img height='60' alt='Download on the App Store' src='./assets/app-store-badge.png'/></a>
-<a href='https://play.google.com/store/apps/details?id=com.edde746.plezy'><img height='60' alt='Get it on Google Play' src='./assets/play-store-badge.png'/></a>
-<a href='https://www.amazon.com/gp/product/B0GK65CVS1'><img height='60' alt='Available at the Amazon App Store' src='./assets/amazon-badge.png'/></a>
-
-- [Windows (x64, arm64)](https://github.com/edde746/plezy/releases/latest/download/plezy-windows-installer.exe)
-- [macOS (x64, arm64)](https://github.com/edde746/plezy/releases/latest/download/plezy-macos.dmg)
-- [Linux (x64, arm64)](https://github.com/edde746/plezy/releases/latest) - .deb, .rpm, .pkg.tar.zst, and portable tar.gz available
-- [NixOS/Nix](https://github.com/mio-19/nurpkgs/tree/main/pkgs/plezy) - Community package by [@mio-19](https://github.com/mio-19)
-- **Homebrew** (macOS):
-  ```bash
-  brew tap edde746/plezy https://github.com/edde746/plezy
-  brew install --cask plezy
-  ```
+Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-platform Plex client built with Flutter, adapted for [Jellyfin](https://jellyfin.org) instead of Plex.
 
 ## Features
 
 ### 🔐 Authentication
-- Sign in with Plex
-- Automatic server discovery and smart connection selection
-- Persistent sessions with auto-login
+- Sign in with Jellyfin (server URL + username/password or Quick Connect)
+- Multi-user support with profile switching
 
 ### 📚 Media Browsing
 - Browse libraries with rich metadata
@@ -43,37 +19,27 @@ A modern Plex client for desktop and mobile. Built with Flutter for native perfo
 - Wide codec support (HEVC, AV1, VP9, and more)
 - HDR and Dolby Vision (iOS, macOS, Windows)
 - Full ASS/SSA subtitle support
-- Audio and subtitle preferences synced with Plex profile
 - Progress sync and resume
 - Auto-play next episode
-
-### 📺 Live TV & DVR
-- EPG guide grid
-- Channel tuning
-- DVR recording rules and scheduled recordings
-- Multi-server DVR support
 
 ### 📥 Downloads
 - Download media for offline viewing
 - Background downloads with queue management
 
-### 👥 Watch Together
-- Synchronized playback with friends
-- Real-time play/pause and seek sync
-
 ## Building from Source
 
 ### Prerequisites
 - Flutter SDK 3.8.1+
-- A Plex account with server access
+- A Jellyfin server
 
 ### Setup
 
 ```bash
-git clone https://github.com/edde746/plezy.git
-cd plezy
+git clone https://github.com/dkmcgowan/finzy.git
+cd finzy
 flutter pub get
 dart run build_runner build
+dart run slang
 flutter run
 ```
 
@@ -85,8 +51,15 @@ After modifying model classes:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
+After modifying i18n files:
+
+```bash
+dart run slang
+```
+
 ## Acknowledgments
 
+- **Based on [Plezy](https://github.com/edde746/plezy)** — modern cross-platform Plex client built with Flutter; Finzy is a fork for Jellyfin.
 - Built with [Flutter](https://flutter.dev)
-- Designed for [Plex Media Server](https://www.plex.tv)
+- Designed for [Jellyfin](https://jellyfin.org)
 - Playback powered by [mpv](https://mpv.io) via [MPVKit](https://github.com/mpvkit/MPVKit) and [libmpv-android](https://github.com/jarnedemeulemeester/libmpv-android)

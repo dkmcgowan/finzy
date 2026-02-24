@@ -11,14 +11,14 @@ import '../../../i18n/strings.g.dart';
 import '../../../models/livetv_channel.dart';
 import '../../../models/livetv_program.dart';
 import '../../../providers/multi_server_provider.dart';
-import '../../../services/media_server_client.dart';
+import '../../../services/jellyfin_client.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/formatters.dart';
-import '../../../utils/plex_image_helper.dart';
+import '../../../utils/media_image_helper.dart';
 import '../../../utils/live_tv_player_navigation.dart';
 import '../../../widgets/app_icon.dart';
 import '../../../widgets/overlay_sheet.dart';
-import '../../../widgets/plex_optimized_image.dart';
+import '../../../widgets/optimized_image.dart';
 import '../program_details_sheet.dart';
 
 class GuideTab extends StatefulWidget {
@@ -1081,12 +1081,12 @@ class GuideTabState extends State<GuideTab> {
     final client = multiServer.getClientForServer(channel.serverId ?? '');
     String? posterUrl;
     if (program.thumb != null && client != null) {
-      posterUrl = PlexImageHelper.getOptimizedImageUrl(
+      posterUrl = MediaImageHelper.getOptimizedImageUrl(
         client: client,
         thumbPath: program.thumb,
         maxWidth: 80,
         maxHeight: 120,
-        devicePixelRatio: PlexImageHelper.effectiveDevicePixelRatio(context),
+        devicePixelRatio: MediaImageHelper.effectiveDevicePixelRatio(context),
         imageType: ImageType.poster,
       );
     }
@@ -1105,7 +1105,7 @@ class _ChannelCell extends StatefulWidget {
   final double rowHeight;
   final double channelColumnWidth;
   final String? channelThumb;
-  final MediaServerClient? client;
+  final JellyfinClient? client;
   final LiveTvChannel channel;
   final ThemeData theme;
   final VoidCallback onTap;
@@ -1160,7 +1160,7 @@ class _ChannelCellState extends State<_ChannelCell> {
                   opacity: showAction ? 0.3 : 1.0,
                   duration: const Duration(milliseconds: 150),
                   child: widget.channelThumb != null && widget.client != null
-                      ? PlexOptimizedImage.thumb(
+                      ? OptimizedImage.thumb(
                           client: widget.client!,
                           imagePath: widget.channelThumb,
                           width: widget.channelColumnWidth - 16,

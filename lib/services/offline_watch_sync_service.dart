@@ -6,10 +6,10 @@ import '../database/app_database.dart';
 import '../providers/offline_mode_provider.dart';
 import '../utils/app_logger.dart';
 import 'multi_server_manager.dart';
-import 'plex_api_cache.dart';
-import 'media_server_client.dart';
+import 'api_cache.dart';
+import 'jellyfin_client.dart';
 
-/// Service for managing offline watch progress and syncing to media servers (Plex/Jellyfin).
+/// Service for managing offline watch progress and syncing to Jellyfin.
 ///
 /// Handles:
 /// - Queuing progress updates when offline
@@ -129,7 +129,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
 
   /// Called when servers connect on app startup.
   ///
-  /// Triggers the initial sync now that PlexClients are available.
+  /// Triggers the initial sync now that Jellyfin clients are available.
   /// Only runs once per app session.
   void onServersConnected() {
     if (_hasPerformedStartupSync) return;
@@ -359,8 +359,8 @@ class OfflineWatchSyncService extends ChangeNotifier {
   /// Execute a callback with an online client for the given server.
   ///
   /// Returns null if no client available or server is offline.
-  /// The callback receives the MediaServerClient and should return the result.
-  Future<T?> _withOnlineClient<T>(String serverId, Future<T> Function(MediaServerClient client) callback) async {
+  /// The callback receives the JellyfinClient and should return the result.
+  Future<T?> _withOnlineClient<T>(String serverId, Future<T> Function(JellyfinClient client) callback) async {
     final client = _serverManager.getClient(serverId);
     if (client == null) {
       appLogger.d('No client for server $serverId, skipping');
@@ -376,7 +376,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
   }
 
   /// Sync a single action to the server.
-  Future<void> _syncAction(MediaServerClient client, OfflineWatchProgressItem action) async {
+  Future<void> _syncAction(JellyfinClient client, OfflineWatchProgressItem action) async {
     switch (action.actionType) {
       case 'watched':
         await client.markAsWatched(action.ratingKey);
@@ -409,7 +409,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
   ///
   /// Returns the number of episodes synced, or -1 on failure.
   Future<int> _syncSeasonEpisodes(
-    MediaServerClient client,
+    JellyfinClient client,
     String serverId,
     String seasonRatingKey,
     Set<String> downloadedEpisodeKeys,
@@ -421,7 +421,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
       for (final episode in seasonEpisodes) {
         if (!downloadedEpisodeKeys.contains(episode.ratingKey)) continue;
 
-        await PlexApiCache.instance.put(serverId, '/library/metadata/${episode.ratingKey}', {
+        await ApiCache.instance.put(serverId, '${ApiCache.itemPrefix}${episode.ratingKey}', {
           'MediaContainer': {
             'Metadata': [episode.toJson()],
           },
@@ -503,7 +503,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
             try {
               final metadata = await client.getMetadataWithImages(ratingKey);
               if (metadata != null) {
-                await PlexApiCache.instance.put(serverId, '/library/metadata/$ratingKey', {
+                await ApiCache.instance.put(serverId, '${ApiCache.itemPrefix}$ratingKey', {
                   'MediaContainer': {
                     'Metadata': [metadata.toJson()],
                   },

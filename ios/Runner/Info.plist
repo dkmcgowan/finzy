@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Plezy</string>
+	<string>Finzy</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Plezy</string>
+	<string>Finzy</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -35,10 +35,10 @@
 	</dict>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_plexmediasvr._tcp</string>
+		<string>_jellyfin._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>This app needs to connect to your Plex Media Server on your local network.</string>
+	<string>This app needs to connect to your Jellyfin server on your local network.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera is used to scan QR codes for Companion Remote pairing.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

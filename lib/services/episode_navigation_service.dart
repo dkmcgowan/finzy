@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../mpv/mpv.dart';
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../providers/playback_state_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/video_player_navigation.dart';
 
 /// Result of loading adjacent episodes
 class AdjacentEpisodes {
-  final PlexMetadata? next;
-  final PlexMetadata? previous;
+  final MediaMetadata? next;
+  final MediaMetadata? previous;
 
   AdjacentEpisodes({this.next, this.previous});
 
@@ -25,7 +25,7 @@ class AdjacentEpisodes {
 /// - Navigating between episodes while preserving track selections
 /// - Supporting both sequential and shuffle playback modes
 ///
-/// All episode navigation uses Plex play queues for consistent behavior.
+/// All episode navigation uses play queues for consistent behavior.
 class EpisodeNavigationService {
   /// Load the next and previous episodes for the current episode
   ///
@@ -33,7 +33,7 @@ class EpisodeNavigationService {
   /// - Not applicable (e.g., movie content)
   /// - Next episode doesn't exist (end of season/series)
   /// - Previous episode doesn't exist (first episode)
-  Future<AdjacentEpisodes> loadAdjacentEpisodes({required BuildContext context, required PlexMetadata metadata}) async {
+  Future<AdjacentEpisodes> loadAdjacentEpisodes({required BuildContext context, required MediaMetadata metadata}) async {
     try {
       final playbackState = context.read<PlaybackStateProvider>();
 
@@ -64,7 +64,7 @@ class EpisodeNavigationService {
   /// selections when transitioning between episodes.
   Future<void> navigateToEpisode({
     required BuildContext context,
-    required PlexMetadata episode,
+    required MediaMetadata episode,
     required Player? player,
     bool usePushReplacement = true,
   }) async {

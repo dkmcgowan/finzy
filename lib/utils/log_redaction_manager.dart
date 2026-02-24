@@ -15,7 +15,7 @@ class LogRedactionManager {
   // Combined regex for single-pass redaction (rebuilt on set changes)
   static RegExp? _combinedPattern;
 
-  /// Register a server access token or Plex.tv token for redaction.
+  /// Register a server access token for redaction.
   static void registerToken(String? token) {
     final normalized = _normalize(token);
     if (normalized == null) return;

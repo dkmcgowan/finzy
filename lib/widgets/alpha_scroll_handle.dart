@@ -2,16 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../models/plex_first_character.dart';
+import '../models/first_character.dart';
 import 'alpha_jump_helper.dart';
 
 /// Phone-optimized draggable scroll handle that appears on scroll and shows
-/// a letter bubble when dragged. Designed to match the Plex app's scroll
+/// a letter bubble when dragged. Designed to match the app's scroll
 /// indicator behavior.
 ///
 /// Desktop/tablet/TV should use [AlphaJumpBar] instead.
 class AlphaScrollHandle extends StatefulWidget {
-  final List<PlexFirstCharacter> firstCharacters;
+  final List<FirstCharacter> firstCharacters;
   final void Function(int targetIndex) onJump;
 
   /// The letter currently visible at the top of the grid, derived from the

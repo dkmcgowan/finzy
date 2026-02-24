@@ -2,9 +2,8 @@ import 'package:flutter/foundation.dart';
 
 import '../models/registered_server.dart';
 import '../services/data_aggregation_service.dart';
-import '../services/media_server_client.dart';
+import '../services/jellyfin_client.dart';
 import '../services/multi_server_manager.dart';
-import '../services/plex_client.dart';
 import '../utils/app_logger.dart';
 
 /// Cached info about a DVR-enabled server
@@ -16,8 +15,7 @@ class LiveTvServerInfo {
   LiveTvServerInfo({required this.serverId, required this.dvrKey, this.lineup});
 }
 
-/// Provider for multi-server Plex connections
-/// Manages multiple PlexClient instances and provides data aggregation
+/// Provider for multi-server Jellyfin connections and data aggregation
 class MultiServerProvider extends ChangeNotifier {
   final MultiServerManager _serverManager;
   final DataAggregationService _aggregationService;
@@ -45,8 +43,8 @@ class MultiServerProvider extends ChangeNotifier {
   /// Get the data aggregation service
   DataAggregationService get aggregationService => _aggregationService;
 
-  /// Get client for specific server (Plex or Jellyfin)
-  MediaServerClient? getClientForServer(String serverId) {
+  /// Get client for specific server
+  JellyfinClient? getClientForServer(String serverId) {
     return _serverManager.getClient(serverId);
   }
 
@@ -70,36 +68,9 @@ class MultiServerProvider extends ChangeNotifier {
   /// Check if any servers are connected
   bool get hasConnectedServers => onlineServerCount > 0;
 
-  /// True if at least one connected server is Plex (not Jellyfin). Used to hide Plex-only UI (Watch Together, Companion Remote) when only Jellyfin is connected.
-  bool get hasPlexServers {
-    for (final serverId in onlineServerIds) {
-      final client = getClientForServer(serverId);
-      if (client != null && !client.isJellyfin) return true;
-    }
-    return false;
-  }
-
-  /// True if at least one connected server is Jellyfin. Used to show Jellyfin-only UI (e.g. global Favorites in library sidebar).
-  bool get hasJellyfinServers {
-    for (final serverId in onlineServerIds) {
-      final client = getClientForServer(serverId);
-      if (client != null && client.isJellyfin) return true;
-    }
-    return false;
-  }
-
-  /// Update token for a specific Plex server (no-op for Jellyfin)
+  /// Update token for a server. No-op in Finzy (Jellyfin tokens are per-user in server data).
   void updateTokenForServer(String serverId, String newToken) {
-    final client = _serverManager.getClient(serverId);
-    if (client is PlexClient) {
-      client.updateToken(newToken);
-      appLogger.d('MultiServerProvider: Token updated for server $serverId');
-      notifyListeners();
-    } else if (client != null) {
-      appLogger.d('MultiServerProvider: Server $serverId is not Plex, token update skipped');
-    } else {
-      appLogger.w('MultiServerProvider: Cannot update token - server $serverId not found');
-    }
+    // No-op: Jellyfin uses per-user tokens stored in RegisteredServer
   }
 
   /// Clear all server connections

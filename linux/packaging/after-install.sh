@@ -1,7 +1,7 @@
 #!/bin/bash
 # Ensure binaries are executable
-chmod +x /usr/bin/plezy
-chmod +x /opt/plezy/plezy
+chmod +x /usr/bin/finzy
+chmod +x /opt/dkmcgowan/finzy/finzy
 
 # Update icon cache
 if command -v gtk-update-icon-cache &> /dev/null; then

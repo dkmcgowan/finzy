@@ -1,7 +1,7 @@
-name: plezy
-description: "A beautiful Plex client for Flutter"
+name: finzy
+description: "A beautiful Jellyfin client"
 publish_to: "none"
-version: 1.18.2+42
+version: 0.1.0+1
 
 environment:
   sdk: ^3.8.1
@@ -47,9 +47,9 @@ dependencies:
   saf_util: ^0.11.0
   saf_stream: ^0.12.2
   material_symbols_icons: ^4.2892.0
-  web_socket_channel: ^3.0.1
+
   in_app_review: ^2.0.11
-  dart_discord_presence: ^1.1.0
+
   flutter_svg: ^2.2.3
   mobile_scanner: ^6.0.2
   android_intent_plus: ^5.0.2
@@ -66,11 +66,16 @@ dev_dependencies:
   dart_code_linter: ^3.2.1
   drift_dev: ^2.14.0
 
+dependency_overrides:
+  # Fix build_runner: source_gen 3.x uses getInvocation() removed in analyzer 8+.
+  # Force source_gen 4.x which is compatible with analyzer 8.x.
+  source_gen: ^4.1.2
+
 flutter:
   uses-material-design: true
   assets:
     - lib/data/iso_639_codes.json
-    - assets/plezy.png
+    - assets/finzy.png
     - assets/go-noto-current-regular.ttf
     - assets/shaders/nvscaler/
     - assets/shaders/anime4k/
@@ -80,10 +85,10 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/plezy.png"
+  image_path: "assets/finzy.png"
   adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "assets/plezy_android_foreground.png"
-  adaptive_icon_monochrome: "assets/plezy_monochrome.png"
+  adaptive_icon_foreground: "assets/finzy_android_foreground.png"
+  adaptive_icon_monochrome: "assets/finzy_monochrome.png"
   macos:
     generate: false
   windows:

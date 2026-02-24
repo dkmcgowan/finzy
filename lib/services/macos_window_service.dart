@@ -12,7 +12,7 @@ import 'macos_window_delegate.dart';
 /// - Fullscreen enter/exit (for video controls)
 /// - Delegate registration (for FullscreenStateManager updates)
 class MacOSWindowService {
-  static const _channel = MethodChannel('com.plezy/window_utils');
+  static const _channel = MethodChannel('com.finzy/window_utils');
   static bool _initialized = false;
   static bool _delegateEnabled = false;
   static final List<MacOSWindowDelegate> _delegates = [];

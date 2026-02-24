@@ -69,7 +69,6 @@ class TranslationsZh with BaseTranslations<AppLocale, Translations> implements T
 	@override late final _TranslationsDownloadsZh downloads = _TranslationsDownloadsZh._(_root);
 	@override late final _TranslationsPlaylistsZh playlists = _TranslationsPlaylistsZh._(_root);
 	@override late final _TranslationsCollectionsZh collections = _TranslationsCollectionsZh._(_root);
-	@override late final _TranslationsWatchTogetherZh watchTogether = _TranslationsWatchTogetherZh._(_root);
 	@override late final _TranslationsShadersZh shaders = _TranslationsShadersZh._(_root);
 	@override late final _TranslationsCompanionRemoteZh companionRemote = _TranslationsCompanionRemoteZh._(_root);
 	@override late final _TranslationsVideoSettingsZh videoSettings = _TranslationsVideoSettingsZh._(_root);
@@ -83,7 +82,7 @@ class _TranslationsAppZh implements TranslationsAppEn {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Plezy';
+	@override String get title => 'Finzy';
 }
 
 // Path: auth
@@ -93,7 +92,6 @@ class _TranslationsAuthZh implements TranslationsAuthEn {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
-	@override String get signInWithPlex => '使用 Plex 登录';
 	@override String get signInWithJellyfin => '使用 Jellyfin 登录';
 	@override String get jellyfinServerUrl => '服务器 URL';
 	@override String get jellyfinServerUrlHint => 'https://your-jellyfin.example.com';
@@ -102,9 +100,9 @@ class _TranslationsAuthZh implements TranslationsAuthEn {
 	@override String get jellyfinSignIn => '登录';
 	@override String get showQRCode => '显示二维码';
 	@override String get authenticate => '验证';
-	@override String get debugEnterToken => '调试：输入 Plex Token';
-	@override String get plexTokenLabel => 'Plex 授权令牌 (Auth Token)';
-	@override String get plexTokenHint => '输入你的 Plex.tv 令牌';
+	@override String get debugEnterToken => '调试：输入 Jellyfin Token';
+	@override String get authTokenLabel => 'Jellyfin 授权令牌 (Auth Token)';
+	@override String get authTokenHint => '输入你的令牌';
 	@override String get authenticationTimeout => '验证超时。请重试。';
 	@override String get scanQRToSignIn => '扫描二维码登录';
 	@override String get waitingForAuth => '等待验证中...\n请在你的浏览器中完成登录。';
@@ -233,11 +231,11 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get listView => '列表视图';
 	@override String get listViewDescription => '以列表布局显示项目';
 	@override String get showHeroSection => '显示主要精选区';
-	@override String get useGlobalHubs => '使用 Plex 主页布局';
-	@override String get useGlobalHubsDescription => '显示与官方 Plex 客户端相同的主页推荐。关闭时将显示按媒体库分类的推荐。';
+	@override String get useGlobalHubs => '使用主页布局';
+	@override String get useGlobalHubsDescription => '显示与官方 Jellyfin 客户端相同的主页推荐。关闭时将显示按媒体库分类的推荐。';
 	@override String get showServerNameOnHubs => '在推荐栏显示服务器名称';
 	@override String get showServerNameOnHubsDescription => '始终在推荐栏标题中显示服务器名称。关闭时仅在推荐栏名称重复时显示。';
-	@override String get showJellyfinRecommendations => 'Jellyfin 电影推荐';
+	@override String get showJellyfinRecommendations => '电影推荐';
 	@override String get showJellyfinRecommendationsDescription => '在电影库的“推荐”标签页中显示“因为您观看过”等推荐行。在服务器行为改进前默认关闭。';
 	@override String get alwaysKeepSidebarOpen => '始终保持侧边栏展开';
 	@override String get alwaysKeepSidebarOpenDescription => '侧边栏保持展开状态，内容区域自动调整';
@@ -291,8 +289,20 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get autoSkip => '自动跳过';
 	@override String get autoSkipIntro => '自动跳过片头';
 	@override String get autoSkipIntroDescription => '几秒钟后自动跳过片头标记';
-	@override String get autoSkipCredits => '自动跳过片尾';
-	@override String get autoSkipCreditsDescription => '自动跳过片尾并播放下一集';
+	@override String get enableExternalSubtitles => 'Enable External Subtitles';
+	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get enableTrickplay => 'Enable trickplay thumbnails';
+	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
+	@override String get enableChapterImages => 'Enable Chapter Images';
+	@override String get enableChapterImagesDescription => 'Show thumbnail images for chapters in the chapter list.';
+	@override String get autoSkipOutro => '自动跳过片尾';
+	@override String get autoSkipOutroDescription => '自动跳过片尾片段';
+	@override String get autoSkipRecap => '自动跳过回顾';
+	@override String get autoSkipRecapDescription => '自动跳过回顾片段';
+	@override String get autoSkipPreview => '自动跳过预告';
+	@override String get autoSkipPreviewDescription => '自动跳过预告片段';
+	@override String get autoSkipCommercial => '自动跳过广告';
+	@override String get autoSkipCommercialDescription => '自动跳过广告片段';
 	@override String get autoSkipDelay => '自动跳过延迟';
 	@override String autoSkipDelayDescription({required Object seconds}) => '自动跳过前等待 ${seconds} 秒';
 	@override String get downloads => '下载';
@@ -312,8 +322,6 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get maxVolume => '最大音量';
 	@override String get maxVolumeDescription => '允许音量超过 100% 以适应安静的媒体';
 	@override String maxVolumePercent({required Object percent}) => '${percent}%';
-	@override String get discordRichPresence => 'Discord 动态状态';
-	@override String get discordRichPresenceDescription => '在 Discord 上显示您正在观看的内容';
 	@override String get matchContentFrameRate => '匹配内容帧率';
 	@override String get matchContentFrameRateDescription => '调整显示刷新率以匹配视频内容，减少画面抖动并节省电量';
 	@override String get requireProfileSelectionOnOpen => '打开应用时询问配置文件';
@@ -551,9 +559,6 @@ class _TranslationsMessagesZh implements TranslationsMessagesEn {
 	@override String get failedToCreatePlayQueueNoItems => '创建播放队列失败 - 没有项目';
 	@override String failedPlayback({required Object action, required Object error}) => '无法${action}: ${error}';
 	@override String get switchingToCompatiblePlayer => '正在切换到兼容的播放器...';
-	@override String get logsUploaded => 'Logs uploaded';
-	@override String get logsUploadFailed => 'Failed to upload logs';
-	@override String get logId => 'Log ID';
 }
 
 // Path: subtitlingStyling
@@ -631,6 +636,7 @@ class _TranslationsDiscoverZh implements TranslationsDiscoverEn {
 	@override String playEpisode({required Object season, required Object episode}) => 'S${season}E${episode}';
 	@override String get overview => '概述';
 	@override String get cast => '演员表';
+	@override String get moreLikeThis => '相似推荐';
 	@override String get extras => '预告片与花絮';
 	@override String get seasons => '季数';
 	@override String get studio => '制作公司';
@@ -651,7 +657,7 @@ class _TranslationsErrorsZh implements TranslationsErrorsEn {
 	// Translations
 	@override String searchFailed({required Object error}) => '搜索失败: ${error}';
 	@override String connectionTimeout({required Object context}) => '加载 ${context} 时连接超时';
-	@override String get connectionFailed => '无法连接到 Plex 服务器';
+	@override String get connectionFailed => '无法连接到 Jellyfin 服务器';
 	@override String failedToLoad({required Object context, required Object error}) => '无法加载 ${context}: ${error}';
 	@override String get noClientAvailable => '没有可用客户端';
 	@override String authenticationFailed({required Object error}) => '验证失败: ${error}';
@@ -721,7 +727,7 @@ class _TranslationsAboutZh implements TranslationsAboutEn {
 	@override String get title => '关于';
 	@override String get openSourceLicenses => '开源许可证';
 	@override String versionLabel({required Object version}) => '版本 ${version}';
-	@override String get appDescription => '一款精美的 Flutter Plex 客户端';
+	@override String get appDescription => '一款精美的 Flutter Jellyfin 客户端';
 	@override String get viewLicensesDescription => '查看第三方库的许可证';
 }
 
@@ -760,7 +766,6 @@ class _TranslationsLogsZh implements TranslationsLogsEn {
 	// Translations
 	@override String get clearLogs => '清除日志';
 	@override String get copyLogs => '复制日志';
-	@override String get uploadLogs => 'Upload Logs';
 	@override String get error => '错误:';
 	@override String get stackTrace => '堆栈跟踪 (Stack Trace):';
 }
@@ -929,61 +934,6 @@ class _TranslationsCollectionsZh implements TranslationsCollectionsEn {
 	@override String removeFromCollectionError({required Object error}) => '从合集移除时出错：${error}';
 }
 
-// Path: watchTogether
-class _TranslationsWatchTogetherZh implements TranslationsWatchTogetherEn {
-	_TranslationsWatchTogetherZh._(this._root);
-
-	final TranslationsZh _root; // ignore: unused_field
-
-	// Translations
-	@override String get title => '一起看';
-	@override String get description => '与朋友和家人同步观看内容';
-	@override String get createSession => '创建会话';
-	@override String get creating => '创建中...';
-	@override String get joinSession => '加入会话';
-	@override String get joining => '加入中...';
-	@override String get controlMode => '控制模式';
-	@override String get controlModeQuestion => '谁可以控制播放？';
-	@override String get hostOnly => '仅主持人';
-	@override String get anyone => '任何人';
-	@override String get hostingSession => '主持会话';
-	@override String get inSession => '在会话中';
-	@override String get sessionCode => '会话代码';
-	@override String get hostControlsPlayback => '主持人控制播放';
-	@override String get anyoneCanControl => '任何人都可以控制播放';
-	@override String get hostControls => '主持人控制';
-	@override String get anyoneControls => '任何人控制';
-	@override String get participants => '参与者';
-	@override String get host => '主持人';
-	@override String get hostBadge => '主持人';
-	@override String get youAreHost => '你是主持人';
-	@override String get watchingWithOthers => '与他人一起观看';
-	@override String get endSession => '结束会话';
-	@override String get leaveSession => '离开会话';
-	@override String get endSessionQuestion => '结束会话？';
-	@override String get leaveSessionQuestion => '离开会话？';
-	@override String get endSessionConfirm => '这将为所有参与者结束会话。';
-	@override String get leaveSessionConfirm => '你将被移出会话。';
-	@override String get endSessionConfirmOverlay => '这将为所有参与者结束观看会话。';
-	@override String get leaveSessionConfirmOverlay => '你将断开与观看会话的连接。';
-	@override String get end => '结束';
-	@override String get leave => '离开';
-	@override String get syncing => '同步中...';
-	@override String get joinWatchSession => '加入观看会话';
-	@override String get enterCodeHint => '输入8位代码';
-	@override String get pasteFromClipboard => '从剪贴板粘贴';
-	@override String get pleaseEnterCode => '请输入会话代码';
-	@override String get codeMustBe8Chars => '会话代码必须是8个字符';
-	@override String get joinInstructions => '输入主持人分享的会话代码以加入他们的观看会话。';
-	@override String get failedToCreate => '创建会话失败';
-	@override String get failedToJoin => '加入会话失败';
-	@override String get sessionCodeCopied => '会话代码已复制到剪贴板';
-	@override String get relayUnreachable => '无法连接到中继服务器。这可能是由于您的网络运营商屏蔽了连接。您仍然可以尝试，但一起观看功能可能无法正常使用。';
-	@override String get reconnectingToHost => '正在重新连接到主持人...';
-	@override String participantJoined({required Object name}) => '${name} 加入了';
-	@override String participantLeft({required Object name}) => '${name} 离开了';
-}
-
 // Path: shaders
 class _TranslationsShadersZh implements TranslationsShadersEn {
 	_TranslationsShadersZh._(this._root);
@@ -1095,7 +1045,7 @@ class _TranslationsVideoControlsPipErrorsZh implements TranslationsVideoControls
 
 	// Translations
 	@override String get androidVersion => '需要 Android 8.0 或更高版本';
-	@override String get permissionDisabled => '画中画权限已禁用。请在设置 > 应用 > Plezy > 画中画中启用';
+	@override String get permissionDisabled => '画中画权限已禁用。请在设置 > 应用 > Finzy > 画中画中启用';
 	@override String get notSupported => '此设备不支持画中画模式';
 	@override String get failed => '画中画启动失败';
 	@override String unknown({required Object error}) => '发生错误：${error}';
@@ -1174,7 +1124,7 @@ class _TranslationsCompanionRemotePairingZh implements TranslationsCompanionRemo
 	@override String get pinHint => '输入6位 PIN';
 	@override String get connecting => '连接中...';
 	@override String get tips => '提示';
-	@override String get tipDesktop => '在桌面上打开 Plezy，并从设置或菜单中启用 Companion Remote';
+	@override String get tipDesktop => '在桌面上打开 Finzy，并从设置或菜单中启用 Companion Remote';
 	@override String get tipScan => '使用扫描选项卡扫描桌面上的 QR 码以快速配对';
 	@override String get tipWifi => '请确保两台设备连接到同一个 WiFi 网络';
 	@override String get cameraPermissionRequired => '扫描 QR 码需要相机权限。\n请在设备设置中授予相机访问权限。';
@@ -1243,8 +1193,7 @@ class _TranslationsCompanionRemoteRemoteZh implements TranslationsCompanionRemot
 extension on TranslationsZh {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
-			'app.title' => 'Plezy',
-			'auth.signInWithPlex' => '使用 Plex 登录',
+			'app.title' => 'Finzy',
 			'auth.signInWithJellyfin' => '使用 Jellyfin 登录',
 			'auth.jellyfinServerUrl' => '服务器 URL',
 			'auth.jellyfinServerUrlHint' => 'https://your-jellyfin.example.com',
@@ -1253,9 +1202,9 @@ extension on TranslationsZh {
 			'auth.jellyfinSignIn' => '登录',
 			'auth.showQRCode' => '显示二维码',
 			'auth.authenticate' => '验证',
-			'auth.debugEnterToken' => '调试：输入 Plex Token',
-			'auth.plexTokenLabel' => 'Plex 授权令牌 (Auth Token)',
-			'auth.plexTokenHint' => '输入你的 Plex.tv 令牌',
+			'auth.debugEnterToken' => '调试：输入 Jellyfin Token',
+			'auth.authTokenLabel' => 'Jellyfin 授权令牌 (Auth Token)',
+			'auth.authTokenHint' => '输入你的令牌',
 			'auth.authenticationTimeout' => '验证超时。请重试。',
 			'auth.scanQRToSignIn' => '扫描二维码登录',
 			'auth.waitingForAuth' => '等待验证中...\n请在你的浏览器中完成登录。',
@@ -1348,11 +1297,11 @@ extension on TranslationsZh {
 			'settings.listView' => '列表视图',
 			'settings.listViewDescription' => '以列表布局显示项目',
 			'settings.showHeroSection' => '显示主要精选区',
-			'settings.useGlobalHubs' => '使用 Plex 主页布局',
-			'settings.useGlobalHubsDescription' => '显示与官方 Plex 客户端相同的主页推荐。关闭时将显示按媒体库分类的推荐。',
+			'settings.useGlobalHubs' => '使用主页布局',
+			'settings.useGlobalHubsDescription' => '显示与官方 Jellyfin 客户端相同的主页推荐。关闭时将显示按媒体库分类的推荐。',
 			'settings.showServerNameOnHubs' => '在推荐栏显示服务器名称',
 			'settings.showServerNameOnHubsDescription' => '始终在推荐栏标题中显示服务器名称。关闭时仅在推荐栏名称重复时显示。',
-			'settings.showJellyfinRecommendations' => 'Jellyfin 电影推荐',
+			'settings.showJellyfinRecommendations' => '电影推荐',
 			'settings.showJellyfinRecommendationsDescription' => '在电影库的“推荐”标签页中显示“因为您观看过”等推荐行。在服务器行为改进前默认关闭。',
 			'settings.alwaysKeepSidebarOpen' => '始终保持侧边栏展开',
 			'settings.alwaysKeepSidebarOpenDescription' => '侧边栏保持展开状态，内容区域自动调整',
@@ -1406,8 +1355,20 @@ extension on TranslationsZh {
 			'settings.autoSkip' => '自动跳过',
 			'settings.autoSkipIntro' => '自动跳过片头',
 			'settings.autoSkipIntroDescription' => '几秒钟后自动跳过片头标记',
-			'settings.autoSkipCredits' => '自动跳过片尾',
-			'settings.autoSkipCreditsDescription' => '自动跳过片尾并播放下一集',
+			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
+			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.enableTrickplay' => 'Enable trickplay thumbnails',
+			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
+			'settings.enableChapterImages' => 'Enable Chapter Images',
+			'settings.enableChapterImagesDescription' => 'Show thumbnail images for chapters in the chapter list.',
+			'settings.autoSkipOutro' => '自动跳过片尾',
+			'settings.autoSkipOutroDescription' => '自动跳过片尾片段',
+			'settings.autoSkipRecap' => '自动跳过回顾',
+			'settings.autoSkipRecapDescription' => '自动跳过回顾片段',
+			'settings.autoSkipPreview' => '自动跳过预告',
+			'settings.autoSkipPreviewDescription' => '自动跳过预告片段',
+			'settings.autoSkipCommercial' => '自动跳过广告',
+			'settings.autoSkipCommercialDescription' => '自动跳过广告片段',
 			'settings.autoSkipDelay' => '自动跳过延迟',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => '自动跳过前等待 ${seconds} 秒',
 			'settings.downloads' => '下载',
@@ -1427,8 +1388,6 @@ extension on TranslationsZh {
 			'settings.maxVolume' => '最大音量',
 			'settings.maxVolumeDescription' => '允许音量超过 100% 以适应安静的媒体',
 			'settings.maxVolumePercent' => ({required Object percent}) => '${percent}%',
-			'settings.discordRichPresence' => 'Discord 动态状态',
-			'settings.discordRichPresenceDescription' => '在 Discord 上显示您正在观看的内容',
 			'settings.matchContentFrameRate' => '匹配内容帧率',
 			'settings.matchContentFrameRateDescription' => '调整显示刷新率以匹配视频内容，减少画面抖动并节省电量',
 			'settings.requireProfileSelectionOnOpen' => '打开应用时询问配置文件',
@@ -1558,7 +1517,7 @@ extension on TranslationsZh {
 			'videoControls.endsAt' => ({required Object time}) => '${time} 结束',
 			'videoControls.pipFailed' => '画中画启动失败',
 			'videoControls.pipErrors.androidVersion' => '需要 Android 8.0 或更高版本',
-			'videoControls.pipErrors.permissionDisabled' => '画中画权限已禁用。请在设置 > 应用 > Plezy > 画中画中启用',
+			'videoControls.pipErrors.permissionDisabled' => '画中画权限已禁用。请在设置 > 应用 > Finzy > 画中画中启用',
 			'videoControls.pipErrors.notSupported' => '此设备不支持画中画模式',
 			'videoControls.pipErrors.failed' => '画中画启动失败',
 			'videoControls.pipErrors.unknown' => ({required Object error}) => '发生错误：${error}',
@@ -1598,9 +1557,6 @@ extension on TranslationsZh {
 			'messages.failedToCreatePlayQueueNoItems' => '创建播放队列失败 - 没有项目',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => '无法${action}: ${error}',
 			'messages.switchingToCompatiblePlayer' => '正在切换到兼容的播放器...',
-			'messages.logsUploaded' => 'Logs uploaded',
-			'messages.logsUploadFailed' => 'Failed to upload logs',
-			'messages.logId' => 'Log ID',
 			'subtitlingStyling.stylingOptions' => '样式选项',
 			'subtitlingStyling.fontSize' => '字号',
 			'subtitlingStyling.textColor' => '文本颜色',
@@ -1642,6 +1598,7 @@ extension on TranslationsZh {
 			'discover.playEpisode' => ({required Object season, required Object episode}) => 'S${season}E${episode}',
 			'discover.overview' => '概述',
 			'discover.cast' => '演员表',
+			'discover.moreLikeThis' => '相似推荐',
 			'discover.extras' => '预告片与花絮',
 			'discover.seasons' => '季数',
 			'discover.studio' => '制作公司',
@@ -1653,7 +1610,7 @@ extension on TranslationsZh {
 			'discover.minutesLeft' => ({required Object minutes}) => '剩余 ${minutes} 分钟',
 			'errors.searchFailed' => ({required Object error}) => '搜索失败: ${error}',
 			'errors.connectionTimeout' => ({required Object context}) => '加载 ${context} 时连接超时',
-			'errors.connectionFailed' => '无法连接到 Plex 服务器',
+			'errors.connectionFailed' => '无法连接到 Jellyfin 服务器',
 			'errors.failedToLoad' => ({required Object context, required Object error}) => '无法加载 ${context}: ${error}',
 			'errors.noClientAvailable' => '没有可用客户端',
 			'errors.authenticationFailed' => ({required Object error}) => '验证失败: ${error}',
@@ -1697,10 +1654,12 @@ extension on TranslationsZh {
 			'libraries.noRecommendations' => '暂无推荐',
 			'libraries.noCollections' => '此媒体库中没有合集',
 			'libraries.noFavorites' => '此媒体库中无收藏',
+			'libraries.noGenres' => '此媒体库中无类型',
 			'libraries.noFoldersFound' => '未找到文件夹',
 			'libraries.folders' => '文件夹',
 			'libraries.tabs.recommended' => '推荐',
 			'libraries.tabs.browse' => '浏览',
+			'libraries.tabs.genre' => '类型',
 			'libraries.tabs.favorites' => '收藏',
 			'libraries.tabs.collections' => '合集',
 			'libraries.tabs.playlists' => '播放列表',
@@ -1713,7 +1672,7 @@ extension on TranslationsZh {
 			'about.title' => '关于',
 			'about.openSourceLicenses' => '开源许可证',
 			'about.versionLabel' => ({required Object version}) => '版本 ${version}',
-			'about.appDescription' => '一款精美的 Flutter Plex 客户端',
+			'about.appDescription' => '一款精美的 Flutter Jellyfin 客户端',
 			'about.viewLicensesDescription' => '查看第三方库的许可证',
 			'serverSelection.allServerConnectionsFailed' => '无法连接到任何服务器。请检查你的网络并重试。',
 			'serverSelection.noServersFoundForAccount' => ({required Object username, required Object email}) => '未找到 ${username} (${email}) 的服务器',
@@ -1725,7 +1684,6 @@ extension on TranslationsZh {
 			'hubDetail.noItemsFound' => '未找到项目',
 			'logs.clearLogs' => '清除日志',
 			'logs.copyLogs' => '复制日志',
-			'logs.uploadLogs' => 'Upload Logs',
 			'logs.error' => '错误:',
 			'logs.stackTrace' => '堆栈跟踪 (Stack Trace):',
 			'licenses.relatedPackages' => '相关软件包',
@@ -1747,6 +1705,8 @@ extension on TranslationsZh {
 			'liveTv.loading' => '正在加载频道...',
 			'liveTv.nowPlaying' => '正在播放',
 			'liveTv.record' => '录制',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordSeries' => '录制系列',
 			'liveTv.cancelRecording' => '取消录制',
 			'liveTv.deleteSubscription' => '删除录制规则',
@@ -1756,8 +1716,6 @@ extension on TranslationsZh {
 			'liveTv.noRecordings' => '没有计划的录制',
 			'liveTv.noSubscriptions' => '没有录制规则',
 			'liveTv.channelNumber' => ({required Object number}) => '频道 ${number}',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.live' => '直播',
 			'liveTv.hd' => '高清',
 			'liveTv.premiere' => '新',
@@ -1840,52 +1798,6 @@ extension on TranslationsZh {
 			'collections.removedFromCollection' => '已从合集移除',
 			'collections.removeFromCollectionFailed' => '从合集移除失败',
 			'collections.removeFromCollectionError' => ({required Object error}) => '从合集移除时出错：${error}',
-			'watchTogether.title' => '一起看',
-			'watchTogether.description' => '与朋友和家人同步观看内容',
-			'watchTogether.createSession' => '创建会话',
-			'watchTogether.creating' => '创建中...',
-			'watchTogether.joinSession' => '加入会话',
-			'watchTogether.joining' => '加入中...',
-			'watchTogether.controlMode' => '控制模式',
-			'watchTogether.controlModeQuestion' => '谁可以控制播放？',
-			'watchTogether.hostOnly' => '仅主持人',
-			'watchTogether.anyone' => '任何人',
-			'watchTogether.hostingSession' => '主持会话',
-			'watchTogether.inSession' => '在会话中',
-			'watchTogether.sessionCode' => '会话代码',
-			'watchTogether.hostControlsPlayback' => '主持人控制播放',
-			'watchTogether.anyoneCanControl' => '任何人都可以控制播放',
-			'watchTogether.hostControls' => '主持人控制',
-			'watchTogether.anyoneControls' => '任何人控制',
-			'watchTogether.participants' => '参与者',
-			'watchTogether.host' => '主持人',
-			'watchTogether.hostBadge' => '主持人',
-			'watchTogether.youAreHost' => '你是主持人',
-			'watchTogether.watchingWithOthers' => '与他人一起观看',
-			'watchTogether.endSession' => '结束会话',
-			'watchTogether.leaveSession' => '离开会话',
-			'watchTogether.endSessionQuestion' => '结束会话？',
-			'watchTogether.leaveSessionQuestion' => '离开会话？',
-			'watchTogether.endSessionConfirm' => '这将为所有参与者结束会话。',
-			'watchTogether.leaveSessionConfirm' => '你将被移出会话。',
-			'watchTogether.endSessionConfirmOverlay' => '这将为所有参与者结束观看会话。',
-			'watchTogether.leaveSessionConfirmOverlay' => '你将断开与观看会话的连接。',
-			'watchTogether.end' => '结束',
-			'watchTogether.leave' => '离开',
-			'watchTogether.syncing' => '同步中...',
-			'watchTogether.joinWatchSession' => '加入观看会话',
-			'watchTogether.enterCodeHint' => '输入8位代码',
-			'watchTogether.pasteFromClipboard' => '从剪贴板粘贴',
-			'watchTogether.pleaseEnterCode' => '请输入会话代码',
-			'watchTogether.codeMustBe8Chars' => '会话代码必须是8个字符',
-			'watchTogether.joinInstructions' => '输入主持人分享的会话代码以加入他们的观看会话。',
-			'watchTogether.failedToCreate' => '创建会话失败',
-			'watchTogether.failedToJoin' => '加入会话失败',
-			'watchTogether.sessionCodeCopied' => '会话代码已复制到剪贴板',
-			'watchTogether.relayUnreachable' => '无法连接到中继服务器。这可能是由于您的网络运营商屏蔽了连接。您仍然可以尝试，但一起观看功能可能无法正常使用。',
-			'watchTogether.reconnectingToHost' => '正在重新连接到主持人...',
-			'watchTogether.participantJoined' => ({required Object name}) => '${name} 加入了',
-			'watchTogether.participantLeft' => ({required Object name}) => '${name} 离开了',
 			'shaders.title' => '着色器',
 			'shaders.noShaderDescription' => '无视频增强',
 			'shaders.nvscalerDescription' => 'NVIDIA 图像缩放，使视频更清晰',
@@ -1926,7 +1838,7 @@ extension on TranslationsZh {
 			'companionRemote.pairing.pinHint' => '输入6位 PIN',
 			'companionRemote.pairing.connecting' => '连接中...',
 			'companionRemote.pairing.tips' => '提示',
-			'companionRemote.pairing.tipDesktop' => '在桌面上打开 Plezy，并从设置或菜单中启用 Companion Remote',
+			'companionRemote.pairing.tipDesktop' => '在桌面上打开 Finzy，并从设置或菜单中启用 Companion Remote',
 			'companionRemote.pairing.tipScan' => '使用扫描选项卡扫描桌面上的 QR 码以快速配对',
 			'companionRemote.pairing.tipWifi' => '请确保两台设备连接到同一个 WiFi 网络',
 			'companionRemote.pairing.cameraPermissionRequired' => '扫描 QR 码需要相机权限。\n请在设备设置中授予相机访问权限。',

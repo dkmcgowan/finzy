@@ -6,7 +6,7 @@
 #include "mpv/mpv_plugin.h"
 
 // Registry key for window placement persistence
-static constexpr wchar_t kWindowPlacementKey[] = L"Software\\Plezy";
+static constexpr wchar_t kWindowPlacementKey[] = L"Software\\Finzy";
 static constexpr wchar_t kWindowPlacementValue[] = L"WindowPlacement";
 
 // Debounce timer for saving window placement

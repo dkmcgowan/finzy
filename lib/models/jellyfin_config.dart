@@ -16,14 +16,14 @@ class JellyfinConfig {
     required this.userId,
     required this.serverId,
     this.serverName,
-    this.deviceId = 'plezy-jellyfin',
-    this.clientName = 'Plezy',
+    this.deviceId = 'finzy-jellyfin',
+    this.clientName = 'Finzy',
     this.clientVersion = '1.0.0',
   });
 
   /// Authorization header value for Jellyfin API requests.
   String get authorizationHeader =>
-      'MediaBrowser Client="$clientName", Device="Plezy", DeviceId="$deviceId", Version="$clientVersion", Token="$token"';
+      'MediaBrowser Client="$clientName", Device="Finzy", DeviceId="$deviceId", Version="$clientVersion", Token="$token"';
 
   JellyfinConfig copyWith({
     String? baseUrl,

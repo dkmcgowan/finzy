@@ -1,13 +1,5 @@
 import 'dart:convert';
 
-import '../services/plex_auth_service.dart';
-
-/// Backend type for a registered media server.
-enum BackendType {
-  plex,
-  jellyfin,
-}
-
 /// One stored Jellyfin user (token + display info for switch profile).
 class JellyfinStoredUser {
   final String userId;
@@ -106,75 +98,40 @@ class JellyfinServerData {
   }
 }
 
-/// A server registered in the app (Plex or Jellyfin).
-/// Used for storage and for MultiServerManager to create the right client.
+/// A server registered in the app. Finzy supports Jellyfin only.
+/// Used for storage and for MultiServerManager to create the client.
 class RegisteredServer {
-  final BackendType backend;
   final String serverId;
   final String serverName;
-  final PlexServer? plexServer;
-  final JellyfinServerData? jellyfinData;
+  final JellyfinServerData jellyfinData;
 
   RegisteredServer._({
-    required this.backend,
     required this.serverId,
     required this.serverName,
-    this.plexServer,
-    this.jellyfinData,
+    required this.jellyfinData,
   });
-
-  factory RegisteredServer.plex(PlexServer server) {
-    return RegisteredServer._(
-      backend: BackendType.plex,
-      serverId: server.clientIdentifier,
-      serverName: server.name,
-      plexServer: server,
-      jellyfinData: null,
-    );
-  }
 
   factory RegisteredServer.jellyfin(JellyfinServerData data) {
     return RegisteredServer._(
-      backend: BackendType.jellyfin,
       serverId: data.serverId,
       serverName: data.serverName,
-      plexServer: null,
       jellyfinData: data,
     );
   }
 
-  bool get isPlex => backend == BackendType.plex;
-  bool get isJellyfin => backend == BackendType.jellyfin;
-
   Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{
-      'backend': backend.name,
+    return <String, dynamic>{
+      'backend': 'jellyfin',
       'serverId': serverId,
       'serverName': serverName,
+      'jellyfin': jellyfinData.toJson(),
     };
-    if (plexServer != null) {
-      map['plex'] = plexServer!.toJson();
-    }
-    if (jellyfinData != null) {
-      map['jellyfin'] = jellyfinData!.toJson();
-    }
-    return map;
   }
 
   factory RegisteredServer.fromJson(Map<String, dynamic> json) {
-    final backendStr = json['backend'] as String? ?? 'plex';
-    final backend = backendStr == 'jellyfin' ? BackendType.jellyfin : BackendType.plex;
-
-    if (backend == BackendType.jellyfin) {
-      final j = json['jellyfin'] as Map<String, dynamic>?;
-      if (j == null) throw FormatException('RegisteredServer jellyfin missing jellyfin data');
-      final data = JellyfinServerData.fromJson(j);
-      return RegisteredServer.jellyfin(data);
-    }
-
-    final p = json['plex'] as Map<String, dynamic>? ?? json;
-    final server = PlexServer.fromJson(p);
-    return RegisteredServer.plex(server);
+    final j = json['jellyfin'] as Map<String, dynamic>? ?? json;
+    final data = JellyfinServerData.fromJson(j);
+    return RegisteredServer.jellyfin(data);
   }
 
   /// Decode a stored servers list JSON string into [RegisteredServer] list.
@@ -183,7 +140,15 @@ class RegisteredServer {
     try {
       final list = jsonDecode(serversJson) as List<dynamic>?;
       if (list == null) return [];
-      return list.map((e) => RegisteredServer.fromJson(e as Map<String, dynamic>)).toList();
+      final result = <RegisteredServer>[];
+      for (final e in list) {
+        try {
+          result.add(RegisteredServer.fromJson(e as Map<String, dynamic>));
+        } catch (_) {
+          // Skip malformed entries
+        }
+      }
+      return result;
     } catch (_) {
       return [];
     }

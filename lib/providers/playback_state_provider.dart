@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../models/play_queue_response.dart';
-import '../services/media_server_client.dart';
+import '../services/jellyfin_client.dart';
 
 /// Playback mode types
 ///
-/// All playback now uses Plex play queues.
+/// All playback uses Jellyfin play queues.
 enum PlaybackMode {
   playQueue, // Play queue-based playback (sequential, shuffle, playlists, collections)
 }
@@ -19,7 +19,7 @@ class _IndexLookupResult {
   const _IndexLookupResult({this.index, this.attemptedLoad = false, this.loadFailed = false});
 }
 
-/// Manages playback state using Plex's play queue API.
+/// Manages playback state using the play queue API.
 /// This provider is session-only and does not persist across app restarts.
 class PlaybackStateProvider with ChangeNotifier {
   // Play queue state
@@ -29,7 +29,7 @@ class PlaybackStateProvider with ChangeNotifier {
   int? _currentPlayQueueItemID;
 
   // Windowed items (loaded around current position)
-  List<PlexMetadata> _loadedItems = [];
+  List<MediaMetadata> _loadedItems = [];
   final int _windowSize = 50; // Number of items to keep in memory
 
   // Legacy state for backward compatibility
@@ -37,7 +37,7 @@ class PlaybackStateProvider with ChangeNotifier {
   PlaybackMode? _playbackMode;
 
   // Client reference for loading more items
-  MediaServerClient? _client;
+  JellyfinClient? _client;
 
   /// Current playback mode (null if no queue active)
   PlaybackMode? get playbackMode => _playbackMode;
@@ -68,12 +68,12 @@ class PlaybackStateProvider with ChangeNotifier {
   }
 
   /// Set the client reference for loading more items
-  void setClient(MediaServerClient client) {
+  void setClient(JellyfinClient client) {
     _client = client;
   }
 
   /// Update the current play queue item when playing a new item
-  void setCurrentItem(PlexMetadata metadata) {
+  void setCurrentItem(MediaMetadata metadata) {
     if (_playbackMode == PlaybackMode.playQueue && metadata.playQueueItemID != null) {
       _currentPlayQueueItemID = metadata.playQueueItemID;
       notifyListeners();
@@ -89,7 +89,7 @@ class PlaybackStateProvider with ChangeNotifier {
     _playQueueShuffled = playQueue.playQueueShuffled;
     _currentPlayQueueItemID = playQueue.playQueueSelectedItemID;
 
-    // Items are already tagged with server info by PlexClient
+    // Items are already tagged with server info by JellyfinClient
     _loadedItems = playQueue.items ?? [];
 
     _contextKey = contextKey;
@@ -116,7 +116,7 @@ class PlaybackStateProvider with ChangeNotifier {
       );
 
       if (response != null && response.items != null) {
-        // Items are already tagged with server info by PlexClient
+        // Items are already tagged with server info by JellyfinClient
         _loadedItems = response.items!;
         // Use size or items length as fallback if totalCount is null
         _playQueueTotalCount = response.playQueueTotalCount ?? response.size ?? response.items!.length;
@@ -164,7 +164,7 @@ class PlaybackStateProvider with ChangeNotifier {
   /// Gets the next item in the playback queue.
   /// Returns null if queue is exhausted or current item is not in queue.
   /// [loopQueue] - If true, restart from beginning when queue is exhausted
-  Future<PlexMetadata?> getNextEpisode(String currentItemKey, {bool loopQueue = false}) async {
+  Future<MediaMetadata?> getNextEpisode(String currentItemKey, {bool loopQueue = false}) async {
     if (_playbackMode != PlaybackMode.playQueue) {
       // For sequential mode, let the video player handle next episode
       return null;
@@ -192,7 +192,7 @@ class PlaybackStateProvider with ChangeNotifier {
         if (_client != null && _playQueueId != null) {
           final response = await _client!.getPlayQueue(_playQueueId!);
           if (response != null && response.items != null && response.items!.isNotEmpty) {
-            // Items are already tagged with server info by PlexClient
+            // Items are already tagged with server info by JellyfinClient
             _loadedItems = response.items!;
             // Don't update _currentPlayQueueItemID here - let setCurrentItem do it when playback starts
             return _loadedItems.first;
@@ -221,7 +221,7 @@ class PlaybackStateProvider with ChangeNotifier {
 
   /// Gets the previous item in the playback queue.
   /// Returns null if at the beginning of the queue or current item is not in queue.
-  Future<PlexMetadata?> getPreviousEpisode(String currentItemKey) async {
+  Future<MediaMetadata?> getPreviousEpisode(String currentItemKey) async {
     if (_playbackMode != PlaybackMode.playQueue) {
       // For sequential mode, let the video player handle previous episode
       return null;

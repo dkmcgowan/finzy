@@ -3,7 +3,7 @@ import '../providers/libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/connection_constants.dart';
-import 'media_server_client.dart';
+import 'jellyfin_client.dart';
 import 'offline_watch_sync_service.dart';
 
 /// Result of a connection attempt to one or more servers.
@@ -11,7 +11,7 @@ class ConnectionResult {
   final int connectedCount;
 
   /// The first client that connected successfully, or null if none did.
-  final MediaServerClient? firstClient;
+  final JellyfinClient? firstClient;
 
   ConnectionResult({required this.connectedCount, this.firstClient});
 
@@ -46,7 +46,7 @@ class ServerConnectionOrchestrator {
       timeout: timeout,
     );
 
-    MediaServerClient? firstClient;
+    JellyfinClient? firstClient;
 
     if (connectedCount > 0) {
       appLogger.i('Successfully connected to $connectedCount servers');

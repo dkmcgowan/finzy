@@ -1,9 +1,9 @@
 import 'codec_utils.dart';
-import '../models/plex_media_info.dart' show buildTrackLabel;
+import '../models/media_info.dart' show buildTrackLabel;
 
 /// Utility for building track labels for audio and subtitle tracks.
 ///
-/// Delegates to the shared [buildTrackLabel] function so Plex-model and
+/// Delegates to the shared [buildTrackLabel] function so server-model and
 /// MPV-player label logic stays consistent.
 class TrackLabelBuilder {
   TrackLabelBuilder._();

@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../services/offline_watch_sync_service.dart';
-import '../services/plex_api_cache.dart';
+import '../services/api_cache.dart';
 import '../utils/watch_state_notifier.dart';
 import 'download_provider.dart';
 
@@ -16,12 +16,12 @@ class OfflineWatchProvider extends ChangeNotifier {
   final OfflineWatchSyncService _syncService;
   final DownloadProvider _downloadProvider;
   // ignore: unused_field - reserved for future cached metadata lookup
-  final PlexApiCache _apiCache;
+  final ApiCache _apiCache;
 
   OfflineWatchProvider({
     required OfflineWatchSyncService syncService,
     required DownloadProvider downloadProvider,
-    required PlexApiCache apiCache,
+    required ApiCache apiCache,
   }) : _syncService = syncService,
        _downloadProvider = downloadProvider,
        _apiCache = apiCache {
@@ -67,7 +67,7 @@ class OfflineWatchProvider extends ChangeNotifier {
   ///
   /// This is useful for UI that can't await, but may not reflect
   /// the most recent local actions.
-  bool isWatchedSync(PlexMetadata metadata) {
+  bool isWatchedSync(MediaMetadata metadata) {
     // Note: This doesn't check local actions synchronously
     // because that would require async database access.
     // For real-time accuracy, use isWatched() instead.
@@ -94,7 +94,7 @@ class OfflineWatchProvider extends ChangeNotifier {
   }
 
   /// Get sorted episodes for a show (by season, then episode number).
-  List<PlexMetadata> _getSortedEpisodes(String showRatingKey) {
+  List<MediaMetadata> _getSortedEpisodes(String showRatingKey) {
     final episodes = _downloadProvider.getDownloadedEpisodesForShow(showRatingKey);
     if (episodes.isEmpty) return episodes;
 
@@ -110,7 +110,7 @@ class OfflineWatchProvider extends ChangeNotifier {
   /// Batch resolve watch statuses for a list of episodes.
   ///
   /// Returns a map of globalKey -> isWatched for each episode.
-  Future<Map<String, bool>> _resolveEpisodeWatchStatuses(List<PlexMetadata> episodes) async {
+  Future<Map<String, bool>> _resolveEpisodeWatchStatuses(List<MediaMetadata> episodes) async {
     if (episodes.isEmpty) return {};
 
     final globalKeys = episodes.map((e) => e.globalKey).toSet();
@@ -131,7 +131,7 @@ class OfflineWatchProvider extends ChangeNotifier {
   /// Episodes are sorted by season number, then episode number.
   ///
   /// Returns the next unwatched episode, or the first episode if all watched.
-  Future<PlexMetadata?> getNextUnwatchedEpisode(String showRatingKey) async {
+  Future<MediaMetadata?> getNextUnwatchedEpisode(String showRatingKey) async {
     final episodes = _getSortedEpisodes(showRatingKey);
     if (episodes.isEmpty) return null;
 
@@ -152,7 +152,7 @@ class OfflineWatchProvider extends ChangeNotifier {
   ///
   /// This uses cached metadata without checking local offline actions.
   /// For real-time accuracy, use getNextUnwatchedEpisode() instead.
-  PlexMetadata? getNextUnwatchedEpisodeSync(String showRatingKey) {
+  MediaMetadata? getNextUnwatchedEpisodeSync(String showRatingKey) {
     final episodes = _getSortedEpisodes(showRatingKey);
     if (episodes.isEmpty) return null;
 
@@ -225,7 +225,7 @@ class OfflineWatchProvider extends ChangeNotifier {
   ///
   /// Returns a list of (episode, isWatched) pairs.
   /// Uses batched database query for efficiency.
-  Future<List<(PlexMetadata episode, bool isWatched)>> getEpisodesWithWatchStatus(String showRatingKey) async {
+  Future<List<(MediaMetadata episode, bool isWatched)>> getEpisodesWithWatchStatus(String showRatingKey) async {
     final episodes = _downloadProvider.getDownloadedEpisodesForShow(showRatingKey);
     if (episodes.isEmpty) return [];
 

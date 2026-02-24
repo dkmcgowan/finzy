@@ -74,7 +74,7 @@ class WindowUtilsPlugin: NSObject, FlutterPlugin {
 
     static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(
-            name: "com.plezy/window_utils",
+            name: "com.finzy/window_utils",
             binaryMessenger: registrar.messenger
         )
         let instance = WindowUtilsPlugin()

@@ -8,25 +8,23 @@ import '../models/livetv_program.dart';
 import '../models/livetv_scheduled_recording.dart';
 import '../models/livetv_subscription.dart';
 import '../models/play_queue_response.dart';
-import '../models/plex_file_info.dart';
-import '../models/plex_filter.dart';
-import '../models/plex_first_character.dart';
-import '../models/plex_hub.dart';
-import '../models/plex_library.dart';
-import '../models/plex_media_info.dart';
-import '../models/plex_media_version.dart';
-import '../models/plex_metadata.dart';
-import '../models/plex_playlist.dart';
-import '../models/plex_role.dart';
-import '../models/plex_sort.dart';
-import '../models/plex_video_playback_data.dart';
+import '../models/file_info.dart';
+import '../models/library_filter.dart';
+import '../models/first_character.dart';
+import '../models/hub.dart';
+import '../models/media_library.dart';
+import '../models/media_info.dart';
+import '../models/media_version.dart';
+import '../models/media_metadata.dart';
+import '../models/playlist.dart';
+import '../models/cast_role.dart';
+import '../models/library_sort.dart';
+import '../models/video_playback_data.dart';
 import '../utils/app_logger.dart';
 import '../utils/watch_state_notifier.dart';
-import 'media_server_client.dart';
 
-/// Jellyfin API client implementing [MediaServerClient].
-/// Maps Jellyfin REST API to Plex-shaped DTOs for use by the existing UI.
-class JellyfinClient implements MediaServerClient {
+/// Jellyfin API client. Maps Jellyfin REST API to DTOs used by the UI.
+class JellyfinClient {
   /// Minimal Fields for list/grid views (thumbnails, title, watch state, duration).
   /// ItemCounts ensures Series/Season get UnplayedItemCount and episode counts for unwatched badge.
   /// EndDate,Status for series year range (e.g. 2025 - 2026 or 2025 - Present).
@@ -38,9 +36,7 @@ class JellyfinClient implements MediaServerClient {
   late final Dio _dio;
   bool _offlineMode = false;
 
-  @override
   final String serverId;
-  @override
   final String? serverName;
 
   JellyfinClient(this.config, {required this.serverId, this.serverName}) {
@@ -73,10 +69,7 @@ class JellyfinClient implements MediaServerClient {
     _offlineMode = offline;
   }
 
-  @override
-  bool get isJellyfin => true;
-
-  /// Jellyfin uses PascalCase; normalize type to Plex lowercase and Series -> show, BoxSet/Boxsets -> collection.
+  /// Jellyfin uses PascalCase; normalize type to lowercase and Series -> show, BoxSet/Boxsets -> collection.
   static String _normalizeType(String? type) {
     if (type == null || type.isEmpty) return 'folder';
     final t = type.toLowerCase();
@@ -121,8 +114,8 @@ class JellyfinClient implements MediaServerClient {
     return null;
   }
 
-  /// Map Jellyfin BaseItemDto to PlexMetadata (with serverId/serverName).
-  PlexMetadata _itemToMetadata(Map<String, dynamic> item) {
+  /// Map Jellyfin BaseItemDto to MediaMetadata (with serverId/serverName).
+  MediaMetadata _itemToMetadata(Map<String, dynamic> item) {
     final id = item['Id']?.toString() ?? '';
     final name = item['Name'] as String? ?? 'Unknown';
     final type = _normalizeType(item['Type'] as String?);
@@ -142,7 +135,7 @@ class JellyfinClient implements MediaServerClient {
     // Unwatched badge: use unplayed count directly when API provides it (no need to fake leafCount).
     final unwatchedCount = (type == 'show' || type == 'season') ? _toInt(userData['UnplayedItemCount']) : null;
 
-    return PlexMetadata(
+    return MediaMetadata(
       ratingKey: id,
       key: id,
       guid: item['Id']?.toString(),
@@ -254,18 +247,18 @@ class JellyfinClient implements MediaServerClient {
     return names.isEmpty ? null : names.join(', ');
   }
 
-  /// Map Jellyfin People array to PlexRole list for cast. People: [{Name, Id, Role, Type}, ...].
-  static List<PlexRole>? _peopleToRoles(dynamic people) {
+  /// Map Jellyfin People array to CastRole list for cast. People: [{Name, Id, Role, Type}, ...].
+  static List<CastRole>? _peopleToRoles(dynamic people) {
     final list = people as List?;
     if (list == null || list.isEmpty) return null;
-    final roles = <PlexRole>[];
+    final roles = <CastRole>[];
     for (final p in list) {
       if (p is! Map) continue;
       final name = p['Name'] as String?;
       if (name == null || name.isEmpty) continue;
       final characterRole = p['Role'] as String?;
       final id = p['Id']?.toString();
-      roles.add(PlexRole(
+      roles.add(CastRole(
         tag: name,
         role: characterRole,
         thumb: id,
@@ -306,9 +299,9 @@ class JellyfinClient implements MediaServerClient {
     return null;
   }
 
-  /// Map Jellyfin view to PlexLibrary.
-  /// Jellyfin CollectionType is "movies" / "tvshows"; Plex uses "movie" / "show" for hub filtering.
-  PlexLibrary _viewToLibrary(Map<String, dynamic> view) {
+  /// Map Jellyfin view to MediaLibrary.
+  /// Jellyfin CollectionType is "movies" / "tvshows"; app uses "movie" / "show" for hub filtering.
+  MediaLibrary _viewToLibrary(Map<String, dynamic> view) {
     final id = view['Id']?.toString() ?? '';
     final name = view['Name'] as String? ?? 'Unknown';
     final colType = view['CollectionType'] as String? ?? view['Type'] as String? ?? 'mixed';
@@ -316,7 +309,7 @@ class JellyfinClient implements MediaServerClient {
     if (type == 'movies') type = 'movie';
     if (type == 'tvshows') type = 'show';
 
-    return PlexLibrary(
+    return MediaLibrary(
       key: id,
       title: name,
       type: type,
@@ -339,7 +332,7 @@ class JellyfinClient implements MediaServerClient {
   static const String syntheticPlaylistsKey = 'jellyfin_playlists';
 
   @override
-  Future<List<PlexLibrary>> getLibraries() async {
+  Future<List<MediaLibrary>> getLibraries() async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>('/Users/${config.userId}/Views');
     final list = response.data?['Items'] as List?;
@@ -349,7 +342,7 @@ class JellyfinClient implements MediaServerClient {
         .toList();
 
     // Split: content libraries (Movies, Shows, etc.) vs Collections/Playlists (always at bottom).
-    bool isCollectionOrPlaylist(PlexLibrary l) {
+    bool isCollectionOrPlaylist(MediaLibrary l) {
       final t = l.type.toLowerCase();
       return t == 'collection' || t == 'boxset' || t == 'boxsets' ||
           t == 'playlist' || t == 'playlists' ||
@@ -372,7 +365,7 @@ class JellyfinClient implements MediaServerClient {
       return t == 'playlist' || t == 'playlists' || l.title == 'Playlists';
     });
 
-    final result = <PlexLibrary>[...contentLibraries];
+    final result = <MediaLibrary>[...contentLibraries];
 
     if (hasCollectionLib) {
       result.add(collectionPlaylistFromViews.firstWhere((l) {
@@ -382,7 +375,7 @@ class JellyfinClient implements MediaServerClient {
     } else {
       final collections = await getGlobalCollections();
       if (collections.isNotEmpty) {
-        result.add(PlexLibrary(
+        result.add(MediaLibrary(
           key: syntheticCollectionsKey,
           title: 'Collections',
           type: 'collection',
@@ -400,7 +393,7 @@ class JellyfinClient implements MediaServerClient {
     } else {
       final playlists = await getPlaylists(playlistType: 'video');
       if (playlists.isNotEmpty) {
-        result.add(PlexLibrary(
+        result.add(MediaLibrary(
           key: syntheticPlaylistsKey,
           title: 'Playlists',
           type: 'playlist',
@@ -414,7 +407,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getLibraryContent(
+  Future<List<MediaMetadata>> getLibraryContent(
     String sectionId, {
     int? start,
     int? size,
@@ -430,7 +423,7 @@ class JellyfinClient implements MediaServerClient {
     if (start != null) query['StartIndex'] = start;
     if (size != null) query['Limit'] = size;
 
-    // Parse app-level sort/type/filters into Jellyfin API params (do not pass raw Plex keys)
+    // Parse app-level sort/type/filters into Jellyfin API params (do not pass raw type keys)
     final itemFilters = <String>[];
     String? sortBy;
     String? sortOrder;
@@ -459,7 +452,7 @@ class JellyfinClient implements MediaServerClient {
           }
           break;
         case 'type':
-          includeItemTypes = _plexTypeIdToJellyfin(v);
+          includeItemTypes = _typeIdToJellyfin(v);
           break;
         case 'genre':
         case 'Genre':
@@ -496,7 +489,7 @@ class JellyfinClient implements MediaServerClient {
           if (v.isNotEmpty) videoTypesList.add(v);
           break;
         default:
-          // Ignore unknown keys (e.g. from Plex-shaped UI)
+          // Ignore unknown keys from UI/serialization
           break;
       }
     }
@@ -525,8 +518,8 @@ class JellyfinClient implements MediaServerClient {
     return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
   }
 
-  /// Map Plex type id (1=movie, 2=show, 3=season, 4=episode) to Jellyfin IncludeItemTypes.
-  static String? _plexTypeIdToJellyfin(String typeId) {
+  /// Map type id (1=movie, 2=show, 3=season, 4=episode) to Jellyfin IncludeItemTypes.
+  static String? _typeIdToJellyfin(String typeId) {
     switch (typeId) {
       case '1':
         return 'Movie';
@@ -542,7 +535,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<PlexMetadata?> getMetadataWithImages(String ratingKey) async {
+  Future<MediaMetadata?> getMetadataWithImages(String ratingKey) async {
     if (_offlineMode) return null;
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -561,7 +554,7 @@ class JellyfinClient implements MediaServerClient {
   @override
   Future<Map<String, dynamic>> getMetadataWithImagesAndOnDeck(String ratingKey) async {
     final metadata = await getMetadataWithImages(ratingKey);
-    PlexMetadata? onDeckEpisode;
+    MediaMetadata? onDeckEpisode;
     final type = metadata?.type.toLowerCase() ?? '';
     if (metadata != null && type == 'show' && !_offlineMode) {
       // Try NextUp API (omit Limit to work around Jellyfin 10.9 bug; take first result for this series)
@@ -593,7 +586,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   /// Returns the first unwatched episode for a series (by season order, then episode index).
-  Future<PlexMetadata?> _getFirstUnwatchedEpisodeForShow(String showRatingKey) async {
+  Future<MediaMetadata?> _getFirstUnwatchedEpisodeForShow(String showRatingKey) async {
     final seasons = await getChildren(showRatingKey);
     if (seasons.isEmpty) return null;
     seasons.sort((a, b) => (a.parentIndex ?? 0).compareTo(b.parentIndex ?? 0));
@@ -610,7 +603,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getChildren(String ratingKey) async {
+  Future<List<MediaMetadata>> getChildren(String ratingKey) async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>(
       '/Users/${config.userId}/Items',
@@ -622,7 +615,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getExtras(String ratingKey) async {
+  Future<List<MediaMetadata>> getExtras(String ratingKey) async {
     if (_offlineMode) return [];
     // Prefer local trailers (streamable in-app); fall back to remote (URLs open in browser).
     try {
@@ -632,7 +625,7 @@ class JellyfinClient implements MediaServerClient {
       final localData = localResponse.data;
       final localList = localData is List ? localData : (localData is Map ? (localData['Items'] as List?) ?? [] : null);
       if (localList != null && localList.isNotEmpty) {
-        final list = <PlexMetadata>[];
+        final list = <MediaMetadata>[];
         for (final t in localList) {
           if (t is! Map<String, dynamic>) continue;
           final meta = _itemToMetadata(t);
@@ -650,13 +643,13 @@ class JellyfinClient implements MediaServerClient {
       final item = response.data;
       final trailers = item?['RemoteTrailers'] as List?;
       if (trailers == null || trailers.isEmpty) return [];
-      final list = <PlexMetadata>[];
+      final list = <MediaMetadata>[];
       for (final t in trailers) {
         if (t is! Map) continue;
         final url = t['Url'] as String?;
         if (url == null || url.isEmpty) continue;
         final name = t['Name'] as String? ?? 'Trailer';
-        list.add(PlexMetadata(
+        list.add(MediaMetadata(
           ratingKey: url,
           key: url,
           type: 'clip',
@@ -674,9 +667,9 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getAllUnwatchedEpisodes(String showRatingKey) async {
+  Future<List<MediaMetadata>> getAllUnwatchedEpisodes(String showRatingKey) async {
     final seasons = await getChildren(showRatingKey);
-    final all = <PlexMetadata>[];
+    final all = <MediaMetadata>[];
     for (final s in seasons) {
       if (s.type.toLowerCase() == 'season') {
         final episodes = await getChildren(s.ratingKey);
@@ -687,7 +680,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getUnwatchedEpisodesInSeason(String seasonRatingKey) async {
+  Future<List<MediaMetadata>> getUnwatchedEpisodesInSeason(String seasonRatingKey) async {
     final episodes = await getChildren(seasonRatingKey);
     return episodes.where((e) => e.type.toLowerCase() == 'episode' && (e.viewCount ?? 0) == 0).toList();
   }
@@ -702,6 +695,32 @@ class JellyfinClient implements MediaServerClient {
         : '${base}Items/$thumbPath/Images/Primary?ApiKey=${Uri.encodeComponent(token)}';
   }
 
+  /// Build a trickplay (timeline scrub) thumbnail URL for the given position.
+  /// Uses Jellyfin 10.9+ native trickplay. Returns null if token unavailable.
+  /// [itemId] is the video item id (ratingKey). [positionMs] is position in milliseconds.
+  /// Default interval is 10s per tile; width 320 is a common resolution.
+  String? getTrickplayTileUrl(String itemId, int positionMs, {int width = 320, int intervalMs = 10000}) {
+    final token = config.token;
+    if (token == null || token.isEmpty) return null;
+    final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
+    final index = (positionMs / intervalMs).floor();
+    return '${base}Videos/$itemId/Trickplay/$width/$index.jpg?ApiKey=${Uri.encodeComponent(token)}';
+  }
+
+  /// Probe whether trickplay data exists for [itemId] by requesting the first tile.
+  /// Returns true if the server responds with 200; false on 404 or any error.
+  Future<bool> checkTrickplayAvailable(String itemId, {int width = 320}) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/Videos/$itemId/Trickplay/$width/0.jpg',
+        options: Options(responseType: ResponseType.bytes, receiveTimeout: const Duration(seconds: 5)),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Map<String, String>? get imageHttpHeaders => requestHeaders;
 
@@ -711,7 +730,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexChapter>> getChapters(String ratingKey) async {
+  Future<List<Chapter>> getChapters(String ratingKey, {bool includeImages = false}) async {
     try {
       final item = await _dio.get<Map<String, dynamic>>(
         '/Users/${config.userId}/Items/$ratingKey',
@@ -719,18 +738,25 @@ class JellyfinClient implements MediaServerClient {
       );
       final chapters = item.data?['Chapters'] as List?;
       if (chapters == null) return [];
-      final list = <PlexChapter>[];
+      final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
+      final token = config.token;
+      final list = <Chapter>[];
       for (var i = 0; i < chapters.length; i++) {
         final c = chapters[i] as Map<String, dynamic>;
         final start = _toInt(c['StartPositionTicks']);
         final end = _toInt(c['EndPositionTicks']);
-        list.add(PlexChapter(
+        final imageTag = c['ImageTag'] as String?;
+        String? thumb;
+        if (includeImages && imageTag != null && imageTag.isNotEmpty) {
+          thumb = '${base}Items/$ratingKey/Images/Chapter/$i?tag=$imageTag&ApiKey=${Uri.encodeComponent(token)}';
+        }
+        list.add(Chapter(
           id: i,
           index: i,
           startTimeOffset: _ticksToMs(start),
           endTimeOffset: _ticksToMs(end),
           title: c['Name'] as String?,
-          thumb: null,
+          thumb: thumb,
         ));
       }
       return list;
@@ -740,22 +766,92 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMarker>> getMarkers(String ratingKey) async {
-    return [];
+  Future<List<Marker>> getMarkers(String ratingKey) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/MediaSegments/$ratingKey',
+      );
+      final items = response.data?['Items'] as List?;
+      if (items == null || items.isEmpty) return [];
+      final list = <Marker>[];
+      var id = 0;
+      for (final seg in items) {
+        final s = seg as Map<String, dynamic>;
+        final startTicks = _toInt(s['StartTicks']);
+        final endTicks = _toInt(s['EndTicks']);
+        final typeRaw = s['Type'] as String?;
+        if (startTicks == null || endTicks == null) continue;
+        final startMs = _ticksToMs(startTicks) ?? 0;
+        final endMs = _ticksToMs(endTicks) ?? 0;
+        final type = _normalizeSegmentType(typeRaw);
+        if (type != null) {
+          list.add(Marker(
+            id: id++,
+            type: type,
+            startTimeOffset: startMs,
+            endTimeOffset: endMs,
+          ));
+        }
+      }
+      return list;
+    } catch (e) {
+      appLogger.d('Jellyfin getMarkers failed for $ratingKey: $e');
+      return [];
+    }
+  }
+
+  /// Normalizes Jellyfin MediaSegmentType to lowercase app type.
+  static String? _normalizeSegmentType(String? type) {
+    if (type == null || type.isEmpty) return null;
+    switch (type) {
+      case 'Intro':
+        return 'intro';
+      case 'Outro':
+        return 'outro';
+      case 'Recap':
+        return 'recap';
+      case 'Preview':
+        return 'preview';
+      case 'Commercial':
+        return 'commercial';
+      default:
+        return null;
+    }
+  }
+
+  Future<List<MediaMetadata>> getSimilarItems(String itemId, {int limit = 12}) async {
+    if (_offlineMode) return [];
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/Items/$itemId/Similar',
+        queryParameters: {
+          'UserId': config.userId,
+          'Limit': limit,
+          'Fields': _listFields,
+        },
+      );
+      final list = response.data?['Items'] as List?;
+      if (list == null) return [];
+      return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+    } catch (e) {
+      appLogger.d('Jellyfin getSimilarItems failed for $itemId: $e');
+      return [];
+    }
   }
 
   @override
-  Future<PlaybackExtras> getPlaybackExtras(String ratingKey) async {
-    final chapters = await getChapters(ratingKey);
-    return PlaybackExtras(chapters: chapters, markers: []);
+  Future<PlaybackExtras> getPlaybackExtras(String ratingKey, {bool includeChapterImages = false}) async {
+    final chapters = await getChapters(ratingKey, includeImages: includeChapterImages);
+    final markers = await getMarkers(ratingKey);
+    return PlaybackExtras(chapters: chapters, markers: markers);
   }
 
   @override
-  Future<PlexVideoPlaybackData> getVideoPlaybackData(String ratingKey, {int mediaIndex = 0}) async {
+  Future<VideoPlaybackData> getVideoPlaybackData(String ratingKey, {int mediaIndex = 0}) async {
     String? videoUrl;
-    PlexMediaInfo? mediaInfo;
-    final versions = <PlexMediaVersion>[];
-    final markers = <PlexMarker>[];
+    MediaInfo? mediaInfo;
+    final versions = <MediaVersion>[];
+    final markers = <Marker>[];
 
     if (!_offlineMode) {
       try {
@@ -797,15 +893,16 @@ class JellyfinClient implements MediaServerClient {
             }
             videoUrl ??= '${config.baseUrl}/Videos/$ratingKey/stream?api_key=${config.token}';
             final streams = item['MediaStreams'] as List? ?? [];
-            final audioTracks = <PlexAudioTrack>[];
-            final subtitleTracks = <PlexSubtitleTrack>[];
+            final audioTracks = <MediaAudioTrack>[];
+            final subtitleTracks = <MediaSubtitleTrack>[];
             var audioIdx = 0;
             var subIdx = 0;
+            final mediaSourceId = source['Id'] as String? ?? '';
             for (final s in streams) {
               final m = s as Map<String, dynamic>;
               final type = m['Type'] as String?;
               if (type == 'Audio') {
-                audioTracks.add(PlexAudioTrack(
+                audioTracks.add(MediaAudioTrack(
                   id: audioIdx,
                   index: audioIdx,
                   codec: m['Codec'] as String?,
@@ -818,7 +915,13 @@ class JellyfinClient implements MediaServerClient {
                 ));
                 audioIdx++;
               } else if (type == 'Subtitle') {
-                subtitleTracks.add(PlexSubtitleTrack(
+                final streamIndex = _toInt(m['Index']) ?? subIdx;
+                // Build Jellyfin subtitle URL path so getSubtitleUrl can build full URL.
+                // GET /Videos/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.{format}
+                final subtitleKey = mediaSourceId.isNotEmpty
+                    ? 'Videos/$ratingKey/$mediaSourceId/Subtitles/$streamIndex/Stream'
+                    : null;
+                subtitleTracks.add(MediaSubtitleTrack(
                   id: subIdx,
                   index: subIdx,
                   codec: m['Codec'] as String?,
@@ -828,13 +931,13 @@ class JellyfinClient implements MediaServerClient {
                   displayTitle: m['DisplayTitle'] as String?,
                   selected: m['IsDefault'] == true,
                   forced: m['IsForced'] == true,
-                  key: null,
+                  key: subtitleKey,
                 ));
                 subIdx++;
               }
             }
             final chapters = await getChapters(ratingKey);
-            mediaInfo = PlexMediaInfo(
+            mediaInfo = MediaInfo(
               videoUrl: videoUrl,
               audioTracks: audioTracks,
               subtitleTracks: subtitleTracks,
@@ -843,7 +946,7 @@ class JellyfinClient implements MediaServerClient {
             );
             for (final ms in mediaSources) {
               final m = ms as Map<String, dynamic>;
-              versions.add(PlexMediaVersion(
+              versions.add(MediaVersion(
                 id: _toInt(m['Index']) ?? 0,
                 videoResolution: m['VideoType'] as String?,
                 videoCodec: m['VideoCodec'] as String?,
@@ -862,7 +965,7 @@ class JellyfinClient implements MediaServerClient {
       }
     }
 
-    return PlexVideoPlaybackData(
+    return VideoPlaybackData(
       videoUrl: videoUrl,
       mediaInfo: mediaInfo,
       availableVersions: versions,
@@ -871,7 +974,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<PlexFileInfo?> getFileInfo(String ratingKey) async {
+  Future<FileInfo?> getFileInfo(String ratingKey) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/Users/${config.userId}/Items/$ratingKey',
@@ -889,7 +992,7 @@ class JellyfinClient implements MediaServerClient {
         if (m['Type'] == 'Video' && videoStream == null) videoStream = m;
         if (m['Type'] == 'Audio' && audioStream == null) audioStream = m;
       }
-      return PlexFileInfo(
+      return FileInfo(
         container: source['Container'] as String?,
         videoCodec: source['VideoCodec'] as String?,
         videoResolution: source['VideoType'] as String?,
@@ -909,7 +1012,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<void> markAsWatched(String ratingKey, {PlexMetadata? metadata}) async {
+  Future<void> markAsWatched(String ratingKey, {MediaMetadata? metadata}) async {
     if (_offlineMode) return;
     await _dio.post('/Users/${config.userId}/PlayedItems/$ratingKey');
     if (metadata != null) {
@@ -918,7 +1021,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<void> markAsUnwatched(String ratingKey, {PlexMetadata? metadata}) async {
+  Future<void> markAsUnwatched(String ratingKey, {MediaMetadata? metadata}) async {
     if (_offlineMode) return;
     await _dio.delete('/Users/${config.userId}/PlayedItems/$ratingKey');
     if (metadata != null) {
@@ -990,7 +1093,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> search(String query, {int limit = 10}) async {
+  Future<List<MediaMetadata>> search(String query, {int limit = 10}) async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>(
       '/Users/${config.userId}/Items',
@@ -1008,7 +1111,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getRecentlyAdded({int limit = 50}) async {
+  Future<List<MediaMetadata>> getRecentlyAdded({int limit = 50}) async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>(
       '/Users/${config.userId}/Items',
@@ -1027,7 +1130,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getOnDeck() async {
+  Future<List<MediaMetadata>> getOnDeck() async {
     if (_offlineMode) return [];
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1043,7 +1146,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getOnDeckForLibrary(String sectionId) async {
+  Future<List<MediaMetadata>> getOnDeckForLibrary(String sectionId) async {
     if (_offlineMode) return [];
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1079,7 +1182,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexFilter>> getLibraryFilters(String sectionId, {String? libraryType}) async {
+  Future<List<LibraryFilter>> getLibraryFilters(String sectionId, {String? libraryType}) async {
     if (_offlineMode) return [];
     final t = (libraryType ?? '').toLowerCase();
     final sectionPrefix = '$sectionId'; // used in key for getFilterValues
@@ -1093,19 +1196,19 @@ class JellyfinClient implements MediaServerClient {
     const videoTypesGroup = 'Video Types';
     const yearsGroup = 'Years';
 
-    final filters = <PlexFilter>[];
+    final filters = <LibraryFilter>[];
 
     // Top-level group: Filters → Played, Unplayed, Resumable, Favorites
     filters.addAll([
-      PlexFilter(filter: 'IsPlayed', filterType: 'boolean', key: 'IsPlayed', title: 'Played', type: 'filter', group: filtersGroup),
-      PlexFilter(filter: 'IsUnplayed', filterType: 'boolean', key: 'IsUnplayed', title: 'Unplayed', type: 'filter', group: filtersGroup),
-      PlexFilter(filter: 'IsResumable', filterType: 'boolean', key: 'IsResumable', title: 'Resumable', type: 'filter', group: filtersGroup),
-      PlexFilter(filter: 'IsFavorite', filterType: 'boolean', key: 'IsFavorite', title: 'Favorites', type: 'filter', group: filtersGroup),
+      LibraryFilter(filter: 'IsPlayed', filterType: 'boolean', key: 'IsPlayed', title: 'Played', type: 'filter', group: filtersGroup),
+      LibraryFilter(filter: 'IsUnplayed', filterType: 'boolean', key: 'IsUnplayed', title: 'Unplayed', type: 'filter', group: filtersGroup),
+      LibraryFilter(filter: 'IsResumable', filterType: 'boolean', key: 'IsResumable', title: 'Resumable', type: 'filter', group: filtersGroup),
+      LibraryFilter(filter: 'IsFavorite', filterType: 'boolean', key: 'IsFavorite', title: 'Favorites', type: 'filter', group: filtersGroup),
     ]);
 
     // Top-level group: Status (Shows only, before Features)
     if (t == 'show') {
-      filters.add(PlexFilter(
+      filters.add(LibraryFilter(
         filter: 'SeriesStatus',
         filterType: 'string',
         key: 'seriesStatus:$sectionPrefix',
@@ -1117,16 +1220,16 @@ class JellyfinClient implements MediaServerClient {
 
     // Top-level group: Features → Subtitles, Trailer, Special Features, Theme Song, Theme Video
     filters.addAll([
-      PlexFilter(filter: 'HasSubtitles', filterType: 'boolean', key: 'HasSubtitles', title: 'Subtitles', type: 'filter', group: featuresGroup),
-      PlexFilter(filter: 'HasTrailer', filterType: 'boolean', key: 'HasTrailer', title: 'Trailer', type: 'filter', group: featuresGroup),
-      PlexFilter(filter: 'HasSpecialFeature', filterType: 'boolean', key: 'HasSpecialFeature', title: 'Special Features', type: 'filter', group: featuresGroup),
-      PlexFilter(filter: 'HasThemeSong', filterType: 'boolean', key: 'HasThemeSong', title: 'Theme Song', type: 'filter', group: featuresGroup),
-      PlexFilter(filter: 'HasThemeVideo', filterType: 'boolean', key: 'HasThemeVideo', title: 'Theme Video', type: 'filter', group: featuresGroup),
+      LibraryFilter(filter: 'HasSubtitles', filterType: 'boolean', key: 'HasSubtitles', title: 'Subtitles', type: 'filter', group: featuresGroup),
+      LibraryFilter(filter: 'HasTrailer', filterType: 'boolean', key: 'HasTrailer', title: 'Trailer', type: 'filter', group: featuresGroup),
+      LibraryFilter(filter: 'HasSpecialFeature', filterType: 'boolean', key: 'HasSpecialFeature', title: 'Special Features', type: 'filter', group: featuresGroup),
+      LibraryFilter(filter: 'HasThemeSong', filterType: 'boolean', key: 'HasThemeSong', title: 'Theme Song', type: 'filter', group: featuresGroup),
+      LibraryFilter(filter: 'HasThemeVideo', filterType: 'boolean', key: 'HasThemeVideo', title: 'Theme Video', type: 'filter', group: featuresGroup),
     ]);
 
     // Top-level groups: Genres, Parental Ratings, Tags, Video Types (Movies only), Years
     filters.addAll([
-      PlexFilter(
+      LibraryFilter(
         filter: 'genre',
         filterType: 'string',
         key: 'genre:$sectionPrefix',
@@ -1134,7 +1237,7 @@ class JellyfinClient implements MediaServerClient {
         type: 'filter',
         group: genresGroup,
       ),
-      PlexFilter(
+      LibraryFilter(
         filter: 'OfficialRating',
         filterType: 'string',
         key: 'officialRating:$sectionPrefix',
@@ -1142,7 +1245,7 @@ class JellyfinClient implements MediaServerClient {
         type: 'filter',
         group: parentalGroup,
       ),
-      PlexFilter(
+      LibraryFilter(
         filter: 'tags',
         filterType: 'string',
         key: 'tags:$sectionPrefix',
@@ -1153,7 +1256,7 @@ class JellyfinClient implements MediaServerClient {
     ]);
 
     if (t == 'movie') {
-      filters.add(PlexFilter(
+      filters.add(LibraryFilter(
         filter: 'VideoTypes',
         filterType: 'string',
         key: 'videoType:',
@@ -1163,7 +1266,7 @@ class JellyfinClient implements MediaServerClient {
       ));
     }
 
-    filters.add(PlexFilter(
+    filters.add(LibraryFilter(
       filter: 'year',
       filterType: 'string',
       key: 'year:$sectionPrefix',
@@ -1176,7 +1279,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexFirstCharacter>> getFirstCharacters(
+  Future<List<FirstCharacter>> getFirstCharacters(
     String sectionId, {
     int? type,
     Map<String, String>? filters,
@@ -1185,7 +1288,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexFilterValue>> getFilterValues(String filterKey) async {
+  Future<List<LibraryFilterValue>> getFilterValues(String filterKey) async {
     if (_offlineMode) return [];
     if (!filterKey.contains(':')) return [];
     final colonIndex = filterKey.indexOf(':');
@@ -1209,7 +1312,7 @@ class JellyfinClient implements MediaServerClient {
         return list
             .map((e) {
               final name = e['Name'] as String? ?? '';
-              return PlexFilterValue(key: name, title: name, type: 'genre');
+              return LibraryFilterValue(key: name, title: name, type: 'genre');
             })
             .toList();
       } catch (e) {
@@ -1233,7 +1336,7 @@ class JellyfinClient implements MediaServerClient {
         return list
             .map((e) {
               final name = (e as Map<String, dynamic>)['Name']?.toString() ?? '';
-              return PlexFilterValue(key: name, title: name, type: 'year');
+              return LibraryFilterValue(key: name, title: name, type: 'year');
             })
             .toList();
       } catch (e) {
@@ -1257,11 +1360,11 @@ class JellyfinClient implements MediaServerClient {
         );
         final list = response.data?['Items'] as List? ?? [];
         final seen = <String>{};
-        final values = <PlexFilterValue>[];
+        final values = <LibraryFilterValue>[];
         for (final e in list) {
           final rating = (e as Map<String, dynamic>)['OfficialRating']?.toString()?.trim();
           if (rating != null && rating.isNotEmpty && seen.add(rating)) {
-            values.add(PlexFilterValue(key: rating, title: rating, type: 'rating'));
+            values.add(LibraryFilterValue(key: rating, title: rating, type: 'rating'));
           }
         }
         values.sort((a, b) => a.title.compareTo(b.title));
@@ -1297,7 +1400,7 @@ class JellyfinClient implements MediaServerClient {
           }
         }
         return (seen.toList()..sort())
-            .map((s) => PlexFilterValue(key: s, title: s, type: 'tag'))
+            .map((s) => LibraryFilterValue(key: s, title: s, type: 'tag'))
             .toList();
       } catch (e) {
         appLogger.d('Jellyfin getFilterValues(tags) failed: $e');
@@ -1308,62 +1411,62 @@ class JellyfinClient implements MediaServerClient {
     if (kind == 'videoType') {
       // Match Jellyfin web: BD, DVD, HD, 4K, SD, 3D (video quality/format)
       return [
-        PlexFilterValue(key: 'BluRay', title: 'BD', type: 'videoType'),
-        PlexFilterValue(key: 'Dvd', title: 'DVD', type: 'videoType'),
-        PlexFilterValue(key: 'Hd', title: 'HD', type: 'videoType'),
-        PlexFilterValue(key: '4K', title: '4K', type: 'videoType'),
-        PlexFilterValue(key: 'Sd', title: 'SD', type: 'videoType'),
-        PlexFilterValue(key: 'ThreeD', title: '3D', type: 'videoType'),
+        LibraryFilterValue(key: 'BluRay', title: 'BD', type: 'videoType'),
+        LibraryFilterValue(key: 'Dvd', title: 'DVD', type: 'videoType'),
+        LibraryFilterValue(key: 'Hd', title: 'HD', type: 'videoType'),
+        LibraryFilterValue(key: '4K', title: '4K', type: 'videoType'),
+        LibraryFilterValue(key: 'Sd', title: 'SD', type: 'videoType'),
+        LibraryFilterValue(key: 'ThreeD', title: '3D', type: 'videoType'),
       ];
     }
 
     if (kind == 'seriesStatus') {
       return [
-        PlexFilterValue(key: 'Continuing', title: 'Continuing', type: 'seriesStatus'),
-        PlexFilterValue(key: 'Ended', title: 'Ended', type: 'seriesStatus'),
-        PlexFilterValue(key: 'NotYetReleased', title: 'Not yet released', type: 'seriesStatus'),
+        LibraryFilterValue(key: 'Continuing', title: 'Continuing', type: 'seriesStatus'),
+        LibraryFilterValue(key: 'Ended', title: 'Ended', type: 'seriesStatus'),
+        LibraryFilterValue(key: 'NotYetReleased', title: 'Not yet released', type: 'seriesStatus'),
       ];
     }
 
     return [];
   }
 
-  static List<PlexFilterValue> _defaultOfficialRatingValues() {
+  static List<LibraryFilterValue> _defaultOfficialRatingValues() {
     return [
       'G', 'PG', 'PG-13', 'R', 'NC-17',
       'TV-Y', 'TV-G', 'TV-PG', 'TV-14', 'TV-MA', 'NR', 'Unrated',
-    ].map((s) => PlexFilterValue(key: s, title: s, type: 'rating')).toList();
+    ].map((s) => LibraryFilterValue(key: s, title: s, type: 'rating')).toList();
   }
 
   @override
-  Future<List<PlexSort>> getLibrarySorts(String sectionId, {String? libraryType}) async {
+  Future<List<LibrarySort>> getLibrarySorts(String sectionId, {String? libraryType}) async {
     final t = (libraryType ?? '').toLowerCase();
     // Movies: match Jellyfin web UI sort list and order.
     if (t == 'movie') {
       return [
-        PlexSort(key: 'SortName', title: 'Name', defaultDirection: 'asc'),
-        PlexSort(key: 'Random', title: 'Random', defaultDirection: 'asc'),
-        PlexSort(key: 'CommunityRating', descKey: 'CommunityRating:desc', title: 'Community Rating', defaultDirection: 'desc'),
-        PlexSort(key: 'CriticRating', descKey: 'CriticRating:desc', title: 'Critics Rating', defaultDirection: 'desc'),
-        PlexSort(key: 'DateCreated', descKey: 'DateCreated:desc', title: 'Date Added', defaultDirection: 'desc'),
-        PlexSort(key: 'DatePlayed', descKey: 'DatePlayed:desc', title: 'Date Played', defaultDirection: 'desc'),
-        PlexSort(key: 'OfficialRating', title: 'Parental Rating', defaultDirection: 'asc'),
-        PlexSort(key: 'PlayCount', descKey: 'PlayCount:desc', title: 'Play Count', defaultDirection: 'desc'),
-        PlexSort(key: 'PremiereDate', descKey: 'PremiereDate:desc', title: 'Release Date', defaultDirection: 'desc'),
-        PlexSort(key: 'Runtime', descKey: 'Runtime:desc', title: 'Runtime', defaultDirection: 'desc'),
+        LibrarySort(key: 'SortName', title: 'Name', defaultDirection: 'asc'),
+        LibrarySort(key: 'Random', title: 'Random', defaultDirection: 'asc'),
+        LibrarySort(key: 'CommunityRating', descKey: 'CommunityRating:desc', title: 'Community Rating', defaultDirection: 'desc'),
+        LibrarySort(key: 'CriticRating', descKey: 'CriticRating:desc', title: 'Critics Rating', defaultDirection: 'desc'),
+        LibrarySort(key: 'DateCreated', descKey: 'DateCreated:desc', title: 'Date Added', defaultDirection: 'desc'),
+        LibrarySort(key: 'DatePlayed', descKey: 'DatePlayed:desc', title: 'Date Played', defaultDirection: 'desc'),
+        LibrarySort(key: 'OfficialRating', title: 'Parental Rating', defaultDirection: 'asc'),
+        LibrarySort(key: 'PlayCount', descKey: 'PlayCount:desc', title: 'Play Count', defaultDirection: 'desc'),
+        LibrarySort(key: 'PremiereDate', descKey: 'PremiereDate:desc', title: 'Release Date', defaultDirection: 'desc'),
+        LibrarySort(key: 'Runtime', descKey: 'Runtime:desc', title: 'Runtime', defaultDirection: 'desc'),
       ];
     }
     // Shows: match Jellyfin web UI sort list and order.
     if (t == 'show') {
       return [
-        PlexSort(key: 'SortName', title: 'Name', defaultDirection: 'asc'),
-        PlexSort(key: 'Random', title: 'Random', defaultDirection: 'asc'),
-        PlexSort(key: 'CommunityRating', descKey: 'CommunityRating:desc', title: 'Community Rating', defaultDirection: 'desc'),
-        PlexSort(key: 'DateCreated', descKey: 'DateCreated:desc', title: 'Date Show Added', defaultDirection: 'desc'),
-        PlexSort(key: 'DateLastContentAdded', descKey: 'DateLastContentAdded:desc', title: 'Date Episode Added', defaultDirection: 'desc'),
-        PlexSort(key: 'DatePlayed', descKey: 'DatePlayed:desc', title: 'Date Played', defaultDirection: 'desc'),
-        PlexSort(key: 'OfficialRating', title: 'Parental Rating', defaultDirection: 'asc'),
-        PlexSort(key: 'PremiereDate', descKey: 'PremiereDate:desc', title: 'Release Date', defaultDirection: 'desc'),
+        LibrarySort(key: 'SortName', title: 'Name', defaultDirection: 'asc'),
+        LibrarySort(key: 'Random', title: 'Random', defaultDirection: 'asc'),
+        LibrarySort(key: 'CommunityRating', descKey: 'CommunityRating:desc', title: 'Community Rating', defaultDirection: 'desc'),
+        LibrarySort(key: 'DateCreated', descKey: 'DateCreated:desc', title: 'Date Show Added', defaultDirection: 'desc'),
+        LibrarySort(key: 'DateLastContentAdded', descKey: 'DateLastContentAdded:desc', title: 'Date Episode Added', defaultDirection: 'desc'),
+        LibrarySort(key: 'DatePlayed', descKey: 'DatePlayed:desc', title: 'Date Played', defaultDirection: 'desc'),
+        LibrarySort(key: 'OfficialRating', title: 'Parental Rating', defaultDirection: 'asc'),
+        LibrarySort(key: 'PremiereDate', descKey: 'PremiereDate:desc', title: 'Release Date', defaultDirection: 'desc'),
       ];
     }
     // Other library types (e.g. collection): use movie list as fallback.
@@ -1372,7 +1475,7 @@ class JellyfinClient implements MediaServerClient {
 
   /// Jellyfin GET /Movies/Recommendations returns categories (Because you watched X, Because you liked X, etc.).
   @override
-  Future<List<PlexHub>> getMovieRecommendations(String sectionId, {int categoryLimit = 10, int itemLimit = 12}) async {
+  Future<List<Hub>> getMovieRecommendations(String sectionId, {int categoryLimit = 10, int itemLimit = 12}) async {
     if (_offlineMode) return [];
     try {
       final response = await _dio.get<List<dynamic>>(
@@ -1387,7 +1490,7 @@ class JellyfinClient implements MediaServerClient {
       );
       final list = response.data;
       if (list == null || list.isEmpty) return [];
-      final hubs = <PlexHub>[];
+      final hubs = <Hub>[];
       for (var i = 0; i < list.length; i++) {
         final cat = list[i] as Map<String, dynamic>?;
         if (cat == null) continue;
@@ -1401,7 +1504,7 @@ class JellyfinClient implements MediaServerClient {
             .where((m) => ['movie', 'show', 'episode', 'collection'].contains(m.type))
             .toList();
         if (items.isEmpty) continue;
-        hubs.add(PlexHub(
+        hubs.add(Hub(
           hubKey: 'movie_rec_${sectionId}_${i}_${cat['CategoryId']}',
           title: title,
           type: 'movie',
@@ -1440,7 +1543,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexHub>> getLibraryHubs(String sectionId, {int limit = 10}) async {
+  Future<List<Hub>> getLibraryHubs(String sectionId, {int limit = 10}) async {
     if (_offlineMode) return [];
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1464,7 +1567,7 @@ class JellyfinClient implements MediaServerClient {
         return [];
       }
       return [
-        PlexHub(
+        Hub(
           hubKey: 'recently_added_$sectionId',
           title: 'Recently Added',
           type: 'mixed',
@@ -1483,7 +1586,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexHub>> getGlobalHubs({int limit = 10}) async {
+  Future<List<Hub>> getGlobalHubs({int limit = 10}) async {
     if (_offlineMode) return [];
     final perHub = limit > 0 ? limit : 12;
 
@@ -1549,13 +1652,13 @@ class JellyfinClient implements MediaServerClient {
     }
 
     final results = await Future.wait([_nextUp(), _movies(), _shows()]);
-    final hubs = <PlexHub>[];
+    final hubs = <Hub>[];
 
     final nextUp = results[0];
     if (nextUp != null) {
       final items = (nextUp['Items'] as List?) ?? [];
       if (items.isNotEmpty) {
-        hubs.add(PlexHub(
+        hubs.add(Hub(
           hubKey: 'next_up',
           title: 'Next Up',
           type: 'show',
@@ -1573,7 +1676,7 @@ class JellyfinClient implements MediaServerClient {
     if (movies != null) {
       final list = (movies['Items'] as List?) ?? [];
       if (list.isNotEmpty) {
-        hubs.add(PlexHub(
+        hubs.add(Hub(
           hubKey: 'recently_added_movies',
           title: 'Recently Added Movies',
           type: 'movie',
@@ -1591,7 +1694,7 @@ class JellyfinClient implements MediaServerClient {
     if (shows != null) {
       final list = (shows['Items'] as List?) ?? [];
       if (list.isNotEmpty) {
-        hubs.add(PlexHub(
+        hubs.add(Hub(
           hubKey: 'recently_added_shows',
           title: 'Recently Added Shows',
           type: 'show',
@@ -1610,12 +1713,12 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getHubContent(String hubKey) async {
+  Future<List<MediaMetadata>> getHubContent(String hubKey) async {
     return [];
   }
 
   @override
-  Future<List<PlexMetadata>> getPlaylist(String playlistId) async {
+  Future<List<MediaMetadata>> getPlaylist(String playlistId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/Playlists/$playlistId/Items',
@@ -1633,7 +1736,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexPlaylist>> getPlaylists({String playlistType = 'video', bool? smart}) async {
+  Future<List<Playlist>> getPlaylists({String playlistType = 'video', bool? smart}) async {
     if (_offlineMode) return [];
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1645,7 +1748,7 @@ class JellyfinClient implements MediaServerClient {
       return list.map((e) {
         final m = e as Map<String, dynamic>;
         final id = m['Id']?.toString() ?? '';
-        return PlexPlaylist(
+        return Playlist(
           ratingKey: id,
           key: id,
           type: 'playlist',
@@ -1665,13 +1768,13 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<PlexPlaylist?> getPlaylistMetadata(String playlistId) async {
+  Future<Playlist?> getPlaylistMetadata(String playlistId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/Playlists/$playlistId');
       final m = response.data;
       if (m == null) return null;
       final id = m['Id']?.toString() ?? playlistId;
-      return PlexPlaylist(
+      return Playlist(
         ratingKey: id,
         key: id,
         type: 'playlist',
@@ -1690,13 +1793,13 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<PlexPlaylist?> createPlaylist({required String title, String? uri, int? playQueueId}) async {
+  Future<Playlist?> createPlaylist({required String title, String? uri, int? playQueueId}) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>('/Playlists', data: {'Name': title});
       final m = response.data;
       if (m == null) return null;
       final id = m['Id']?.toString() ?? '';
-      return PlexPlaylist(
+      return Playlist(
         ratingKey: id,
         key: id,
         type: 'playlist',
@@ -1770,7 +1873,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getLibraryCollections(String sectionId) async {
+  Future<List<MediaMetadata>> getLibraryCollections(String sectionId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/Users/${config.userId}/Items',
@@ -1785,7 +1888,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getGlobalCollections() async {
+  Future<List<MediaMetadata>> getGlobalCollections() async {
     if (_offlineMode) return [];
     try {
       // Fetch all BoxSets (actual collections) directly; do not use ParentId so we get
@@ -1809,7 +1912,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getLibraryFavorites(String sectionId, {int start = 0, int limit = 0}) async {
+  Future<List<MediaMetadata>> getLibraryFavorites(String sectionId, {int start = 0, int limit = 0}) async {
     if (_offlineMode) return [];
     try {
       final queryParams = <String, dynamic>{
@@ -1838,7 +1941,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getCollectionItems(String collectionId) async {
+  Future<List<MediaMetadata>> getCollectionItems(String collectionId) async {
     return getChildren(collectionId);
   }
 
@@ -1916,17 +2019,17 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getLibraryFolders(String sectionId) async {
+  Future<List<MediaMetadata>> getLibraryFolders(String sectionId) async {
     return getLibraryContent(sectionId);
   }
 
   @override
-  Future<List<PlexMetadata>> getFolderChildren(String folderKey) async {
+  Future<List<MediaMetadata>> getFolderChildren(String folderKey) async {
     return getChildren(folderKey);
   }
 
   @override
-  Future<List<PlexPlaylist>> getLibraryPlaylists({String playlistType = 'video'}) async {
+  Future<List<Playlist>> getLibraryPlaylists({String playlistType = 'video'}) async {
     return getPlaylists(playlistType: playlistType);
   }
 
@@ -1996,7 +2099,7 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<List<PlexMetadata>> getLiveTvSessions() async {
+  Future<List<MediaMetadata>> getLiveTvSessions() async {
     return [];
   }
 
@@ -2060,7 +2163,7 @@ class JellyfinClient implements MediaServerClient {
       true;
 
   @override
-  Future<({PlexMetadata metadata, String streamPath, String sessionIdentifier, String sessionPath})?> tuneChannel(
+  Future<({MediaMetadata metadata, String streamPath, String sessionIdentifier, String sessionPath})?> tuneChannel(
     String dvrKey,
     String channelKey,
   ) async =>

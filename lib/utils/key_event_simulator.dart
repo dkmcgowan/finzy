@@ -4,8 +4,7 @@ import 'package:flutter/widgets.dart';
 
 /// Shared utility for simulating key press events through the focus tree.
 ///
-/// Used by both [CompanionRemoteReceiver] and [GamepadService] to translate
-/// external input (remote commands, gamepad buttons) into focus-tree key events.
+/// Used by [GamepadService] to translate gamepad input into focus-tree key events.
 void simulateKeyPress(LogicalKeyboardKey logicalKey) {
   SchedulerBinding.instance.addPostFrameCallback((_) {
     final focusNode = FocusManager.instance.primaryFocus;

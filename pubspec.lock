@@ -297,14 +297,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.1"
-  dart_discord_presence:
-    dependency: "direct main"
-    description:
-      name: dart_discord_presence
-      sha256: "4679b197eb37af3676766bbfba9f1f766ba27131588237f13ea7085e9dfe068a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
   dart_style:
     dependency: transitive
     description:
@@ -1100,13 +1092,13 @@ packages:
     source: hosted
     version: "4.12.0"
   source_gen:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: source_gen
-      sha256: "7b19d6ba131c6eb98bfcbf8d56c1a7002eba438af2e7ae6f8398b2b0f4f381e3"
+      sha256: "1d562a3c1f713904ebbed50d2760217fd8a51ca170ac4b05b0db490699dbac17"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.0"
+    version: "4.2.0"
   source_helper:
     dependency: transitive
     description:
@@ -1421,7 +1413,7 @@ packages:
     source: hosted
     version: "1.0.1"
   web_socket_channel:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: web_socket_channel
       sha256: d645757fb0f4773d602444000a8131ff5d48c9e47adfe9772652dd1a4f2d45c8

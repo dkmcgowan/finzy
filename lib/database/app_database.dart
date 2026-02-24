@@ -208,7 +208,7 @@ LazyDatabase _openConnection() {
         ? await getApplicationDocumentsDirectory()
         : await getApplicationSupportDirectory();
 
-    final file = File(p.join(dbFolder.path, 'plezy_downloads.db'));
+    final file = File(p.join(dbFolder.path, 'finzy_downloads.db'));
 
     // Ensure directory exists
     if (!await file.parent.exists()) {
@@ -218,7 +218,7 @@ LazyDatabase _openConnection() {
     // Migrate from old location on desktop (was in Documents subfolder)
     if (!Platform.isAndroid && !Platform.isIOS && !await file.exists()) {
       final oldFolder = await getApplicationDocumentsDirectory();
-      final oldFile = File(p.join(oldFolder.path, 'plezy_downloads.db'));
+      final oldFile = File(p.join(oldFolder.path, 'finzy_downloads.db'));
       if (await oldFile.exists()) {
         await oldFile.rename(file.path);
       }

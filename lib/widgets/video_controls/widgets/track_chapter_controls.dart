@@ -6,8 +6,8 @@ import 'package:flutter/services.dart';
 
 import '../../../focus/dpad_navigator.dart';
 import '../../../mpv/mpv.dart';
-import '../../../models/plex_media_info.dart';
-import '../../../models/plex_media_version.dart';
+import '../../../models/media_info.dart';
+import '../../../models/media_version.dart';
 import '../../../services/sleep_timer_service.dart';
 import '../../../utils/platform_detector.dart';
 import '../../../i18n/strings.g.dart';
@@ -24,9 +24,9 @@ import '../video_control_button.dart';
 /// Row of track and chapter control buttons for the video player
 class TrackChapterControls extends StatelessWidget {
   final Player player;
-  final List<PlexChapter> chapters;
+  final List<Chapter> chapters;
   final bool chaptersLoaded;
-  final List<PlexMediaVersion> availableVersions;
+  final List<MediaVersion> availableVersions;
   final int selectedMediaIndex;
   final int boxFitMode;
   final int audioSyncOffset;
@@ -42,6 +42,13 @@ class TrackChapterControls extends StatelessWidget {
   final Function(int)? onSwitchVersion;
   final Function(AudioTrack)? onAudioTrackChanged;
   final Function(SubtitleTrack)? onSubtitleTrackChanged;
+
+  /// External subtitle tracks (load on demand when user selects; empty when setting is off)
+  final List<SubtitleTrack> availableExternalSubtitles;
+
+  /// Called when user selects an external subtitle track
+  final Future<void> Function(SubtitleTrack)? onExternalSubtitleSelected;
+
   final VoidCallback? onLoadSeekTimes;
   final VoidCallback? onCancelAutoHide;
   final VoidCallback? onStartAutoHide;
@@ -92,6 +99,8 @@ class TrackChapterControls extends StatelessWidget {
     this.onSwitchVersion,
     this.onAudioTrackChanged,
     this.onSubtitleTrackChanged,
+    this.availableExternalSubtitles = const [],
+    this.onExternalSubtitleSelected,
     this.onLoadSeekTimes,
     this.onCancelAutoHide,
     this.onStartAutoHide,
@@ -267,6 +276,8 @@ class TrackChapterControls extends StatelessWidget {
                   builder: (_) => SubtitleTrackSheet(
                     player: player,
                     onTrackChanged: onSubtitleTrackChanged,
+                    availableExternalSubtitles: availableExternalSubtitles,
+                    onExternalSubtitleSelected: onExternalSubtitleSelected,
                   ),
                 ).whenComplete(() => onStartAutoHide?.call());
               },

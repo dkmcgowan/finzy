@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import '../../i18n/strings.g.dart';

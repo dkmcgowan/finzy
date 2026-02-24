@@ -15,8 +15,8 @@ class PlayerNative extends PlayerBase {
   @override
   int? get textureId => _textureIdValue;
 
-  static const _methodChannel = MethodChannel('com.plezy/mpv_player');
-  static const _eventChannel = EventChannel('com.plezy/mpv_player/events');
+  static const _methodChannel = MethodChannel('com.finzy/mpv_player');
+  static const _eventChannel = EventChannel('com.finzy/mpv_player/events');
 
   @override
   MethodChannel get methodChannel => _methodChannel;
@@ -112,7 +112,7 @@ class PlayerNative extends PlayerBase {
     // Show the video layer
     await setVisible(true);
 
-    // Set HTTP headers for Plex authentication and profile
+    // Set HTTP headers for server authentication and profile
     if (media.headers != null && media.headers!.isNotEmpty) {
       final headerList = media.headers!.entries.map((e) => '${e.key}: ${e.value}').toList();
       await setProperty('http-header-fields', headerList.join(','));

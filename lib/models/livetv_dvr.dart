@@ -1,4 +1,4 @@
-/// Represents a Plex Live TV DVR device (e.g., HDHomeRun tuner, IPTV provider)
+/// Represents a Live TV DVR device (e.g., HDHomeRun tuner, IPTV provider)
 class LiveTvDvr {
   final String key;
   final String uuid;

@@ -20,11 +20,17 @@ import '../../utils/platform_detector.dart';
 import '../../i18n/strings.g.dart';
 
 /// Screen to add another Jellyfin user on the same server (from Switch profile).
-/// Reuses the same UX as auth: user grid → Quick Connect or Manual → save user and pop.
+/// Shows only users not already logged in; layout like auth user step (centered grid, Manual login + Back).
 class JellyfinAddUserScreen extends StatefulWidget {
-  const JellyfinAddUserScreen({super.key, required this.baseUrl});
+  const JellyfinAddUserScreen({
+    super.key,
+    required this.baseUrl,
+    this.existingUserIds = const {},
+  });
 
   final String baseUrl;
+  /// User IDs already authorized on this server; they are excluded from the grid.
+  final Set<String> existingUserIds;
 
   @override
   State<JellyfinAddUserScreen> createState() => _JellyfinAddUserScreenState();
@@ -65,10 +71,13 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
       _errorMessage = null;
     });
     try {
-      final users = await JellyfinAuthService.getPublicUsers(_baseUrl);
+      final all = await JellyfinAuthService.getPublicUsers(_baseUrl);
       if (mounted) {
+        final filtered = widget.existingUserIds.isEmpty
+            ? all
+            : all.where((u) => !widget.existingUserIds.contains(u.id)).toList();
         setState(() {
-          _publicUsers = users;
+          _publicUsers = filtered;
           _loadingUsers = false;
         });
       }
@@ -96,7 +105,7 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
           baseUrl: _baseUrl,
           headers: {
             'Authorization':
-                'MediaBrowser Client="Plezy", Device="Plezy", DeviceId="plezy-jellyfin", Version="1.0.0", Token="${result.accessToken}"',
+                'MediaBrowser Client="Finzy", Device="Finzy", DeviceId="finzy-jellyfin", Version="1.0.0", Token="${result.accessToken}"',
           },
         ),
       );
@@ -295,7 +304,7 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(tokens(context).radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(12),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -303,16 +312,16 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                 ClipOval(
                   child: CachedNetworkImage(
                     imageUrl: imageUrl,
-                    width: 56,
-                    height: 56,
+                    width: 72,
+                    height: 72,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => Icon(icon ?? Symbols.person_rounded, size: 40),
-                    errorWidget: (_, __, ___) => Icon(icon ?? Symbols.person_rounded, size: 40),
+                    placeholder: (_, __) => Icon(icon ?? Symbols.person_rounded, size: 48),
+                    errorWidget: (_, __, ___) => Icon(icon ?? Symbols.person_rounded, size: 48),
                   ),
                 )
               else
-                Icon(icon ?? Symbols.person_rounded, size: 40),
-              const SizedBox(height: 6),
+                Icon(icon ?? Symbols.person_rounded, size: 48),
+              const SizedBox(height: 8),
               Text(
                 label,
                 textAlign: TextAlign.center,
@@ -442,7 +451,7 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
       );
     }
 
-    // users step
+    // users step: remaining users only, centered grid, no scroll; Manual login + Back below
     final users = _publicUsers ?? [];
     final isTV = PlatformDetector.isTV();
     return Scaffold(
@@ -451,61 +460,58 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
       ),
       body: _loadingUsers
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Select a user or sign in manually',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: GridView.builder(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: isTV ? 140 : 120,
-                        childAspectRatio: 0.85,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Select a user or sign in manually',
+                        style: Theme.of(context).textTheme.titleMedium,
+                        textAlign: TextAlign.center,
                       ),
-                      itemCount: users.length + 2,
-                      itemBuilder: (context, index) {
-                        if (index == users.length) {
+                      const SizedBox(height: 20),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: isTV ? 200 : 160,
+                          childAspectRatio: 0.9,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                        ),
+                        itemCount: users.length,
+                        itemBuilder: (context, index) {
+                          final user = users[index];
+                          final imageUrl = user.primaryImageTag != null ? user.imageUrl(_baseUrl) : null;
                           return _buildUserCard(
-                            label: 'Manual login',
-                            subtitle: 'Enter username & password',
-                            icon: Symbols.edit_rounded,
-                            onTap: () => _goToManual(null),
+                            label: user.name,
+                            imageUrl: imageUrl,
+                            onTap: () => _showUserOptions(user),
                           );
-                        }
-                        if (index == users.length + 1) {
-                          return _buildUserCard(
-                            label: t.common.back,
-                            icon: Symbols.arrow_back_rounded,
-                            onTap: () => Navigator.of(context).pop(),
-                          );
-                        }
-                        final user = users[index];
-                        final imageUrl = user.primaryImageTag != null ? user.imageUrl(_baseUrl) : null;
-                        return _buildUserCard(
-                          label: user.name,
-                          imageUrl: imageUrl,
-                          onTap: () => _showUserOptions(user),
-                        );
-                      },
-                    ),
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => _goToManual(null),
+                        style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                        child: const Text('Manual login'),
+                      ),
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _errorMessage!,
+                          style: TextStyle(color: Theme.of(context).colorScheme.error),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ],
                   ),
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      _errorMessage!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
     );

@@ -1,4 +1,4 @@
-module github.com/edde746/plezy-relay
+module github.com/dkmcgowan/finzy-relay
 
 go 1.22
 

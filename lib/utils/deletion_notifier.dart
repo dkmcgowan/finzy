@@ -1,4 +1,4 @@
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import 'app_logger.dart';
 import 'base_notifier.dart';
 import 'hierarchical_event_mixin.dart';
@@ -73,7 +73,7 @@ class DeletionNotifier extends BaseNotifier<DeletionEvent> {
   }
 
   /// Helper to emit a deletion event from metadata
-  void notifyDeleted({required PlexMetadata metadata, bool isDownloadOnly = false}) {
+  void notifyDeleted({required MediaMetadata metadata, bool isDownloadOnly = false}) {
     notify(
       DeletionEvent(
         ratingKey: metadata.ratingKey,
@@ -87,7 +87,7 @@ class DeletionNotifier extends BaseNotifier<DeletionEvent> {
   }
 
   /// Build parent chain from metadata's parent keys
-  List<String> _buildParentChain(PlexMetadata metadata) {
+  List<String> _buildParentChain(MediaMetadata metadata) {
     final chain = <String>[];
     if (metadata.parentRatingKey != null) {
       chain.add(metadata.parentRatingKey!);

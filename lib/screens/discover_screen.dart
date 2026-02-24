@@ -2,24 +2,22 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../focus/dpad_navigator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../services/media_server_client.dart';
-import '../utils/plex_image_helper.dart';
-import '../widgets/plex_optimized_image.dart' show blurArtwork;
-import '../models/plex_metadata.dart';
+import '../../services/jellyfin_client.dart';
+import '../utils/media_image_helper.dart';
+import '../widgets/optimized_image.dart' show blurArtwork;
+import '../models/media_metadata.dart';
 import '../utils/content_utils.dart';
-import '../models/plex_hub.dart';
+import '../models/hub.dart';
 import '../providers/multi_server_provider.dart';
 import '../providers/server_state_provider.dart';
 import '../providers/hidden_libraries_provider.dart';
 import '../providers/playback_state_provider.dart';
-import 'profile/user_avatar_widget.dart';
 import '../widgets/hub_section.dart';
-import 'profile/profile_switch_screen.dart';
 import 'profile/jellyfin_profile_switch_screen.dart';
 import '../providers/user_profile_provider.dart';
 import '../providers/jellyfin_profile_provider.dart';
@@ -41,10 +39,7 @@ import '../services/watch_next_service.dart';
 import 'auth_screen.dart';
 import 'libraries/state_messages.dart';
 import 'main_screen.dart';
-import '../watch_together/watch_together.dart';
-import '../providers/companion_remote_provider.dart';
-import '../widgets/companion_remote/remote_session_dialog.dart';
-import 'companion_remote/mobile_remote_screen.dart';
+
 
 class DiscoverScreen extends StatefulWidget {
   final VoidCallback? onBecameVisible;
@@ -58,10 +53,9 @@ class DiscoverScreen extends StatefulWidget {
 class _DiscoverScreenState extends State<DiscoverScreen>
     with Refreshable, FullRefreshable, ItemUpdatable, WatchStateAware, TabVisibilityAware, WidgetsBindingObserver {
   static const Duration _heroAutoScrollDuration = Duration(seconds: 8);
-  static const Duration _indicatorUpdateInterval = Duration(milliseconds: 200);
 
   @override
-  MediaServerClient get client {
+  JellyfinClient get client {
     final multiServerProvider = Provider.of<MultiServerProvider>(context, listen: false);
     if (!multiServerProvider.hasConnectedServers) {
       throw Exception('No servers available');
@@ -69,8 +63,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return context.getClientForServer(multiServerProvider.onlineServerIds.first);
   }
 
-  List<PlexMetadata> _onDeck = [];
-  List<PlexHub> _hubs = [];
+  List<MediaMetadata> _onDeck = [];
+  List<Hub> _hubs = [];
   bool _isLoading = true;
   bool _areHubsLoading = true;
   String? _errorMessage;
@@ -78,10 +72,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   final ScrollController _scrollController = ScrollController();
   int _currentHeroIndex = 0;
   Timer? _autoScrollTimer;
-  Timer? _indicatorTimer;
-  final ValueNotifier<double> _indicatorProgress = ValueNotifier(0.0);
   bool _isAutoScrollPaused = false;
   HiddenLibrariesProvider? _hiddenLibrariesProvider;
+  SettingsProvider? _settingsProviderForHubs;
+  bool? _lastUseGlobalHubs;
 
   String _toGlobalKey(String ratingKey, String serverId) => '$serverId:$ratingKey';
 
@@ -135,16 +129,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   // Hero and app bar focus
   late FocusNode _heroFocusNode;
   late FocusNode _refreshButtonFocusNode;
-  late FocusNode _watchTogetherButtonFocusNode;
-  late FocusNode _companionRemoteButtonFocusNode;
   late FocusNode _userButtonFocusNode;
   bool _isRefreshFocused = false;
-  bool _isWatchTogetherFocused = false;
-  bool _isCompanionRemoteFocused = false;
   bool _isUserFocused = false;
 
-  /// Get the correct MediaServerClient for an item's server
-  MediaServerClient _getClientForItem(PlexMetadata? item) {
+  /// Get the correct JellyfinClient for an item's server
+  JellyfinClient _getClientForItem(MediaMetadata? item) {
     // Items should always have a serverId, but if not, fall back to first available server
     final serverId = item?.serverId;
     if (serverId == null) {
@@ -249,15 +239,26 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     WidgetsBinding.instance.addObserver(this);
     _heroFocusNode = FocusNode(debugLabel: 'hero_section');
     _refreshButtonFocusNode = FocusNode(debugLabel: 'refresh_button');
-    _watchTogetherButtonFocusNode = FocusNode(debugLabel: 'watch_together_button');
-    _companionRemoteButtonFocusNode = FocusNode(debugLabel: 'companion_remote_button');
     _userButtonFocusNode = FocusNode(debugLabel: 'user_button');
     _refreshButtonFocusNode.addListener(_onRefreshFocusChange);
-    _watchTogetherButtonFocusNode.addListener(_onWatchTogetherFocusChange);
-    _companionRemoteButtonFocusNode.addListener(_onCompanionRemoteFocusChange);
     _userButtonFocusNode.addListener(_onUserFocusChange);
+    _heroController.addListener(_onHeroScroll);
     _loadContent();
     _startAutoScroll();
+  }
+
+  /// Syncs which hero item is "active" with PageView scroll position. The pill shows that item's watch progress.
+  void _onHeroScroll() {
+    if (!mounted || !_heroController.hasClients || _onDeck.isEmpty) return;
+    final double? page = _heroController.page;
+    if (page == null) return;
+    final int maxIndex = _onDeck.length - 1;
+    final int index = page.round().clamp(0, maxIndex);
+    final bool scrolling = _heroController.position.isScrollingNotifier.value;
+
+    if (_currentHeroIndex != index) {
+      setState(() => _currentHeroIndex = index);
+    }
   }
 
   @override
@@ -269,32 +270,30 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _hiddenLibrariesProvider = provider;
       _hiddenLibrariesProvider!.addListener(_onHiddenLibrariesChanged);
     }
+    final settingsProvider = context.read<SettingsProvider>();
+    if (settingsProvider != _settingsProviderForHubs) {
+      _settingsProviderForHubs?.removeListener(_onSettingsForHubsChanged);
+      _settingsProviderForHubs = settingsProvider;
+      _settingsProviderForHubs!.addListener(_onSettingsForHubsChanged);
+    }
   }
 
   void _onHiddenLibrariesChanged() {
     _loadContent();
   }
 
+  void _onSettingsForHubsChanged() {
+    if (!mounted) return;
+    final current = _settingsProviderForHubs!.useGlobalHubs;
+    if (_lastUseGlobalHubs != null && _lastUseGlobalHubs != current) {
+      _loadContent();
+    }
+  }
+
   void _onRefreshFocusChange() {
     if (mounted) {
       setState(() {
         _isRefreshFocused = _refreshButtonFocusNode.hasFocus;
-      });
-    }
-  }
-
-  void _onWatchTogetherFocusChange() {
-    if (mounted) {
-      setState(() {
-        _isWatchTogetherFocused = _watchTogetherButtonFocusNode.hasFocus;
-      });
-    }
-  }
-
-  void _onCompanionRemoteFocusChange() {
-    if (mounted) {
-      setState(() {
-        _isCompanionRemoteFocused = _companionRemoteButtonFocusNode.hasFocus;
       });
     }
   }
@@ -373,14 +372,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       return KeyEventResult.handled;
     }
 
-    // RIGHT: Move to watch together button or user button (if Plex-only buttons hidden)
+    // RIGHT: Move to watch together button or user button
     if (key.isRightKey) {
-      final multiServer = context.read<MultiServerProvider>();
-      if (multiServer.hasPlexServers) {
-        _watchTogetherButtonFocusNode.requestFocus();
-      } else {
-        _userButtonFocusNode.requestFocus();
-      }
+      _userButtonFocusNode.requestFocus();
       return KeyEventResult.handled;
     }
 
@@ -404,8 +398,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return KeyEventResult.ignored;
   }
 
-  /// Handle key events for the watch together button in app bar
-  KeyEventResult _handleWatchTogetherKeyEvent(FocusNode _, KeyEvent event) {
+  /// Handle key events for the user button in app bar
+  KeyEventResult _handleUserKeyEvent(FocusNode _, KeyEvent event) {
     if (!event.isActionable) {
       return KeyEventResult.ignored;
     }
@@ -421,91 +415,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     // LEFT: Move to refresh button
     if (key.isLeftKey) {
       _refreshButtonFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-
-    // RIGHT: Move to companion remote button
-    if (key.isRightKey) {
-      _companionRemoteButtonFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-
-    // UP: Block at boundary
-    if (key.isUpKey) {
-      return KeyEventResult.handled;
-    }
-
-    // SELECT: Navigate to Watch Together screen
-    if (key.isSelectKey) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const WatchTogetherScreen()));
-      return KeyEventResult.handled;
-    }
-
-    return KeyEventResult.ignored;
-  }
-
-  /// Handle key events for the companion remote button in app bar
-  KeyEventResult _handleCompanionRemoteKeyEvent(FocusNode _, KeyEvent event) {
-    if (!event.isActionable) {
-      return KeyEventResult.ignored;
-    }
-
-    final key = event.logicalKey;
-
-    // DOWN: Return to hero
-    if (key.isDownKey) {
-      _heroFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-
-    // LEFT: Move to watch together button
-    if (key.isLeftKey) {
-      _watchTogetherButtonFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-
-    // RIGHT: Move to user button
-    if (key.isRightKey) {
-      _userButtonFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-
-    // UP: Block at boundary
-    if (key.isUpKey) {
-      return KeyEventResult.handled;
-    }
-
-    // SELECT: Show companion remote dialog (host a remote session)
-    if (key.isSelectKey) {
-      RemoteSessionDialog.show(context);
-      return KeyEventResult.handled;
-    }
-
-    return KeyEventResult.ignored;
-  }
-
-  /// Handle key events for the user button in app bar
-  KeyEventResult _handleUserKeyEvent(FocusNode _, KeyEvent event) {
-    if (!event.isActionable) {
-      return KeyEventResult.ignored;
-    }
-
-    final key = event.logicalKey;
-
-    // DOWN: Return to hero/content
-    if (key.isDownKey) {
-      _focusContentFromAppBar();
-      return KeyEventResult.handled;
-    }
-
-    // LEFT: Move to companion remote button or refresh button (if Plex-only buttons hidden)
-    if (key.isLeftKey) {
-      final multiServer = context.read<MultiServerProvider>();
-      if (multiServer.hasPlexServers) {
-        _companionRemoteButtonFocusNode.requestFocus();
-      } else {
-        _refreshButtonFocusNode.requestFocus();
-      }
       return KeyEventResult.handled;
     }
 
@@ -528,19 +437,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void dispose() {
     _hiddenLibrariesProvider?.removeListener(_onHiddenLibrariesChanged);
+    _settingsProviderForHubs?.removeListener(_onSettingsForHubsChanged);
     WidgetsBinding.instance.removeObserver(this);
+    _heroController.removeListener(_onHeroScroll);
     _autoScrollTimer?.cancel();
-    _indicatorTimer?.cancel();
-    _indicatorProgress.dispose();
     _heroController.dispose();
     _scrollController.dispose();
     _heroFocusNode.dispose();
     _refreshButtonFocusNode.removeListener(_onRefreshFocusChange);
     _refreshButtonFocusNode.dispose();
-    _watchTogetherButtonFocusNode.removeListener(_onWatchTogetherFocusChange);
-    _watchTogetherButtonFocusNode.dispose();
-    _companionRemoteButtonFocusNode.removeListener(_onCompanionRemoteFocusChange);
-    _companionRemoteButtonFocusNode.dispose();
     _userButtonFocusNode.removeListener(_onUserFocusChange);
     _userButtonFocusNode.dispose();
     super.dispose();
@@ -560,7 +465,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _autoScrollTimer?.cancel();
     if (_isAutoScrollPaused) return;
 
-    _startIndicatorProgress();
     _autoScrollTimer = Timer.periodic(_heroAutoScrollDuration, (timer) {
       if (_onDeck.isEmpty || !_heroController.hasClients || _isAutoScrollPaused) {
         return;
@@ -573,31 +477,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
       final nextPage = (_currentHeroIndex + 1) % _onDeck.length;
       _heroController.animateToPage(nextPage, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
-      // Wait for page transition to complete before resetting progress
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (!_isAutoScrollPaused) {
-          _startIndicatorProgress();
-        }
-      });
+      // Progress is reset when onPageChanged fires (same moment the 8s timer restarts)
     });
-  }
-
-  void _startIndicatorProgress() {
-    _indicatorTimer?.cancel();
-    _indicatorProgress.value = 0.0;
-    final totalSteps = _heroAutoScrollDuration.inMilliseconds ~/ _indicatorUpdateInterval.inMilliseconds;
-    int step = 0;
-    _indicatorTimer = Timer.periodic(_indicatorUpdateInterval, (timer) {
-      step++;
-      _indicatorProgress.value = (step / totalSteps).clamp(0.0, 1.0);
-      if (step >= totalSteps) {
-        timer.cancel();
-      }
-    });
-  }
-
-  void _stopIndicatorProgress() {
-    _indicatorTimer?.cancel();
   }
 
   void _resetAutoScrollTimer() {
@@ -610,7 +491,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _isAutoScrollPaused = true;
     });
     _autoScrollTimer?.cancel();
-    _stopIndicatorProgress();
   }
 
   void _resumeAutoScroll() {
@@ -623,7 +503,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void onTabHidden() {
     _autoScrollTimer?.cancel();
-    _stopIndicatorProgress();
   }
 
   @override
@@ -632,6 +511,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _startAutoScroll();
     }
     _focusTopBoundary();
+    // If Use Home Layout was changed while on another tab, force refresh so user sees the right hubs
+    if (_settingsProviderForHubs != null &&
+        _lastUseGlobalHubs != null &&
+        _settingsProviderForHubs!.useGlobalHubs != _lastUseGlobalHubs) {
+      _loadContent();
+    }
   }
 
   // Helper method to calculate visible dot range (max 5 dots)
@@ -678,11 +563,19 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     });
 
     try {
-      appLogger.d('Fetching onDeck and global hubs from all Plex servers');
+      appLogger.d('Fetching onDeck and global hubs from all servers');
       final multiServerProvider = Provider.of<MultiServerProvider>(context, listen: false);
 
       if (!multiServerProvider.hasConnectedServers) {
-        throw Exception('No servers available');
+        if (!mounted) return;
+        setState(() {
+          _onDeck = [];
+          _hubs = [];
+          _isLoading = false;
+          _areHubsLoading = false;
+          _errorMessage = null;
+        });
+        return;
       }
 
       // Get hidden libraries for filtering
@@ -698,6 +591,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
       );
       final useGlobalHubs = settingsProvider.useGlobalHubs;
+      _lastUseGlobalHubs = useGlobalHubs;
       final hubsFuture = multiServerProvider.aggregationService.getHubsFromAllServers(
         hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
         useGlobalHubs: useGlobalHubs,
@@ -823,7 +717,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   /// Sync On Deck items to Android TV Watch Next row
-  Future<void> _syncWatchNext(List<PlexMetadata> onDeck) async {
+  Future<void> _syncWatchNext(List<MediaMetadata> onDeck) async {
     try {
       await WatchNextService().syncFromOnDeck(onDeck, (serverId) => context.getClientForServer(serverId));
     } catch (e) {
@@ -952,7 +846,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   @override
-  void updateItemInLists(String ratingKey, PlexMetadata updatedMetadata) {
+  void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata) {
     // Check and update in _onDeck list
     final onDeckIndex = _onDeck.indexWhere((item) => item.ratingKey == ratingKey);
     if (onDeckIndex != -1) {
@@ -1000,29 +894,28 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
   }
 
-  void _handleSwitchProfile(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileSwitchScreen()));
-  }
-
   void _handleJellyfinSwitchProfile(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => const JellyfinProfileSwitchScreen()));
   }
 
-  /// Show user menu programmatically (for D-pad select)
+  /// Show user menu programmatically (for D-pad select).
+  /// Profile switch is shown when a Jellyfin user is loaded.
   void _showUserMenu(BuildContext context, UserProfileProvider userProvider, JellyfinProfileProvider jellyfinProvider) {
-    final isJellyfin = jellyfinProvider.currentUser != null;
-    final showSwitch = isJellyfin ? true : userProvider.hasMultipleUsers;
+    final showSwitch = jellyfinProvider.currentUser != null;
     final RenderBox? button = _userButtonFocusNode.context?.findRenderObject() as RenderBox?;
     if (button == null) return;
 
     final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-    final position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
+    final Offset topLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
+    // Position menu below the avatar so it doesn't cover the icon.
+    // Use a non-zero anchor rect so Flutter consistently places it below.
+    final Rect anchor = Rect.fromLTWH(
+      topLeft.dx,
+      topLeft.dy + button.size.height + 8,
+      button.size.width,
+      button.size.height,
     );
+    final position = RelativeRect.fromRect(anchor, Offset.zero & overlay.size);
 
     showMenu<String>(
       context: context,
@@ -1043,11 +936,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     ).then((value) {
       if (!context.mounted) return;
       if (value == 'switch_profile') {
-        if (isJellyfin) {
-          _handleJellyfinSwitchProfile(context);
-        } else {
-          _handleSwitchProfile(context);
-        }
+        _handleJellyfinSwitchProfile(context);
       } else if (value == 'logout') {
         _handleLogout();
       }
@@ -1097,125 +986,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                 ),
               ),
-              // Watch Together button (Plex only; hidden when only Jellyfin is connected)
-              Consumer<MultiServerProvider>(
-                builder: (context, multiServer, _) {
-                  if (!multiServer.hasPlexServers) return const SizedBox.shrink();
-                  return Consumer<WatchTogetherProvider>(
-                    builder: (context, watchTogether, child) {
-                      return Focus(
-                        focusNode: _watchTogetherButtonFocusNode,
-                        onKeyEvent: _handleWatchTogetherKeyEvent,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _isWatchTogetherFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
-                            borderRadius: const BorderRadius.all(Radius.circular(20)),
-                          ),
-                          child: Stack(
-                            children: [
-                              IconButton(
-                                icon: AppIcon(
-                                  Symbols.group_rounded,
-                                  fill: watchTogether.isInSession ? 1 : 0,
-                                  color: watchTogether.isInSession ? Theme.of(context).colorScheme.primary : Colors.white,
-                                ),
-                                onPressed: () =>
-                                    Navigator.push(context, MaterialPageRoute(builder: (_) => const WatchTogetherScreen())),
-                                tooltip: 'Watch Together',
-                              ),
-                              if (watchTogether.isInSession && watchTogether.participantCount > 1)
-                                Positioned(
-                                  top: 6,
-                                  right: 6,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      borderRadius: const BorderRadius.all(Radius.circular(8)),
-                                    ),
-                                    child: Text(
-                                      '${watchTogether.participantCount}',
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.onPrimary,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-              // Companion Remote button (Plex only; hidden when only Jellyfin is connected)
-              Consumer<MultiServerProvider>(
-                builder: (context, multiServer, _) {
-                  if (!multiServer.hasPlexServers) return const SizedBox.shrink();
-                  return Consumer<CompanionRemoteProvider>(
-                    builder: (context, companionRemote, child) {
-                      final isDesktop = PlatformDetector.isDesktop(context);
-                      final hasDpadNav = isDesktop || PlatformDetector.isTV();
-
-                      return Focus(
-                        focusNode: hasDpadNav ? _companionRemoteButtonFocusNode : null,
-                        onKeyEvent: hasDpadNav ? _handleCompanionRemoteKeyEvent : null,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: hasDpadNav && _isCompanionRemoteFocused
-                                ? Colors.white.withValues(alpha: 0.2)
-                                : Colors.transparent,
-                            borderRadius: const BorderRadius.all(Radius.circular(20)),
-                          ),
-                          child: Stack(
-                            children: [
-                              IconButton(
-                                icon: AppIcon(
-                                  Symbols.phone_android_rounded,
-                                  fill: companionRemote.isConnected ? 1 : 0,
-                                  color: companionRemote.isConnected ? Theme.of(context).colorScheme.primary : Colors.white,
-                                ),
-                                onPressed: () {
-                                  if (isDesktop) {
-                                    RemoteSessionDialog.show(context);
-                                  } else {
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) => MobileRemoteScreen()));
-                                  }
-                                },
-                                tooltip: t.companionRemote.title,
-                              ),
-                              if (companionRemote.isConnected)
-                                Positioned(
-                                  top: 6,
-                                  right: 6,
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      shape: BoxShape.circle,
-                                      border: const Border.fromBorderSide(BorderSide(color: Colors.white, width: 1)),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
               Consumer2<UserProfileProvider, JellyfinProfileProvider>(
                 builder: (context, userProvider, jellyfinProvider, child) {
-                  final isJellyfin = jellyfinProvider.currentUser != null;
-                  final showSwitch = isJellyfin ? true : userProvider.hasMultipleUsers;
+                  final showSwitch = jellyfinProvider.currentUser != null;
                   Widget avatar;
-                  if (isJellyfin) {
-                    final jUser = jellyfinProvider.currentUser!;
+                  final jUser = jellyfinProvider.currentUser;
+                  if (jUser != null) {
                     final imageUrl = jellyfinProvider.imageUrlFor(jUser);
                     avatar = imageUrl.isNotEmpty
                         ? ClipOval(
@@ -1230,9 +1006,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           )
                         : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white);
                   } else {
-                    avatar = userProvider.currentUser?.thumb != null
-                        ? UserAvatarWidget(user: userProvider.currentUser!, size: 32, showIndicators: false)
-                        : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white);
+                    avatar = const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white);
                   }
                   return Focus(
                     focusNode: _userButtonFocusNode,
@@ -1244,13 +1018,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       ),
                       child: PopupMenuButton<String>(
                         icon: avatar,
+                        offset: const Offset(0, 8),
                         onSelected: (value) {
                           if (value == 'switch_profile') {
-                            if (isJellyfin) {
-                              _handleJellyfinSwitchProfile(context);
-                            } else {
-                              _handleSwitchProfile(context);
-                            }
+                            _handleJellyfinSwitchProfile(context);
                           } else if (value == 'logout') {
                             _handleLogout();
                           }
@@ -1331,7 +1102,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     SliverToBoxAdapter(
                       child: HubSection(
                         key: _continueWatchingHubKey,
-                        hub: PlexHub(
+                        hub: Hub(
                           hubKey: 'continue_watching',
                           title: t.discover.continueWatching,
                           type: 'mixed',
@@ -1491,7 +1262,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                 ),
               ),
-              // Page indicators with animated progress and pause/play button
+              // Hero controls: (1) Pause/Play = toggle auto-scroll, (2) Dots = which item (solid = active, muted = inactive)
               Positioned(
                 bottom: 16,
                 left: -26,
@@ -1499,7 +1270,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Pause/Play button
+                    // Pause/Play: toggles auto-scroll
                     GestureDetector(
                       onTap: () {
                         if (_isAutoScrollPaused) {
@@ -1518,56 +1289,25 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     ),
                     // Spacer to separate indicators from button
                     const SizedBox(width: 8),
-                    // Page indicators (limited to 5 dots)
+                    // Page indicators: dots only; active = solid, inactive = muted
                     ...() {
                       final range = _getVisibleDotRange();
+                      final onSurface = Theme.of(context).colorScheme.onSurface;
                       return List.generate(range.end - range.start + 1, (i) {
                         final index = range.start + i;
                         final isActive = _currentHeroIndex == index;
                         final dotSize = _getDotSize(index, range.start, range.end);
-
-                        return isActive
-                            // Progress indicator for active page (~5fps via Timer)
-                            ? ValueListenableBuilder<double>(
-                                valueListenable: _indicatorProgress,
-                                builder: (context, progress, child) {
-                                  final maxWidth = dotSize * 3; // 24px for normal, 15px for small
-                                  final fillWidth = dotSize + ((maxWidth - dotSize) * progress);
-                                  final onSurface = Theme.of(context).colorScheme.onSurface;
-                                  return Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                                    width: maxWidth,
-                                    height: dotSize,
-                                    decoration: BoxDecoration(
-                                      color: onSurface.withValues(alpha: 0.4),
-                                      borderRadius: BorderRadius.circular(dotSize / 2),
-                                    ),
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Container(
-                                        width: fillWidth,
-                                        height: dotSize,
-                                        decoration: BoxDecoration(
-                                          color: onSurface,
-                                          borderRadius: BorderRadius.circular(dotSize / 2),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              )
-                            // Static indicator for inactive pages
-                            : AnimatedContainer(
-                                duration: tokens(context).slow,
-                                curve: Curves.easeInOut,
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
-                                width: dotSize,
-                                height: dotSize,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                                  borderRadius: BorderRadius.circular(dotSize / 2),
-                                ),
-                              );
+                        return AnimatedContainer(
+                          duration: tokens(context).slow,
+                          curve: Curves.easeInOut,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: dotSize,
+                          height: dotSize,
+                          decoration: BoxDecoration(
+                            color: isActive ? onSurface : onSurface.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(dotSize / 2),
+                          ),
+                        );
                       });
                     }(),
                   ],
@@ -1580,7 +1320,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
-  Widget _buildHeroItem(PlexMetadata heroItem) {
+  Widget _buildHeroItem(MediaMetadata heroItem) {
     final isEpisode = heroItem.isEpisode;
     final showName = heroItem.grandparentTitle ?? heroItem.title;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1628,8 +1368,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       builder: (context) {
                         final client = _getClientForItem(heroItem);
                         final mediaQuery = MediaQuery.of(context);
-                        final dpr = PlexImageHelper.effectiveDevicePixelRatio(context);
-                        final imageUrl = PlexImageHelper.getOptimizedImageUrl(
+                        final dpr = MediaImageHelper.effectiveDevicePixelRatio(context);
+                        final imageUrl = MediaImageHelper.getOptimizedImageUrl(
                           client: client,
                           thumbPath: heroItem.art ?? heroItem.grandparentArt,
                           maxWidth: mediaQuery.size.width,
@@ -1696,8 +1436,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         child: Builder(
                           builder: (context) {
                             final client = _getClientForItem(heroItem);
-                            final dpr = PlexImageHelper.effectiveDevicePixelRatio(context);
-                            final logoUrl = PlexImageHelper.getOptimizedImageUrl(
+                            final dpr = MediaImageHelper.effectiveDevicePixelRatio(context);
+                            final logoUrl = MediaImageHelper.getOptimizedImageUrl(
                               client: client,
                               thumbPath: heroItem.clearLogo,
                               maxWidth: 400,
@@ -1836,7 +1576,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
-  Widget _buildSmartPlayButton(PlexMetadata heroItem) {
+  Widget _buildSmartPlayButton(MediaMetadata heroItem) {
     final hasProgress =
         heroItem.viewOffset != null && heroItem.duration != null && heroItem.viewOffset! > 0 && heroItem.duration! > 0;
 

@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
-import 'package:os_media_controls/os_media_controls.dart';
+import 'package:os_media_controls/os_media_controls.dart' hide MediaMetadata;
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
@@ -13,21 +13,18 @@ import 'package:window_manager/window_manager.dart';
 import '../mpv/mpv.dart';
 import '../mpv/player/player_android.dart';
 
-import '../../services/media_server_client.dart';
+import '../../services/jellyfin_client.dart';
 import '../models/livetv_channel.dart';
-import '../services/plex_api_cache.dart';
-import '../models/plex_media_version.dart';
-import '../models/plex_metadata.dart';
+import '../services/api_cache.dart';
+import '../models/media_version.dart';
+import '../models/media_metadata.dart';
 import '../utils/content_utils.dart';
-import '../models/plex_media_info.dart';
+import '../models/media_info.dart';
 import '../providers/download_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../providers/playback_state_provider.dart';
-import '../models/companion_remote/remote_command_type.dart';
-import '../providers/companion_remote_provider.dart';
-import '../services/companion_remote/companion_remote_receiver.dart';
 import '../services/fullscreen_state_manager.dart';
-import '../services/discord_rpc_service.dart';
+
 import '../services/episode_navigation_service.dart';
 import '../services/media_controls_manager.dart';
 import '../services/playback_initialization_service.dart';
@@ -44,15 +41,14 @@ import '../services/shader_service.dart';
 import '../providers/shader_provider.dart';
 import '../providers/user_profile_provider.dart';
 import '../utils/app_logger.dart';
-import '../utils/dialogs.dart';
-import '../utils/player_utils.dart';
+
 import '../utils/orientation_helper.dart';
 import '../utils/platform_detector.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/language_codes.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/track_label_builder.dart' as tlb;
-import '../utils/plex_url_helper.dart';
+import '../utils/auth_url_helper.dart';
 import '../utils/video_player_navigation.dart';
 import '../widgets/overlay_sheet.dart';
 import '../widgets/video_controls/video_controls.dart';
@@ -61,11 +57,10 @@ import '../focus/input_mode_tracker.dart';
 import '../focus/dpad_navigator.dart';
 import '../focus/key_event_utils.dart';
 import '../i18n/strings.g.dart';
-import '../watch_together/providers/watch_together_provider.dart';
-import '../watch_together/widgets/watch_together_overlay.dart';
+
 
 class VideoPlayerScreen extends StatefulWidget {
-  final PlexMetadata metadata;
+  final MediaMetadata metadata;
   final AudioTrack? preferredAudioTrack;
   final SubtitleTrack? preferredSubtitleTrack;
   final int selectedMediaIndex;
@@ -78,7 +73,7 @@ class VideoPlayerScreen extends StatefulWidget {
   final List<LiveTvChannel>? liveChannels;
   final int? liveCurrentChannelIndex;
   final String? liveDvrKey;
-  final MediaServerClient? liveClient;
+  final JellyfinClient? liveClient;
   final String? liveSessionIdentifier;
   final String? liveSessionPath;
 
@@ -114,13 +109,14 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
 
   Player? player;
   bool _isPlayerInitialized = false;
-  PlexMetadata? _nextEpisode;
-  PlexMetadata? _previousEpisode;
+  MediaMetadata? _nextEpisode;
+  MediaMetadata? _previousEpisode;
   bool _isLoadingNext = false;
   bool _showPlayNextDialog = false;
   bool _isPhone = false;
-  List<PlexMediaVersion> _availableVersions = [];
-  PlexMediaInfo? _currentMediaInfo;
+  List<MediaVersion> _availableVersions = [];
+  List<SubtitleTrack> _availableExternalSubtitles = [];
+  MediaInfo? _currentMediaInfo;
   StreamSubscription<String>? _errorSubscription;
   StreamSubscription<bool>? _playingSubscription;
   StreamSubscription<bool>? _completedSubscription;
@@ -172,23 +168,25 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   AmbientLightingService? _ambientLightingService;
   final EpisodeNavigationService _episodeNavigation = EpisodeNavigationService();
 
-  // Watch Together provider reference (stored early to use in dispose)
-  WatchTogetherProvider? _watchTogetherProvider;
-
-  // Companion remote state (stored early for use in dispose)
-  CompanionRemoteProvider? _companionRemoteProvider;
-  VoidCallback? _savedOnHome;
-
-  /// Get the correct MediaServerClient for this metadata's server
-  MediaServerClient _getClientForMetadata(BuildContext context) {
+  /// Get the correct JellyfinClient for this metadata's server
+  JellyfinClient _getClientForMetadata(BuildContext context) {
     return context.getClientForServer(widget.metadata.serverId!);
   }
 
+  /// Timeline scrub thumbnails. For Jellyfin uses trickplay API; for Plex uses /library/parts (partId).
+  /// Returns null when unavailable (e.g. offline).
   String? _buildThumbnailUrl(BuildContext context, Duration time) {
-    final partId = _currentMediaInfo?.partId;
-    if (partId == null || widget.isOffline) return null;
+    if (widget.isOffline) return null;
     final client = _getClientForMetadata(context);
-    return '${client.baseUrl}/library/parts/$partId/indexes/sd/${time.inMilliseconds}'.withPlexToken(
+    final partId = _currentMediaInfo?.partId;
+    // Jellyfin: no partId; use native trickplay (10.9+)
+    if (partId == null) {
+      final url = client.getTrickplayTileUrl(widget.metadata.ratingKey, time.inMilliseconds);
+      if (url != null && url.isNotEmpty) return url;
+      return null;
+    }
+    // Plex-style timeline thumbnail URL
+    return '${client.baseUrl}/library/parts/$partId/indexes/sd/${time.inMilliseconds}'.withAuthToken(
       client.token,
     );
   }
@@ -257,9 +255,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
 
     // Register app lifecycle observer
     WidgetsBinding.instance.addObserver(this);
-
-    // Wire companion remote playback callbacks
-    _setupCompanionRemoteCallbacks();
 
     // Exit the player when the sleep timer completes so the device can auto-lock
     _sleepTimerSubscription = SleepTimerService().onCompleted.listen((_) {
@@ -351,8 +346,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     }
   }
 
-  /// Converts a 2-letter code like "fr", "nl", "ca" to a Plex 3-letter code, or returns null if unknown
-  String? _iso6391ToPlex6392(String? code) {
+  /// Converts a 2-letter code like "fr", "nl" to a 3-letter ISO 639-2 code, or returns null if unknown
+  String? _iso6391To6392(String? code) {
     if (code == null || code.isEmpty) return null;
     // Takes the base "fr" from "fr-FR"
     final lang = code.split('-').first.toLowerCase();
@@ -588,26 +583,19 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     }
   }
 
-  /// Add external subtitle tracks to the player
-  Future<void> _addExternalSubtitles(List<SubtitleTrack> externalSubtitles) async {
-    if (player == null || externalSubtitles.isEmpty) return;
-
-    appLogger.d('Adding ${externalSubtitles.length} external subtitle(s) to player');
-
-    for (final subtitleTrack in externalSubtitles) {
-      if (subtitleTrack.uri == null) continue;
-
-      try {
-        await player!.addSubtitleTrack(
-          uri: subtitleTrack.uri!,
-          title: subtitleTrack.title,
-          language: subtitleTrack.language,
-          select: false, // Don't auto-select
-        );
-        appLogger.d('Added external subtitle: ${subtitleTrack.title ?? subtitleTrack.uri}');
-      } catch (e) {
-        appLogger.w('Failed to add external subtitle: ${subtitleTrack.title ?? subtitleTrack.uri}', error: e);
-      }
+  /// Add a single external subtitle track and select it (used when user picks one from the sheet)
+  Future<void> _onExternalSubtitleSelected(SubtitleTrack track) async {
+    if (player == null || track.uri == null) return;
+    try {
+      await player!.addSubtitleTrack(
+        uri: track.uri!,
+        title: track.title,
+        language: track.language,
+        select: true,
+      );
+      _onSubtitleTrackChanged(track);
+    } catch (e) {
+      appLogger.w('Failed to add external subtitle ${track.title ?? track.uri}', error: e);
     }
   }
 
@@ -702,25 +690,14 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       _updateMediaControlsPlaybackState();
     });
 
-    // Listen to position updates for media controls and Discord
+    // Listen to position updates for media controls
     player!.streams.position.listen((position) {
       _mediaControlsManager?.updatePlaybackState(
         isPlaying: player!.state.playing,
         position: position,
         speed: player!.state.rate,
       );
-      DiscordRPCService.instance.updatePosition(position);
     });
-
-    // Listen to playback rate changes for Discord Rich Presence
-    player!.streams.rate.listen((rate) {
-      DiscordRPCService.instance.updatePlaybackSpeed(rate);
-    });
-
-    // Start Discord Rich Presence for current media
-    if (client != null) {
-      DiscordRPCService.instance.startPlayback(widget.metadata, client);
-    }
   }
 
   /// Ensure a play queue exists for sequential episode playback
@@ -828,7 +805,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       if (episodes.isEmpty) return;
 
       // Sort by season then episode number
-      final sorted = List<PlexMetadata>.from(episodes)
+      final sorted = List<MediaMetadata>.from(episodes)
         ..sort((a, b) {
           final seasonCmp = (a.parentIndex ?? 0).compareTo(b.parentIndex ?? 0);
           if (seasonCmp != 0) return seasonCmp;
@@ -877,7 +854,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
           final result = await client.tuneChannel(widget.liveDvrKey!, channel.key);
           if (result == null) throw Exception('Failed to tune channel');
 
-          streamUrl = '${client.baseUrl}${result.streamPath}'.withPlexToken(client.token);
+          streamUrl = '${client.baseUrl}${result.streamPath}'.withAuthToken(client.token);
 
           _liveSessionIdentifier = result.sessionIdentifier;
           _liveSessionPath = result.sessionPath;
@@ -913,7 +890,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
 
     try {
       PlaybackInitializationResult result;
-      Map<String, String>? plexHeaders;
+      Map<String, String>? requestHeaders;
 
       if (widget.isOffline) {
         // Offline mode: get video path from downloads without requiring server
@@ -921,12 +898,15 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       } else {
         // Online mode: use server-specific client
         final client = _getClientForMetadata(context);
-        plexHeaders = client.requestHeaders;
-        final playbackService = PlaybackInitializationService(client: client, database: PlexApiCache.instance.database);
+        requestHeaders = client.requestHeaders;
+        final settingsService = await SettingsService.getInstance();
+        final enableExternalSubtitles = settingsService.getEnableExternalSubtitles();
+        final playbackService = PlaybackInitializationService(client: client, database: ApiCache.instance.database);
         result = await playbackService.getPlaybackData(
           metadata: widget.metadata,
           selectedMediaIndex: widget.selectedMediaIndex,
           preferOffline: true, // Use downloaded file if available
+          enableExternalSubtitles: enableExternalSubtitles,
         );
       }
 
@@ -955,13 +935,10 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
             ? Duration(milliseconds: widget.metadata.viewOffset!)
             : null;
 
-        // If we have external subtitles, open paused to add them before playback starts.
-        // This prevents a race condition on Android where adding subtitle tracks
-        // during active playback can freeze the video decoder (issue #226).
-        final hasExternalSubs = result.externalSubtitles.isNotEmpty;
+        // Always start playing immediately; external subtitles load on demand when user selects one
         await player!.open(
-          Media(result.videoUrl!, start: resumePosition, headers: plexHeaders),
-          play: !hasExternalSubs,
+          Media(result.videoUrl!, start: resumePosition, headers: requestHeaders),
+          play: true,
         );
 
         // Apply subtitle styling to ExoPlayer native layer (CaptionStyleCompat + libass font scale)
@@ -979,31 +956,41 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
           );
         }
 
-        // Attach player to Watch Together session for sync (if in session)
-        if (mounted && !widget.isOffline) {
-          _attachToWatchTogetherSession();
-          _notifyWatchTogetherMediaChange();
-        }
       }
 
       // Update available versions from the playback data
       if (mounted) {
         setState(() {
           _availableVersions = result.availableVersions.cast();
+          _availableExternalSubtitles = result.externalSubtitles;
           _currentMediaInfo = result.mediaInfo;
           _hasThumbnails = false;
         });
 
-        // Check whether any thumbnails exist by requesting the first one
-        if (_currentMediaInfo?.partId != null && !widget.isOffline) {
-          final partId = _currentMediaInfo!.partId!;
-          final client = _getClientForMetadata(context);
-          client.checkThumbnailsAvailable(partId).then((available) {
-            // Guard against media having changed while the probe was in flight
-            if (mounted && _currentMediaInfo?.partId == partId) {
-              setState(() => _hasThumbnails = available);
+        // Check whether timeline thumbnails exist
+        if (!widget.isOffline) {
+          if (_currentMediaInfo?.partId != null) {
+            // Plex: probe part for thumbnails
+            final partId = _currentMediaInfo!.partId!;
+            final client = _getClientForMetadata(context);
+            client.checkThumbnailsAvailable(partId).then((available) {
+              if (mounted && _currentMediaInfo?.partId == partId) {
+                setState(() => _hasThumbnails = available);
+              }
+            });
+          } else {
+            // Jellyfin: only enable trickplay if the setting is on and the server has data
+            final jellyfinClient = _getClientForMetadata(context);
+            final trickplayEnabled = (await SettingsService.getInstance()).getEnableTrickplay();
+            if (trickplayEnabled) {
+              final itemId = widget.metadata.ratingKey;
+              jellyfinClient.checkTrickplayAvailable(itemId).then((available) {
+                if (mounted) {
+                  setState(() => _hasThumbnails = available);
+                }
+              });
             }
-          });
+          }
         }
 
         // Initialize video PIP and filter manager with player and available versions
@@ -1035,26 +1022,15 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
           }
         }
 
-        // Add external subtitles while paused, then start playback
-        if (result.externalSubtitles.isNotEmpty) {
-          _hasFirstFrame.value = false;
-          _waitingForExternalSubsTrackSelection = true;
+        // Always wait for tracks then apply selection; external subs load on demand when user picks one
+        _trackLoadingSubscription?.cancel();
+        _trackLoadingSubscription = player!.streams.tracks.listen((tracks) {
+          if (tracks.audio.isEmpty && tracks.subtitle.isEmpty) return;
 
-          try {
-            await _addExternalSubtitles(result.externalSubtitles);
-          } finally {
-            await _resumeAfterSubtitleLoad();
-          }
-        } else {
           _trackLoadingSubscription?.cancel();
-          _trackLoadingSubscription = player!.streams.tracks.listen((tracks) {
-            if (tracks.audio.isEmpty && tracks.subtitle.isEmpty) return;
-
-            _trackLoadingSubscription?.cancel();
-            _trackLoadingSubscription = null;
-            _applyTrackSelection();
-          });
-        }
+          _trackLoadingSubscription = null;
+          _applyTrackSelection();
+        });
       }
     } on PlaybackException catch (e) {
       if (mounted) {
@@ -1065,27 +1041,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
       }
     }
-  }
-
-  /// Resume playback after external subtitles have been loaded (or failed to load).
-  Future<void> _resumeAfterSubtitleLoad() async {
-    if (player == null || !mounted) return;
-
-    await player!.play();
-    final pos = player!.state.position;
-    try {
-      await player!.seek(pos.inMilliseconds > 0 ? pos : Duration.zero);
-    } catch (e) {
-      appLogger.w('Non-critical seek after subtitle load failed', error: e);
-    }
-
-    // Fallback if playbackRestart doesn't fire
-    Future.delayed(const Duration(seconds: 3), () {
-      if (_waitingForExternalSubsTrackSelection && mounted) {
-        _waitingForExternalSubsTrackSelection = false;
-        _applyTrackSelection();
-      }
-    });
   }
 
   /// Start playback for offline/downloaded content
@@ -1206,180 +1161,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     });
   }
 
-  /// Attach player to Watch Together session for playback sync
-  void _attachToWatchTogetherSession() {
-    try {
-      final watchTogether = context.read<WatchTogetherProvider>();
-      _watchTogetherProvider = watchTogether; // Store reference for use in dispose
-      if (watchTogether.isInSession && player != null) {
-        watchTogether.attachPlayer(player!);
-        appLogger.d('WatchTogether: Player attached for sync');
-
-        // If guest, handle mediaSwitch internally for proper navigation context
-        if (!watchTogether.isHost) {
-          watchTogether.onPlayerMediaSwitched = _handlePlayerMediaSwitch;
-        }
-      }
-    } catch (e) {
-      // Watch together provider not available or not in session - non-critical
-      appLogger.d('Could not attach player to watch together', error: e);
-    }
-  }
-
-  /// Detach player from Watch Together session
-  void _detachFromWatchTogetherSession() {
-    try {
-      final watchTogether = _watchTogetherProvider ?? context.read<WatchTogetherProvider>();
-      if (watchTogether.isInSession) {
-        watchTogether.detachPlayer();
-        appLogger.d('WatchTogether: Player detached');
-      }
-      watchTogether.onPlayerMediaSwitched = null; // Always clear player callback
-    } catch (e) {
-      // Non-critical
-      appLogger.d('Could not detach player from watch together', error: e);
-    }
-  }
-
-  /// Check if episode navigation controls should be enabled
-  /// Returns true if not in Watch Together session, or if user is the host
-  bool _canNavigateEpisodes() {
-    if (_watchTogetherProvider == null) return true;
-    if (!_watchTogetherProvider!.isInSession) return true;
-    return _watchTogetherProvider!.isHost;
-  }
-
-  /// Notify watch together session of current media change (host only)
-  /// If [metadata] is provided, uses that instead of widget.metadata (for episode navigation)
-  void _notifyWatchTogetherMediaChange({PlexMetadata? metadata}) {
-    final targetMetadata = metadata ?? widget.metadata;
-    try {
-      final watchTogether = context.read<WatchTogetherProvider>();
-      if (watchTogether.isHost && watchTogether.isInSession) {
-        watchTogether.setCurrentMedia(
-          ratingKey: targetMetadata.ratingKey,
-          serverId: targetMetadata.serverId!,
-          mediaTitle: targetMetadata.title,
-        );
-      }
-    } catch (e) {
-      // Watch together provider not available or not in session - non-critical
-      appLogger.d('Could not notify watch together of media change', error: e);
-    }
-  }
-
-  /// Handle media switch from host (guest only)
-  /// Uses VideoPlayerScreen's context for proper navigation (pushReplacement)
-  Future<void> _handlePlayerMediaSwitch(String ratingKey, String serverId, String title) async {
-    if (!mounted) return;
-
-    appLogger.d('WatchTogether: Guest handling media switch to $title');
-
-    // Fetch metadata for the new episode
-    final multiServer = context.read<MultiServerProvider>();
-    final client = multiServer.getClientForServer(serverId);
-    if (client == null) {
-      appLogger.w('WatchTogether: Server $serverId not found for media switch');
-      return;
-    }
-
-    final metadata = await client.getMetadataWithImages(ratingKey);
-    if (metadata == null || !mounted) {
-      appLogger.w('WatchTogether: Could not fetch metadata for $ratingKey');
-      return;
-    }
-
-    // Detach and dispose current player before switching to avoid sync calls on a disposed instance
-    await disposePlayerForNavigation();
-    if (!mounted) return;
-
-    // Use same navigation as local episode change (pushReplacement from player context)
-    _isReplacingWithVideo = true;
-    navigateToVideoPlayer(context, metadata: metadata, usePushReplacement: true);
-  }
-
-  void _setupCompanionRemoteCallbacks() {
-    final receiver = CompanionRemoteReceiver.instance;
-    receiver.onStop = () {
-      if (mounted) _handleBackButton();
-    };
-    receiver.onNextTrack = () {
-      if (mounted && _nextEpisode != null) _playNext();
-    };
-    receiver.onPreviousTrack = () {
-      if (mounted && _previousEpisode != null) _playPrevious();
-    };
-    receiver.onSeekForward = () async {
-      if (player == null) return;
-      final settings = await SettingsService.getInstance();
-      seekWithClamping(player!, Duration(seconds: settings.getSeekTimeSmall()));
-    };
-    receiver.onSeekBackward = () async {
-      if (player == null) return;
-      final settings = await SettingsService.getInstance();
-      seekWithClamping(player!, Duration(seconds: -settings.getSeekTimeSmall()));
-    };
-    receiver.onVolumeUp = () async {
-      if (player == null) return;
-      final settings = await SettingsService.getInstance();
-      final maxVol = settings.getMaxVolume().toDouble();
-      final newVolume = (player!.state.volume + 10).clamp(0.0, maxVol);
-      player!.setVolume(newVolume);
-      settings.setVolume(newVolume);
-    };
-    receiver.onVolumeDown = () async {
-      if (player == null) return;
-      final settings = await SettingsService.getInstance();
-      final maxVol = settings.getMaxVolume().toDouble();
-      final newVolume = (player!.state.volume - 10).clamp(0.0, maxVol);
-      player!.setVolume(newVolume);
-      settings.setVolume(newVolume);
-    };
-    receiver.onVolumeMute = () async {
-      if (player == null) return;
-      final settings = await SettingsService.getInstance();
-      final newVolume = player!.state.volume > 0 ? 0.0 : 100.0;
-      player!.setVolume(newVolume);
-      settings.setVolume(newVolume);
-    };
-    receiver.onSubtitles = _cycleSubtitleTrack;
-    receiver.onAudioTracks = _cycleAudioTrack;
-    receiver.onFullscreen = _toggleFullscreen;
-
-    // Override home to exit the player first (main screen handler runs after pop)
-    _savedOnHome = receiver.onHome;
-    receiver.onHome = () {
-      if (mounted) _handleBackButton();
-    };
-
-    // Store provider reference for use in dispose and notify remote
-    try {
-      _companionRemoteProvider = context.read<CompanionRemoteProvider>();
-      _companionRemoteProvider!.sendCommand(RemoteCommandType.syncState, data: {'playerActive': true});
-    } catch (_) {}
-  }
-
-  void _cleanupCompanionRemoteCallbacks() {
-    final receiver = CompanionRemoteReceiver.instance;
-    receiver.onStop = null;
-    receiver.onNextTrack = null;
-    receiver.onPreviousTrack = null;
-    receiver.onSeekForward = null;
-    receiver.onSeekBackward = null;
-    receiver.onVolumeUp = null;
-    receiver.onVolumeDown = null;
-    receiver.onVolumeMute = null;
-    receiver.onSubtitles = null;
-    receiver.onAudioTracks = null;
-    receiver.onFullscreen = null;
-    receiver.onHome = _savedOnHome;
-    _savedOnHome = null;
-
-    // Notify remote that player is no longer active
-    _companionRemoteProvider?.sendCommand(RemoteCommandType.syncState, data: {'playerActive': false});
-    _companionRemoteProvider = null;
-  }
-
   void _cycleSubtitleTrack() {
     if (player == null) return;
     final tracks = player!.state.tracks.subtitle.where((t) => t.id != 'auto').toList();
@@ -1438,37 +1219,12 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     }
   }
 
-  /// Handle back button press
-  /// For non-host participants in Watch Together, shows leave session confirmation
   Future<void> _handleBackButton() async {
     if (_isHandlingBack) return;
     _isHandlingBack = true;
     try {
-      // For non-host participants, show leave session confirmation
-      if (_watchTogetherProvider != null && _watchTogetherProvider!.isInSession && !_watchTogetherProvider!.isHost) {
-        final confirmed = await showConfirmDialog(
-          context,
-          title: 'Leave Session?',
-          message: 'You will be removed from the session.',
-          confirmText: 'Leave',
-          isDestructive: true,
-        );
-
-        if (confirmed && mounted) {
-          await _watchTogetherProvider!.leaveSession();
-          if (mounted) {
-            await _exitFullscreenIfNeeded();
-            if (!mounted) return;
-            _isExiting.value = true;
-            Navigator.of(context).pop(true);
-          }
-        }
-        return;
-      }
-
       await _exitFullscreenIfNeeded();
 
-      // Default behavior for hosts or non-session users
       if (!mounted) return;
       _isExiting.value = true;
       Navigator.of(context).pop(true);
@@ -1481,22 +1237,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   void dispose() {
     // Unregister app lifecycle observer
     WidgetsBinding.instance.removeObserver(this);
-
-    // Clean up companion remote playback callbacks
-    _cleanupCompanionRemoteCallbacks();
-
-    // Notify Watch Together guests that host is exiting the player
-    // Use stored reference since context.read() may fail in dispose
-    // Skip if replacing with another video (episode navigation)
-    if (!_isReplacingWithVideo &&
-        _watchTogetherProvider != null &&
-        _watchTogetherProvider!.isHost &&
-        _watchTogetherProvider!.isInSession) {
-      _watchTogetherProvider!.notifyHostExitedPlayer();
-    }
-
-    // Detach from Watch Together session
-    _detachFromWatchTogetherSession();
 
     // Dispose value notifiers
     _isBuffering.dispose();
@@ -1544,9 +1284,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     // Clear media controls and dispose manager
     _mediaControlsManager?.clear();
     _mediaControlsManager?.dispose();
-
-    // Clear Discord Rich Presence
-    DiscordRPCService.instance.stopPlayback();
 
     // Clear frame rate matching and abandon audio focus before disposing player (Android only)
     if (Platform.isAndroid && player != null) {
@@ -1617,12 +1354,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     // Update OS media controls playback state
     _updateMediaControlsPlaybackState();
 
-    // Update Discord Rich Presence
-    if (isPlaying) {
-      DiscordRPCService.instance.resumePlayback();
-    } else {
-      DiscordRPCService.instance.pausePlayback();
-    }
   }
 
   void _onVideoCompleted(bool completed) async {
@@ -1692,9 +1423,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     // Cancel auto-play timer if running
     _autoPlayTimer?.cancel();
 
-    // Notify Watch Together of episode change before navigating
-    _notifyWatchTogetherMediaChange(metadata: _nextEpisode);
-
     setState(() {
       _isLoadingNext = true;
       _showPlayNextDialog = false;
@@ -1705,9 +1433,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
 
   Future<void> _playPrevious() async {
     if (_previousEpisode == null) return;
-
-    // Notify Watch Together of episode change before navigating
-    _notifyWatchTogetherMediaChange(metadata: _previousEpisode);
 
     await _navigateToEpisode(_previousEpisode!);
   }
@@ -1817,7 +1542,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       final result = await client.tuneChannel(serverInfo.dvrKey, channel.key);
       if (result == null || !mounted) return;
 
-      final streamUrl = '${client.baseUrl}${result.streamPath}'.withPlexToken(client.token);
+      final streamUrl = '${client.baseUrl}${result.streamPath}'.withAuthToken(client.token);
 
       await _setLiveStreamOptions();
       await player!.open(Media(streamUrl, headers: const {'Accept-Language': 'en'}), play: true, isLive: true);
@@ -1886,7 +1611,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       player: player!,
       profileSettings: profileSettings,
       metadata: widget.metadata,
-      plexMediaInfo: _currentMediaInfo,
+      mediaInfo: _currentMediaInfo,
     );
 
     await trackService.selectAndApplyTracks(
@@ -1920,19 +1645,19 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     int? streamID;
 
     // === Matching by attributes ===
-    PlexAudioTrack? matched;
-    final normalizedTrackLang = _iso6391ToPlex6392(track.language);
+    MediaAudioTrack? matched;
+    final normalizedTrackLang = _iso6391To6392(track.language);
 
     appLogger.d('Normalized media_kit language: ${track.language} -> $normalizedTrackLang');
 
-    for (final plexTrack in _currentMediaInfo!.audioTracks) {
-      final matchLang = plexTrack.languageCode == normalizedTrackLang;
+      for (final serverTrack in _currentMediaInfo!.audioTracks) {
+      final matchLang = serverTrack.languageCode == normalizedTrackLang;
       final matchTitle = (track.title == null || track.title!.isEmpty)
           ? true
-          : (plexTrack.displayTitle == track.title || plexTrack.title == track.title);
+          : (serverTrack.displayTitle == track.title || serverTrack.title == track.title);
 
       if (matchLang && matchTitle) {
-        matched = plexTrack;
+        matched = serverTrack;
         appLogger.d('Matched audio by lang/title: streamID ${matched.id}');
         break;
       }
@@ -1943,13 +1668,13 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       appLogger.d('Matched audio by lang/title: streamID $streamID');
     } else {
       // Use property-based matching from track_selection_service
-      final matchedPlex = findPlexTrackForMpvAudio(track, _currentMediaInfo!.audioTracks);
+      final matchedServerTrack = findServerTrackForMpvAudio(track, _currentMediaInfo!.audioTracks);
 
-      if (matchedPlex != null) {
-        streamID = matchedPlex.id;
+      if (matchedServerTrack != null) {
+        streamID = matchedServerTrack.id;
         appLogger.d('Matched audio by properties: streamID $streamID');
       } else {
-        appLogger.e('Could not match audio track to any Plex track');
+        appLogger.e('Could not match audio track to any server track');
       }
     }
 
@@ -2011,23 +1736,23 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       languageCode = track.language;
 
       // === Matching by attributes ===
-      PlexSubtitleTrack? matched;
-      final normalizedTrackLang = _iso6391ToPlex6392(track.language);
+      MediaSubtitleTrack? matched;
+      final normalizedTrackLang = _iso6391To6392(track.language);
 
       appLogger.d('Normalized media_kit language: ${track.language} -> $normalizedTrackLang');
 
-      for (final plexTrack in _currentMediaInfo!.subtitleTracks) {
-        final matchLang = plexTrack.languageCode == normalizedTrackLang;
+      for (final serverTrack in _currentMediaInfo!.subtitleTracks) {
+        final matchLang = serverTrack.languageCode == normalizedTrackLang;
         final matchTitle = (track.title == null || track.title!.isEmpty)
             ? true
-            : (plexTrack.displayTitle == track.title || plexTrack.title == track.title);
+            : (serverTrack.displayTitle == track.title || serverTrack.title == track.title);
 
-        appLogger.d('Comparing with streamID ${plexTrack.id}:');
-        appLogger.d('  matchLang: $matchLang (${plexTrack.languageCode} == $normalizedTrackLang)');
+        appLogger.d('Comparing with streamID ${serverTrack.id}:');
+        appLogger.d('  matchLang: $matchLang (${serverTrack.languageCode} == $normalizedTrackLang)');
         appLogger.d('  matchTitle: $matchTitle');
 
         if (matchLang && matchTitle) {
-          matched = plexTrack;
+          matched = serverTrack;
           appLogger.d('  ✅ MATCHED!');
           break;
         }
@@ -2038,13 +1763,13 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         appLogger.d('Matched subtitle by lang/title: streamID $streamID');
       } else {
         // Use property-based matching from track_selection_service
-        final matchedPlex = findPlexTrackForMpvSubtitle(track, _currentMediaInfo!.subtitleTracks);
+        final matchedServerTrack = findServerTrackForMpvSubtitle(track, _currentMediaInfo!.subtitleTracks);
 
-        if (matchedPlex != null) {
-          streamID = matchedPlex.id;
+        if (matchedServerTrack != null) {
+          streamID = matchedServerTrack.id;
           appLogger.d('Matched subtitle by properties: streamID $streamID');
         } else {
-          appLogger.e('Could not match subtitle track to any Plex track');
+          appLogger.e('Could not match subtitle track to any server track');
         }
       }
     }
@@ -2087,12 +1812,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   }
 
   /// Navigates to a new episode, preserving playback state and track selections
-  Future<void> _navigateToEpisode(PlexMetadata episodeMetadata) async {
+  Future<void> _navigateToEpisode(MediaMetadata episodeMetadata) async {
     // Set flag to skip orientation restoration in dispose()
     _isReplacingWithVideo = true;
-
-    // Clear Discord Rich Presence before switching episodes
-    DiscordRPCService.instance.stopPlayback();
 
     // If player isn't available, navigate without preserving settings
     if (player == null) {
@@ -2153,7 +1875,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     _isExiting.value = true; // Show black overlay during transition
 
     try {
-      _detachFromWatchTogetherSession();
       await _progressTracker?.sendProgress('stopped');
       _progressTracker?.stopTracking();
       // Clear frame rate matching before disposing (Android only)
@@ -2287,33 +2008,23 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
                       }
                     });
 
-                    // Compute canControl from Watch Together provider (reactive)
-                    bool canControl = true;
-                    try {
-                      canControl = context.select<WatchTogetherProvider, bool>(
-                        (wt) => wt.isInSession ? wt.canControl() : true,
-                      );
-                    } catch (e) {
-                      // Watch Together not available, default to can control
-                    }
-
                     VoidCallback? onNext;
                     if (widget.isLive) {
                       onNext = _hasNextChannel ? () => _switchLiveChannel(1) : null;
                     } else {
-                      onNext = (_nextEpisode != null && _canNavigateEpisodes()) ? _playNext : null;
+                      onNext = _nextEpisode != null ? _playNext : null;
                     }
 
                     VoidCallback? onPrevious;
                     if (widget.isLive) {
                       onPrevious = _hasPreviousChannel ? () => _switchLiveChannel(-1) : null;
                     } else {
-                      onPrevious = (_previousEpisode != null && _canNavigateEpisodes()) ? _playPrevious : null;
+                      onPrevious = _previousEpisode != null ? _playPrevious : null;
                     }
 
                     return Video(
                       player: player!,
-                      controls: (context) => plexVideoControlsBuilder(
+                      controls: (context) => appVideoControlsBuilder(
                         player!,
                         widget.metadata,
                         onNext: onNext,
@@ -2325,28 +2036,16 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
                         onCycleBoxFitMode: _cycleBoxFitMode,
                         onAudioTrackChanged: _onAudioTrackChanged,
                         onSubtitleTrackChanged: _onSubtitleTrackChanged,
-                        onSeekCompleted: (position) {
-                          // Notify Watch Together of seek for sync
-                          // Note: canControl() check is done in sync manager, not here
-                          // This matches play/pause behavior and avoids timing issues
-                          try {
-                            final watchTogether = this.context.read<WatchTogetherProvider>();
-                            if (watchTogether.isInSession) {
-                              watchTogether.onLocalSeek(position);
-                            }
-                          } catch (e) {
-                            // Watch Together not available, ignore
-                          }
-                        },
+                        availableExternalSubtitles: _availableExternalSubtitles,
+                        onExternalSubtitleSelected: _onExternalSubtitleSelected,
                         onBack: _handleBackButton,
-                        canControl: canControl,
                         hasFirstFrame: _hasFirstFrame,
                         playNextFocusNode: _showPlayNextDialog ? _playNextConfirmFocusNode : null,
                         controlsVisible: _controlsVisible,
                         shaderService: _shaderService,
                         // ignore: no-empty-block - setState triggers rebuild to reflect shader change
                         onShaderChanged: () => setState(() {}),
-                        thumbnailUrlBuilder: _hasThumbnails && _currentMediaInfo?.partId != null
+                        thumbnailUrlBuilder: _hasThumbnails
                             ? (Duration time) => _buildThumbnailUrl(context, time)!
                             : null,
                         isLive: widget.isLive,
@@ -2568,43 +2267,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
                   );
                 },
               ),
-              // Watch Together: reconnecting to host overlay
-              Consumer<WatchTogetherProvider>(
-                builder: (context, provider, child) {
-                  if (!provider.isWaitingForHostReconnect) return const SizedBox.shrink();
-                  return Positioned(
-                    bottom: 120,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.all(Radius.circular(20)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              t.watchTogether.reconnectingToHost,
-                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              // Watch Together: participant join/leave notifications
-              const ParticipantNotificationOverlay(),
               // Black overlay during exit (no spinner - just covers transparency)
               ValueListenableBuilder<bool>(
                 valueListenable: _isExiting,

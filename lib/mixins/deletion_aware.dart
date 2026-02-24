@@ -10,7 +10,7 @@ import '../utils/deletion_notifier.dart';
 /// Example usage:
 /// ```dart
 /// class _MyScreenState extends State<MyScreen> with DeletionAware {
-///   List<PlexMetadata> _items = [];
+///   List<MediaMetadata> _items = [];
 ///
 ///   @override
 ///   Set<String>? get deletionRatingKeys =>

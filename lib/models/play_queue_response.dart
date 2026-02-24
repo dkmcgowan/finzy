@@ -1,9 +1,9 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'plex_metadata.dart';
+import 'media_metadata.dart';
 
 part 'play_queue_response.g.dart';
 
-/// Converter to handle both int (0/1) and bool values from Plex API
+/// Converter to handle both int (0/1) and bool values from server API
 class BoolOrIntConverter implements JsonConverter<bool, Object> {
   const BoolOrIntConverter();
 
@@ -19,7 +19,7 @@ class BoolOrIntConverter implements JsonConverter<bool, Object> {
   Object toJson(bool object) => object;
 }
 
-/// Response from Plex play queue API
+/// Response from server play queue API
 /// Contains queue metadata and a window of items
 @JsonSerializable(createToJson: false)
 class PlayQueueResponse {
@@ -34,7 +34,7 @@ class PlayQueueResponse {
   final int playQueueVersion;
   final int? size; // Number of items in this response window
   @JsonKey(name: 'Metadata')
-  final List<PlexMetadata>? items;
+  final List<MediaMetadata>? items;
 
   PlayQueueResponse({
     required this.playQueueID,
@@ -77,7 +77,7 @@ class PlayQueueResponse {
   }
 
   /// Get the current selected item from the queue
-  PlexMetadata? get selectedItem {
+  MediaMetadata? get selectedItem {
     if (items == null || playQueueSelectedItemID == null) return null;
     try {
       return items!.firstWhere((item) => item.playQueueItemID == playQueueSelectedItemID);

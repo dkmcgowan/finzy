@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../i18n/strings.g.dart';
-import '../../models/plex_home_user.dart';
+import '../../models/home_user.dart';
 import '../../theme/mono_tokens.dart';
 import 'user_avatar_widget.dart';
 
 enum UserAttribute { admin, restricted, protected }
 
 class ProfileListTile extends StatelessWidget {
-  final PlexHomeUser user;
+  final HomeUser user;
   final VoidCallback onTap;
   final bool isCurrentUser;
   final bool showTrailingIcon;

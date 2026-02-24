@@ -71,7 +71,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final TranslationsLiveTvEn liveTv = TranslationsLiveTvEn._(_root);
 	late final TranslationsCollectionsEn collections = TranslationsCollectionsEn._(_root);
 	late final TranslationsPlaylistsEn playlists = TranslationsPlaylistsEn._(_root);
-	late final TranslationsWatchTogetherEn watchTogether = TranslationsWatchTogetherEn._(_root);
 	late final TranslationsDownloadsEn downloads = TranslationsDownloadsEn._(_root);
 	late final TranslationsShadersEn shaders = TranslationsShadersEn._(_root);
 	late final TranslationsCompanionRemoteEn companionRemote = TranslationsCompanionRemoteEn._(_root);
@@ -87,8 +86,8 @@ class TranslationsAppEn {
 
 	// Translations
 
-	/// en: 'Plezy'
-	String get title => 'Plezy';
+	/// en: 'Finzy'
+	String get title => 'Finzy';
 }
 
 // Path: auth
@@ -98,9 +97,6 @@ class TranslationsAuthEn {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
-
-	/// en: 'Sign in with Plex'
-	String get signInWithPlex => 'Sign in with Plex';
 
 	/// en: 'Sign in with Jellyfin'
 	String get signInWithJellyfin => 'Sign in with Jellyfin';
@@ -126,14 +122,14 @@ class TranslationsAuthEn {
 	/// en: 'Authenticate'
 	String get authenticate => 'Authenticate';
 
-	/// en: 'Debug: Enter Plex Token'
-	String get debugEnterToken => 'Debug: Enter Plex Token';
+	/// en: 'Debug: Enter token'
+	String get debugEnterToken => 'Debug: Enter token';
 
-	/// en: 'Plex Auth Token'
-	String get plexTokenLabel => 'Plex Auth Token';
+	/// en: 'Auth Token'
+	String get authTokenLabel => 'Auth Token';
 
-	/// en: 'Enter your Plex.tv token'
-	String get plexTokenHint => 'Enter your Plex.tv token';
+	/// en: 'Enter your token'
+	String get authTokenHint => 'Enter your token';
 
 	/// en: 'Authentication timed out. Please try again.'
 	String get authenticationTimeout => 'Authentication timed out. Please try again.';
@@ -447,11 +443,11 @@ class TranslationsSettingsEn {
 	/// en: 'Show Hero Section'
 	String get showHeroSection => 'Show Hero Section';
 
-	/// en: 'Use Plex Home Layout'
-	String get useGlobalHubs => 'Use Plex Home Layout';
+	/// en: 'Use Home Layout'
+	String get useGlobalHubs => 'Use Home Layout';
 
-	/// en: 'Show home page hubs like the official Plex client. When off, shows per-library recommendations instead.'
-	String get useGlobalHubsDescription => 'Show home page hubs like the official Plex client. When off, shows per-library recommendations instead.';
+	/// en: 'Combined home rows (Next Up, Movies, Shows) or one row per library.'
+	String get useGlobalHubsDescription => 'Combined home rows (Next Up, Movies, Shows) or one row per library.';
 
 	/// en: 'Show Server Name on Hubs'
 	String get showServerNameOnHubs => 'Show Server Name on Hubs';
@@ -459,8 +455,8 @@ class TranslationsSettingsEn {
 	/// en: 'Always display the server name in hub titles. When off, only shows for duplicate hub names.'
 	String get showServerNameOnHubsDescription => 'Always display the server name in hub titles. When off, only shows for duplicate hub names.';
 
-	/// en: 'Jellyfin Movie Recommendations'
-	String get showJellyfinRecommendations => 'Jellyfin Movie Recommendations';
+	/// en: 'Movie Recommendations'
+	String get showJellyfinRecommendations => 'Movie Recommendations';
 
 	/// en: 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab.'
 	String get showJellyfinRecommendationsDescription => 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab.';
@@ -525,14 +521,14 @@ class TranslationsSettingsEn {
 	/// en: '${minutes} minutes'
 	String minutesUnit({required Object minutes}) => '${minutes} minutes';
 
-	/// en: 'Remember track selections per show/movie'
-	String get rememberTrackSelections => 'Remember track selections per show/movie';
+	/// en: 'Remember Track Selections Per Show/Movie'
+	String get rememberTrackSelections => 'Remember Track Selections Per Show/Movie';
 
 	/// en: 'Automatically save audio and subtitle language preferences when you change tracks during playback'
 	String get rememberTrackSelectionsDescription => 'Automatically save audio and subtitle language preferences when you change tracks during playback';
 
-	/// en: 'Click on video to toggle play/pause'
-	String get clickVideoTogglesPlayback => 'Click on video to toggle play/pause';
+	/// en: 'Click on Video to Toggle Play/Pause'
+	String get clickVideoTogglesPlayback => 'Click on Video to Toggle Play/Pause';
 
 	/// en: 'If enabled, clicking on the video player will play/pause the video. Otherwise, clicking will show/hide the playback controls.'
 	String get clickVideoTogglesPlaybackDescription => 'If enabled, clicking on the video player will play/pause the video. Otherwise, clicking will show/hide the playback controls.';
@@ -564,14 +560,14 @@ class TranslationsSettingsEn {
 	/// en: 'View application logs'
 	String get viewLogsDescription => 'View application logs';
 
-	/// en: 'Clear Cache'
-	String get clearCache => 'Clear Cache';
+	/// en: 'Clear Cached Metadata'
+	String get clearCache => 'Clear Cached Metadata';
 
-	/// en: 'This will clear all cached images and data. The app may take longer to load content after clearing the cache.'
-	String get clearCacheDescription => 'This will clear all cached images and data. The app may take longer to load content after clearing the cache.';
+	/// en: 'Clears cached API metadata (items, playback info). Does not remove downloaded media or images.'
+	String get clearCacheDescription => 'Clears cached API metadata (items, playback info). Does not remove downloaded media or images.';
 
-	/// en: 'Cache cleared successfully'
-	String get clearCacheSuccess => 'Cache cleared successfully';
+	/// en: 'Metadata cache cleared'
+	String get clearCacheSuccess => 'Metadata cache cleared';
 
 	/// en: 'Reset Settings'
 	String get resetSettings => 'Reset Settings';
@@ -621,11 +617,47 @@ class TranslationsSettingsEn {
 	/// en: 'Automatically skip intro markers after a few seconds'
 	String get autoSkipIntroDescription => 'Automatically skip intro markers after a few seconds';
 
-	/// en: 'Auto Skip Credits'
-	String get autoSkipCredits => 'Auto Skip Credits';
+	/// en: 'Enable External Subtitles'
+	String get enableExternalSubtitles => 'Enable External Subtitles';
 
-	/// en: 'Automatically skip credits and play next episode'
-	String get autoSkipCreditsDescription => 'Automatically skip credits and play next episode';
+	/// en: 'Show external subtitle options in the player; they load when you select one.'
+	String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+
+	/// en: 'Enable Trickplay Thumbnails'
+	String get enableTrickplay => 'Enable Trickplay Thumbnails';
+
+	/// en: 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.'
+	String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
+
+	/// en: 'Enable Chapter Images'
+	String get enableChapterImages => 'Enable Chapter Images';
+
+	/// en: 'Show thumbnail images for chapters in the chapter list.'
+	String get enableChapterImagesDescription => 'Show thumbnail images for chapters in the chapter list.';
+
+	/// en: 'Auto Skip Outro'
+	String get autoSkipOutro => 'Auto Skip Outro';
+
+	/// en: 'Automatically skip outro segments'
+	String get autoSkipOutroDescription => 'Automatically skip outro segments';
+
+	/// en: 'Auto Skip Recap'
+	String get autoSkipRecap => 'Auto Skip Recap';
+
+	/// en: 'Automatically skip recap segments'
+	String get autoSkipRecapDescription => 'Automatically skip recap segments';
+
+	/// en: 'Auto Skip Preview'
+	String get autoSkipPreview => 'Auto Skip Preview';
+
+	/// en: 'Automatically skip preview segments'
+	String get autoSkipPreviewDescription => 'Automatically skip preview segments';
+
+	/// en: 'Auto Skip Ads'
+	String get autoSkipCommercial => 'Auto Skip Ads';
+
+	/// en: 'Automatically skip commercial/ad segments'
+	String get autoSkipCommercialDescription => 'Automatically skip commercial/ad segments';
 
 	/// en: 'Auto Skip Delay'
 	String get autoSkipDelay => 'Auto Skip Delay';
@@ -683,12 +715,6 @@ class TranslationsSettingsEn {
 
 	/// en: '${percent}%'
 	String maxVolumePercent({required Object percent}) => '${percent}%';
-
-	/// en: 'Discord Rich Presence'
-	String get discordRichPresence => 'Discord Rich Presence';
-
-	/// en: 'Show what you're watching on Discord'
-	String get discordRichPresenceDescription => 'Show what you\'re watching on Discord';
 
 	/// en: 'Match Content Frame Rate'
 	String get matchContentFrameRate => 'Match Content Frame Rate';
@@ -1218,15 +1244,6 @@ class TranslationsMessagesEn {
 
 	/// en: 'Switching to compatible player...'
 	String get switchingToCompatiblePlayer => 'Switching to compatible player...';
-
-	/// en: 'Logs uploaded'
-	String get logsUploaded => 'Logs uploaded';
-
-	/// en: 'Failed to upload logs'
-	String get logsUploadFailed => 'Failed to upload logs';
-
-	/// en: 'Log ID'
-	String get logId => 'Log ID';
 }
 
 // Path: subtitlingStyling
@@ -1387,6 +1404,9 @@ class TranslationsDiscoverEn {
 	/// en: 'Cast'
 	String get cast => 'Cast';
 
+	/// en: 'More Like This'
+	String get moreLikeThis => 'More Like This';
+
 	/// en: 'Trailers & Extras'
 	String get extras => 'Trailers & Extras';
 
@@ -1429,8 +1449,8 @@ class TranslationsErrorsEn {
 	/// en: 'Connection timeout while loading ${context}'
 	String connectionTimeout({required Object context}) => 'Connection timeout while loading ${context}';
 
-	/// en: 'Unable to connect to Plex server'
-	String get connectionFailed => 'Unable to connect to Plex server';
+	/// en: 'Unable to connect to server'
+	String get connectionFailed => 'Unable to connect to server';
 
 	/// en: 'Failed to load ${context}: ${error}'
 	String failedToLoad({required Object context, required Object error}) => 'Failed to load ${context}: ${error}';
@@ -1600,8 +1620,8 @@ class TranslationsAboutEn {
 	/// en: 'Version ${version}'
 	String versionLabel({required Object version}) => 'Version ${version}';
 
-	/// en: 'A beautiful Plex client for Flutter'
-	String get appDescription => 'A beautiful Plex client for Flutter';
+	/// en: 'A beautiful Jellyfin client'
+	String get appDescription => 'A beautiful Jellyfin client';
 
 	/// en: 'View licenses of third-party libraries'
 	String get viewLicensesDescription => 'View licenses of third-party libraries';
@@ -1662,9 +1682,6 @@ class TranslationsLogsEn {
 
 	/// en: 'Copy Logs'
 	String get copyLogs => 'Copy Logs';
-
-	/// en: 'Upload Logs'
-	String get uploadLogs => 'Upload Logs';
 
 	/// en: 'Error:'
 	String get error => 'Error:';
@@ -1994,153 +2011,6 @@ class TranslationsPlaylistsEn {
 	String get errorRemoving => 'Failed to remove from playlist';
 }
 
-// Path: watchTogether
-class TranslationsWatchTogetherEn {
-	TranslationsWatchTogetherEn._(this._root);
-
-	final Translations _root; // ignore: unused_field
-
-	// Translations
-
-	/// en: 'Watch Together'
-	String get title => 'Watch Together';
-
-	/// en: 'Watch content in sync with friends and family'
-	String get description => 'Watch content in sync with friends and family';
-
-	/// en: 'Create Session'
-	String get createSession => 'Create Session';
-
-	/// en: 'Creating...'
-	String get creating => 'Creating...';
-
-	/// en: 'Join Session'
-	String get joinSession => 'Join Session';
-
-	/// en: 'Joining...'
-	String get joining => 'Joining...';
-
-	/// en: 'Control Mode'
-	String get controlMode => 'Control Mode';
-
-	/// en: 'Who can control playback?'
-	String get controlModeQuestion => 'Who can control playback?';
-
-	/// en: 'Host Only'
-	String get hostOnly => 'Host Only';
-
-	/// en: 'Anyone'
-	String get anyone => 'Anyone';
-
-	/// en: 'Hosting Session'
-	String get hostingSession => 'Hosting Session';
-
-	/// en: 'In Session'
-	String get inSession => 'In Session';
-
-	/// en: 'Session Code'
-	String get sessionCode => 'Session Code';
-
-	/// en: 'Host controls playback'
-	String get hostControlsPlayback => 'Host controls playback';
-
-	/// en: 'Anyone can control playback'
-	String get anyoneCanControl => 'Anyone can control playback';
-
-	/// en: 'Host controls'
-	String get hostControls => 'Host controls';
-
-	/// en: 'Anyone controls'
-	String get anyoneControls => 'Anyone controls';
-
-	/// en: 'Participants'
-	String get participants => 'Participants';
-
-	/// en: 'Host'
-	String get host => 'Host';
-
-	/// en: 'HOST'
-	String get hostBadge => 'HOST';
-
-	/// en: 'You are the host'
-	String get youAreHost => 'You are the host';
-
-	/// en: 'Watching with others'
-	String get watchingWithOthers => 'Watching with others';
-
-	/// en: 'End Session'
-	String get endSession => 'End Session';
-
-	/// en: 'Leave Session'
-	String get leaveSession => 'Leave Session';
-
-	/// en: 'End Session?'
-	String get endSessionQuestion => 'End Session?';
-
-	/// en: 'Leave Session?'
-	String get leaveSessionQuestion => 'Leave Session?';
-
-	/// en: 'This will end the session for all participants.'
-	String get endSessionConfirm => 'This will end the session for all participants.';
-
-	/// en: 'You will be removed from the session.'
-	String get leaveSessionConfirm => 'You will be removed from the session.';
-
-	/// en: 'This will end the watch session for all participants.'
-	String get endSessionConfirmOverlay => 'This will end the watch session for all participants.';
-
-	/// en: 'You will be disconnected from the watch session.'
-	String get leaveSessionConfirmOverlay => 'You will be disconnected from the watch session.';
-
-	/// en: 'End'
-	String get end => 'End';
-
-	/// en: 'Leave'
-	String get leave => 'Leave';
-
-	/// en: 'Syncing...'
-	String get syncing => 'Syncing...';
-
-	/// en: 'Join Watch Session'
-	String get joinWatchSession => 'Join Watch Session';
-
-	/// en: 'Enter 8-character code'
-	String get enterCodeHint => 'Enter 8-character code';
-
-	/// en: 'Paste from clipboard'
-	String get pasteFromClipboard => 'Paste from clipboard';
-
-	/// en: 'Please enter a session code'
-	String get pleaseEnterCode => 'Please enter a session code';
-
-	/// en: 'Session code must be 8 characters'
-	String get codeMustBe8Chars => 'Session code must be 8 characters';
-
-	/// en: 'Enter the session code shared by the host to join their watch session.'
-	String get joinInstructions => 'Enter the session code shared by the host to join their watch session.';
-
-	/// en: 'Failed to create session'
-	String get failedToCreate => 'Failed to create session';
-
-	/// en: 'Failed to join session'
-	String get failedToJoin => 'Failed to join session';
-
-	/// en: 'Session code copied to clipboard'
-	String get sessionCodeCopied => 'Session code copied to clipboard';
-
-	/// en: 'The relay server is unreachable. This may be caused by your ISP blocking the connection. You can still try, but Watch Together may not work.'
-	String get relayUnreachable => 'The relay server is unreachable. This may be caused by your ISP blocking the connection. You can still try, but Watch Together may not work.';
-
-	/// en: 'Reconnecting to host...'
-	String get reconnectingToHost => 'Reconnecting to host...';
-
-	/// en: '${name} joined'
-	String participantJoined({required Object name}) => '${name} joined';
-
-	/// en: '${name} left'
-	String participantLeft({required Object name}) => '${name} left';
-}
-
 // Path: downloads
 class TranslationsDownloadsEn {
 	TranslationsDownloadsEn._(this._root);
@@ -2429,8 +2299,8 @@ class TranslationsVideoControlsPipErrorsEn {
 	/// en: 'Requires Android 8.0 or newer'
 	String get androidVersion => 'Requires Android 8.0 or newer';
 
-	/// en: 'Picture-in-picture permission is disabled. Enable it in Settings > Apps > Plezy > Picture-in-picture'
-	String get permissionDisabled => 'Picture-in-picture permission is disabled. Enable it in Settings > Apps > Plezy > Picture-in-picture';
+	/// en: 'Picture-in-picture permission is disabled. Enable it in Settings > Apps > Finzy > Picture-in-picture'
+	String get permissionDisabled => 'Picture-in-picture permission is disabled. Enable it in Settings > Apps > Finzy > Picture-in-picture';
 
 	/// en: 'Device doesn't support picture-in-picture mode'
 	String get notSupported => 'Device doesn\'t support picture-in-picture mode';
@@ -2594,8 +2464,8 @@ class TranslationsCompanionRemotePairingEn {
 	/// en: 'Tips'
 	String get tips => 'Tips';
 
-	/// en: 'Open Plezy on your desktop and enable Companion Remote from settings or menu'
-	String get tipDesktop => 'Open Plezy on your desktop and enable Companion Remote from settings or menu';
+	/// en: 'Open Finzy on your desktop and enable Companion Remote from settings or menu'
+	String get tipDesktop => 'Open Finzy on your desktop and enable Companion Remote from settings or menu';
 
 	/// en: 'Use the Scan tab to quickly pair by scanning the QR code on your desktop'
 	String get tipScan => 'Use the Scan tab to quickly pair by scanning the QR code on your desktop';
@@ -2762,8 +2632,7 @@ class TranslationsCompanionRemoteRemoteEn {
 extension on Translations {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
-			'app.title' => 'Plezy',
-			'auth.signInWithPlex' => 'Sign in with Plex',
+			'app.title' => 'Finzy',
 			'auth.signInWithJellyfin' => 'Sign in with Jellyfin',
 			'auth.jellyfinServerUrl' => 'Server URL',
 			'auth.jellyfinServerUrlHint' => 'https://your-jellyfin.example.com',
@@ -2772,9 +2641,9 @@ extension on Translations {
 			'auth.jellyfinSignIn' => 'Sign in',
 			'auth.showQRCode' => 'Show QR Code',
 			'auth.authenticate' => 'Authenticate',
-			'auth.debugEnterToken' => 'Debug: Enter Plex Token',
-			'auth.plexTokenLabel' => 'Plex Auth Token',
-			'auth.plexTokenHint' => 'Enter your Plex.tv token',
+			'auth.debugEnterToken' => 'Debug: Enter token',
+			'auth.authTokenLabel' => 'Auth Token',
+			'auth.authTokenHint' => 'Enter your token',
 			'auth.authenticationTimeout' => 'Authentication timed out. Please try again.',
 			'auth.scanQRToSignIn' => 'Scan this QR code to sign in',
 			'auth.waitingForAuth' => 'Waiting for authentication...\nPlease complete sign-in in your browser.',
@@ -2867,11 +2736,11 @@ extension on Translations {
 			'settings.listView' => 'List',
 			'settings.listViewDescription' => 'Display items in a list layout',
 			'settings.showHeroSection' => 'Show Hero Section',
-			'settings.useGlobalHubs' => 'Use Plex Home Layout',
-			'settings.useGlobalHubsDescription' => 'Show home page hubs like the official Plex client. When off, shows per-library recommendations instead.',
+			'settings.useGlobalHubs' => 'Use Home Layout',
+			'settings.useGlobalHubsDescription' => 'Combined home rows (Next Up, Movies, Shows) or one row per library.',
 			'settings.showServerNameOnHubs' => 'Show Server Name on Hubs',
 			'settings.showServerNameOnHubsDescription' => 'Always display the server name in hub titles. When off, only shows for duplicate hub names.',
-			'settings.showJellyfinRecommendations' => 'Jellyfin Movie Recommendations',
+			'settings.showJellyfinRecommendations' => 'Movie Recommendations',
 			'settings.showJellyfinRecommendationsDescription' => 'Show "Because you watched" and similar recommendation rows in movie library Recommend tab.',
 			'settings.alwaysKeepSidebarOpen' => 'Always Keep Sidebar Open',
 			'settings.alwaysKeepSidebarOpenDescription' => 'Sidebar stays expanded and content area adjusts to fit',
@@ -2893,9 +2762,9 @@ extension on Translations {
 			'settings.secondsUnit' => ({required Object seconds}) => '${seconds} seconds',
 			'settings.defaultSleepTimer' => 'Default Sleep Timer',
 			'settings.minutesUnit' => ({required Object minutes}) => '${minutes} minutes',
-			'settings.rememberTrackSelections' => 'Remember track selections per show/movie',
+			'settings.rememberTrackSelections' => 'Remember Track Selections Per Show/Movie',
 			'settings.rememberTrackSelectionsDescription' => 'Automatically save audio and subtitle language preferences when you change tracks during playback',
-			'settings.clickVideoTogglesPlayback' => 'Click on video to toggle play/pause',
+			'settings.clickVideoTogglesPlayback' => 'Click on Video to Toggle Play/Pause',
 			'settings.clickVideoTogglesPlaybackDescription' => 'If enabled, clicking on the video player will play/pause the video. Otherwise, clicking will show/hide the playback controls.',
 			'settings.videoPlayerControls' => 'Video Player Controls',
 			'settings.keyboardShortcuts' => 'Keyboard Shortcuts',
@@ -2906,9 +2775,9 @@ extension on Translations {
 			'settings.debugLoggingDescription' => 'Enable detailed logging for troubleshooting',
 			'settings.viewLogs' => 'View Logs',
 			'settings.viewLogsDescription' => 'View application logs',
-			'settings.clearCache' => 'Clear Cache',
-			'settings.clearCacheDescription' => 'This will clear all cached images and data. The app may take longer to load content after clearing the cache.',
-			'settings.clearCacheSuccess' => 'Cache cleared successfully',
+			'settings.clearCache' => 'Clear Cached Metadata',
+			'settings.clearCacheDescription' => 'Clears cached API metadata (items, playback info). Does not remove downloaded media or images.',
+			'settings.clearCacheSuccess' => 'Metadata cache cleared',
 			'settings.resetSettings' => 'Reset Settings',
 			'settings.resetSettingsDescription' => 'This will reset all settings to their default values. This action cannot be undone.',
 			'settings.resetSettingsSuccess' => 'Settings reset successfully',
@@ -2925,8 +2794,20 @@ extension on Translations {
 			'settings.autoSkip' => 'Auto Skip',
 			'settings.autoSkipIntro' => 'Auto Skip Intro',
 			'settings.autoSkipIntroDescription' => 'Automatically skip intro markers after a few seconds',
-			'settings.autoSkipCredits' => 'Auto Skip Credits',
-			'settings.autoSkipCreditsDescription' => 'Automatically skip credits and play next episode',
+			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
+			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
+			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
+			'settings.enableChapterImages' => 'Enable Chapter Images',
+			'settings.enableChapterImagesDescription' => 'Show thumbnail images for chapters in the chapter list.',
+			'settings.autoSkipOutro' => 'Auto Skip Outro',
+			'settings.autoSkipOutroDescription' => 'Automatically skip outro segments',
+			'settings.autoSkipRecap' => 'Auto Skip Recap',
+			'settings.autoSkipRecapDescription' => 'Automatically skip recap segments',
+			'settings.autoSkipPreview' => 'Auto Skip Preview',
+			'settings.autoSkipPreviewDescription' => 'Automatically skip preview segments',
+			'settings.autoSkipCommercial' => 'Auto Skip Ads',
+			'settings.autoSkipCommercialDescription' => 'Automatically skip commercial/ad segments',
 			'settings.autoSkipDelay' => 'Auto Skip Delay',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => 'Wait ${seconds} seconds before auto-skipping',
 			'settings.downloads' => 'Downloads',
@@ -2946,8 +2827,6 @@ extension on Translations {
 			'settings.maxVolume' => 'Maximum Volume',
 			'settings.maxVolumeDescription' => 'Allow volume boost above 100% for quiet media',
 			'settings.maxVolumePercent' => ({required Object percent}) => '${percent}%',
-			'settings.discordRichPresence' => 'Discord Rich Presence',
-			'settings.discordRichPresenceDescription' => 'Show what you\'re watching on Discord',
 			'settings.matchContentFrameRate' => 'Match Content Frame Rate',
 			'settings.matchContentFrameRateDescription' => 'Adjust display refresh rate to match video content, reducing judder and saving battery',
 			'settings.requireProfileSelectionOnOpen' => 'Ask for profile on app open',
@@ -3077,7 +2956,7 @@ extension on Translations {
 			'videoControls.endsAt' => ({required Object time}) => 'Ends at ${time}',
 			'videoControls.pipFailed' => 'Picture-in-picture failed to start',
 			'videoControls.pipErrors.androidVersion' => 'Requires Android 8.0 or newer',
-			'videoControls.pipErrors.permissionDisabled' => 'Picture-in-picture permission is disabled. Enable it in Settings > Apps > Plezy > Picture-in-picture',
+			'videoControls.pipErrors.permissionDisabled' => 'Picture-in-picture permission is disabled. Enable it in Settings > Apps > Finzy > Picture-in-picture',
 			'videoControls.pipErrors.notSupported' => 'Device doesn\'t support picture-in-picture mode',
 			'videoControls.pipErrors.failed' => 'Picture-in-picture failed to start',
 			'videoControls.pipErrors.unknown' => ({required Object error}) => 'An error occurred: ${error}',
@@ -3117,9 +2996,6 @@ extension on Translations {
 			'messages.failedToCreatePlayQueueNoItems' => 'Failed to create play queue - no items',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => 'Failed to ${action}: ${error}',
 			'messages.switchingToCompatiblePlayer' => 'Switching to compatible player...',
-			'messages.logsUploaded' => 'Logs uploaded',
-			'messages.logsUploadFailed' => 'Failed to upload logs',
-			'messages.logId' => 'Log ID',
 			'subtitlingStyling.stylingOptions' => 'Styling Options',
 			'subtitlingStyling.fontSize' => 'Font Size',
 			'subtitlingStyling.textColor' => 'Text Color',
@@ -3161,6 +3037,7 @@ extension on Translations {
 			'discover.playEpisode' => ({required Object season, required Object episode}) => 'S${season}E${episode}',
 			'discover.overview' => 'Overview',
 			'discover.cast' => 'Cast',
+			'discover.moreLikeThis' => 'More Like This',
 			'discover.extras' => 'Trailers & Extras',
 			'discover.seasons' => 'Seasons',
 			'discover.studio' => 'Studio',
@@ -3172,7 +3049,7 @@ extension on Translations {
 			'discover.minutesLeft' => ({required Object minutes}) => '${minutes} min left',
 			'errors.searchFailed' => ({required Object error}) => 'Search failed: ${error}',
 			'errors.connectionTimeout' => ({required Object context}) => 'Connection timeout while loading ${context}',
-			'errors.connectionFailed' => 'Unable to connect to Plex server',
+			'errors.connectionFailed' => 'Unable to connect to server',
 			'errors.failedToLoad' => ({required Object context, required Object error}) => 'Failed to load ${context}: ${error}',
 			'errors.noClientAvailable' => 'No client available',
 			'errors.authenticationFailed' => ({required Object error}) => 'Authentication failed: ${error}',
@@ -3234,7 +3111,7 @@ extension on Translations {
 			'about.title' => 'About',
 			'about.openSourceLicenses' => 'Open Source Licenses',
 			'about.versionLabel' => ({required Object version}) => 'Version ${version}',
-			'about.appDescription' => 'A beautiful Plex client for Flutter',
+			'about.appDescription' => 'A beautiful Jellyfin client',
 			'about.viewLicensesDescription' => 'View licenses of third-party libraries',
 			'serverSelection.allServerConnectionsFailed' => 'Failed to connect to any servers. Please check your network and try again.',
 			'serverSelection.noServersFoundForAccount' => ({required Object username, required Object email}) => 'No servers found for ${username} (${email})',
@@ -3246,7 +3123,6 @@ extension on Translations {
 			'hubDetail.noItemsFound' => 'No items found',
 			'logs.clearLogs' => 'Clear Logs',
 			'logs.copyLogs' => 'Copy Logs',
-			'logs.uploadLogs' => 'Upload Logs',
 			'logs.error' => 'Error:',
 			'logs.stackTrace' => 'Stack Trace:',
 			'licenses.relatedPackages' => 'Related Packages',
@@ -3268,6 +3144,8 @@ extension on Translations {
 			'liveTv.loading' => 'Loading channels...',
 			'liveTv.nowPlaying' => 'Now Playing',
 			'liveTv.record' => 'Record',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordSeries' => 'Record Series',
 			'liveTv.cancelRecording' => 'Cancel Recording',
 			'liveTv.deleteSubscription' => 'Delete Recording Rule',
@@ -3277,8 +3155,6 @@ extension on Translations {
 			'liveTv.noRecordings' => 'No recordings scheduled',
 			'liveTv.noSubscriptions' => 'No recording rules',
 			'liveTv.channelNumber' => ({required Object number}) => 'Ch. ${number}',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
 			'liveTv.premiere' => 'NEW',
@@ -3343,52 +3219,6 @@ extension on Translations {
 			'playlists.errorAdding' => 'Failed to add to playlist',
 			'playlists.errorReordering' => 'Failed to reorder playlist item',
 			'playlists.errorRemoving' => 'Failed to remove from playlist',
-			'watchTogether.title' => 'Watch Together',
-			'watchTogether.description' => 'Watch content in sync with friends and family',
-			'watchTogether.createSession' => 'Create Session',
-			'watchTogether.creating' => 'Creating...',
-			'watchTogether.joinSession' => 'Join Session',
-			'watchTogether.joining' => 'Joining...',
-			'watchTogether.controlMode' => 'Control Mode',
-			'watchTogether.controlModeQuestion' => 'Who can control playback?',
-			'watchTogether.hostOnly' => 'Host Only',
-			'watchTogether.anyone' => 'Anyone',
-			'watchTogether.hostingSession' => 'Hosting Session',
-			'watchTogether.inSession' => 'In Session',
-			'watchTogether.sessionCode' => 'Session Code',
-			'watchTogether.hostControlsPlayback' => 'Host controls playback',
-			'watchTogether.anyoneCanControl' => 'Anyone can control playback',
-			'watchTogether.hostControls' => 'Host controls',
-			'watchTogether.anyoneControls' => 'Anyone controls',
-			'watchTogether.participants' => 'Participants',
-			'watchTogether.host' => 'Host',
-			'watchTogether.hostBadge' => 'HOST',
-			'watchTogether.youAreHost' => 'You are the host',
-			'watchTogether.watchingWithOthers' => 'Watching with others',
-			'watchTogether.endSession' => 'End Session',
-			'watchTogether.leaveSession' => 'Leave Session',
-			'watchTogether.endSessionQuestion' => 'End Session?',
-			'watchTogether.leaveSessionQuestion' => 'Leave Session?',
-			'watchTogether.endSessionConfirm' => 'This will end the session for all participants.',
-			'watchTogether.leaveSessionConfirm' => 'You will be removed from the session.',
-			'watchTogether.endSessionConfirmOverlay' => 'This will end the watch session for all participants.',
-			'watchTogether.leaveSessionConfirmOverlay' => 'You will be disconnected from the watch session.',
-			'watchTogether.end' => 'End',
-			'watchTogether.leave' => 'Leave',
-			'watchTogether.syncing' => 'Syncing...',
-			'watchTogether.joinWatchSession' => 'Join Watch Session',
-			'watchTogether.enterCodeHint' => 'Enter 8-character code',
-			'watchTogether.pasteFromClipboard' => 'Paste from clipboard',
-			'watchTogether.pleaseEnterCode' => 'Please enter a session code',
-			'watchTogether.codeMustBe8Chars' => 'Session code must be 8 characters',
-			'watchTogether.joinInstructions' => 'Enter the session code shared by the host to join their watch session.',
-			'watchTogether.failedToCreate' => 'Failed to create session',
-			'watchTogether.failedToJoin' => 'Failed to join session',
-			'watchTogether.sessionCodeCopied' => 'Session code copied to clipboard',
-			'watchTogether.relayUnreachable' => 'The relay server is unreachable. This may be caused by your ISP blocking the connection. You can still try, but Watch Together may not work.',
-			'watchTogether.reconnectingToHost' => 'Reconnecting to host...',
-			'watchTogether.participantJoined' => ({required Object name}) => '${name} joined',
-			'watchTogether.participantLeft' => ({required Object name}) => '${name} left',
 			'downloads.title' => 'Downloads',
 			'downloads.manage' => 'Manage',
 			'downloads.tvShows' => 'TV Shows',
@@ -3447,7 +3277,7 @@ extension on Translations {
 			'companionRemote.pairing.pinHint' => 'Enter 6-digit PIN',
 			'companionRemote.pairing.connecting' => 'Connecting...',
 			'companionRemote.pairing.tips' => 'Tips',
-			'companionRemote.pairing.tipDesktop' => 'Open Plezy on your desktop and enable Companion Remote from settings or menu',
+			'companionRemote.pairing.tipDesktop' => 'Open Finzy on your desktop and enable Companion Remote from settings or menu',
 			'companionRemote.pairing.tipScan' => 'Use the Scan tab to quickly pair by scanning the QR code on your desktop',
 			'companionRemote.pairing.tipWifi' => 'Make sure both devices are on the same WiFi network',
 			'companionRemote.pairing.cameraPermissionRequired' => 'Camera permission is required to scan QR codes.\nPlease grant camera access in your device settings.',

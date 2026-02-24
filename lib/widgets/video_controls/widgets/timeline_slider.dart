@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import '../../../models/plex_media_info.dart';
+import '../../../models/media_info.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../focus/focusable_wrapper.dart';
 import '../../../utils/formatters.dart';
 import '../painters/chapter_marker_painter.dart';
-import '../../plex_optimized_image.dart' show blurArtwork;
+import '../../optimized_image.dart' show blurArtwork;
 
 /// Timeline slider with chapter markers for video playback
 ///
@@ -16,7 +16,7 @@ import '../../plex_optimized_image.dart' show blurArtwork;
 class TimelineSlider extends StatefulWidget {
   final Duration position;
   final Duration duration;
-  final List<PlexChapter> chapters;
+  final List<Chapter> chapters;
   final bool chaptersLoaded;
   final ValueChanged<Duration> onSeek;
   final ValueChanged<Duration> onSeekEnd;
@@ -96,7 +96,7 @@ class _TimelineSliderState extends State<TimelineSlider> {
   }
 
   Widget _buildTooltip(double sliderWidth, double pixelX, Duration time) {
-    // Snap to the nearest 5-second interval since Plex's thumbnails are generated every 5 seconds.
+    // Snap to the nearest 5-second interval since server thumbnails are generated every 5 seconds.
     // Round here so the URL is consistent for widget-level cache hits rather than a new URL for each timestamp.
     final roundedMs = (time.inMilliseconds / 5000).round() * 5000;
     final roundedTime = Duration(milliseconds: roundedMs);
@@ -117,22 +117,10 @@ class _TimelineSliderState extends State<TimelineSlider> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (hasThumbnail)
-              Container(
+              _ThumbnailContainer(
+                url: thumbnailUrl,
                 width: _thumbWidth,
                 height: _thumbHeight,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: const BorderRadius.all(Radius.circular(6)),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 1)],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: blurArtwork(CachedNetworkImage(
-                  imageUrl: thumbnailUrl,
-                  fit: BoxFit.cover,
-                  fadeInDuration: Duration.zero,
-                  placeholder: (_, _) => const SizedBox.shrink(), // Show nothing for placeholder
-                  errorWidget: (_, _, _) => const SizedBox.shrink(), // Show nothing for errors
-                )),
               ),
             if (hasThumbnail) const SizedBox(height: 4),
             Container(
@@ -284,6 +272,57 @@ class _TimelineSliderState extends State<TimelineSlider> {
           child: slider,
         );
       },
+    );
+  }
+}
+
+/// Thumbnail container that collapses to zero size if the image fails to load (e.g. 404).
+class _ThumbnailContainer extends StatefulWidget {
+  final String url;
+  final double width;
+  final double height;
+
+  const _ThumbnailContainer({required this.url, required this.width, required this.height});
+
+  @override
+  State<_ThumbnailContainer> createState() => _ThumbnailContainerState();
+}
+
+class _ThumbnailContainerState extends State<_ThumbnailContainer> {
+  bool _hasError = false;
+
+  @override
+  void didUpdateWidget(_ThumbnailContainer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.url != oldWidget.url) {
+      _hasError = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasError) return const SizedBox.shrink();
+    return Container(
+      width: widget.width,
+      height: widget.height,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: const BorderRadius.all(Radius.circular(6)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 1)],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: blurArtwork(CachedNetworkImage(
+        imageUrl: widget.url,
+        fit: BoxFit.cover,
+        fadeInDuration: Duration.zero,
+        placeholder: (_, _) => const SizedBox.shrink(),
+        errorWidget: (_, _, _) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _hasError = true);
+          });
+          return const SizedBox.shrink();
+        },
+      )),
     );
   }
 }

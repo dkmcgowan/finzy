@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import '../../models/plex_home_user.dart';
+import '../../models/home_user.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../utils/provider_extensions.dart';
 import '../../utils/snackbar_helper.dart';
@@ -73,7 +73,7 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> {
                 const SliverFillRemaining(
                   child: EmptyStateWidget(
                     message: 'No profiles available',
-                    subtitle: 'Contact your Plex administrator to add profiles',
+                    subtitle: 'Contact your server administrator to add profiles',
                     icon: Symbols.person_off_rounded,
                   ),
                 )
@@ -117,7 +117,7 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> {
     );
   }
 
-  void _switchToUser(BuildContext context, PlexHomeUser user) async {
+  void _switchToUser(BuildContext context, HomeUser user) async {
     final userProvider = context.userProfile;
     final navigator = Navigator.of(context);
     final success = await userProvider.switchToUser(user, context);

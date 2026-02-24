@@ -44,13 +44,13 @@ class JellyfinQuickConnectState {
 class JellyfinAuthService {
   JellyfinAuthService._();
 
-  static const _clientName = 'Plezy';
+  static const _clientName = 'Finzy';
   static const _clientVersion = '1.0.0';
-  static const _deviceId = 'plezy-jellyfin';
+  static const _deviceId = 'finzy-jellyfin';
 
   /// Build Authorization header without token (for login).
   static String _authHeaderNoToken() =>
-      'MediaBrowser Client="$_clientName", Device="Plezy", DeviceId="$_deviceId", Version="$_clientVersion"';
+      'MediaBrowser Client="$_clientName", Device="Finzy", DeviceId="$_deviceId", Version="$_clientVersion"';
 
   /// Authenticate by username and password.
   /// [baseUrl] should be the server base URL (e.g. https://jellyfin.example.com).

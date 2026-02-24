@@ -8,7 +8,7 @@ import '../../models/livetv_program.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/overlay_sheet.dart';
-import '../../widgets/plex_optimized_image.dart' show blurArtwork;
+import '../../widgets/optimized_image.dart' show blurArtwork;
 
 /// Shows a bottom sheet with program details and actions (Record, Watch Channel, Play).
 void showProgramDetailsSheet(

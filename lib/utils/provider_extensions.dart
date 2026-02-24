@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/media_server_client.dart';
+import '../services/jellyfin_client.dart';
 import '../i18n/strings.g.dart';
-import '../models/plex_library.dart';
-import '../models/plex_metadata.dart';
-import '../models/plex_user_profile.dart';
+import '../models/media_library.dart';
+import '../models/media_metadata.dart';
+import '../models/user_profile_preferences.dart';
 import '../providers/hidden_libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../providers/user_profile_provider.dart';
@@ -20,10 +20,10 @@ extension ProviderExtensions on BuildContext {
   HiddenLibrariesProvider watchHiddenLibraries() => Provider.of<HiddenLibrariesProvider>(this, listen: true);
 
   // Direct profile settings access (nullable)
-  PlexUserProfile? get profileSettings => userProfile.profileSettings;
+  UserProfilePreferences? get profileSettings => userProfile.profileSettings;
 
-  /// Get media server client for a specific server ID (Plex or Jellyfin)
-  MediaServerClient getClientForServer(String serverId) {
+  /// Get Jellyfin client for a specific server ID
+  JellyfinClient getClientForServer(String serverId) {
     final multiServerProvider = Provider.of<MultiServerProvider>(this, listen: false);
 
     final serverClient = multiServerProvider.getClientForServer(serverId);
@@ -37,7 +37,7 @@ extension ProviderExtensions on BuildContext {
   }
 
   /// Get client for a library
-  MediaServerClient getClientForLibrary(PlexLibrary library) {
+  JellyfinClient getClientForLibrary(MediaLibrary library) {
     if (library.serverId == null) {
       final multiServerProvider = Provider.of<MultiServerProvider>(this, listen: false);
       if (!multiServerProvider.hasConnectedServers) {
@@ -49,7 +49,7 @@ extension ProviderExtensions on BuildContext {
   }
 
   /// Get client for metadata, with fallback to first available server
-  MediaServerClient getClientForMetadata(PlexMetadata metadata) {
+  JellyfinClient getClientForMetadata(MediaMetadata metadata) {
     if (metadata.serverId != null) {
       return getClientForServer(metadata.serverId!);
     }
@@ -57,7 +57,7 @@ extension ProviderExtensions on BuildContext {
   }
 
   /// Get client for metadata, or null if offline mode or no serverId
-  MediaServerClient? getClientForMetadataOrNull(PlexMetadata metadata, {bool isOffline = false}) {
+  JellyfinClient? getClientForMetadataOrNull(MediaMetadata metadata, {bool isOffline = false}) {
     if (isOffline || metadata.serverId == null) {
       return null;
     }
@@ -65,7 +65,7 @@ extension ProviderExtensions on BuildContext {
   }
 
   /// Get the first available client from connected servers
-  MediaServerClient getFirstAvailableClient() {
+  JellyfinClient getFirstAvailableClient() {
     final multiServerProvider = Provider.of<MultiServerProvider>(this, listen: false);
     if (!multiServerProvider.hasConnectedServers) {
       throw Exception(t.errors.noClientAvailable);
@@ -75,7 +75,7 @@ extension ProviderExtensions on BuildContext {
 
   /// Get client for a serverId with fallback to first available server
   /// Useful for items that might not have a serverId
-  MediaServerClient getClientWithFallback(String? serverId) {
+  JellyfinClient getClientWithFallback(String? serverId) {
     if (serverId != null) {
       return getClientForServer(serverId);
     }

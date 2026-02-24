@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Only enabled when ENABLE_UPDATE_CHECK build flag is set
 class UpdateService {
   static final Logger _logger = Logger();
-  static const String _githubRepo = 'edde746/plezy';
+  static const String _githubRepo = 'dkmcgowan/finzy';
 
   // SharedPreferences keys
   static const String _keySkippedVersion = 'update_skipped_version';

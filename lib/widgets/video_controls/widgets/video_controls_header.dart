@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/utils/formatters.dart';
+import 'package:finzy/utils/formatters.dart';
 
-import '../../../models/plex_metadata.dart';
+import '../../../models/media_metadata.dart';
 import '../../../i18n/strings.g.dart';
 import '../../app_bar_back_button.dart';
 
@@ -19,7 +19,7 @@ enum VideoHeaderStyle {
 /// Displays the video title with optional series/episode information.
 /// Supports both single-line (macOS) and multi-line (other platforms) layouts.
 class VideoControlsHeader extends StatelessWidget {
-  final PlexMetadata metadata;
+  final MediaMetadata metadata;
   final VideoHeaderStyle style;
 
   /// Optional trailing widget (e.g., track/chapter controls)

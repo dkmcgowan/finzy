@@ -22,6 +22,12 @@ class TrackSelectionSheet<T> extends StatefulWidget {
   final T Function()? createOffTrack;
   final bool Function(T track)? isOffTrack;
 
+  /// Optional tracks not yet in the player (e.g. external subtitles); shown after embedded tracks.
+  final List<T>? extraTracks;
+
+  /// Called when user selects an extra track (e.g. to load it on demand).
+  final void Function(T track)? onExtraTrackSelected;
+
   const TrackSelectionSheet({
     super.key,
     required this.player,
@@ -35,6 +41,8 @@ class TrackSelectionSheet<T> extends StatefulWidget {
     this.showOffOption = false,
     this.createOffTrack,
     this.isOffTrack,
+    this.extraTracks,
+    this.onExtraTrackSelected,
   });
 
   @override
@@ -50,8 +58,8 @@ class _TrackSelectionSheetState<T> extends State<TrackSelectionSheet<T>> {
       builder: (context, snapshot) {
         final tracks = snapshot.data;
         final availableTracks = TrackFilterHelper.extractAndFilterTracks<T>(tracks, widget.extractTracks);
-
-        final sheetChild = availableTracks.isEmpty
+        final hasAnyTracks = availableTracks.isNotEmpty || (widget.extraTracks?.isNotEmpty ?? false);
+        final sheetChild = !hasAnyTracks
             ? TrackSelectionHelper.buildEmptyState<T>()
             : _buildTrackList(availableTracks);
 
@@ -68,7 +76,8 @@ class _TrackSelectionSheetState<T> extends State<TrackSelectionSheet<T>> {
         final currentTrack = selectedSnapshot.data ?? widget.player.state.track;
         final selectedTrack = widget.getCurrentTrack(currentTrack);
         final isOffSelected = TrackSelectionHelper.isOffSelected(selectedTrack, widget.isOffTrack);
-        final itemCount = availableTracks.length + (widget.showOffOption ? 1 : 0);
+        final extraTracks = widget.extraTracks ?? [];
+        final itemCount = availableTracks.length + (widget.showOffOption ? 1 : 0) + extraTracks.length;
 
         return ListView.builder(
           itemCount: itemCount,
@@ -78,15 +87,29 @@ class _TrackSelectionSheetState<T> extends State<TrackSelectionSheet<T>> {
             }
 
             final trackIndex = widget.showOffOption ? index - 1 : index;
-            final track = availableTracks[trackIndex];
-            final trackId = TrackSelectionHelper.getTrackId(track);
-            final selectedId = selectedTrack == null ? '' : TrackSelectionHelper.getTrackId(selectedTrack);
+            if (trackIndex < availableTracks.length) {
+              final track = availableTracks[trackIndex];
+              final trackId = TrackSelectionHelper.getTrackId(track);
+              final selectedId = selectedTrack == null ? '' : TrackSelectionHelper.getTrackId(selectedTrack);
+              return TrackSelectionHelper.buildTrackTile<T>(
+                label: widget.buildLabel(track, trackIndex),
+                isSelected: trackId == selectedId,
+                onTap: () {
+                  widget.setTrack(track);
+                  widget.onTrackChanged?.call(track);
+                  OverlaySheetController.of(context).close();
+                },
+              );
+            }
+
+            // Extra track (e.g. external subtitle)
+            final extraIndex = trackIndex - availableTracks.length;
+            final extraTrack = extraTracks[extraIndex];
             return TrackSelectionHelper.buildTrackTile<T>(
-              label: widget.buildLabel(track, trackIndex),
-              isSelected: trackId == selectedId,
+              label: widget.buildLabel(extraTrack, availableTracks.length + extraIndex),
+              isSelected: false,
               onTap: () {
-                widget.setTrack(track);
-                widget.onTrackChanged?.call(track);
+                widget.onExtraTrackSelected?.call(extraTrack);
                 OverlaySheetController.of(context).close();
               },
             );

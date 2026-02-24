@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../models/plex_first_character.dart';
+import '../models/first_character.dart';
 import 'alpha_jump_helper.dart';
 
 /// Vertical strip of letters for jumping through sorted library items.
@@ -14,7 +14,7 @@ import 'alpha_jump_helper.dart';
 /// highest-count letters (by item size) and drops the rest.
 /// Supports both touch (tap/drag) and D-pad (up/down/select) input.
 class AlphaJumpBar extends StatefulWidget {
-  final List<PlexFirstCharacter> firstCharacters;
+  final List<FirstCharacter> firstCharacters;
   final void Function(int targetIndex) onJump;
 
   /// The letter currently visible at the top of the grid, derived from the

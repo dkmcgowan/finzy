@@ -23,7 +23,7 @@ class OfflineModeProvider extends ChangeNotifier {
   /// Whether there is network connectivity (WiFi, mobile data, etc.)
   bool get hasNetworkConnection => _hasNetworkConnection;
 
-  /// Whether at least one Plex server is reachable
+  /// Whether at least one server is reachable
   bool get hasServerConnection => _hasServerConnection;
 
   /// Updates network and server connection flags

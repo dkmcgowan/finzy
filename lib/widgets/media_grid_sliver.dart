@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../providers/settings_provider.dart';
 import 'media_card.dart';
 import 'media_grid_delegate.dart';
@@ -10,7 +10,7 @@ import 'media_grid_delegate.dart';
 /// to maintain consistent spacing and focus behavior
 class MediaGridSliver extends StatelessWidget {
   /// The list of media items to display
-  final List<PlexMetadata> items;
+  final List<MediaMetadata> items;
 
   /// Callback when an item needs to be refreshed
   final void Function(String ratingKey)? onRefresh;

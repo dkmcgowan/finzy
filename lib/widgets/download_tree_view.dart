@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../focus/focusable_wrapper.dart';
 import '../i18n/strings.g.dart';
 import '../models/download_models.dart';
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../utils/content_utils.dart';
 import '../utils/dialogs.dart';
 
@@ -16,7 +16,7 @@ class DownloadTreeNode {
   final double progress; // 0.0-1.0
   final DownloadStatus status;
   final List<DownloadTreeNode> children;
-  final PlexMetadata? metadata;
+  final MediaMetadata? metadata;
   final DownloadProgress? downloadProgress;
 
   const DownloadTreeNode({
@@ -52,7 +52,7 @@ enum DownloadNodeType { show, season, episode, movie }
 /// Movies appear at top level
 class DownloadTreeView extends StatefulWidget {
   final Map<String, DownloadProgress> downloads;
-  final Map<String, PlexMetadata> metadata;
+  final Map<String, MediaMetadata> metadata;
   final void Function(String globalKey)? onPause;
   final void Function(String globalKey)? onResume;
   final void Function(String globalKey)? onRetry;

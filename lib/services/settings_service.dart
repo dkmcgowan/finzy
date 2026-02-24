@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../models/hotkey_model.dart';
-import 'package:plezy/utils/app_logger.dart';
+import 'package:finzy/utils/app_logger.dart';
 import '../i18n/strings.g.dart';
 import '../models/mpv_config_models.dart';
 import '../models/external_player_models.dart';
 import 'base_shared_preferences_service.dart';
 import '../utils/platform_detector.dart';
+import 'api_cache.dart';
 
 enum ThemeMode { system, light, dark, oled }
 
@@ -53,8 +54,14 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyRememberTrackSelections = 'remember_track_selections';
   static const String _keyClickVideoTogglesPlayback = 'click_video_toggles_playback';
   static const String _keyAutoSkipIntro = 'auto_skip_intro';
-  static const String _keyAutoSkipCredits = 'auto_skip_credits';
+  static const String _keyAutoSkipOutro = 'auto_skip_outro';
+  static const String _keyAutoSkipRecap = 'auto_skip_recap';
+  static const String _keyAutoSkipPreview = 'auto_skip_preview';
+  static const String _keyAutoSkipCommercial = 'auto_skip_commercial';
   static const String _keyAutoSkipDelay = 'auto_skip_delay';
+  static const String _keyEnableExternalSubtitles = 'enable_external_subtitles';
+  static const String _keyEnableTrickplay = 'enable_trickplay';
+  static const String _keyEnableChapterImages = 'enable_chapter_images';
   static const String _keyCustomDownloadPath = 'custom_download_path';
   static const String _keyCustomDownloadPathType = 'custom_download_path_type';
   static const String _keyDownloadOnWifiOnly = 'download_on_wifi_only';
@@ -63,7 +70,7 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyMpvConfigEntries = 'mpv_config_entries';
   static const String _keyMpvConfigPresets = 'mpv_config_presets';
   static const String _keyMaxVolume = 'max_volume';
-  static const String _keyEnableDiscordRPC = 'enable_discord_rpc';
+
   static const String _keyMatchContentFrameRate = 'match_content_frame_rate';
   static const String _keyDefaultPlaybackSpeed = 'default_playback_speed';
   static const String _keyAutoPlayNextEpisode = 'auto_play_next_episode';
@@ -206,13 +213,13 @@ class SettingsService extends BaseSharedPreferencesService {
     return prefs.getBool(_keyShowHeroSection) ?? true; // Default: true (show hero section)
   }
 
-  // Use Global Hubs (true = global /hubs endpoint, false = per-library hubs)
+  // Use Global Hubs (true = global home hubs, false = per-library hubs on home)
   Future<void> setUseGlobalHubs(bool enabled) async {
     await prefs.setBool(_keyUseGlobalHubs, enabled);
   }
 
   bool getUseGlobalHubs() {
-    return prefs.getBool(_keyUseGlobalHubs) ?? true; // Default: true (use global hubs like official Plex)
+    return prefs.getBool(_keyUseGlobalHubs) ?? true; // Default: true (use global hubs like official Jellyfin)
   }
 
   // Show Server Name on Hubs (false = only on duplicates, true = always)
@@ -859,13 +866,40 @@ class SettingsService extends BaseSharedPreferencesService {
     return prefs.getBool(_keyAutoSkipIntro) ?? false; // Default: disabled
   }
 
-  // Auto Skip Credits
-  Future<void> setAutoSkipCredits(bool value) async {
-    await prefs.setBool(_keyAutoSkipCredits, value);
+  // Auto Skip Outro
+  Future<void> setAutoSkipOutro(bool value) async {
+    await prefs.setBool(_keyAutoSkipOutro, value);
   }
 
-  bool getAutoSkipCredits() {
-    return prefs.getBool(_keyAutoSkipCredits) ?? false; // Default: disabled
+  bool getAutoSkipOutro() {
+    return prefs.getBool(_keyAutoSkipOutro) ?? false;
+  }
+
+  // Auto Skip Recap
+  Future<void> setAutoSkipRecap(bool value) async {
+    await prefs.setBool(_keyAutoSkipRecap, value);
+  }
+
+  bool getAutoSkipRecap() {
+    return prefs.getBool(_keyAutoSkipRecap) ?? false;
+  }
+
+  // Auto Skip Preview
+  Future<void> setAutoSkipPreview(bool value) async {
+    await prefs.setBool(_keyAutoSkipPreview, value);
+  }
+
+  bool getAutoSkipPreview() {
+    return prefs.getBool(_keyAutoSkipPreview) ?? false;
+  }
+
+  // Auto Skip Commercial
+  Future<void> setAutoSkipCommercial(bool value) async {
+    await prefs.setBool(_keyAutoSkipCommercial, value);
+  }
+
+  bool getAutoSkipCommercial() {
+    return prefs.getBool(_keyAutoSkipCommercial) ?? false;
   }
 
   // Auto Skip Delay (in seconds)
@@ -875,6 +909,33 @@ class SettingsService extends BaseSharedPreferencesService {
 
   int getAutoSkipDelay() {
     return prefs.getInt(_keyAutoSkipDelay) ?? 5; // Default: 5 seconds
+  }
+
+  // Enable external subtitles (load on demand when user selects; default off for fast video load)
+  Future<void> setEnableExternalSubtitles(bool value) async {
+    await prefs.setBool(_keyEnableExternalSubtitles, value);
+  }
+
+  bool getEnableExternalSubtitles() {
+    return prefs.getBool(_keyEnableExternalSubtitles) ?? false;
+  }
+
+  // Enable trickplay timeline thumbnails (probes server; default off)
+  Future<void> setEnableTrickplay(bool value) async {
+    await prefs.setBool(_keyEnableTrickplay, value);
+  }
+
+  bool getEnableTrickplay() {
+    return prefs.getBool(_keyEnableTrickplay) ?? false;
+  }
+
+  // Enable chapter images in the player (default off)
+  Future<void> setEnableChapterImages(bool value) async {
+    await prefs.setBool(_keyEnableChapterImages, value);
+  }
+
+  bool getEnableChapterImages() {
+    return prefs.getBool(_keyEnableChapterImages) ?? false;
   }
 
   // Custom Download Path
@@ -979,15 +1040,6 @@ class SettingsService extends BaseSharedPreferencesService {
     final preset = presets.firstWhere((p) => p.name == name, orElse: () => throw Exception('Preset not found: $name'));
 
     await setMpvConfigEntries(preset.entries);
-  }
-
-  // Discord Rich Presence
-  Future<void> setEnableDiscordRPC(bool enabled) async {
-    await prefs.setBool(_keyEnableDiscordRPC, enabled);
-  }
-
-  bool getEnableDiscordRPC() {
-    return prefs.getBool(_keyEnableDiscordRPC) ?? false; // Default disabled
   }
 
   // Match Content Frame Rate (Android only)
@@ -1144,6 +1196,7 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyUseSeasonPoster), // Legacy key
       prefs.remove(_keyEpisodePosterMode),
       prefs.remove(_keyShowHeroSection),
+      prefs.remove(_keyUseGlobalHubs),
       prefs.remove(_keyShowJellyfinRecommendations),
       prefs.remove(_keySeekTimeSmall),
       prefs.remove(_keySeekTimeLarge),
@@ -1169,7 +1222,7 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyShowPerformanceOverlay),
       prefs.remove(_keyMpvConfigEntries),
       prefs.remove(_keyMpvConfigPresets),
-      prefs.remove(_keyEnableDiscordRPC),
+
       prefs.remove(_keyMatchContentFrameRate),
       prefs.remove(_keyDefaultPlaybackSpeed),
       prefs.remove(_keyAutoPlayNextEpisode),
@@ -1182,16 +1235,14 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keySelectedExternalPlayer),
       prefs.remove(_keyCustomExternalPlayers),
       prefs.remove(_keyConfirmExitOnBack),
+      prefs.remove(_keyEnableTrickplay),
+      prefs.remove(_keyEnableChapterImages),
     ]);
   }
 
-  // Clear cache (for storage cleanup)
+  // Clear cache (metadata only; no platform-specific image/download clearing)
   Future<void> clearCache() async {
-    // This would be expanded to clear various cache directories
-    // For now, we'll just clear any cache-related preferences
-    await Future.wait([
-      // Add cache clearing logic here
-    ]);
+    await ApiCache.instance.clearAll();
   }
 
   // Get all settings as a map for debugging/export
@@ -1214,8 +1265,14 @@ class SettingsService extends BaseSharedPreferencesService {
       'rememberTrackSelections': getRememberTrackSelections(),
       'clickVideoTogglesPlayback': getClickVideoTogglesPlayback(),
       'autoSkipIntro': getAutoSkipIntro(),
-      'autoSkipCredits': getAutoSkipCredits(),
+      'autoSkipOutro': getAutoSkipOutro(),
+      'autoSkipRecap': getAutoSkipRecap(),
+      'autoSkipPreview': getAutoSkipPreview(),
+      'autoSkipCommercial': getAutoSkipCommercial(),
       'autoSkipDelay': getAutoSkipDelay(),
+      'enableExternalSubtitles': getEnableExternalSubtitles(),
+      'enableTrickplay': getEnableTrickplay(),
+      'enableChapterImages': getEnableChapterImages(),
     };
   }
 }

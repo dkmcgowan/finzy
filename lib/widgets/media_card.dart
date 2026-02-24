@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/utils/content_utils.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/utils/content_utils.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import '../models/plex_metadata.dart';
-import '../models/plex_playlist.dart';
+import '../models/media_metadata.dart';
+import '../models/playlist.dart';
 import '../providers/download_provider.dart';
 import '../services/download_storage_service.dart';
 import '../providers/settings_provider.dart';
@@ -17,10 +17,10 @@ import '../theme/mono_tokens.dart';
 import '../i18n/strings.g.dart';
 import 'media_context_menu.dart';
 import 'media_progress_bar.dart';
-import 'plex_optimized_image.dart';
+import 'optimized_image.dart';
 
 class MediaCard extends StatefulWidget {
-  final dynamic item; // Can be PlexMetadata or PlexPlaylist
+  final dynamic item; // Can be MediaMetadata or Playlist
   final double? width;
   final double? height;
   final void Function(String ratingKey)? onRefresh;
@@ -76,26 +76,26 @@ class MediaCardState extends State<MediaCard> {
     final item = widget.item;
 
     // Playlists don't expose mediaType, so build a simple localized label and exit early
-    if (item is PlexPlaylist) {
+    if (item is Playlist) {
       final count = item.leafCount;
       final countText = count != null ? ', ${t.playlists.itemCount(count: count)}' : '';
       return '${item.displayTitle}, ${t.playlists.playlist}$countText';
     }
 
-    // Build base label based on PlexMetadata media type
-    if (item is! PlexMetadata) {
+    // Build base label based on MediaMetadata media type
+    if (item is! MediaMetadata) {
       return '$item';
     }
 
     String baseLabel;
     switch (item.mediaType) {
-      case PlexMediaType.episode:
+      case MediaType.episode:
         final episodeInfo = item.parentIndex != null && item.index != null ? 'S${item.parentIndex} E${item.index}' : '';
         baseLabel = t.accessibility.mediaCardEpisode(title: item.displayTitle, episodeInfo: episodeInfo);
-      case PlexMediaType.season:
+      case MediaType.season:
         final seasonInfo = item.parentIndex != null ? 'Season ${item.parentIndex}' : '';
         baseLabel = t.accessibility.mediaCardSeason(title: item.displayTitle, seasonInfo: seasonInfo);
-      case PlexMediaType.movie:
+      case MediaType.movie:
         baseLabel = t.accessibility.mediaCardMovie(title: item.displayTitle);
       default:
         baseLabel = t.accessibility.mediaCardShow(title: item.displayTitle);
@@ -152,9 +152,9 @@ class MediaCardState extends State<MediaCard> {
   /// Get the local poster path for offline mode
   String? _getLocalPosterPath(BuildContext context) {
     if (!widget.isOffline) return null;
-    if (widget.item is! PlexMetadata) return null;
+    if (widget.item is! MediaMetadata) return null;
 
-    final metadata = widget.item as PlexMetadata;
+    final metadata = widget.item as MediaMetadata;
     if (metadata.serverId == null) return null;
 
     final downloadProvider = context.read<DownloadProvider>();
@@ -195,7 +195,7 @@ class MediaCardState extends State<MediaCard> {
             localPosterPath: localPosterPath,
           );
 
-    // Use context menu for both PlexMetadata and PlexPlaylist items
+    // Use context menu for both MediaMetadata and Playlist items
     return MediaContextMenu(
       key: _contextMenuKey,
       item: widget.item,
@@ -212,7 +212,7 @@ class MediaCardState extends State<MediaCard> {
 
 /// Grid layout for media cards
 class _MediaCardGrid extends StatelessWidget {
-  final dynamic item; // Can be PlexMetadata or PlexPlaylist
+  final dynamic item; // Can be MediaMetadata or Playlist
   final double? width;
   final double? height;
   final String semanticLabel;
@@ -267,10 +267,10 @@ class _MediaCardGrid extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, height: 1.1),
                     ),
-                    if (item is PlexPlaylist)
-                      _MediaCardHelpers.buildPlaylistMeta(context, item as PlexPlaylist)
-                    else if (item is PlexMetadata)
-                      _MediaCardHelpers.buildMetadataSubtitle(context, item as PlexMetadata),
+                    if (item is Playlist)
+                      _MediaCardHelpers.buildPlaylistMeta(context, item as Playlist)
+                    else if (item is MediaMetadata)
+                      _MediaCardHelpers.buildMetadataSubtitle(context, item as MediaMetadata),
                   ],
                 ),
               ],
@@ -302,7 +302,7 @@ class _MediaCardGrid extends StatelessWidget {
 
 /// List layout for media cards
 class _MediaCardList extends StatelessWidget {
-  final dynamic item; // Can be PlexMetadata or PlexPlaylist
+  final dynamic item; // Can be MediaMetadata or Playlist
   final String semanticLabel;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
@@ -334,9 +334,9 @@ class _MediaCardList extends StatelessWidget {
   double _posterWidth(BuildContext context) {
     final base = _basePosterWidth();
     // For episodes with thumbnail mode, use wider width to maintain reasonable thumbnail size
-    if (item is PlexMetadata) {
+    if (item is MediaMetadata) {
       final mode = context.watch<SettingsProvider>().episodePosterMode;
-      if ((item as PlexMetadata).usesWideAspectRatio(mode)) {
+      if ((item as MediaMetadata).usesWideAspectRatio(mode)) {
         return base * 1.6; // Wider for 16:9 thumbnails
       }
     }
@@ -346,9 +346,9 @@ class _MediaCardList extends StatelessWidget {
   double _posterHeight(BuildContext context) {
     final base = _basePosterWidth();
     // For episodes with thumbnail mode, use 16:9 aspect ratio
-    if (item is PlexMetadata) {
+    if (item is MediaMetadata) {
       final mode = context.watch<SettingsProvider>().episodePosterMode;
-      if ((item as PlexMetadata).usesWideAspectRatio(mode)) {
+      if ((item as MediaMetadata).usesWideAspectRatio(mode)) {
         // 16:9: height = width * 9/16 = base * 1.6 * 9/16 = base * 0.9
         return base * 0.9;
       }
@@ -408,8 +408,8 @@ class _MediaCardList extends StatelessWidget {
   String _buildMetadataLine() {
     final parts = <String>[];
 
-    if (item is PlexPlaylist) {
-      final playlist = item as PlexPlaylist;
+    if (item is Playlist) {
+      final playlist = item as Playlist;
       // Add item count
       if (playlist.leafCount != null && playlist.leafCount! > 0) {
         parts.add(t.playlists.itemCount(count: playlist.leafCount!));
@@ -424,11 +424,11 @@ class _MediaCardList extends StatelessWidget {
       if (playlist.smart) {
         parts.add(t.playlists.smartPlaylist);
       }
-    } else if (item is PlexMetadata) {
-      final metadata = item as PlexMetadata;
+    } else if (item is MediaMetadata) {
+      final metadata = item as MediaMetadata;
 
       // For collections, show item count
-      if (metadata.mediaType == PlexMediaType.collection) {
+      if (metadata.mediaType == MediaType.collection) {
         final count = metadata.childCount ?? metadata.leafCount;
         if (count != null && count > 0) {
           parts.add(t.playlists.itemCount(count: count));
@@ -470,10 +470,10 @@ class _MediaCardList extends StatelessWidget {
   /// For episodes with season/episode numbers: "S1:E1 - 7:00 A.M." (series and episode count + title).
   /// Otherwise returns displayTitle (e.g. show name for episodes, title for movies).
   String _buildTitleText() {
-    if (item is PlexPlaylist) return (item as PlexPlaylist).title;
-    if (item is! PlexMetadata) return '$item';
-    final metadata = item as PlexMetadata;
-    if (metadata.mediaType == PlexMediaType.episode &&
+    if (item is Playlist) return (item as Playlist).title;
+    if (item is! MediaMetadata) return '$item';
+    final metadata = item as MediaMetadata;
+    if (metadata.mediaType == MediaType.episode &&
         metadata.parentIndex != null &&
         metadata.index != null) {
       return 'S${metadata.parentIndex}:E${metadata.index} - ${metadata.title}';
@@ -482,14 +482,14 @@ class _MediaCardList extends StatelessWidget {
   }
 
   String? _buildSubtitleText() {
-    if (item is PlexPlaylist) {
+    if (item is Playlist) {
       // Playlists don't have subtitles
       return null;
-    } else if (item is PlexMetadata) {
-      final metadata = item as PlexMetadata;
+    } else if (item is MediaMetadata) {
+      final metadata = item as MediaMetadata;
 
       // For TV episodes with S#:E# in title, show show name as subtitle
-      if (metadata.mediaType == PlexMediaType.episode &&
+      if (metadata.mediaType == MediaType.episode &&
           metadata.parentIndex != null &&
           metadata.index != null &&
           metadata.grandparentTitle != null) {
@@ -619,11 +619,11 @@ Widget _buildPosterImage(
   String? posterUrl;
   IconData fallbackIcon = Symbols.movie_rounded;
 
-  if (item is PlexPlaylist) {
+  if (item is Playlist) {
     posterUrl = item.displayImage;
     fallbackIcon = Symbols.playlist_play_rounded;
 
-    return PlexOptimizedImage.playlist(
+    return OptimizedImage.playlist(
       client: isOffline ? null : context.getClientWithFallback(item.serverId),
       imagePath: posterUrl,
       width: double.infinity,
@@ -631,13 +631,13 @@ Widget _buildPosterImage(
       fit: BoxFit.cover,
       localFilePath: localPosterPath,
     );
-  } else if (item is PlexMetadata) {
+  } else if (item is MediaMetadata) {
     final episodePosterMode = context.watch<SettingsProvider>().episodePosterMode;
     posterUrl = item.posterThumb(mode: episodePosterMode, mixedHubContext: mixedHubContext);
 
     // Use thumb image type for 16:9 content (episodes, or movies in mixed hubs)
     if (item.usesWideAspectRatio(episodePosterMode, mixedHubContext: mixedHubContext)) {
-      return PlexOptimizedImage.thumb(
+      return OptimizedImage.thumb(
         client: isOffline ? null : context.getClientWithFallback(item.serverId),
         imagePath: posterUrl,
         width: double.infinity,
@@ -647,7 +647,7 @@ Widget _buildPosterImage(
       );
     }
 
-    return PlexOptimizedImage.poster(
+    return OptimizedImage.poster(
       client: isOffline ? null : context.getClientWithFallback(item.serverId),
       imagePath: posterUrl,
       width: double.infinity,
@@ -664,18 +664,18 @@ Widget _buildPosterImage(
 
 /// Overlay widget for poster showing watched indicator and progress bar
 class _PosterOverlay extends StatelessWidget {
-  final dynamic item; // Can be PlexMetadata or PlexPlaylist
+  final dynamic item; // Can be MediaMetadata or Playlist
 
   const _PosterOverlay({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    // Only show overlays for PlexMetadata items
-    if (item is! PlexMetadata) {
+    // Only show overlays for MediaMetadata items
+    if (item is! MediaMetadata) {
       return const SizedBox.shrink();
     }
 
-    return _MediaCardHelpers.buildWatchProgress(context, item as PlexMetadata);
+    return _MediaCardHelpers.buildWatchProgress(context, item as MediaMetadata);
   }
 }
 
@@ -683,10 +683,10 @@ class _PosterOverlay extends StatelessWidget {
 class _MediaCardHelpers {
   /// Title for card: episodes with season/episode get "S1:E1 - Episode Title", else displayTitle.
   static String buildTitleForCard(dynamic item) {
-    if (item is PlexPlaylist) return item.title;
-    if (item is! PlexMetadata) return '$item';
-    final metadata = item as PlexMetadata;
-    if (metadata.mediaType == PlexMediaType.episode &&
+    if (item is Playlist) return item.title;
+    if (item is! MediaMetadata) return '$item';
+    final metadata = item as MediaMetadata;
+    if (metadata.mediaType == MediaType.episode &&
         metadata.parentIndex != null &&
         metadata.index != null) {
       return 'S${metadata.parentIndex}:E${metadata.index} - ${metadata.title}';
@@ -695,7 +695,7 @@ class _MediaCardHelpers {
   }
 
   /// Builds playlist metadata (item count)
-  static Widget buildPlaylistMeta(BuildContext context, PlexPlaylist playlist) {
+  static Widget buildPlaylistMeta(BuildContext context, Playlist playlist) {
     if (playlist.leafCount != null && playlist.leafCount! > 0) {
       return Text(
         t.playlists.itemCount(count: playlist.leafCount!),
@@ -710,9 +710,9 @@ class _MediaCardHelpers {
   }
 
   /// Builds metadata subtitle (for collections, episodes, movies, shows)
-  static Widget buildMetadataSubtitle(BuildContext context, PlexMetadata metadata) {
+  static Widget buildMetadataSubtitle(BuildContext context, MediaMetadata metadata) {
     // For collections, show item count
-    if (metadata.mediaType == PlexMediaType.collection) {
+    if (metadata.mediaType == MediaType.collection) {
       final count = metadata.childCount ?? metadata.leafCount;
       if (count != null && count > 0) {
         return Text(
@@ -727,7 +727,7 @@ class _MediaCardHelpers {
     }
 
     // For episodes with S#:E# in title, show show name as subtitle
-    if (metadata.mediaType == PlexMediaType.episode &&
+    if (metadata.mediaType == MediaType.episode &&
         metadata.parentIndex != null &&
         metadata.index != null &&
         metadata.grandparentTitle != null) {
@@ -773,7 +773,7 @@ class _MediaCardHelpers {
   }
 
   /// Builds watch progress overlay (checkmark for watched, progress bar for in-progress)
-  static Widget buildWatchProgress(BuildContext context, PlexMetadata metadata) {
+  static Widget buildWatchProgress(BuildContext context, MediaMetadata metadata) {
     final showUnwatchedCount = context.watch<SettingsProvider>().showUnwatchedCount;
 
     final hasActiveProgress =
@@ -800,7 +800,7 @@ class _MediaCardHelpers {
             ),
           ),
         if (showUnwatchedCount &&
-            (metadata.mediaType == PlexMediaType.show || metadata.mediaType == PlexMediaType.season)) ...[
+            (metadata.mediaType == MediaType.show || metadata.mediaType == MediaType.season)) ...[
           if (metadata.effectiveUnwatchedCount != null && metadata.effectiveUnwatchedCount! > 0)
             Positioned(
               top: 4,

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/plex_hub.dart';
-import '../../models/plex_library.dart';
-import '../../models/plex_metadata.dart';
+import '../../models/hub.dart';
+import '../../models/media_library.dart';
+import '../../models/media_metadata.dart';
 import '../../providers/settings_provider.dart';
 import '../../utils/grid_size_calculator.dart';
 import '../../utils/layout_constants.dart';
@@ -14,8 +14,8 @@ import '../../widgets/focusable_media_card.dart';
 /// Inline view for a library's favorites from the global Favorites sidebar (Jellyfin).
 /// Shows back button + library title + grid of favorites. Back returns to Favorites list.
 class LibraryInlineFavoritesView extends StatefulWidget {
-  final PlexHub hub;
-  final PlexLibrary library;
+  final Hub hub;
+  final MediaLibrary library;
   final VoidCallback onBack;
 
   const LibraryInlineFavoritesView({
@@ -30,7 +30,7 @@ class LibraryInlineFavoritesView extends StatefulWidget {
 }
 
 class _LibraryInlineFavoritesViewState extends State<LibraryInlineFavoritesView> {
-  List<PlexMetadata> _items = [];
+  List<MediaMetadata> _items = [];
   bool _isLoadingMore = false;
   bool _hasMore = true;
   String? _errorMessage;

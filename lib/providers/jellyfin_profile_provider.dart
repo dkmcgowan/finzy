@@ -62,7 +62,7 @@ class JellyfinProfileProvider extends ChangeNotifier {
     _storage ??= await StorageService.getInstance();
     _registry ??= ServerRegistry(_storage!);
     final servers = await _registry!.getServers();
-    final jellyfin = servers.where((s) => s.isJellyfin).toList();
+    final jellyfin = servers.toList();
     if (jellyfin.isEmpty) {
       if (_data != null) {
         _data = null;

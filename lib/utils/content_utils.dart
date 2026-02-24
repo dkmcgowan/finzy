@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 
 /// Content type constants used throughout the app
 class ContentTypes {
@@ -91,8 +91,8 @@ String formatContentRating(String? contentRating) {
   return contentRating;
 }
 
-/// Extension on PlexMetadata for type checking convenience methods
-extension PlexMetadataType on PlexMetadata {
+/// Extension on MediaMetadata for type checking convenience methods
+extension MediaMetadataType on MediaMetadata {
   String get _lowerType => type.toLowerCase();
 
   bool get isShow => _lowerType == ContentTypes.show;

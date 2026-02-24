@@ -486,7 +486,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	dev := flag.Bool("dev", false, "Run in development mode (plain HTTP on :8080)")
-	host := flag.String("host", "ice.plezy.app", "Hostname for TLS autocert")
+	host := flag.String("host", "ice.finzy.app", "Hostname for TLS autocert")
 	flag.Parse()
 
 	srv := newServer()
@@ -507,7 +507,7 @@ func main() {
 		certManager := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(*host),
-			Cache:      autocert.DirCache("/var/lib/plezy-relay/certs"),
+			Cache:      autocert.DirCache("/var/lib/finzy-relay/certs"),
 		}
 
 		server := &http.Server{

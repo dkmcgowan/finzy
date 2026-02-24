@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../models/plex_library.dart';
+import '../../../models/media_library.dart';
 import '../../../utils/app_logger.dart';
 import '../../../mixins/library_tab_state.dart';
 import '../../../mixins/refreshable.dart';
@@ -12,7 +12,7 @@ import '../content_state_builder.dart';
 /// Type parameter T: The type of items this tab displays
 ///
 /// Subclasses must implement:
-/// - [loadData]: Load data from the Plex API
+/// - [loadData]: Load data from the server API
 /// - [buildContent]: Build the UI for displaying loaded items
 ///
 /// Optional overrides:
@@ -21,7 +21,7 @@ import '../content_state_builder.dart';
 /// - [errorContext]: Context for error messages (defaults to "content")
 /// - [getRefreshStream]: Stream to listen for refresh events
 abstract class BaseLibraryTab<T> extends StatefulWidget {
-  final PlexLibrary library;
+  final MediaLibrary library;
   final String? viewMode;
   final String? density;
 
@@ -61,7 +61,7 @@ abstract class BaseLibraryTabState<T, W extends BaseLibraryTab<T>> extends State
   bool get wantKeepAlive => true;
 
   @override
-  PlexLibrary get library => widget.library;
+  MediaLibrary get library => widget.library;
 
   @override
   void refresh() {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../mpv/mpv.dart';
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../providers/download_provider.dart';
 import '../screens/video_player_screen.dart';
 import '../services/external_player_service.dart';
@@ -21,7 +21,7 @@ const String kVideoPlayerRouteName = '/video_player';
 ///
 /// Parameters:
 /// - [context]: The build context for navigation
-/// - [metadata]: The Plex metadata for the content to play
+/// - [metadata]: The metadata for the content to play
 /// - [preferredAudioTrack]: Optional audio track to select on playback start
 /// - [preferredSubtitleTrack]: Optional subtitle track to select on playback start
 /// - [selectedMediaIndex]: Optional media version index to use; if not provided,
@@ -34,7 +34,7 @@ const String kVideoPlayerRouteName = '/video_player';
 /// was watched, or null if navigation was cancelled.
 Future<bool?> navigateToVideoPlayer(
   BuildContext context, {
-  required PlexMetadata metadata,
+  required MediaMetadata metadata,
   AudioTrack? preferredAudioTrack,
   SubtitleTrack? preferredSubtitleTrack,
   int? selectedMediaIndex,
@@ -126,14 +126,14 @@ Future<bool?> navigateToVideoPlayer(
 ///
 /// Parameters:
 /// - [context]: The build context for navigation
-/// - [metadata]: The Plex metadata for the content to play
+/// - [metadata]: The metadata for the content to play
 /// - [isOffline]: If true, plays from downloaded content
 /// - [onRefresh]: Optional callback to refresh data when returning from playback
 ///   (only called when not offline)
 /// - All other parameters are passed through to [navigateToVideoPlayer]
 Future<bool?> navigateToVideoPlayerWithRefresh(
   BuildContext context, {
-  required PlexMetadata metadata,
+  required MediaMetadata metadata,
   bool isOffline = false,
   VoidCallback? onRefresh,
   AudioTrack? preferredAudioTrack,

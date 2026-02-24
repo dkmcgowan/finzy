@@ -1,4 +1,4 @@
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import 'app_logger.dart';
 import 'base_notifier.dart';
 import 'hierarchical_event_mixin.dart';
@@ -78,7 +78,7 @@ class WatchStateNotifier extends BaseNotifier<WatchStateEvent> {
   }
 
   /// Helper to emit a watched/unwatched event from metadata
-  void notifyWatched({required PlexMetadata metadata, bool isNowWatched = true}) {
+  void notifyWatched({required MediaMetadata metadata, bool isNowWatched = true}) {
     notify(
       WatchStateEvent(
         ratingKey: metadata.ratingKey,
@@ -92,7 +92,7 @@ class WatchStateNotifier extends BaseNotifier<WatchStateEvent> {
   }
 
   /// Helper to emit a progress update event
-  void notifyProgress({required PlexMetadata metadata, required int viewOffset, required int duration}) {
+  void notifyProgress({required MediaMetadata metadata, required int viewOffset, required int duration}) {
     const threshold = 0.9;
     final isNowWatched = duration > 0 && (viewOffset / duration) >= threshold;
 
@@ -110,7 +110,7 @@ class WatchStateNotifier extends BaseNotifier<WatchStateEvent> {
   }
 
   /// Build parent chain from metadata's parent keys
-  List<String> _buildParentChain(PlexMetadata metadata) {
+  List<String> _buildParentChain(MediaMetadata metadata) {
     final chain = <String>[];
     if (metadata.parentRatingKey != null) {
       chain.add(metadata.parentRatingKey!);

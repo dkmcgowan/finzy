@@ -82,7 +82,7 @@ MpvPlugin* mpv_plugin_new(FlPluginRegistrar* registrar) {
   g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
   self->method_channel = fl_method_channel_new(
       fl_plugin_registrar_get_messenger(registrar),
-      "com.plezy/mpv_player",
+      "com.finzy/mpv_player",
       FL_METHOD_CODEC(codec));
 
   fl_method_channel_set_method_call_handler(
@@ -93,7 +93,7 @@ MpvPlugin* mpv_plugin_new(FlPluginRegistrar* registrar) {
 
   self->event_channel = fl_event_channel_new(
       fl_plugin_registrar_get_messenger(registrar),
-      "com.plezy/mpv_player/events",
+      "com.finzy/mpv_player/events",
       FL_METHOD_CODEC(codec));
 
   return self;

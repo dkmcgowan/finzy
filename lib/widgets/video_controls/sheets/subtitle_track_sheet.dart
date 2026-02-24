@@ -11,10 +11,18 @@ class SubtitleTrackSheet extends StatelessWidget {
   final Player player;
   final Function(SubtitleTrack)? onTrackChanged;
 
+  /// External subtitle tracks (shown when setting is on; load on demand when selected)
+  final List<SubtitleTrack> availableExternalSubtitles;
+
+  /// Called when user selects an external subtitle track
+  final Future<void> Function(SubtitleTrack)? onExternalSubtitleSelected;
+
   const SubtitleTrackSheet({
     super.key,
     required this.player,
     this.onTrackChanged,
+    this.availableExternalSubtitles = const [],
+    this.onExternalSubtitleSelected,
   });
 
   @override
@@ -36,6 +44,12 @@ class SubtitleTrackSheet extends StatelessWidget {
       showOffOption: true,
       createOffTrack: () => SubtitleTrack.off,
       isOffTrack: (track) => track.id == 'no',
+      extraTracks: availableExternalSubtitles.isEmpty ? null : availableExternalSubtitles,
+      onExtraTrackSelected: onExternalSubtitleSelected == null
+          ? null
+          : (track) {
+              onExternalSubtitleSelected!(track);
+            },
     );
   }
 }

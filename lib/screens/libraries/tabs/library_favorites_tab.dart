@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import '../../../models/plex_metadata.dart';
+import '../../../models/media_metadata.dart';
 import '../../../widgets/focusable_media_card.dart';
 import '../../../i18n/strings.g.dart';
 import '../adaptive_media_grid.dart';
 import 'base_library_tab.dart';
 import 'library_grid_tab_state.dart';
 
-/// Favorites tab for library screen (Jellyfin only; Plex returns empty list).
+/// Favorites tab for library screen.
 /// Shows favorite movies or shows for the current library.
-class LibraryFavoritesTab extends BaseLibraryTab<PlexMetadata> {
+class LibraryFavoritesTab extends BaseLibraryTab<MediaMetadata> {
   const LibraryFavoritesTab({
     super.key,
     required super.library,
@@ -25,7 +25,7 @@ class LibraryFavoritesTab extends BaseLibraryTab<PlexMetadata> {
   State<LibraryFavoritesTab> createState() => _LibraryFavoritesTabState();
 }
 
-class _LibraryFavoritesTabState extends LibraryGridTabState<PlexMetadata, LibraryFavoritesTab> {
+class _LibraryFavoritesTabState extends LibraryGridTabState<MediaMetadata, LibraryFavoritesTab> {
   @override
   String get focusNodeDebugLabel => 'favorites_first_item';
 
@@ -39,13 +39,13 @@ class _LibraryFavoritesTabState extends LibraryGridTabState<PlexMetadata, Librar
   String get errorContext => t.libraries.tabs.favorites;
 
   @override
-  Future<List<PlexMetadata>> loadData() async {
+  Future<List<MediaMetadata>> loadData() async {
     final client = getClientForLibrary();
     return await client.getLibraryFavorites(widget.library.key);
   }
 
   @override
-  Widget buildGridItem(BuildContext context, PlexMetadata item, int index, [GridItemContext? gridContext]) {
+  Widget buildGridItem(BuildContext context, MediaMetadata item, int index, [GridItemContext? gridContext]) {
     return FocusableMediaCard(
       key: Key(item.ratingKey),
       item: item,

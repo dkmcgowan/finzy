@@ -2,13 +2,13 @@ import 'dart:async';
 
 import '../mpv/mpv.dart';
 
-import 'media_server_client.dart';
+import 'jellyfin_client.dart';
 import 'offline_watch_sync_service.dart';
-import '../models/plex_metadata.dart';
+import '../models/media_metadata.dart';
 import '../utils/app_logger.dart';
 import '../utils/watch_state_notifier.dart';
 
-/// Tracks playback progress and reports it to the Plex server.
+/// Tracks playback progress and reports it to the Jellyfin server.
 ///
 /// Handles:
 /// - Periodic timeline updates during playback (online) or queuing (offline)
@@ -17,10 +17,10 @@ import '../utils/watch_state_notifier.dart';
 /// - Offline progress queuing for later sync
 class PlaybackProgressTracker {
   /// Media server client for online progress updates (null when offline)
-  final MediaServerClient? client;
+  final JellyfinClient? client;
 
   /// Metadata of the media being played
-  final PlexMetadata metadata;
+  final MediaMetadata metadata;
 
   /// Video player instance
   final Player player;
@@ -55,7 +55,7 @@ class PlaybackProgressTracker {
 
   /// Start tracking playback progress
   ///
-  /// Begins periodic timeline updates to the Plex server (online)
+  /// Begins periodic timeline updates to the server (online)
   /// or queuing progress updates locally (offline).
   void startTracking() {
     if (_progressTimer != null) {
@@ -92,7 +92,7 @@ class PlaybackProgressTracker {
     appLogger.d('Stopped progress tracking');
   }
 
-  /// Send progress update to Plex server or queue locally
+  /// Send progress update to server or queue locally
   ///
   /// [state] can be 'playing', 'paused', or 'stopped'
   Future<void> sendProgress(String state) async {
@@ -164,7 +164,7 @@ class PlaybackProgressTracker {
     }
   }
 
-  /// Send progress update to Plex server (online mode)
+  /// Send progress update to server (online mode)
   Future<void> _sendOnlineProgress(String state, Duration position, Duration duration) async {
     await client!.updateProgress(
       metadata.ratingKey,

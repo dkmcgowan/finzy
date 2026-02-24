@@ -5,8 +5,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
-import 'package:plezy/utils/platform_detector.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/utils/platform_detector.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../widgets/collapsible_text.dart';
@@ -19,11 +19,11 @@ import '../focus/input_mode_tracker.dart';
 import '../widgets/focus_builders.dart';
 import '../widgets/media_card.dart';
 import '../i18n/strings.g.dart';
-import '../widgets/plex_optimized_image.dart';
-import '../utils/plex_image_helper.dart';
-import '../../services/media_server_client.dart';
-import '../services/plex_api_cache.dart';
-import '../models/plex_metadata.dart';
+import '../widgets/optimized_image.dart';
+import '../utils/media_image_helper.dart';
+import '../../services/jellyfin_client.dart';
+import '../services/api_cache.dart';
+import '../models/media_metadata.dart';
 import '../utils/content_utils.dart';
 import '../utils/rating_utils.dart';
 import '../models/download_models.dart';
@@ -52,7 +52,7 @@ import '../utils/deletion_notifier.dart';
 import 'season_detail_screen.dart';
 
 class MediaDetailScreen extends StatefulWidget {
-  final PlexMetadata metadata;
+  final MediaMetadata metadata;
   final bool isOffline;
 
   const MediaDetailScreen({super.key, required this.metadata, this.isOffline = false});
@@ -62,12 +62,12 @@ class MediaDetailScreen extends StatefulWidget {
 }
 
 class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAware, DeletionAware {
-  List<PlexMetadata> _seasons = [];
+  List<MediaMetadata> _seasons = [];
   bool _isLoadingSeasons = false;
-  PlexMetadata? _fullMetadata;
-  PlexMetadata? _onDeckEpisode;
+  MediaMetadata? _fullMetadata;
+  MediaMetadata? _onDeckEpisode;
   bool _isLoadingMetadata = true;
-  List<PlexMetadata>? _extras;
+  List<MediaMetadata>? _extras;
   late final ScrollController _scrollController;
   final ScrollController _seasonsScrollController = ScrollController();
   final ScrollController _extrasScrollController = ScrollController();
@@ -92,6 +92,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   late final FocusNode _extrasFocusNode;
   final Map<int, GlobalKey<MediaCardState>> _extraCardKeys = {};
   final _extrasSectionKey = GlobalKey();
+
+  // Similar items ("More Like This")
+  List<MediaMetadata>? _similarItems;
+  int _focusedSimilarIndex = 0;
+  late final FocusNode _similarItemsFocusNode;
+  final ScrollController _similarItemsScrollController = ScrollController();
+  final Map<int, GlobalKey<MediaCardState>> _similarCardKeys = {};
+  final _similarSectionKey = GlobalKey();
 
   // Locked focus pattern for overview
   late final FocusNode _overviewFocusNode;
@@ -223,8 +231,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     try {
       // Fetch updated metadata + on-deck without showing loader
       final result = await client.getMetadataWithImagesAndOnDeck(widget.metadata.ratingKey);
-      final metadata = result['metadata'] as PlexMetadata?;
-      final onDeckEpisode = result['onDeckEpisode'] as PlexMetadata?;
+      final metadata = result['metadata'] as MediaMetadata?;
+      final onDeckEpisode = result['onDeckEpisode'] as MediaMetadata?;
 
       if (metadata != null && mounted) {
         setState(() {
@@ -263,6 +271,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     _ratingChipFocusNode = FocusNode(debugLabel: 'rating_chip');
     _overviewFocusNode = FocusNode(debugLabel: 'overview');
     _castFocusNode = FocusNode(debugLabel: 'cast_row');
+    _similarItemsFocusNode = FocusNode(debugLabel: 'similar_items_row');
     _loadFullMetadata();
   }
 
@@ -284,6 +293,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     _overviewFocusNode.dispose();
     _castFocusNode.dispose();
     _castScrollController.dispose();
+    _similarItemsFocusNode.dispose();
+    _similarItemsScrollController.dispose();
     _selectKeyTimer?.cancel();
     super.dispose();
   }
@@ -333,7 +344,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   }
 
   /// Build action buttons row (play, shuffle, download, mark watched)
-  Widget _buildActionButtons(PlexMetadata metadata) {
+  Widget _buildActionButtons(MediaMetadata metadata) {
     final playButtonLabel = _getPlayButtonLabel(metadata);
     final playButtonIcon = AppIcon(_getPlayButtonIcon(metadata), fill: 1, size: 20);
 
@@ -392,9 +403,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
             ),
           ),
           const SizedBox(width: 12),
-          // Restart / Play from start (Jellyfin only, when play would resume — hide if play already starts from 0)
+          // Restart / Play from start (when play would resume — hide if play already starts from 0)
           if (!widget.isOffline &&
-              _getClientForMetadata(context)?.isJellyfin == true &&
               (metadata.isMovie || metadata.isEpisode) &&
               metadata.hasActiveProgress) ...[
             IconButton.filledTonal(
@@ -735,8 +745,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
             iconSize: 20,
             style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
           ),
-          // Favorite button (Jellyfin only)
-          if (!widget.isOffline && _getClientForMetadata(context)?.isJellyfin == true) ...[
+          // Favorite button
+          if (!widget.isOffline) ...[
             const SizedBox(width: 12),
             IconButton.filledTonal(
               onPressed: () async {
@@ -819,10 +829,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     );
   }
 
-  /// Build a rating chip that shows a source icon when available,
-  /// falling back to a generic Material icon.
   /// Format is determined by ratingImage (e.g. TMDB = 6.5, RT = 65%); unknown = percent.
-  /// For Jellyfin [useReadableLabel] avoids dark SVG logos (TMDB/IMDB) and uses the fallback icon + value only.
+  /// [useReadableLabel] avoids dark SVG logos (TMDB/IMDB) and uses the fallback icon + value only.
   Widget _buildRatingChip(String? imageUri, double value, IconData fallbackIcon, {bool useReadableLabel = false}) {
     final info = parseRatingImage(imageUri, value);
     if (info != null && !useReadableLabel) {
@@ -835,9 +843,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   /// Build all rating chips for the metadata.
   /// When both critic and audience ratings are from Rotten Tomatoes,
   /// they are combined into a single badge.
-  List<Widget> _buildRatingChips(PlexMetadata metadata) {
+  List<Widget> _buildRatingChips(MediaMetadata metadata) {
     final chips = <Widget>[];
-    final isJellyfin = _getClientForMetadata(context)?.isJellyfin == true;
     final bothRT =
         metadata.rating != null &&
         metadata.audienceRating != null &&
@@ -854,28 +861,25 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
           metadata.ratingImage,
           metadata.rating!,
           Symbols.star_rounded,
-          useReadableLabel: isJellyfin && !isRottenTomatoes(metadata.ratingImage),
+          useReadableLabel: !isRottenTomatoes(metadata.ratingImage),
         ));
       }
       if (metadata.audienceRating != null) {
         chips.add(_buildRatingChip(
           metadata.audienceRatingImage,
           metadata.audienceRating!,
-          isJellyfin ? Symbols.star_rounded : Symbols.people_rounded,
-          useReadableLabel: isJellyfin,
+          Symbols.star_rounded,
+          useReadableLabel: true,
         ));
       }
     }
 
-    // User rating chip (tappable) — Plex only; hidden for Jellyfin
-    if (!widget.isOffline && !isJellyfin) {
-      chips.add(_buildUserRatingChip(metadata));
-    }
+    // User rating chip not shown (server handles ratings)
 
     return chips;
   }
 
-  Widget _buildUserRatingChip(PlexMetadata metadata) {
+  Widget _buildUserRatingChip(MediaMetadata metadata) {
     final hasRating = metadata.userRating != null && metadata.userRating! > 0;
     final starValue = hasRating ? metadata.userRating! / 2.0 : 0.0;
 
@@ -935,7 +939,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     );
   }
 
-  void _showRatingDialog(PlexMetadata metadata, double currentStarValue) {
+  void _showRatingDialog(MediaMetadata metadata, double currentStarValue) {
     showModalBottomSheet(
       context: context,
       builder: (context) => RatingBottomSheet(
@@ -943,8 +947,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         onRate: (stars) async {
           final client = _getClientForMetadata(this.context);
           if (client == null) return;
-          final plexRating = stars * 2.0; // Convert 0-5 stars to 0-10 scale
-          final success = await client.rateItem(metadata.ratingKey, plexRating);
+          final ratingValue = stars * 2.0; // Convert 0-5 stars to 0-10 scale
+          final success = await client.rateItem(metadata.ratingKey, ratingValue);
           if (success) _updateWatchState();
         },
         onClear: () async {
@@ -986,9 +990,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     );
   }
 
-  /// Get the correct MediaServerClient for this metadata's server
+  /// Get the correct JellyfinClient for this metadata's server
   /// Returns null in offline mode or if serverId is null
-  MediaServerClient? _getClientForMetadata(BuildContext context) {
+  JellyfinClient? _getClientForMetadata(BuildContext context) {
     if (widget.isOffline || widget.metadata.serverId == null) {
       return null;
     }
@@ -1002,7 +1006,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
     // Offline mode: try to load full metadata from cache (has clearLogo, summary, etc.)
     if (widget.isOffline) {
-      final cachedMetadata = await PlexApiCache.instance.getMetadata(
+      final cachedMetadata = await ApiCache.instance.getMetadata(
         widget.metadata.serverId ?? '',
         widget.metadata.ratingKey,
       );
@@ -1034,8 +1038,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
       // Fetch full metadata with clearLogo and OnDeck episode
       final result = await client.getMetadataWithImagesAndOnDeck(widget.metadata.ratingKey);
-      final metadata = result['metadata'] as PlexMetadata?;
-      final onDeckEpisode = result['onDeckEpisode'] as PlexMetadata?;
+      final metadata = result['metadata'] as MediaMetadata?;
+      final onDeckEpisode = result['onDeckEpisode'] as MediaMetadata?;
 
       if (!mounted) return;
 
@@ -1063,6 +1067,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
         // Load extras (trailers, behind-the-scenes, etc.)
         _loadExtras();
+
+        // Load similar items ("More Like This")
+        _loadSimilarItems();
 
         return;
       }
@@ -1127,7 +1134,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     final episodes = downloadProvider.getDownloadedEpisodesForShow(widget.metadata.ratingKey);
 
     // Group episodes by season
-    final Map<int, List<PlexMetadata>> seasonMap = {};
+    final Map<int, List<MediaMetadata>> seasonMap = {};
     for (final episode in episodes) {
       final seasonNum = episode.parentIndex ?? 0;
       seasonMap.putIfAbsent(seasonNum, () => []).add(episode);
@@ -1136,9 +1143,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     // Create season metadata from episodes
     final seasons = seasonMap.entries.map((entry) {
       final firstEp = entry.value.first;
-      return PlexMetadata(
+      return MediaMetadata(
         ratingKey: firstEp.parentRatingKey ?? '',
-        key: '/library/metadata/${firstEp.parentRatingKey}',
+        key: '${ApiCache.itemPrefix}${firstEp.parentRatingKey}',
         type: 'season',
         title: firstEp.parentTitle ?? 'Season ${entry.key}',
         index: entry.key,
@@ -1190,8 +1197,33 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     }
   }
 
+  /// Load similar items for "More Like This" section
+  Future<void> _loadSimilarItems() async {
+    if (!widget.metadata.isMovie && !widget.metadata.isShow) return;
+    if (widget.isOffline) return;
+
+    try {
+      final client = _getClientForMetadata(context);
+      if (client == null) return;
+
+      final items = await client.getSimilarItems(widget.metadata.ratingKey);
+
+      final itemsWithServerId = items
+          .map((item) => item.copyWith(serverId: widget.metadata.serverId, serverName: widget.metadata.serverName))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _similarItems = itemsWithServerId;
+        });
+      }
+    } catch (e) {
+      // Silently fail - section won't appear
+    }
+  }
+
   /// Navigate to a season detail screen
-  Future<void> _navigateToSeason(PlexMetadata season) async {
+  Future<void> _navigateToSeason(MediaMetadata season) async {
     final watchStateChanged = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -1248,14 +1280,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (metadata.role != null && metadata.role!.isNotEmpty) {
       _castFocusNode.requestFocus();
       _scrollSectionIntoView(_castSectionKey);
-      return KeyEventResult.handled;
-    }
-
-    if (_getClientForMetadata(context)?.isJellyfin != true &&
-        _extras != null &&
-        _extras!.isNotEmpty) {
-      _extrasFocusNode.requestFocus();
-      _scrollSectionIntoView(_extrasSectionKey);
       return KeyEventResult.handled;
     }
 
@@ -1353,17 +1377,12 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // DOWN: cast → extras
+    // DOWN: cast → (extras section removed)
     if (key.isDownKey) {
       final metadata = _fullMetadata ?? widget.metadata;
       if (metadata.role != null && metadata.role!.isNotEmpty) {
         _castFocusNode.requestFocus();
         _scrollSectionIntoView(_castSectionKey);
-      } else if (_getClientForMetadata(context)?.isJellyfin != true &&
-          _extras != null &&
-          _extras!.isNotEmpty) {
-        _extrasFocusNode.requestFocus();
-        _scrollSectionIntoView(_extrasSectionKey);
       }
       return KeyEventResult.handled;
     }
@@ -1386,7 +1405,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // DOWN: seasons (if show) → cast → extras
+    // DOWN: seasons (if show) → cast
     if (key.isDownKey) {
       if (metadata.isShow && _seasons.isNotEmpty) {
         _seasonsFocusNode.requestFocus();
@@ -1394,11 +1413,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       } else if (metadata.role != null && metadata.role!.isNotEmpty) {
         _castFocusNode.requestFocus();
         _scrollSectionIntoView(_castSectionKey);
-      } else if (_getClientForMetadata(context)?.isJellyfin != true &&
-          _extras != null &&
-          _extras!.isNotEmpty) {
-        _extrasFocusNode.requestFocus();
-        _scrollSectionIntoView(_extrasSectionKey);
       }
       return KeyEventResult.handled;
     }
@@ -1600,19 +1614,69 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // DOWN: extras (if available) → consume
+    // DOWN: similar items (if available) → consume
     if (key.isDownKey) {
-      if (_getClientForMetadata(context)?.isJellyfin != true &&
-          _extras != null &&
-          _extras!.isNotEmpty) {
-        _extrasFocusNode.requestFocus();
-        _scrollSectionIntoView(_extrasSectionKey);
+      if (_similarItems != null && _similarItems!.isNotEmpty) {
+        _similarItemsFocusNode.requestFocus();
+        _scrollSectionIntoView(_similarSectionKey);
       }
       return KeyEventResult.handled;
     }
 
     // SELECT: consume (cast is informational)
     if (key.isSelectKey) {
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  /// Handle key events for the similar items row (locked focus pattern)
+  KeyEventResult _handleSimilarItemsKeyEvent(FocusNode _, KeyEvent event) {
+    final key = event.logicalKey;
+    if (key.isBackKey) return KeyEventResult.ignored;
+    if (!event.isActionable) return KeyEventResult.ignored;
+    if (_similarItems == null || _similarItems!.isEmpty) return KeyEventResult.ignored;
+
+    // LEFT
+    if (key.isLeftKey) {
+      if (_focusedSimilarIndex > 0) {
+        setState(() => _focusedSimilarIndex--);
+        scrollListToIndex(_similarItemsScrollController, _focusedSimilarIndex, itemExtent: _getResponsiveCardWidth() + 4);
+      }
+      return KeyEventResult.handled;
+    }
+
+    // RIGHT
+    if (key.isRightKey) {
+      if (_focusedSimilarIndex < _similarItems!.length - 1) {
+        setState(() => _focusedSimilarIndex++);
+        scrollListToIndex(_similarItemsScrollController, _focusedSimilarIndex, itemExtent: _getResponsiveCardWidth() + 4);
+      }
+      return KeyEventResult.handled;
+    }
+
+    // UP: cast → seasons → overview → play button
+    if (key.isUpKey) {
+      final metadata = _fullMetadata ?? widget.metadata;
+      if (metadata.role != null && metadata.role!.isNotEmpty) {
+        _castFocusNode.requestFocus();
+        _scrollSectionIntoView(_castSectionKey);
+      } else if (metadata.isShow && _seasons.isNotEmpty) {
+        _seasonsFocusNode.requestFocus();
+        _scrollSectionIntoView(_seasonsSectionKey);
+      } else if (metadata.summary != null) {
+        _overviewFocusNode.requestFocus();
+        _scrollSectionIntoView(_overviewSectionKey);
+      } else {
+        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        _playButtonFocusNode.requestFocus();
+      }
+      return KeyEventResult.handled;
+    }
+
+    // DOWN: consume (nothing below similar items)
+    if (key.isDownKey) {
       return KeyEventResult.handled;
     }
 
@@ -1690,7 +1754,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         );
 
         // For shows, also refetch seasons to update their watch counts
-        List<PlexMetadata>? updatedSeasons;
+        List<MediaMetadata>? updatedSeasons;
         if (metadata.isShow) {
           final seasons = await client.getChildren(widget.metadata.ratingKey);
           // Preserve serverId for each season
@@ -1745,7 +1809,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       final firstSeason = _seasons.first;
 
       // Get episodes of the first season
-      List<PlexMetadata> episodes;
+      List<MediaMetadata> episodes;
       if (!mounted) return;
       if (widget.isOffline) {
         // In offline mode, get episodes from downloads
@@ -1792,7 +1856,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
   /// Handle shuffle play using play queues
   /// Note: Shuffle requires server connectivity (play queue API)
-  Future<void> _handleShufflePlayWithQueue(BuildContext context, PlexMetadata metadata) async {
+  Future<void> _handleShufflePlayWithQueue(BuildContext context, MediaMetadata metadata) async {
     // Shuffle requires server connectivity
     if (widget.isOffline) {
       if (context.mounted) {
@@ -1950,8 +2014,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                                   // Online - use network image
                                   final client = _getClientForMetadata(context);
                                   final mediaQuery = MediaQuery.of(context);
-                                  final dpr = PlexImageHelper.effectiveDevicePixelRatio(context);
-                                  final imageUrl = PlexImageHelper.getOptimizedImageUrl(
+                                  final dpr = MediaImageHelper.effectiveDevicePixelRatio(context);
+                                  final imageUrl = MediaImageHelper.getOptimizedImageUrl(
                                     client: client,
                                     thumbPath: metadata.art,
                                     maxWidth: mediaQuery.size.width,
@@ -2034,8 +2098,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
                                         // Online - use network image
                                         final client = _getClientForMetadata(context);
-                                        final dpr = PlexImageHelper.effectiveDevicePixelRatio(context);
-                                        final logoUrl = PlexImageHelper.getOptimizedImageUrl(
+                                        final dpr = MediaImageHelper.effectiveDevicePixelRatio(context);
+                                        final logoUrl = MediaImageHelper.getOptimizedImageUrl(
                                           client: client,
                                           thumbPath: metadata.clearLogo,
                                           maxWidth: 400,
@@ -2226,18 +2290,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                           const SizedBox(height: 24),
                         ],
 
-                        // Trailers & Extras Section (Plex only; Jellyfin uses remote URLs, not in-app extras)
-                        if (!widget.isOffline &&
-                            _getClientForMetadata(context)?.isJellyfin != true &&
-                            _extras != null &&
-                            _extras!.isNotEmpty) ...[
+                        // More Like This
+                        if (_similarItems != null && _similarItems!.isNotEmpty) ...[
                           Text(
-                            key: _extrasSectionKey,
-                            t.discover.extras,
+                            key: _similarSectionKey,
+                            t.discover.moreLikeThis,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 12),
-                          _buildExtrasSection(),
+                          _buildSimilarItemsSection(),
                           const SizedBox(height: 24),
                         ],
 
@@ -2316,13 +2377,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   }
 
   /// Get the primary trailer from the extras list
-  PlexMetadata? _getPrimaryTrailer() {
+  MediaMetadata? _getPrimaryTrailer() {
     if (_extras == null || _extras!.isEmpty) return null;
 
     // If there's a primaryExtraKey, try to find that specific trailer
     final metadata = _fullMetadata ?? widget.metadata;
     if (metadata.primaryExtraKey != null) {
-      // Extract rating key from primaryExtraKey (e.g., "/library/metadata/52601" -> "52601")
+        // Extract rating key from primaryExtraKey (e.g., "/items/52601" -> "52601")
       final primaryKey = metadata.primaryExtraKey!.split('/').last;
       try {
         return _extras!.firstWhere((extra) => extra.ratingKey == primaryKey);
@@ -2342,7 +2403,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
   /// Build the cast section with locked focus pattern for D-pad navigation
   /// Uses same layout pattern as seasons/extras (ListView.builder + Padding(horizontal: 2))
-  Widget _buildCastSection(PlexMetadata metadata) {
+  Widget _buildCastSection(MediaMetadata metadata) {
     const cardWidth = 120.0;
     const innerPadding = 6.0;
     // image + inner padding + text area + outer list padding + focus scale headroom
@@ -2382,7 +2443,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(tokens(context).radiusSm),
-                            child: PlexOptimizedImage(
+                            child: OptimizedImage(
                               client: _getClientForMetadata(context),
                               imagePath: actor.thumb,
                               width: 120,
@@ -2478,6 +2539,51 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     );
   }
 
+  Widget _buildSimilarItemsSection() {
+    final cardWidth = _getResponsiveCardWidth();
+    final posterHeight = (cardWidth - 16) * 1.5;
+    final containerHeight = posterHeight + 66;
+
+    final hasFocus = _similarItemsFocusNode.hasFocus;
+
+    return Focus(
+      focusNode: _similarItemsFocusNode,
+      onKeyEvent: _handleSimilarItemsKeyEvent,
+      child: SizedBox(
+        height: containerHeight,
+        child: HorizontalScrollWithArrows(
+          controller: _similarItemsScrollController,
+          builder: (scrollController) => ListView.builder(
+            controller: scrollController,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12),
+            itemCount: _similarItems!.length,
+            itemBuilder: (context, index) {
+              final item = _similarItems![index];
+              final isFocused = hasFocus && index == _focusedSimilarIndex;
+              final cardKey = _similarCardKeys.putIfAbsent(index, () => GlobalKey<MediaCardState>());
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: FocusBuilders.buildLockedFocusWrapper(
+                  context: context,
+                  isFocused: isFocused,
+                  child: MediaCard(
+                    key: cardKey,
+                    item: item,
+                    width: cardWidth,
+                    height: posterHeight,
+                    forceGridMode: true,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoRow(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2494,7 +2600,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     );
   }
 
-  String _getPlayButtonLabel(PlexMetadata metadata) {
+  String _getPlayButtonLabel(MediaMetadata metadata) {
     // For TV shows - use compact S1E1 format
     if (metadata.isShow) {
       if (_onDeckEpisode != null) {
@@ -2515,7 +2621,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     return '';
   }
 
-  IconData _getPlayButtonIcon(PlexMetadata metadata) {
+  IconData _getPlayButtonIcon(MediaMetadata metadata) {
     // For TV shows
     if (metadata.isShow) {
       if (_onDeckEpisode != null) {
@@ -2538,8 +2644,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
 /// Season card widget with D-pad long-press support
 class _SeasonCard extends StatefulWidget {
-  final PlexMetadata season;
-  final MediaServerClient? client;
+  final MediaMetadata season;
+  final JellyfinClient? client;
   final VoidCallback onTap;
   final VoidCallback onRefresh;
   final VoidCallback? onListRefresh;
@@ -2691,7 +2797,7 @@ class _SeasonCardState extends State<_SeasonCard> {
       );
     }
     if (widget.season.thumb != null) {
-      return PlexOptimizedImage.poster(
+      return OptimizedImage.poster(
         client: widget.client,
         imagePath: widget.season.thumb,
         width: 80,

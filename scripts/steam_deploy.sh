@@ -4,7 +4,7 @@ set -euo pipefail
 APP_ID=4435320
 DEPOT_WIN=4435321
 DEPOT_LINUX=4435322
-REPO="edde746/plezy"
+REPO="dkmcgowan/finzy"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORK="$SCRIPT_DIR/build"
@@ -18,16 +18,16 @@ mkdir -p "$WORK"
 
 # Download & extract
 echo "Downloading Windows build..."
-gh release download "$TAG" --repo "$REPO" -p "plezy-windows-x64-portable.7z" -D "$WORK"
+gh release download "$TAG" --repo "$REPO" -p "finzy-windows-x64-portable.7z" -D "$WORK"
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    unar -o "$WORK" "$WORK/plezy-windows-x64-portable.7z"
+    unar -o "$WORK" "$WORK/finzy-windows-x64-portable.7z"
 else
-    7z x "$WORK/plezy-windows-x64-portable.7z" -o"$WORK" -y
+    7z x "$WORK/finzy-windows-x64-portable.7z" -o"$WORK" -y
 fi
-mv "$WORK"/plezy-windows-x64-portable "$WORK/windows"
+mv "$WORK"/finzy-windows-x64-portable "$WORK/windows"
 
 echo "Extracting Linux Steam build..."
-STEAM_TARBALL="$SCRIPT_DIR/../plezy-steam-linux-x64.tar.gz"
+STEAM_TARBALL="$SCRIPT_DIR/../finzy-steam-linux-x64.tar.gz"
 if [[ ! -f "$STEAM_TARBALL" ]]; then
     echo "Error: $STEAM_TARBALL not found. Run build_steam.sh first." >&2
     exit 1

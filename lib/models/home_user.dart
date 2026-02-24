@@ -1,0 +1,74 @@
+class HomeUser {
+  final int id;
+  final String uuid;
+  final String title;
+  final String? username;
+  final String? email;
+  final String? friendlyName;
+  final String thumb;
+  final bool hasPassword;
+  final bool restricted;
+  final int? updatedAt;
+  final bool admin;
+  final bool guest;
+  final bool protected;
+
+  HomeUser({
+    required this.id,
+    required this.uuid,
+    required this.title,
+    this.username,
+    this.email,
+    this.friendlyName,
+    required this.thumb,
+    required this.hasPassword,
+    required this.restricted,
+    required this.updatedAt,
+    required this.admin,
+    required this.guest,
+    required this.protected,
+  });
+
+  factory HomeUser.fromJson(Map<String, dynamic> json) {
+    return HomeUser(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      uuid: json['uuid'] as String? ?? '',
+      title: json['title'] as String? ?? 'Unknown',
+      username: json['username'] as String?,
+      email: json['email'] as String?,
+      friendlyName: json['friendlyName'] as String?,
+      thumb: json['thumb'] as String? ?? '',
+      hasPassword: json['hasPassword'] as bool? ?? false,
+      restricted: json['restricted'] as bool? ?? false,
+      updatedAt: (json['updatedAt'] as num?)?.toInt(),
+      admin: json['admin'] as bool? ?? false,
+      guest: json['guest'] as bool? ?? false,
+      protected: json['protected'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'uuid': uuid,
+      'title': title,
+      'username': username,
+      'email': email,
+      'friendlyName': friendlyName,
+      'thumb': thumb,
+      'hasPassword': hasPassword,
+      'restricted': restricted,
+      'updatedAt': updatedAt,
+      'admin': admin,
+      'guest': guest,
+      'protected': protected,
+    };
+  }
+
+  String get displayName => friendlyName ?? title;
+
+  bool get isAdminUser => admin;
+  bool get isRestrictedUser => restricted;
+  bool get isGuestUser => guest;
+  bool get requiresPassword => protected;
+}

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../models/plex_media_info.dart';
+import '../../../models/media_info.dart';
 
 /// Custom painter for drawing chapter markers on the video timeline slider
 class ChapterMarkerPainter extends CustomPainter {
-  final List<PlexChapter> chapters;
+  final List<Chapter> chapters;
   final Duration duration;
 
   ChapterMarkerPainter({required this.chapters, required this.duration});

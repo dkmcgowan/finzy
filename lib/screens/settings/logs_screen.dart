@@ -1,8 +1,5 @@
-import 'dart:convert';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
+import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
@@ -75,61 +72,6 @@ class _LogsScreenState extends State<LogsScreen> {
     showSuccessSnackBar(context, t.messages.logsCopied);
   }
 
-  Future<void> _uploadLogs() async {
-    final logText = _formatAllLogs();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final response = await Dio().post(
-        'https://ice.plezy.app/logs',
-        data: logText,
-        options: Options(contentType: 'text/plain'),
-      );
-
-      if (!mounted) return;
-      Navigator.of(context).pop(); // dismiss loading
-
-      final id =
-          (jsonDecode(response.data is String ? response.data : jsonEncode(response.data))
-                  as Map<String, dynamic>)['id']
-              as String;
-
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(t.messages.logsUploaded),
-          content: Row(
-            children: [
-              Text('${t.messages.logId}: '),
-              SelectableText(
-                id,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace', fontSize: 18),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.copy, size: 20),
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: id));
-                  showSuccessSnackBar(ctx, t.messages.logsCopied);
-                },
-              ),
-            ],
-          ),
-          actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(t.common.close))],
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      Navigator.of(context).pop(); // dismiss loading
-      showErrorSnackBar(context, t.messages.logsUploadFailed);
-    }
-  }
-
   Color _getLevelColor(Level level) {
     switch (level) {
       case Level.error:
@@ -180,11 +122,6 @@ class _LogsScreenState extends State<LogsScreen> {
                   icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
                   onPressed: _loadLogs,
                   tooltip: t.common.refresh,
-                ),
-                IconButton(
-                  icon: const AppIcon(Symbols.upload_rounded, fill: 1),
-                  onPressed: _logs.isNotEmpty ? _uploadLogs : null,
-                  tooltip: t.logs.uploadLogs,
                 ),
                 IconButton(
                   icon: const AppIcon(Symbols.content_copy_rounded, fill: 1),

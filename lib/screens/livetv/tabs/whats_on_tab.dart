@@ -18,14 +18,14 @@ import '../../../theme/mono_tokens.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/layout_constants.dart';
 import '../../../utils/live_tv_player_navigation.dart';
-import '../../../utils/plex_image_helper.dart';
+import '../../../utils/media_image_helper.dart';
 import '../../../utils/provider_extensions.dart';
 import '../../../widgets/app_icon.dart';
 import '../../../widgets/focus_builders.dart';
 import '../../../widgets/overlay_sheet.dart';
 import '../../../utils/scroll_utils.dart';
 import '../../../widgets/horizontal_scroll_with_arrows.dart';
-import '../../../widgets/plex_optimized_image.dart';
+import '../../../widgets/optimized_image.dart';
 import '../live_tv_show_schedule_screen.dart';
 import '../program_details_sheet.dart';
 
@@ -194,12 +194,12 @@ class WhatsOnTabState extends State<WhatsOnTab> {
     final posterImage = metadata.grandparentThumb ?? metadata.thumb;
     String? posterUrl;
     if (posterImage != null && client != null) {
-      posterUrl = PlexImageHelper.getOptimizedImageUrl(
+      posterUrl = MediaImageHelper.getOptimizedImageUrl(
         client: client,
         thumbPath: posterImage,
         maxWidth: 80,
         maxHeight: 120,
-        devicePixelRatio: PlexImageHelper.effectiveDevicePixelRatio(context),
+        devicePixelRatio: MediaImageHelper.effectiveDevicePixelRatio(context),
         imageType: ImageType.poster,
       );
     }
@@ -612,7 +612,7 @@ class _LiveTvPosterCard extends StatelessWidget {
                 height: posterHeight,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(tokens(context).radiusSm),
-                  child: PlexOptimizedImage.poster(
+                  child: OptimizedImage.poster(
                     client: context.getClientWithFallback(metadata.serverId),
                     imagePath: posterImage,
                     width: double.infinity,

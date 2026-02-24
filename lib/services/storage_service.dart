@@ -6,7 +6,7 @@ import 'base_shared_preferences_service.dart';
 class StorageService extends BaseSharedPreferencesService {
   static const String _keyServerUrl = 'server_url';
   static const String _keyToken = 'token';
-  static const String _keyPlexToken = 'plex_token';
+  static const String _keyAuthToken = 'auth_token';
   static const String _keyServerData = 'server_data';
   static const String _keyClientId = 'client_identifier';
   static const String _keySelectedLibraryIndex = 'selected_library_index';
@@ -31,7 +31,7 @@ class StorageService extends BaseSharedPreferencesService {
   static const List<String> _credentialKeys = [
     _keyServerUrl,
     _keyToken,
-    _keyPlexToken,
+    _keyAuthToken,
     _keyServerData,
     _keyClientId,
     _keyUserProfile,
@@ -58,7 +58,7 @@ class StorageService extends BaseSharedPreferencesService {
     // Seed known values so logs can redact immediately on startup.
     LogRedactionManager.registerServerUrl(prefs.getString(_keyServerUrl));
     LogRedactionManager.registerToken(prefs.getString(_keyToken));
-    LogRedactionManager.registerToken(getPlexToken());
+    LogRedactionManager.registerToken(getAuthToken());
   }
 
   // Per-Server Endpoint URL (for multi-server connection caching)
@@ -75,14 +75,14 @@ class StorageService extends BaseSharedPreferencesService {
     await prefs.remove('$_prefixServerEndpoint$serverId');
   }
 
-  // Plex.tv Token (for API access)
-  Future<void> savePlexToken(String token) async {
-    await prefs.setString(_keyPlexToken, token);
+  // Auth token (for API access and log redaction)
+  Future<void> saveAuthToken(String token) async {
+    await prefs.setString(_keyAuthToken, token);
     LogRedactionManager.registerToken(token);
   }
 
-  String? getPlexToken() {
-    return prefs.getString(_keyPlexToken);
+  String? getAuthToken() {
+    return prefs.getString(_keyAuthToken);
   }
 
   // Client Identifier
