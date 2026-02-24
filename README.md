@@ -1,6 +1,6 @@
 <img src="assets/finzy.png" alt="Finzy Logo" width="96" height="96" align="left">
 
-# Finzy
+### Finzy
 
 <br clear="left">
 
