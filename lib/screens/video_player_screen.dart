@@ -47,7 +47,6 @@ import '../utils/platform_detector.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/language_codes.dart';
 import '../utils/snackbar_helper.dart';
-import '../utils/track_label_builder.dart' as tlb;
 import '../utils/auth_url_helper.dart';
 import '../utils/video_player_navigation.dart';
 import '../widgets/overlay_sheet.dart';
@@ -1151,6 +1150,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       await ambientLighting.enable(videoAspect, outputAspect);
     }
 
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -1159,51 +1159,6 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     setState(() {
       _videoFilterManager?.toggleContainCover();
     });
-  }
-
-  void _cycleSubtitleTrack() {
-    if (player == null) return;
-    final tracks = player!.state.tracks.subtitle.where((t) => t.id != 'auto').toList();
-    if (tracks.isEmpty) return;
-
-    final current = player!.state.track.subtitle;
-    // tracks includes 'no' (off). Find current index and advance.
-    final currentIndex = tracks.indexWhere((t) => t.id == current?.id);
-    final nextIndex = (currentIndex + 1) % tracks.length;
-    final next = tracks[nextIndex];
-    player!.selectSubtitleTrack(next);
-    _onSubtitleTrackChanged(next);
-
-    if (mounted) {
-      final label = next.id == 'no'
-          ? 'Subtitles: Off'
-          : 'Subtitles: ${tlb.TrackLabelBuilder.buildSubtitleLabel(title: next.title, language: next.language, codec: next.codec, index: nextIndex)}';
-      showAppSnackBar(context, label, duration: const Duration(seconds: 1));
-    }
-  }
-
-  void _cycleAudioTrack() {
-    if (player == null) return;
-    final tracks = player!.state.tracks.audio.where((t) => t.id != 'auto' && t.id != 'no').toList();
-    if (tracks.length <= 1) return;
-
-    final current = player!.state.track.audio;
-    final currentIndex = tracks.indexWhere((t) => t.id == current?.id);
-    final nextIndex = (currentIndex + 1) % tracks.length;
-    final next = tracks[nextIndex];
-    player!.selectAudioTrack(next);
-    _onAudioTrackChanged(next);
-
-    if (mounted) {
-      final label =
-          'Audio: ${tlb.TrackLabelBuilder.buildAudioLabel(title: next.title, language: next.language, codec: next.codec, channelsCount: next.channelsCount, index: nextIndex)}';
-      showAppSnackBar(context, label, duration: const Duration(seconds: 1));
-    }
-  }
-
-  Future<void> _toggleFullscreen() async {
-    if (PlatformDetector.isMobile(context)) return;
-    await FullscreenStateManager().toggleFullscreen();
   }
 
   /// Exit fullscreen before leaving the player (Windows/Linux only).

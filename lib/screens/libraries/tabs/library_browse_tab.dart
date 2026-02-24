@@ -23,7 +23,6 @@ import '../../../widgets/focusable_filter_chip.dart';
 import '../../../widgets/media_grid_delegate.dart';
 import '../../../widgets/overlay_sheet.dart';
 import '../../../mixins/library_tab_focus_mixin.dart';
-import '../folder_tree_view.dart';
 import '../filters_bottom_sheet.dart';
 import '../sort_bottom_sheet.dart';
 import '../state_messages.dart';

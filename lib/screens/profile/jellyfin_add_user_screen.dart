@@ -97,7 +97,6 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
     required String userName,
     String? primaryImageTag,
   }) async {
-    String serverId = result.serverId ?? _baseUrl.hashCode.abs().toString();
     String serverName = result.serverName ?? 'Jellyfin';
     try {
       final dio = Dio(
@@ -113,8 +112,6 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
       final data = info.data;
       if (data != null) {
         serverName = data['ServerName'] as String? ?? serverName;
-        final id = data['Id'] as String?;
-        if (id != null && id.isNotEmpty) serverId = id;
       }
     } catch (_) {}
 

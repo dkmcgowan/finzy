@@ -254,7 +254,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     if (page == null) return;
     final int maxIndex = _onDeck.length - 1;
     final int index = page.round().clamp(0, maxIndex);
-    final bool scrolling = _heroController.position.isScrollingNotifier.value;
 
     if (_currentHeroIndex != index) {
       setState(() => _currentHeroIndex = index);

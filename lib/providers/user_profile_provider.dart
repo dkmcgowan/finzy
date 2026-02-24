@@ -25,10 +25,7 @@ class UserProfileProvider extends ChangeNotifier {
 
   StorageService? _storageService;
 
-  Future<void> Function()? _onDataInvalidationRequested;
-
   void setDataInvalidationCallback(Future<void> Function()? callback) {
-    _onDataInvalidationRequested = callback;
   }
 
   Future<void> initialize() async {
@@ -61,7 +58,6 @@ class UserProfileProvider extends ChangeNotifier {
       _home = null;
       _currentUser = null;
       _profileSettings = null;
-      _onDataInvalidationRequested = null;
       _storageService = null;
       _isInitialized = false;
       _clearError();
@@ -86,11 +82,6 @@ class UserProfileProvider extends ChangeNotifier {
 
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
-  }
-
-  void _setError(String error) {
-    _error = error;
     notifyListeners();
   }
 

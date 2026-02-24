@@ -10,7 +10,6 @@ import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../widgets/collapsible_text.dart';
-import '../widgets/rating_bottom_sheet.dart';
 
 import '../focus/dpad_navigator.dart';
 import '../focus/focusable_wrapper.dart';
@@ -88,10 +87,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   final Map<int, GlobalKey<MediaCardState>> _seasonCardKeys = {};
 
   // Locked focus pattern for extras
-  int _focusedExtraIndex = 0;
   late final FocusNode _extrasFocusNode;
-  final Map<int, GlobalKey<MediaCardState>> _extraCardKeys = {};
-  final _extrasSectionKey = GlobalKey();
 
   // Similar items ("More Like This")
   List<MediaMetadata>? _similarItems;
@@ -879,88 +875,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     return chips;
   }
 
-  Widget _buildUserRatingChip(MediaMetadata metadata) {
-    final hasRating = metadata.userRating != null && metadata.userRating! > 0;
-    final starValue = hasRating ? metadata.userRating! / 2.0 : 0.0;
-
-    return FocusableWrapper(
-      focusNode: _ratingChipFocusNode,
-      onSelect: () => _showRatingDialog(metadata, starValue),
-      borderRadius: 100,
-      useBackgroundFocus: true,
-      onKeyEvent: (_, event) {
-        if (!event.isActionable) return KeyEventResult.ignored;
-        final key = event.logicalKey;
-        if (key.isDownKey) {
-          _playButtonFocusNode.requestFocus();
-          return KeyEventResult.handled;
-        }
-        if (key.isUpKey) {
-          return KeyEventResult.handled; // consume — nothing above
-        }
-        return KeyEventResult.ignored;
-      },
-      child: GestureDetector(
-        onTap: () => _showRatingDialog(metadata, starValue),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8),
-            borderRadius: const BorderRadius.all(Radius.circular(100)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppIcon(
-                Symbols.star_rounded,
-                fill: hasRating ? 1 : 0,
-                color: hasRating
-                    ? Colors.amber
-                    : Theme.of(context).colorScheme.onSecondaryContainer,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                hasRating
-                    ? (starValue == starValue.truncateToDouble()
-                        ? '${starValue.toInt()}'
-                        : starValue.toStringAsFixed(1))
-                    : t.mediaMenu.rate,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showRatingDialog(MediaMetadata metadata, double currentStarValue) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => RatingBottomSheet(
-        currentRating: currentStarValue,
-        onRate: (stars) async {
-          final client = _getClientForMetadata(this.context);
-          if (client == null) return;
-          final ratingValue = stars * 2.0; // Convert 0-5 stars to 0-10 scale
-          final success = await client.rateItem(metadata.ratingKey, ratingValue);
-          if (success) _updateWatchState();
-        },
-        onClear: () async {
-          final client = _getClientForMetadata(this.context);
-          if (client == null) return;
-          final success = await client.rateItem(metadata.ratingKey, -1);
-          if (success) _updateWatchState();
-        },
-      ),
-    );
-  }
-
   /// Build a combined RT chip showing critic + audience side by side.
   Widget _buildCombinedRtChip(RatingInfo critic, RatingInfo audience) {
     final textStyle = TextStyle(
@@ -1486,91 +1400,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     );
   }
 
-
-  /// Handle key events for the extras row (locked focus pattern)
-  KeyEventResult _handleExtrasKeyEvent(FocusNode _, KeyEvent event) {
-    final key = event.logicalKey;
-
-    if (key.isBackKey) return KeyEventResult.ignored;
-
-    // Handle SELECT with long-press detection
-    if (key.isSelectKey) {
-      if (event is KeyDownEvent) {
-        _selectKeyTimer?.cancel();
-        _isSelectKeyDown = true;
-        _longPressTriggered = false;
-        _selectKeyTimer = Timer(_longPressDuration, () {
-          if (!mounted) return;
-          if (_isSelectKeyDown) {
-            _longPressTriggered = true;
-            SelectKeyUpSuppressor.suppressSelectUntilKeyUp();
-            _extraCardKeys[_focusedExtraIndex]?.currentState?.showContextMenu();
-          }
-        });
-        return KeyEventResult.handled;
-      } else if (event is KeyRepeatEvent) {
-        return KeyEventResult.handled;
-      } else if (event is KeyUpEvent) {
-        final timerWasActive = _selectKeyTimer?.isActive ?? false;
-        _selectKeyTimer?.cancel();
-        if (!_longPressTriggered && timerWasActive && _isSelectKeyDown) {
-          if (_focusedExtraIndex < _extras!.length) {
-            navigateToVideoPlayer(context, metadata: _extras![_focusedExtraIndex]);
-          }
-        }
-        _isSelectKeyDown = false;
-        _longPressTriggered = false;
-        return KeyEventResult.handled;
-      }
-    }
-
-    if (!event.isActionable) return KeyEventResult.ignored;
-    if (_extras == null || _extras!.isEmpty) return KeyEventResult.ignored;
-
-    // LEFT: previous extra
-    if (key.isLeftKey) {
-      if (_focusedExtraIndex > 0) {
-        setState(() => _focusedExtraIndex--);
-        scrollListToIndex(_extrasScrollController, _focusedExtraIndex, itemExtent: _getResponsiveCardWidth() + 4);
-      }
-      return KeyEventResult.handled;
-    }
-
-    // RIGHT: next extra
-    if (key.isRightKey) {
-      if (_focusedExtraIndex < _extras!.length - 1) {
-        setState(() => _focusedExtraIndex++);
-        scrollListToIndex(_extrasScrollController, _focusedExtraIndex, itemExtent: _getResponsiveCardWidth() + 4);
-      }
-      return KeyEventResult.handled;
-    }
-
-    // UP: cast → seasons (if show) → overview → play button
-    if (key.isUpKey) {
-      final metadata = _fullMetadata ?? widget.metadata;
-      if (metadata.role != null && metadata.role!.isNotEmpty) {
-        _castFocusNode.requestFocus();
-        _scrollSectionIntoView(_castSectionKey);
-      } else if (metadata.isShow && _seasons.isNotEmpty) {
-        _seasonsFocusNode.requestFocus();
-        _scrollSectionIntoView(_seasonsSectionKey);
-      } else if (metadata.summary != null) {
-        _overviewFocusNode.requestFocus();
-        _scrollSectionIntoView(_overviewSectionKey);
-      } else {
-        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-        _playButtonFocusNode.requestFocus();
-      }
-      return KeyEventResult.handled;
-    }
-
-    // DOWN: consume (nothing below extras to focus)
-    if (key.isDownKey) {
-      return KeyEventResult.handled;
-    }
-
-    return KeyEventResult.ignored;
-  }
 
   /// Handle key events for the cast row (locked focus pattern)
   KeyEventResult _handleCastKeyEvent(FocusNode _, KeyEvent event) {
@@ -2482,53 +2311,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                         ],
                       ),
                     ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExtrasSection() {
-    final cardWidth = _getResponsiveCardWidth();
-    // 16:9 aspect ratio for clip thumbnails (cardWidth includes 8px padding on each side)
-    final posterHeight = (cardWidth - 16) * (9 / 16);
-    final containerHeight = posterHeight + 66;
-
-    final hasFocus = _extrasFocusNode.hasFocus;
-
-    return Focus(
-      focusNode: _extrasFocusNode,
-      onKeyEvent: _handleExtrasKeyEvent,
-      child: SizedBox(
-        height: containerHeight,
-        child: HorizontalScrollWithArrows(
-          controller: _extrasScrollController,
-          builder: (scrollController) => ListView.builder(
-            controller: scrollController,
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12),
-            itemCount: _extras!.length,
-            itemBuilder: (context, index) {
-              final extra = _extras![index];
-              final isFocused = hasFocus && index == _focusedExtraIndex;
-              final cardKey = _extraCardKeys.putIfAbsent(index, () => GlobalKey<MediaCardState>());
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: FocusBuilders.buildLockedFocusWrapper(
-                  context: context,
-                  isFocused: isFocused,
-                  onTap: () => navigateToVideoPlayer(context, metadata: extra),
-                  child: MediaCard(
-                    key: cardKey,
-                    item: extra,
-                    width: cardWidth,
-                    height: posterHeight,
-                    forceGridMode: true,
                   ),
                 ),
               );

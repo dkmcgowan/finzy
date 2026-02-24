@@ -2086,9 +2086,7 @@ class _LibraryManagementSheetState extends State<_LibraryManagementSheet> {
         setState(() => _focusedColumn--);
         return KeyEventResult.handled;
       }
-      final lib = _focusedIndex < _tempLibraries.length ? _tempLibraries[_focusedIndex] : null;
-      const hasOptions = false; // No per-library menu in management sheet
-      final maxCol = hasOptions ? 2 : 1;
+      const maxCol = 1;
       if (key.isRightKey && _focusedColumn < maxCol) {
         setState(() => _focusedColumn++);
         return KeyEventResult.handled;

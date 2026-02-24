@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../i18n/strings.g.dart';
-import '../../../models/library_filter.dart' show LibraryFilterValue;
 import '../../../models/hub.dart';
-import '../../../models/media_metadata.dart';
 import '../../../widgets/hub_section.dart';
 import '../../main_screen.dart';
 import 'base_library_tab.dart';

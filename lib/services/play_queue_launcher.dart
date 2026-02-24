@@ -124,7 +124,7 @@ class PlayQueueLauncher {
         }
 
         // If the queue is empty, try fetching it again with getPlayQueue
-        if (playQueue != null && (playQueue.items == null || playQueue.items!.isEmpty)) {
+        if (playQueue.items == null || playQueue.items!.isEmpty) {
           final fetchedQueue = await client.getPlayQueue(playQueue.playQueueID);
           if (fetchedQueue != null && fetchedQueue.items != null && fetchedQueue.items!.isNotEmpty) {
             playQueue = fetchedQueue;

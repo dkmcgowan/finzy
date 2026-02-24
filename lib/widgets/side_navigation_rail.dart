@@ -915,19 +915,6 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     );
   }
 
-  Widget _buildLibraryItems(List<MediaLibrary> visibleLibraries, dynamic t) {
-    // Find which library names are not unique
-    final nonUniqueNames = _getNonUniqueLibraryNames(visibleLibraries);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: visibleLibraries.map((library) {
-        final showServerName = nonUniqueNames.contains(library.title) && library.serverName != null;
-        return _buildLibraryItem(library, t, showServerName: showServerName);
-      }).toList(),
-    );
-  }
-
   Widget _buildLibraryItem(MediaLibrary library, dynamic t, {bool showServerName = false}) {
     final isSelected = widget.selectedIndex == 1 && widget.selectedLibraryKey == library.globalKey;
     final isFocused = _focusTracker.isFocused(library.globalKey);

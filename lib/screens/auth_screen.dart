@@ -6,8 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import '../models/jellyfin_public_user.dart';
 import '../models/registered_server.dart';
 import '../services/jellyfin_auth_service.dart';
@@ -167,6 +165,7 @@ class _AuthScreenState extends State<AuthScreen> {
       clientIdentifier: storage.getClientIdentifier(),
     );
 
+    if (!mounted) return;
     if (!connResult.hasConnections) {
       setState(() {
         _isAuthenticating = false;

@@ -52,19 +52,14 @@ class JellyfinClient {
     );
   }
 
-  @override
   String get baseUrl => config.baseUrl;
 
-  @override
   String? get token => config.token;
 
-  @override
   Map<String, String> get requestHeaders => {'Authorization': config.authorizationHeader};
 
-  @override
   bool get isOfflineMode => _offlineMode;
 
-  @override
   void setOfflineMode(bool offline) {
     _offlineMode = offline;
   }
@@ -163,7 +158,7 @@ class JellyfinClient {
       grandparentTitle: item['SeriesName'] as String?,
       grandparentThumb: item['SeriesId']?.toString(),
       grandparentRatingKey: item['SeriesId']?.toString(),
-      parentTitle: item['SeasonName'] as String? ?? (item['ParentId'] != null ? null : null),
+      parentTitle: item['SeasonName'] as String?,
       parentRatingKey: item['SeasonId']?.toString(),
       parentIndex: _toInt(item['ParentIndexNumber']),
       index: _toInt(item['IndexNumber']),
@@ -318,20 +313,17 @@ class JellyfinClient {
     );
   }
 
-  @override
   Future<Map<String, dynamic>> getServerIdentity() async {
     final response = await _dio.get<Map<String, dynamic>>('/System/Info');
     return response.data ?? {};
   }
 
-  @override
   Future<String?> getMachineIdentifier() async => serverId;
 
   /// Synthetic library keys for top-level Collections and Playlists (Jellyfin treats these as libraries).
   static const String syntheticCollectionsKey = 'jellyfin_collections';
   static const String syntheticPlaylistsKey = 'jellyfin_playlists';
 
-  @override
   Future<List<MediaLibrary>> getLibraries() async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>('/Users/${config.userId}/Views');
@@ -406,7 +398,6 @@ class JellyfinClient {
     return result;
   }
 
-  @override
   Future<List<MediaMetadata>> getLibraryContent(
     String sectionId, {
     int? start,
@@ -534,7 +525,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<MediaMetadata?> getMetadataWithImages(String ratingKey) async {
     if (_offlineMode) return null;
     try {
@@ -551,7 +541,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<Map<String, dynamic>> getMetadataWithImagesAndOnDeck(String ratingKey) async {
     final metadata = await getMetadataWithImages(ratingKey);
     MediaMetadata? onDeckEpisode;
@@ -602,7 +591,6 @@ class JellyfinClient {
     return null;
   }
 
-  @override
   Future<List<MediaMetadata>> getChildren(String ratingKey) async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>(
@@ -614,7 +602,6 @@ class JellyfinClient {
     return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
   }
 
-  @override
   Future<List<MediaMetadata>> getExtras(String ratingKey) async {
     if (_offlineMode) return [];
     // Prefer local trailers (streamable in-app); fall back to remote (URLs open in browser).
@@ -666,7 +653,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<MediaMetadata>> getAllUnwatchedEpisodes(String showRatingKey) async {
     final seasons = await getChildren(showRatingKey);
     final all = <MediaMetadata>[];
@@ -679,13 +665,11 @@ class JellyfinClient {
     return all;
   }
 
-  @override
   Future<List<MediaMetadata>> getUnwatchedEpisodesInSeason(String seasonRatingKey) async {
     final episodes = await getChildren(seasonRatingKey);
     return episodes.where((e) => e.type.toLowerCase() == 'episode' && (e.viewCount ?? 0) == 0).toList();
   }
 
-  @override
   String getThumbnailUrl(String? thumbPath) {
     if (thumbPath == null || thumbPath.isEmpty) return '';
     final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
@@ -701,7 +685,7 @@ class JellyfinClient {
   /// Default interval is 10s per tile; width 320 is a common resolution.
   String? getTrickplayTileUrl(String itemId, int positionMs, {int width = 320, int intervalMs = 10000}) {
     final token = config.token;
-    if (token == null || token.isEmpty) return null;
+    if (token.isEmpty) return null;
     final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
     final index = (positionMs / intervalMs).floor();
     return '${base}Videos/$itemId/Trickplay/$width/$index.jpg?ApiKey=${Uri.encodeComponent(token)}';
@@ -721,15 +705,12 @@ class JellyfinClient {
     }
   }
 
-  @override
   Map<String, String>? get imageHttpHeaders => requestHeaders;
 
-  @override
   Future<bool> checkThumbnailsAvailable(int partId) async {
     return false;
   }
 
-  @override
   Future<List<Chapter>> getChapters(String ratingKey, {bool includeImages = false}) async {
     try {
       final item = await _dio.get<Map<String, dynamic>>(
@@ -765,7 +746,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<Marker>> getMarkers(String ratingKey) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -839,14 +819,12 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<PlaybackExtras> getPlaybackExtras(String ratingKey, {bool includeChapterImages = false}) async {
     final chapters = await getChapters(ratingKey, includeImages: includeChapterImages);
     final markers = await getMarkers(ratingKey);
     return PlaybackExtras(chapters: chapters, markers: markers);
   }
 
-  @override
   Future<VideoPlaybackData> getVideoPlaybackData(String ratingKey, {int mediaIndex = 0}) async {
     String? videoUrl;
     MediaInfo? mediaInfo;
@@ -973,7 +951,6 @@ class JellyfinClient {
     );
   }
 
-  @override
   Future<FileInfo?> getFileInfo(String ratingKey) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1011,7 +988,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<void> markAsWatched(String ratingKey, {MediaMetadata? metadata}) async {
     if (_offlineMode) return;
     await _dio.post('/Users/${config.userId}/PlayedItems/$ratingKey');
@@ -1020,7 +996,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<void> markAsUnwatched(String ratingKey, {MediaMetadata? metadata}) async {
     if (_offlineMode) return;
     await _dio.delete('/Users/${config.userId}/PlayedItems/$ratingKey');
@@ -1029,7 +1004,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<bool?> toggleFavorite(String ratingKey, {bool? isCurrentlyFavorite}) async {
     if (_offlineMode) return null;
     try {
@@ -1047,7 +1021,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<void> updateProgress(
     String ratingKey, {
     required int time,
@@ -1066,10 +1039,8 @@ class JellyfinClient {
     );
   }
 
-  @override
   Future<void> removeFromOnDeck(String ratingKey) async {}
 
-  @override
   Future<bool> rateItem(String ratingKey, double rating) async {
     try {
       await _dio.post(
@@ -1082,7 +1053,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<bool> deleteMediaItem(String ratingKey) async {
     try {
       await _dio.delete('/Items/$ratingKey');
@@ -1092,7 +1062,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<MediaMetadata>> search(String query, {int limit = 10}) async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>(
@@ -1110,7 +1079,6 @@ class JellyfinClient {
     return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
   }
 
-  @override
   Future<List<MediaMetadata>> getRecentlyAdded({int limit = 50}) async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>(
@@ -1129,7 +1097,6 @@ class JellyfinClient {
     return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
   }
 
-  @override
   Future<List<MediaMetadata>> getOnDeck() async {
     if (_offlineMode) return [];
     try {
@@ -1145,7 +1112,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<MediaMetadata>> getOnDeckForLibrary(String sectionId) async {
     if (_offlineMode) return [];
     try {
@@ -1165,12 +1131,10 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<Map<String, dynamic>> getServerPreferences() async {
     return {};
   }
 
-  @override
   Future<List<dynamic>> getSessions() async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/Sessions');
@@ -1181,11 +1145,10 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<LibraryFilter>> getLibraryFilters(String sectionId, {String? libraryType}) async {
     if (_offlineMode) return [];
     final t = (libraryType ?? '').toLowerCase();
-    final sectionPrefix = '$sectionId'; // used in key for getFilterValues
+    final sectionPrefix = sectionId; // used in key for getFilterValues
 
     const filtersGroup = 'Filters';
     const featuresGroup = 'Features';
@@ -1278,7 +1241,6 @@ class JellyfinClient {
     return filters;
   }
 
-  @override
   Future<List<FirstCharacter>> getFirstCharacters(
     String sectionId, {
     int? type,
@@ -1287,7 +1249,6 @@ class JellyfinClient {
     return [];
   }
 
-  @override
   Future<List<LibraryFilterValue>> getFilterValues(String filterKey) async {
     if (_offlineMode) return [];
     if (!filterKey.contains(':')) return [];
@@ -1362,7 +1323,7 @@ class JellyfinClient {
         final seen = <String>{};
         final values = <LibraryFilterValue>[];
         for (final e in list) {
-          final rating = (e as Map<String, dynamic>)['OfficialRating']?.toString()?.trim();
+          final rating = (e as Map<String, dynamic>)['OfficialRating']?.toString().trim();
           if (rating != null && rating.isNotEmpty && seen.add(rating)) {
             values.add(LibraryFilterValue(key: rating, title: rating, type: 'rating'));
           }
@@ -1438,7 +1399,6 @@ class JellyfinClient {
     ].map((s) => LibraryFilterValue(key: s, title: s, type: 'rating')).toList();
   }
 
-  @override
   Future<List<LibrarySort>> getLibrarySorts(String sectionId, {String? libraryType}) async {
     final t = (libraryType ?? '').toLowerCase();
     // Movies: match Jellyfin web UI sort list and order.
@@ -1474,7 +1434,6 @@ class JellyfinClient {
   }
 
   /// Jellyfin GET /Movies/Recommendations returns categories (Because you watched X, Because you liked X, etc.).
-  @override
   Future<List<Hub>> getMovieRecommendations(String sectionId, {int categoryLimit = 10, int itemLimit = 12}) async {
     if (_offlineMode) return [];
     try {
@@ -1542,7 +1501,6 @@ class JellyfinClient {
     return name.isEmpty ? 'Recommended' : 'More like $name';
   }
 
-  @override
   Future<List<Hub>> getLibraryHubs(String sectionId, {int limit = 10}) async {
     if (_offlineMode) return [];
     try {
@@ -1585,7 +1543,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<Hub>> getGlobalHubs({int limit = 10}) async {
     if (_offlineMode) return [];
     final perHub = limit > 0 ? limit : 12;
@@ -1712,12 +1669,10 @@ class JellyfinClient {
     return hubs;
   }
 
-  @override
   Future<List<MediaMetadata>> getHubContent(String hubKey) async {
     return [];
   }
 
-  @override
   Future<List<MediaMetadata>> getPlaylist(String playlistId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1735,7 +1690,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<Playlist>> getPlaylists({String playlistType = 'video', bool? smart}) async {
     if (_offlineMode) return [];
     try {
@@ -1767,7 +1721,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<Playlist?> getPlaylistMetadata(String playlistId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/Playlists/$playlistId');
@@ -1792,7 +1745,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<Playlist?> createPlaylist({required String title, String? uri, int? playQueueId}) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>('/Playlists', data: {'Name': title});
@@ -1815,7 +1767,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<bool> deletePlaylist(String playlistId) async {
     try {
       await _dio.delete('/Playlists/$playlistId');
@@ -1825,7 +1776,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<bool> addToPlaylist({required String playlistId, required String uri}) async {
     try {
       await _dio.post('/Playlists/$playlistId/Items', queryParameters: {'Ids': uri});
@@ -1835,7 +1785,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<bool> removeFromPlaylist({required String playlistId, required String playlistItemId}) async {
     try {
       await _dio.delete('/Playlists/$playlistId/Items/$playlistItemId');
@@ -1845,7 +1794,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<bool> movePlaylistItem({
     required String playlistId,
     required int playlistItemId,
@@ -1854,7 +1802,6 @@ class JellyfinClient {
     return false;
   }
 
-  @override
   Future<bool> clearPlaylist(String playlistId) async {
     try {
       final items = await getPlaylist(playlistId);
@@ -1867,12 +1814,10 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<bool> updatePlaylist({required String playlistId, String? title, String? summary}) async {
     return false;
   }
 
-  @override
   Future<List<MediaMetadata>> getLibraryCollections(String sectionId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1887,7 +1832,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<MediaMetadata>> getGlobalCollections() async {
     if (_offlineMode) return [];
     try {
@@ -1911,7 +1855,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<MediaMetadata>> getLibraryFavorites(String sectionId, {int start = 0, int limit = 0}) async {
     if (_offlineMode) return [];
     try {
@@ -1940,12 +1883,10 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<List<MediaMetadata>> getCollectionItems(String collectionId) async {
     return getChildren(collectionId);
   }
 
-  @override
   Future<bool> deleteCollection(String sectionId, String collectionId) async {
     try {
       await _dio.delete('/Items/$collectionId');
@@ -1955,7 +1896,6 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<String?> createCollection({
     required String sectionId,
     required String title,
@@ -1965,17 +1905,14 @@ class JellyfinClient {
     return null;
   }
 
-  @override
   Future<bool> addToCollection({required String collectionId, required String uri}) async {
     return false;
   }
 
-  @override
   Future<bool> removeFromCollection({required String collectionId, required String itemId}) async {
     return false;
   }
 
-  @override
   Future<PlayQueueResponse?> createPlayQueue({
     String? uri,
     int? playlistID,
@@ -1988,7 +1925,6 @@ class JellyfinClient {
     return null;
   }
 
-  @override
   Future<PlayQueueResponse?> getPlayQueue(
     int playQueueId, {
     String? center,
@@ -1999,17 +1935,14 @@ class JellyfinClient {
     return null;
   }
 
-  @override
   Future<PlayQueueResponse?> shufflePlayQueue(int playQueueId) async {
     return null;
   }
 
-  @override
   Future<bool> clearPlayQueue(int playQueueId) async {
     return false;
   }
 
-  @override
   Future<PlayQueueResponse?> createShowPlayQueue({
     required String showRatingKey,
     int shuffle = 0,
@@ -2018,34 +1951,26 @@ class JellyfinClient {
     return null;
   }
 
-  @override
   Future<List<MediaMetadata>> getLibraryFolders(String sectionId) async {
     return getLibraryContent(sectionId);
   }
 
-  @override
   Future<List<MediaMetadata>> getFolderChildren(String folderKey) async {
     return getChildren(folderKey);
   }
 
-  @override
   Future<List<Playlist>> getLibraryPlaylists({String playlistType = 'video'}) async {
     return getPlaylists(playlistType: playlistType);
   }
 
-  @override
   Future<void> scanLibrary(String sectionId) async {}
 
-  @override
   Future<void> refreshLibraryMetadata(String sectionId) async {}
 
-  @override
   Future<void> emptyLibraryTrash(String sectionId) async {}
 
-  @override
   Future<void> analyzeLibrary(String sectionId) async {}
 
-  @override
   Future<int> getLibraryTotalCount(String sectionId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -2058,57 +1983,46 @@ class JellyfinClient {
     }
   }
 
-  @override
   Future<int> getLibraryEpisodeCount(String sectionId) async {
     return getLibraryTotalCount(sectionId);
   }
 
-  @override
   Future<int> getWatchHistoryCount({DateTime? since}) async {
     return 0;
   }
 
-  @override
   Future<List<LiveTvDvr>> getDvrs() async {
     return [];
   }
 
-  @override
   Future<bool> hasDvr() async {
     return false;
   }
 
-  @override
   Future<List<LiveTvChannel>> getEpgChannels({String? lineup}) async {
     return [];
   }
 
-  @override
   Future<List<LiveTvProgram>> getEpgGrid({int? beginsAt, int? endsAt}) async {
     return [];
   }
 
-  @override
   Future<List<LiveTvHubResult>> getLiveTvHubs({int count = 12}) async {
     return [];
   }
 
-  @override
   Future<bool> reloadGuide(String dvrKey) async {
     return false;
   }
 
-  @override
   Future<List<MediaMetadata>> getLiveTvSessions() async {
     return [];
   }
 
-  @override
   Future<List<LiveTvSubscription>> getSubscriptions() async {
     return [];
   }
 
-  @override
   Future<LiveTvSubscription?> createSubscription({
     required String type,
     required int targetSectionID,
@@ -2120,30 +2034,24 @@ class JellyfinClient {
     return null;
   }
 
-  @override
   Future<bool> deleteSubscription(String subscriptionId) async {
     return false;
   }
 
-  @override
   Future<bool> editSubscription(String subscriptionId, Map<String, String> prefs) async {
     return false;
   }
 
-  @override
   Future<List<ScheduledRecording>> getScheduledRecordings() async {
     return [];
   }
 
-  @override
   Future<Map<String, dynamic>?> getSubscriptionTemplate(String guid) async {
     return null;
   }
 
-  @override
   Future<String> buildMetadataUri(String ratingKey) async => ratingKey;
 
-  @override
   Future<void> updateLiveTimeline({
     required String ratingKey,
     required String sessionPath,
@@ -2154,15 +2062,12 @@ class JellyfinClient {
     required int playbackTime,
   }) async {}
 
-  @override
   Future<bool> setMetadataPreferences(String ratingKey, {String? audioLanguage, String? subtitleLanguage}) async =>
       true;
 
-  @override
   Future<bool> selectStreams(int partId, {int? audioStreamID, int? subtitleStreamID, bool allParts = true}) async =>
       true;
 
-  @override
   Future<({MediaMetadata metadata, String streamPath, String sessionIdentifier, String sessionPath})?> tuneChannel(
     String dvrKey,
     String channelKey,

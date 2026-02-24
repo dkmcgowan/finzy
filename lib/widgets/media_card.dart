@@ -685,7 +685,7 @@ class _MediaCardHelpers {
   static String buildTitleForCard(dynamic item) {
     if (item is Playlist) return item.title;
     if (item is! MediaMetadata) return '$item';
-    final metadata = item as MediaMetadata;
+    final metadata = item;
     if (metadata.mediaType == MediaType.episode &&
         metadata.parentIndex != null &&
         metadata.index != null) {

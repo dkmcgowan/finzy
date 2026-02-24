@@ -7,7 +7,6 @@ import '../models/registered_server.dart';
 import '../utils/app_logger.dart';
 import '../utils/connection_constants.dart';
 import 'jellyfin_client.dart';
-import 'storage_service.dart';
 
 /// Manages multiple Jellyfin server connections.
 class MultiServerManager {
