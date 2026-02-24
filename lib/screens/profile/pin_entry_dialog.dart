@@ -507,12 +507,3 @@ class _DigitBox extends StatelessWidget {
     );
   }
 }
-
-/// Shows the PIN entry dialog and returns the entered PIN, or null if cancelled
-Future<String?> showPinEntryDialog(BuildContext context, String userName, {String? errorMessage}) {
-  return showDialog<String>(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => PinEntryDialog(userName: userName, errorMessage: errorMessage),
-  );
-}
