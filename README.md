@@ -1,7 +1,8 @@
-<table><tr>
-<td><img src="assets/finzy.png" alt="Finzy Logo" width="96" height="96"></td>
-<td><h1>Finzy</h1></td>
-</tr></table>
+<img src="assets/finzy.png" alt="Finzy Logo" width="96" height="96" align="left">
+
+# Finzy
+
+<br clear="left">
 
 A modern Jellyfin client for desktop and mobile. Built with Flutter for native performance and a clean interface.
 
