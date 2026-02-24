@@ -1,9 +1,7 @@
-<p align="center">
- <img src="assets/finzy.png" alt="Finzy Logo" width="128" height="128">
- <br>
- <strong style="font-size: 2em;">Finzy</strong>
- <br>
-</p>
+<table><tr>
+<td><img src="assets/finzy.png" alt="Finzy Logo" width="96" height="96"></td>
+<td><h1>Finzy</h1></td>
+</tr></table>
 
 A modern Jellyfin client for desktop and mobile. Built with Flutter for native performance and a clean interface.
 
@@ -14,7 +12,6 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 ### 🔐 Authentication
 - Sign in with Jellyfin (server URL + username/password or Quick Connect)
 - Multi-user support with profile switching
-- Multi-server support
 
 ### 📚 Media Browsing
 - Browse libraries with rich metadata
@@ -30,8 +27,6 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 - External subtitles (load on demand)
 - Trickplay timeline thumbnails
 - Chapter images and chapter navigation
-- Progress sync and resume
-- Auto-play next episode
 
 ### ⏭️ Media Segments
 - Skip Intro, Skip Outro, Skip Recap, Skip Preview, Skip Ads
@@ -42,14 +37,6 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 ### 📥 Downloads
 - Download media for offline viewing
 - Background downloads with queue management
-
-### ⚙️ Customization
-- Keyboard shortcuts (fully configurable)
-- External player support
-- Sleep timer
-- Rotation lock
-- Performance overlay
-- 9 languages supported
 
 ## Building from Source
 
