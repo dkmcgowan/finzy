@@ -129,9 +129,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pods-
 
-      - name: Install dependencies
-        run: flutter pub get
-
       - name: Import Code Signing Certificate
         id: import-cert
         env:
@@ -158,6 +155,7 @@ jobs:
 
       - name: Install Provisioning Profile
         if: steps.import-cert.outputs.imported == 'true'
+        id: install-profile
         env:
           IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
         run: |
@@ -171,33 +169,42 @@ jobs:
           PP_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" $RUNNER_TEMP/pp_decoded.plist)
           echo "Installing profile: $PP_NAME (UUID: $PP_UUID)"
           cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/$PP_UUID.mobileprovision
+          echo "pp_uuid=$PP_UUID" >> $GITHUB_OUTPUT
 
-      - name: Build iOS
-        run: flutter build ios --release --no-codesign --dart-define=ENABLE_UPDATE_CHECK=true
-
-      - name: Archive and sign IPA
+      - name: Verify signing setup
         if: steps.import-cert.outputs.imported == 'true'
         run: |
-          cd ios
-          xcodebuild -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -sdk iphoneos \
-            -configuration Release \
-            -archivePath $RUNNER_TEMP/Runner.xcarchive \
-            archive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="Finzy App Store Distribution" \
-            DEVELOPMENT_TEAM=G88U5B5783
+          echo "=== Installed Provisioning Profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo ""
+          echo "=== Available Signing Identities ==="
+          security find-identity -v -p codesigning
+          echo ""
+          echo "=== Keychain Search List ==="
+          security list-keychains -d user
 
-          xcodebuild -exportArchive \
-            -archivePath $RUNNER_TEMP/Runner.xcarchive \
-            -exportOptionsPlist ExportOptions.plist \
-            -exportPath $GITHUB_WORKSPACE/build/ios/ipa
+      - name: Configure Runner for manual signing
+        if: steps.import-cert.outputs.imported == 'true'
+        run: |
+          PROJECT="ios/Runner.xcodeproj/project.pbxproj"
 
-      - name: Create unsigned IPA (fallback)
+          # Add manual signing settings to all Runner build configurations
+          perl -i -pe 's/(DEVELOPMENT_TEAM = G88U5B5783;)/$1\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n\t\t\t\tCODE_SIGN_STYLE = Manual;\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "Finzy App Store Distribution";/' "$PROJECT"
+
+          echo "=== Verifying project signing settings ==="
+          grep -A3 'CODE_SIGN_STYLE' "$PROJECT" || echo "No CODE_SIGN_STYLE found"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build signed IPA
+        if: steps.import-cert.outputs.imported == 'true'
+        run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --dart-define=ENABLE_UPDATE_CHECK=true
+
+      - name: Build unsigned IPA (fallback)
         if: steps.import-cert.outputs.imported != 'true'
         run: |
+          flutter build ios --release --no-codesign --dart-define=ENABLE_UPDATE_CHECK=true
           mkdir -p build/ios/ipa Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r build/ios/ipa/finzy.ipa Payload
