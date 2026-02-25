@@ -370,7 +370,7 @@ jobs:
             --key ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
             --key-id "$APP_STORE_CONNECT_API_KEY_ID" \
             --issuer "$APP_STORE_CONNECT_API_ISSUER_ID" \
-            --wait --timeout 15m
+            --wait --timeout 30m
 
           echo "Stapling notarization ticket..."
           xcrun stapler staple "$APP_PATH"
