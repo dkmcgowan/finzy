@@ -172,21 +172,33 @@ jobs:
           echo "Installing profile: $PP_NAME (UUID: $PP_UUID)"
           cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/$PP_UUID.mobileprovision
 
-      - name: Configure manual signing for CI
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign --dart-define=ENABLE_UPDATE_CHECK=true
+
+      - name: Archive and sign IPA
         if: steps.import-cert.outputs.imported == 'true'
         run: |
-          PROJECT="ios/Runner.xcodeproj/project.pbxproj"
-          perl -i -pe 's/(DEVELOPMENT_TEAM = G88U5B5783;)/$1\n\t\t\t\tCODE_SIGN_STYLE = Manual;\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "Finzy App Store Distribution";/' "$PROJECT"
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/Runner.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="Finzy App Store Distribution" \
+            DEVELOPMENT_TEAM=G88U5B5783
 
-      - name: Build signed IPA
-        if: steps.import-cert.outputs.imported == 'true'
-        run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --dart-define=ENABLE_UPDATE_CHECK=true
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/Runner.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath $GITHUB_WORKSPACE/build/ios/ipa
 
-      - name: Build unsigned IPA (fallback)
+      - name: Create unsigned IPA (fallback)
         if: steps.import-cert.outputs.imported != 'true'
         run: |
-          flutter build ios --release --no-codesign --dart-define=ENABLE_UPDATE_CHECK=true
-          mkdir -p Payload
+          mkdir -p build/ios/ipa Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r build/ios/ipa/finzy.ipa Payload
 
