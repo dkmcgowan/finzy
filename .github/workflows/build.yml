@@ -165,8 +165,12 @@ jobs:
           echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PP_PATH
 
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          PP_UUID=$(security cms -D -i $PP_PATH | grep -A1 '<key>UUID</key>' | grep '<string>' | sed 's/.*<string>\(.*\)<\/string>/\1/')
-          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$PP_UUID.mobileprovision
+
+          security cms -D -i "$PP_PATH" > $RUNNER_TEMP/pp_decoded.plist
+          PP_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" $RUNNER_TEMP/pp_decoded.plist)
+          PP_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" $RUNNER_TEMP/pp_decoded.plist)
+          echo "Installing profile: $PP_NAME (UUID: $PP_UUID)"
+          cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/$PP_UUID.mobileprovision
 
       - name: Configure manual signing for CI
         if: steps.import-cert.outputs.imported == 'true'
