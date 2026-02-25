@@ -4,7 +4,7 @@
     {
       "identity" : "mpvkit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/dkmcgowan/MPVKit",
+      "location" : "https://github.com/edde746/MPVKit",
       "state" : {
         "revision" : "e6afd7fa47b6a0f55c29028bbebb4a05b43e779f"
       }
