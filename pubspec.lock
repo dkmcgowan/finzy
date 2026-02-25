@@ -723,7 +723,7 @@ packages:
       path: "."
       ref: "467251821f76bba37ed4c6d5ee1c9de27c285e34"
       resolved-ref: "467251821f76bba37ed4c6d5ee1c9de27c285e34"
-      url: "https://github.com/edde746/os-media-controls"
+      url: "https://github.com/dkmcgowan/media_controls"
     source: git
     version: "0.2.0"
   package_config:
@@ -1377,7 +1377,7 @@ packages:
       path: wakelock_plus
       ref: HEAD
       resolved-ref: "0085d705c80a961a4a5eeaa4ee8f723dcf4bc9b8"
-      url: "https://github.com/edde746/wakelock_plus"
+      url: "https://github.com/dkmcgowan/wakelock_plus"
     source: git
     version: "1.4.0"
   wakelock_plus_platform_interface:
