@@ -168,6 +168,12 @@ jobs:
           PP_UUID=$(security cms -D -i $PP_PATH | grep -A1 '<key>UUID</key>' | grep '<string>' | sed 's/.*<string>\(.*\)<\/string>/\1/')
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$PP_UUID.mobileprovision
 
+      - name: Configure manual signing for CI
+        if: steps.import-cert.outputs.imported == 'true'
+        run: |
+          PROJECT="ios/Runner.xcodeproj/project.pbxproj"
+          perl -i -pe 's/(DEVELOPMENT_TEAM = G88U5B5783;)/$1\n\t\t\t\tCODE_SIGN_STYLE = Manual;\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "Finzy App Store Distribution";/' "$PROJECT"
+
       - name: Build signed IPA
         if: steps.import-cert.outputs.imported == 'true'
         run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --dart-define=ENABLE_UPDATE_CHECK=true
