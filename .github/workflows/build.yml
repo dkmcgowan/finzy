@@ -189,7 +189,7 @@ jobs:
           PROJECT="ios/Runner.xcodeproj/project.pbxproj"
 
           # Add manual signing settings to all Runner build configurations
-          perl -i -pe 's/(DEVELOPMENT_TEAM = G88U5B5783;)/$1\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n\t\t\t\tCODE_SIGN_STYLE = Manual;\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "Finzy App Store Distribution";/' "$PROJECT"
+          perl -i -pe 's/(DEVELOPMENT_TEAM = MTQC4MRP5R;)/$1\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n\t\t\t\tCODE_SIGN_STYLE = Manual;\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "Finzy App Store Distribution";/' "$PROJECT"
 
           echo "=== Verifying project signing settings ==="
           grep -A3 'CODE_SIGN_STYLE' "$PROJECT" || echo "No CODE_SIGN_STYLE found"
