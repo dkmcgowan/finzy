@@ -16,6 +16,7 @@ import '../providers/hidden_libraries_provider.dart';
 import '../providers/libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../services/fullscreen_state_manager.dart';
+import '../utils/platform_detector.dart';
 import '../theme/mono_tokens.dart';
 import '../i18n/strings.g.dart';
 
@@ -311,7 +312,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
       _kHome,
       _kLibraries,
       _kSearch,
-      _kDownloads,
+      if (!PlatformDetector.isTV()) _kDownloads,
       _kSettings,
       _kReconnect,
       'liveTv',
@@ -345,7 +346,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
         if (hasLiveTv) 'liveTv',
         _kSearch,
       ],
-      _kDownloads,
+      if (!PlatformDetector.isTV()) _kDownloads,
       _kSettings,
     ];
   }
@@ -567,33 +568,34 @@ class SideNavigationRailState extends State<SideNavigationRail> {
                               const SizedBox(height: 8),
                             ],
 
-                            // Downloads
-                            Builder(
-                              builder: (context) {
-                                final hasLiveTv = context.read<MultiServerProvider>().hasLiveTv;
-                                return _buildNavItem(
-                                  icon: Symbols.download_rounded,
-                                  selectedIcon: Symbols.download_rounded,
-                                  label: Translations.of(context).navigation.downloads,
-                                  isSelected: NavigationTab.isTabAtIndex(
-                                    NavigationTabId.downloads,
-                                    widget.selectedIndex,
-                                    isOffline: widget.isOfflineMode,
-                                    hasLiveTv: hasLiveTv,
-                                  ),
-                                  isFocused: _focusTracker.isFocused(_kDownloads),
-                                  onTap: () => widget.onDestinationSelected(
-                                    NavigationTab.indexFor(
+                            // Downloads (hidden on Android TV)
+                            if (!PlatformDetector.isTV())
+                              Builder(
+                                builder: (context) {
+                                  final hasLiveTv = context.read<MultiServerProvider>().hasLiveTv;
+                                  return _buildNavItem(
+                                    icon: Symbols.download_rounded,
+                                    selectedIcon: Symbols.download_rounded,
+                                    label: Translations.of(context).navigation.downloads,
+                                    isSelected: NavigationTab.isTabAtIndex(
                                       NavigationTabId.downloads,
+                                      widget.selectedIndex,
                                       isOffline: widget.isOfflineMode,
                                       hasLiveTv: hasLiveTv,
                                     ),
-                                  ),
-                                  focusNode: _focusTracker.get(_kDownloads),
-                                  isCollapsed: isCollapsed,
-                                );
-                              },
-                            ),
+                                    isFocused: _focusTracker.isFocused(_kDownloads),
+                                    onTap: () => widget.onDestinationSelected(
+                                      NavigationTab.indexFor(
+                                        NavigationTabId.downloads,
+                                        isOffline: widget.isOfflineMode,
+                                        hasLiveTv: hasLiveTv,
+                                      ),
+                                    ),
+                                    focusNode: _focusTracker.get(_kDownloads),
+                                    isCollapsed: isCollapsed,
+                                  );
+                                },
+                              ),
 
                             const SizedBox(height: 8),
 
