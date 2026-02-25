@@ -212,16 +212,20 @@ jobs:
       - name: Upload to TestFlight
         if: steps.import-cert.outputs.imported == 'true'
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
         run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY_P8" | base64 --decode -o ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+
           IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
           echo "Uploading $IPA_PATH to App Store Connect..."
           xcrun altool --upload-app \
             --type ios \
             --file "$IPA_PATH" \
-            --username "$APPLE_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD"
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
 
       - name: Rename IPA for artifact upload
         run: |
@@ -247,6 +251,7 @@ jobs:
           rm -f $RUNNER_TEMP/ios-certificate.p12
           rm -f $RUNNER_TEMP/finzy_distribution.mobileprovision
           rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision
+          rm -rf ~/.appstoreconnect
 
   build-macos:
     runs-on: macos-26
@@ -348,31 +353,34 @@ jobs:
       - name: Notarize Application
         if: steps.import-cert.outputs.imported == 'true'
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
         run: |
           APP_PATH="build/macos/Build/Products/Release/Finzy.app"
 
-          # Create a temporary ZIP for notarization submission
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY_P8" | base64 --decode -o ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+
           echo "Creating ZIP for notarization..."
           ditto -c -k --keepParent "$APP_PATH" notarization.zip
 
-          # Submit for notarization
           echo "Submitting to Apple's notary service..."
           xcrun notarytool submit notarization.zip \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --wait
+            --key ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
+            --key-id "$APP_STORE_CONNECT_API_KEY_ID" \
+            --issuer "$APP_STORE_CONNECT_API_ISSUER_ID" \
+            --wait --timeout 15m
 
-          # Staple the notarization ticket to the app
           echo "Stapling notarization ticket..."
           xcrun stapler staple "$APP_PATH"
 
-          # Verify stapling
           echo "Verifying notarization..."
           xcrun stapler validate "$APP_PATH"
+
+      - name: Clean up API key
+        if: always()
+        run: rm -rf ~/.appstoreconnect
 
       - name: Create DMG
         run: |
