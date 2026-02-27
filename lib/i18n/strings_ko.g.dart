@@ -645,6 +645,8 @@ class _TranslationsDiscoverKo implements TranslationsDiscoverEn {
 	@override String get overview => '개요';
 	@override String get cast => '출연진';
 	@override String get moreLikeThis => '비슷한 콘텐츠';
+	@override String get moviesAndShows => 'Movies & Shows';
+	@override String get noItemsFound => 'No items found on this server';
 	@override String get extras => '예고편 및 부가영상';
 	@override String get seasons => '시즌 수';
 	@override String get studio => '제작사';
@@ -1615,6 +1617,8 @@ extension on TranslationsKo {
 			'discover.overview' => '개요',
 			'discover.cast' => '출연진',
 			'discover.moreLikeThis' => '비슷한 콘텐츠',
+			'discover.moviesAndShows' => 'Movies & Shows',
+			'discover.noItemsFound' => 'No items found on this server',
 			'discover.extras' => '예고편 및 부가영상',
 			'discover.seasons' => '시즌 수',
 			'discover.studio' => '제작사',
@@ -1711,10 +1715,10 @@ extension on TranslationsKo {
 			'navigation.liveTv' => '실시간 TV',
 			'liveTv.title' => '실시간 TV',
 			'liveTv.channels' => '채널',
-			'liveTv.guide' => '편성표',
-			'liveTv.recordings' => '녹화',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guide' => '편성표',
+			'liveTv.recordings' => '녹화',
 			'liveTv.subscriptions' => '녹화 규칙',
 			'liveTv.scheduled' => '예약됨',
 			'liveTv.noChannels' => '사용 가능한 채널이 없습니다',

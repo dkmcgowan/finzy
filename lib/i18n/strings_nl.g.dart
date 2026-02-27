@@ -645,6 +645,8 @@ class _TranslationsDiscoverNl implements TranslationsDiscoverEn {
 	@override String get overview => 'Overzicht';
 	@override String get cast => 'Acteurs';
 	@override String get moreLikeThis => 'Vergelijkbaar';
+	@override String get moviesAndShows => 'Movies & Shows';
+	@override String get noItemsFound => 'No items found on this server';
 	@override String get extras => 'Trailers & Extra\'s';
 	@override String get seasons => 'Seizoenen';
 	@override String get studio => 'Studio';
@@ -1615,6 +1617,8 @@ extension on TranslationsNl {
 			'discover.overview' => 'Overzicht',
 			'discover.cast' => 'Acteurs',
 			'discover.moreLikeThis' => 'Vergelijkbaar',
+			'discover.moviesAndShows' => 'Movies & Shows',
+			'discover.noItemsFound' => 'No items found on this server',
 			'discover.extras' => 'Trailers & Extra\'s',
 			'discover.seasons' => 'Seizoenen',
 			'discover.studio' => 'Studio',
@@ -1711,10 +1715,10 @@ extension on TranslationsNl {
 			'navigation.liveTv' => 'Live TV',
 			'liveTv.title' => 'Live TV',
 			'liveTv.channels' => 'Zenders',
-			'liveTv.guide' => 'Gids',
-			'liveTv.recordings' => 'Opnames',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guide' => 'Gids',
+			'liveTv.recordings' => 'Opnames',
 			'liveTv.subscriptions' => 'Opnameregels',
 			'liveTv.scheduled' => 'Gepland',
 			'liveTv.noChannels' => 'Geen zenders beschikbaar',

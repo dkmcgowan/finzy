@@ -819,6 +819,63 @@ class JellyfinClient {
     }
   }
 
+  /// Get person/actor details (name, biography, image info).
+  Future<Map<String, dynamic>?> getPersonDetails(String name) async {
+    if (_offlineMode) return null;
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/Persons/${Uri.encodeComponent(name)}',
+        queryParameters: {'UserId': config.userId},
+      );
+      if (response.statusCode != 200 || response.data == null) return null;
+      final d = response.data!;
+      return {
+        'name': d['Name'] as String? ?? name,
+        'id': d['Id'] as String?,
+        'overview': d['Overview'] as String?,
+        'imageTag': (d['ImageTags'] as Map?)?['Primary'] as String?,
+      };
+    } catch (e) {
+      appLogger.d('Jellyfin getPersonDetails failed for $name: $e');
+      return null;
+    }
+  }
+
+  /// Get movies and shows on this server featuring a person.
+  Future<List<MediaMetadata>> getItemsByPerson(String personId, {int limit = 50}) async {
+    if (_offlineMode) return [];
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/Items',
+        queryParameters: {
+          'PersonIds': personId,
+          'Recursive': true,
+          'IncludeItemTypes': 'Movie,Series',
+          'UserId': config.userId,
+          'Limit': limit,
+          'Fields': _listFields,
+          'SortBy': 'SortName',
+          'SortOrder': 'Ascending',
+        },
+      );
+      final list = response.data?['Items'] as List?;
+      if (list == null) return [];
+      return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+    } catch (e) {
+      appLogger.d('Jellyfin getItemsByPerson failed for $personId: $e');
+      return [];
+    }
+  }
+
+  /// Build URL for a person's primary image.
+  String getPersonImageUrl(String personId) {
+    final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
+    final token = config.token;
+    return token.isEmpty
+        ? '${base}Items/$personId/Images/Primary'
+        : '${base}Items/$personId/Images/Primary?ApiKey=${Uri.encodeComponent(token)}';
+  }
+
   Future<PlaybackExtras> getPlaybackExtras(String ratingKey, {bool includeChapterImages = false}) async {
     final chapters = await getChapters(ratingKey, includeImages: includeChapterImages);
     final markers = await getMarkers(ratingKey);

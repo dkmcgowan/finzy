@@ -645,6 +645,8 @@ class _TranslationsDiscoverSv implements TranslationsDiscoverEn {
 	@override String get overview => 'Översikt';
 	@override String get cast => 'Rollbesättning';
 	@override String get moreLikeThis => 'Liknande';
+	@override String get moviesAndShows => 'Movies & Shows';
+	@override String get noItemsFound => 'No items found on this server';
 	@override String get extras => 'Trailers och Extra';
 	@override String get seasons => 'Säsonger';
 	@override String get studio => 'Studio';
@@ -1615,6 +1617,8 @@ extension on TranslationsSv {
 			'discover.overview' => 'Översikt',
 			'discover.cast' => 'Rollbesättning',
 			'discover.moreLikeThis' => 'Liknande',
+			'discover.moviesAndShows' => 'Movies & Shows',
+			'discover.noItemsFound' => 'No items found on this server',
 			'discover.extras' => 'Trailers och Extra',
 			'discover.seasons' => 'Säsonger',
 			'discover.studio' => 'Studio',
@@ -1711,10 +1715,10 @@ extension on TranslationsSv {
 			'navigation.liveTv' => 'Live-TV',
 			'liveTv.title' => 'Live-TV',
 			'liveTv.channels' => 'Kanaler',
-			'liveTv.guide' => 'Programguide',
-			'liveTv.recordings' => 'Inspelningar',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guide' => 'Programguide',
+			'liveTv.recordings' => 'Inspelningar',
 			'liveTv.subscriptions' => 'Inspelningsregler',
 			'liveTv.scheduled' => 'Schemalagda',
 			'liveTv.noChannels' => 'Inga kanaler tillgängliga',

@@ -645,6 +645,8 @@ class _TranslationsDiscoverEs implements TranslationsDiscoverEn {
 	@override String get overview => 'Resumen';
 	@override String get cast => 'Reparto';
 	@override String get moreLikeThis => 'Más como esto';
+	@override String get moviesAndShows => 'Movies & Shows';
+	@override String get noItemsFound => 'No items found on this server';
 	@override String get extras => 'Tráilers y Extras';
 	@override String get seasons => 'Temporadas';
 	@override String get studio => 'Estudio';
@@ -1615,6 +1617,8 @@ extension on TranslationsEs {
 			'discover.overview' => 'Resumen',
 			'discover.cast' => 'Reparto',
 			'discover.moreLikeThis' => 'Más como esto',
+			'discover.moviesAndShows' => 'Movies & Shows',
+			'discover.noItemsFound' => 'No items found on this server',
 			'discover.extras' => 'Tráilers y Extras',
 			'discover.seasons' => 'Temporadas',
 			'discover.studio' => 'Estudio',
@@ -1711,10 +1715,10 @@ extension on TranslationsEs {
 			'navigation.liveTv' => 'TV en vivo',
 			'liveTv.title' => 'TV en vivo',
 			'liveTv.channels' => 'Canales',
-			'liveTv.guide' => 'Guía',
-			'liveTv.recordings' => 'Grabaciones',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guide' => 'Guía',
+			'liveTv.recordings' => 'Grabaciones',
 			'liveTv.subscriptions' => 'Reglas de grabación',
 			'liveTv.scheduled' => 'Programadas',
 			'liveTv.noChannels' => 'No hay canales disponibles',

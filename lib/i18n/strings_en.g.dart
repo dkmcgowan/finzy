@@ -1431,6 +1431,12 @@ class TranslationsDiscoverEn {
 	/// en: 'More Like This'
 	String get moreLikeThis => 'More Like This';
 
+	/// en: 'Movies & Shows'
+	String get moviesAndShows => 'Movies & Shows';
+
+	/// en: 'No items found on this server'
+	String get noItemsFound => 'No items found on this server';
+
 	/// en: 'Trailers & Extras'
 	String get extras => 'Trailers & Extras';
 
@@ -3070,6 +3076,8 @@ extension on Translations {
 			'discover.overview' => 'Overview',
 			'discover.cast' => 'Cast',
 			'discover.moreLikeThis' => 'More Like This',
+			'discover.moviesAndShows' => 'Movies & Shows',
+			'discover.noItemsFound' => 'No items found on this server',
 			'discover.extras' => 'Trailers & Extras',
 			'discover.seasons' => 'Seasons',
 			'discover.studio' => 'Studio',
@@ -3166,10 +3174,10 @@ extension on Translations {
 			'navigation.liveTv' => 'Live TV',
 			'liveTv.title' => 'Live TV',
 			'liveTv.channels' => 'Channels',
-			'liveTv.guide' => 'Guide',
-			'liveTv.recordings' => 'Recordings',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guide' => 'Guide',
+			'liveTv.recordings' => 'Recordings',
 			'liveTv.subscriptions' => 'Subscriptions',
 			'liveTv.scheduled' => 'Scheduled',
 			'liveTv.noChannels' => 'No channels available',

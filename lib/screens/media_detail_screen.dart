@@ -40,6 +40,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/video_player_navigation.dart';
 import '../widgets/app_bar_back_button.dart';
+import 'person_detail_screen.dart';
 import '../utils/desktop_window_padding.dart';
 import '../widgets/horizontal_scroll_with_arrows.dart';
 import '../widgets/media_context_menu.dart';
@@ -2259,56 +2260,72 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: FocusBuilders.buildLockedFocusWrapper(
-                  context: context,
-                  isFocused: isFocused,
-                  borderRadius: tokens(context).radiusSm,
-                  child: Padding(
-                    padding: const EdgeInsets.all(innerPadding),
-                    child: SizedBox(
-                      width: cardWidth,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(tokens(context).radiusSm),
-                            child: OptimizedImage(
-                              client: _getClientForMetadata(context),
-                              imagePath: actor.thumb,
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
-                              imageType: ImageType.avatar,
-                              fallbackIcon: Symbols.person_rounded,
+                child: GestureDetector(
+                  onTap: () {
+                    final client = _getClientForMetadata(context);
+                    if (client == null) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PersonDetailScreen(
+                          actor: actor,
+                          client: client,
+                          serverId: widget.metadata.serverId ?? '',
+                        ),
+                      ),
+                    );
+                  },
+                  child: FocusBuilders.buildLockedFocusWrapper(
+                    context: context,
+                    isFocused: isFocused,
+                    borderRadius: tokens(context).radiusSm,
+                    child: Padding(
+                      padding: const EdgeInsets.all(innerPadding),
+                      child: SizedBox(
+                        width: cardWidth,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(tokens(context).radiusSm),
+                              child: OptimizedImage(
+                                client: _getClientForMetadata(context),
+                                imagePath: actor.thumb,
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                imageType: ImageType.avatar,
+                                fallbackIcon: Symbols.person_rounded,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  actor.tag,
-                                  style:
-                                      Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                if (actor.role != null) ...[
-                                  const SizedBox(height: 2),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    actor.role!,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                                    maxLines: 1,
+                                    actor.tag,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
+                                  if (actor.role != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      actor.role!,
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

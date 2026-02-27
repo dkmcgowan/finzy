@@ -645,6 +645,8 @@ class _TranslationsDiscoverZh implements TranslationsDiscoverEn {
 	@override String get overview => '概述';
 	@override String get cast => '演员表';
 	@override String get moreLikeThis => '相似推荐';
+	@override String get moviesAndShows => 'Movies & Shows';
+	@override String get noItemsFound => 'No items found on this server';
 	@override String get extras => '预告片与花絮';
 	@override String get seasons => '季数';
 	@override String get studio => '制作公司';
@@ -1615,6 +1617,8 @@ extension on TranslationsZh {
 			'discover.overview' => '概述',
 			'discover.cast' => '演员表',
 			'discover.moreLikeThis' => '相似推荐',
+			'discover.moviesAndShows' => 'Movies & Shows',
+			'discover.noItemsFound' => 'No items found on this server',
 			'discover.extras' => '预告片与花絮',
 			'discover.seasons' => '季数',
 			'discover.studio' => '制作公司',
@@ -1711,10 +1715,10 @@ extension on TranslationsZh {
 			'navigation.liveTv' => '电视直播',
 			'liveTv.title' => '电视直播',
 			'liveTv.channels' => '频道',
-			'liveTv.guide' => '节目指南',
-			'liveTv.recordings' => '录制',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guide' => '节目指南',
+			'liveTv.recordings' => '录制',
 			'liveTv.subscriptions' => '录制规则',
 			'liveTv.scheduled' => '已计划',
 			'liveTv.noChannels' => '没有可用的频道',
