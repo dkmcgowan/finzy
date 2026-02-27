@@ -91,6 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kEnableTrickplay = 'enable_trickplay';
   static const _kEnableChapterImages = 'enable_chapter_images';
   static const _kAutoSkipDelay = 'auto_skip_delay';
+  static const _kShowDownloads = 'show_downloads';
   static const _kDownloadLocation = 'download_location';
   static const _kDownloadOnWifiOnly = 'download_on_wifi_only';
   static const _kVideoPlayerControls = 'video_player_controls';
@@ -122,6 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   bool _enableTrickplay = false;
   bool _enableChapterImages = false;
   int _autoSkipDelay = 5;
+  bool _showDownloads = true;
   bool _downloadOnWifiOnly = false;
   bool _videoPlayerNavigationEnabled = false;
   int _maxVolume = 100;
@@ -202,6 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       _enableTrickplay = _settingsService.getEnableTrickplay();
       _enableChapterImages = _settingsService.getEnableChapterImages();
       _autoSkipDelay = _settingsService.getAutoSkipDelay();
+      _showDownloads = _settingsService.getShowDownloads();
       _downloadOnWifiOnly = _settingsService.getDownloadOnWifiOnly();
       _videoPlayerNavigationEnabled = _settingsService.getVideoPlayerNavigationEnabled();
       _maxVolume = _settingsService.getMaxVolume();
@@ -733,6 +736,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               t.settings.downloads,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
+          ),
+          SwitchListTile(
+            focusNode: _focusTracker.get(_kShowDownloads),
+            secondary: const AppIcon(Symbols.download_rounded, fill: 1),
+            title: Text(t.settings.showDownloads),
+            subtitle: Text(t.settings.showDownloadsDescription),
+            value: _showDownloads,
+            onChanged: (value) async {
+              setState(() => _showDownloads = value);
+              await _settingsService.setShowDownloads(value);
+            },
           ),
           // Download location picker - not available on iOS
           if (!Platform.isIOS)

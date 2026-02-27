@@ -126,6 +126,12 @@ class _TranslationsCommonFr implements TranslationsCommonEn {
 	@override String get confirm => 'Confirmer';
 	@override String get retry => 'Réessayer';
 	@override String get logout => 'Se déconnecter';
+	@override String get quickConnect => 'Quick Connect';
+	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
+	@override String get quickConnectCode => 'Quick Connect Code';
+	@override String get authorize => 'Authorize';
+	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
+	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
 	@override String get unknown => 'Inconnu';
 	@override String get refresh => 'Rafraichir';
 	@override String get yes => 'Oui';
@@ -305,6 +311,8 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => 'Passer automatiquement les segments publicitaires';
 	@override String get autoSkipDelay => 'Délai avant skip automatique';
 	@override String autoSkipDelayDescription({required Object seconds}) => 'Attendre ${seconds} secondes avant l\'auto-skip';
+	@override String get showDownloads => 'Show Downloads';
+	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
 	@override String get downloads => 'Téléchargement';
 	@override String get downloadLocationDescription => 'Choisissez où stocker le contenu téléchargé';
 	@override String get downloadLocationDefault => 'Par défaut (stockage de l\'application)';
@@ -1219,6 +1227,12 @@ extension on TranslationsFr {
 			'common.confirm' => 'Confirmer',
 			'common.retry' => 'Réessayer',
 			'common.logout' => 'Se déconnecter',
+			'common.quickConnect' => 'Quick Connect',
+			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
+			'common.quickConnectCode' => 'Quick Connect Code',
+			'common.authorize' => 'Authorize',
+			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
+			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
 			'common.unknown' => 'Inconnu',
 			'common.refresh' => 'Rafraichir',
 			'common.yes' => 'Oui',
@@ -1371,6 +1385,8 @@ extension on TranslationsFr {
 			'settings.autoSkipCommercialDescription' => 'Passer automatiquement les segments publicitaires',
 			'settings.autoSkipDelay' => 'Délai avant skip automatique',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => 'Attendre ${seconds} secondes avant l\'auto-skip',
+			'settings.showDownloads' => 'Show Downloads',
+			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
 			'settings.downloads' => 'Téléchargement',
 			'settings.downloadLocationDescription' => 'Choisissez où stocker le contenu téléchargé',
 			'settings.downloadLocationDefault' => 'Par défaut (stockage de l\'application)',
@@ -1697,6 +1713,8 @@ extension on TranslationsFr {
 			'liveTv.channels' => 'Chaînes',
 			'liveTv.guide' => 'Guide',
 			'liveTv.recordings' => 'Enregistrements',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.subscriptions' => 'Règles d\'enregistrement',
 			'liveTv.scheduled' => 'Programmés',
 			'liveTv.noChannels' => 'Aucune chaîne disponible',
@@ -1705,8 +1723,6 @@ extension on TranslationsFr {
 			'liveTv.loading' => 'Chargement des chaînes...',
 			'liveTv.nowPlaying' => 'En cours de lecture',
 			'liveTv.record' => 'Enregistrer',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordSeries' => 'Enregistrer la série',
 			'liveTv.cancelRecording' => 'Annuler l\'enregistrement',
 			'liveTv.deleteSubscription' => 'Supprimer la règle d\'enregistrement',

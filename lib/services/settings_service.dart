@@ -64,6 +64,7 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyEnableChapterImages = 'enable_chapter_images';
   static const String _keyCustomDownloadPath = 'custom_download_path';
   static const String _keyCustomDownloadPathType = 'custom_download_path_type';
+  static const String _keyShowDownloads = 'show_downloads';
   static const String _keyDownloadOnWifiOnly = 'download_on_wifi_only';
   static const String _keyVideoPlayerNavigationEnabled = 'video_player_navigation_enabled';
   static const String _keyShowPerformanceOverlay = 'show_performance_overlay';
@@ -959,6 +960,15 @@ class SettingsService extends BaseSharedPreferencesService {
 
   bool hasCustomDownloadPath() {
     return prefs.containsKey(_keyCustomDownloadPath);
+  }
+
+  // Show Downloads
+  Future<void> setShowDownloads(bool value) async {
+    await prefs.setBool(_keyShowDownloads, value);
+  }
+
+  bool getShowDownloads() {
+    return prefs.getBool(_keyShowDownloads) ?? !PlatformDetector.isTV();
   }
 
   // Download on WiFi Only

@@ -39,6 +39,7 @@ import '../services/watch_next_service.dart';
 import 'auth_screen.dart';
 import 'libraries/state_messages.dart';
 import 'main_screen.dart';
+import '../widgets/quick_connect_authorize_dialog.dart';
 
 
 class DiscoverScreen extends StatefulWidget {
@@ -928,6 +929,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             ),
           ),
         PopupMenuItem(
+          value: 'quick_connect',
+          child: Row(children: [AppIcon(Symbols.qr_code_2_rounded, fill: 1), SizedBox(width: 8), Text(t.common.quickConnect)]),
+        ),
+        PopupMenuItem(
           value: 'logout',
           child: Row(children: [AppIcon(Symbols.logout_rounded, fill: 1), SizedBox(width: 8), Text(t.common.logout)]),
         ),
@@ -936,6 +941,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       if (!context.mounted) return;
       if (value == 'switch_profile') {
         _handleJellyfinSwitchProfile(context);
+      } else if (value == 'quick_connect') {
+        showDialog(context: context, builder: (_) => const QuickConnectAuthorizeDialog());
       } else if (value == 'logout') {
         _handleLogout();
       }
@@ -1021,6 +1028,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         onSelected: (value) {
                           if (value == 'switch_profile') {
                             _handleJellyfinSwitchProfile(context);
+                          } else if (value == 'quick_connect') {
+                            showDialog(context: context, builder: (_) => const QuickConnectAuthorizeDialog());
                           } else if (value == 'logout') {
                             _handleLogout();
                           }
@@ -1037,6 +1046,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                 ],
                               ),
                             ),
+                          PopupMenuItem(
+                            value: 'quick_connect',
+                            child: Row(
+                              children: [
+                                AppIcon(Symbols.qr_code_2_rounded, fill: 1),
+                                SizedBox(width: 8),
+                                Text(t.common.quickConnect),
+                              ],
+                            ),
+                          ),
                           PopupMenuItem(
                             value: 'logout',
                             child: Row(

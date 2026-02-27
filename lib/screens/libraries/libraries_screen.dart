@@ -39,6 +39,7 @@ import '../../constants/library_constants.dart';
 import '../../utils/error_message_utils.dart';
 import '../auth_screen.dart';
 import '../profile/jellyfin_profile_switch_screen.dart';
+import '../../widgets/quick_connect_authorize_dialog.dart';
 import 'state_messages.dart';
 import 'library_inline_list_view.dart';
 import 'library_inline_genre_view.dart';
@@ -588,6 +589,16 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             ),
           ),
         PopupMenuItem(
+          value: 'quick_connect',
+          child: Row(
+            children: [
+              AppIcon(Symbols.qr_code_2_rounded, fill: 1),
+              const SizedBox(width: 8),
+              Text(t.common.quickConnect),
+            ],
+          ),
+        ),
+        PopupMenuItem(
           value: 'logout',
           child: Row(
             children: [
@@ -602,6 +613,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       if (!context.mounted) return;
       if (value == 'switch_profile') {
         _handleJellyfinSwitchProfile(context);
+      } else if (value == 'quick_connect') {
+        showDialog(context: context, builder: (_) => const QuickConnectAuthorizeDialog());
       } else if (value == 'logout') {
         _handleLogout();
       }

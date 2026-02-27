@@ -126,6 +126,12 @@ class _TranslationsCommonEs implements TranslationsCommonEn {
 	@override String get confirm => 'Confirmar';
 	@override String get retry => 'Reintentar';
 	@override String get logout => 'Cerrar sesión';
+	@override String get quickConnect => 'Quick Connect';
+	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
+	@override String get quickConnectCode => 'Quick Connect Code';
+	@override String get authorize => 'Authorize';
+	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
+	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
 	@override String get unknown => 'Desconocido';
 	@override String get refresh => 'Actualizar';
 	@override String get yes => 'Sí';
@@ -305,6 +311,8 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => 'Saltar automáticamente los segmentos de anuncios';
 	@override String get autoSkipDelay => 'Retraso de Salto automático';
 	@override String autoSkipDelayDescription({required Object seconds}) => 'Esperar ${seconds} segundos antes de saltar automáticamente';
+	@override String get showDownloads => 'Show Downloads';
+	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
 	@override String get downloads => 'Descargas';
 	@override String get downloadLocationDescription => 'Elegir dónde almacenar el contenido descargado';
 	@override String get downloadLocationDefault => 'Predeterminado (Almacenamiento de la App)';
@@ -1219,6 +1227,12 @@ extension on TranslationsEs {
 			'common.confirm' => 'Confirmar',
 			'common.retry' => 'Reintentar',
 			'common.logout' => 'Cerrar sesión',
+			'common.quickConnect' => 'Quick Connect',
+			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
+			'common.quickConnectCode' => 'Quick Connect Code',
+			'common.authorize' => 'Authorize',
+			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
+			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
 			'common.unknown' => 'Desconocido',
 			'common.refresh' => 'Actualizar',
 			'common.yes' => 'Sí',
@@ -1371,6 +1385,8 @@ extension on TranslationsEs {
 			'settings.autoSkipCommercialDescription' => 'Saltar automáticamente los segmentos de anuncios',
 			'settings.autoSkipDelay' => 'Retraso de Salto automático',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => 'Esperar ${seconds} segundos antes de saltar automáticamente',
+			'settings.showDownloads' => 'Show Downloads',
+			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
 			'settings.downloads' => 'Descargas',
 			'settings.downloadLocationDescription' => 'Elegir dónde almacenar el contenido descargado',
 			'settings.downloadLocationDefault' => 'Predeterminado (Almacenamiento de la App)',
@@ -1697,6 +1713,8 @@ extension on TranslationsEs {
 			'liveTv.channels' => 'Canales',
 			'liveTv.guide' => 'Guía',
 			'liveTv.recordings' => 'Grabaciones',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.subscriptions' => 'Reglas de grabación',
 			'liveTv.scheduled' => 'Programadas',
 			'liveTv.noChannels' => 'No hay canales disponibles',
@@ -1705,8 +1723,6 @@ extension on TranslationsEs {
 			'liveTv.loading' => 'Cargando canales...',
 			'liveTv.nowPlaying' => 'Reproduciendo ahora',
 			'liveTv.record' => 'Grabar',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordSeries' => 'Grabar serie',
 			'liveTv.cancelRecording' => 'Cancelar grabación',
 			'liveTv.deleteSubscription' => 'Eliminar regla de grabación',

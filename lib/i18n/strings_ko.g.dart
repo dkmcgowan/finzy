@@ -126,6 +126,12 @@ class _TranslationsCommonKo implements TranslationsCommonEn {
 	@override String get confirm => '확인';
 	@override String get retry => '재시도';
 	@override String get logout => '로그아웃';
+	@override String get quickConnect => 'Quick Connect';
+	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
+	@override String get quickConnectCode => 'Quick Connect Code';
+	@override String get authorize => 'Authorize';
+	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
+	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
 	@override String get unknown => '알 수 없는';
 	@override String get refresh => '새로고침';
 	@override String get yes => '예';
@@ -305,6 +311,8 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => '광고 세그먼트 자동 건너뛰기';
 	@override String get autoSkipDelay => '자동 건너뛰기 지연';
 	@override String autoSkipDelayDescription({required Object seconds}) => '자동 건너뛰기 전 ${seconds} 초 대기';
+	@override String get showDownloads => 'Show Downloads';
+	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
 	@override String get downloads => '다운로드';
 	@override String get downloadLocationDescription => '다운로드 콘텐츠 저장 위치 선택';
 	@override String get downloadLocationDefault => '기본값 (앱 저장소)';
@@ -1219,6 +1227,12 @@ extension on TranslationsKo {
 			'common.confirm' => '확인',
 			'common.retry' => '재시도',
 			'common.logout' => '로그아웃',
+			'common.quickConnect' => 'Quick Connect',
+			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
+			'common.quickConnectCode' => 'Quick Connect Code',
+			'common.authorize' => 'Authorize',
+			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
+			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
 			'common.unknown' => '알 수 없는',
 			'common.refresh' => '새로고침',
 			'common.yes' => '예',
@@ -1371,6 +1385,8 @@ extension on TranslationsKo {
 			'settings.autoSkipCommercialDescription' => '광고 세그먼트 자동 건너뛰기',
 			'settings.autoSkipDelay' => '자동 건너뛰기 지연',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => '자동 건너뛰기 전 ${seconds} 초 대기',
+			'settings.showDownloads' => 'Show Downloads',
+			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
 			'settings.downloads' => '다운로드',
 			'settings.downloadLocationDescription' => '다운로드 콘텐츠 저장 위치 선택',
 			'settings.downloadLocationDefault' => '기본값 (앱 저장소)',
@@ -1697,6 +1713,8 @@ extension on TranslationsKo {
 			'liveTv.channels' => '채널',
 			'liveTv.guide' => '편성표',
 			'liveTv.recordings' => '녹화',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.subscriptions' => '녹화 규칙',
 			'liveTv.scheduled' => '예약됨',
 			'liveTv.noChannels' => '사용 가능한 채널이 없습니다',
@@ -1705,8 +1723,6 @@ extension on TranslationsKo {
 			'liveTv.loading' => '채널 로딩 중...',
 			'liveTv.nowPlaying' => '현재 재생 중',
 			'liveTv.record' => '녹화',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordSeries' => '시리즈 녹화',
 			'liveTv.cancelRecording' => '녹화 취소',
 			'liveTv.deleteSubscription' => '녹화 규칙 삭제',

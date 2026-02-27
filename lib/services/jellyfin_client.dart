@@ -1041,6 +1041,21 @@ class JellyfinClient {
 
   Future<void> removeFromOnDeck(String ratingKey) async {}
 
+  /// Authorize a Quick Connect code from another device.
+  /// The current authenticated user approves the code so the other device can sign in.
+  Future<bool> authorizeQuickConnect(String code) async {
+    try {
+      final response = await _dio.post(
+        '/QuickConnect/Authorize',
+        queryParameters: {'code': code},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      appLogger.e('QuickConnect Authorize failed: $e');
+      return false;
+    }
+  }
+
   Future<bool> rateItem(String ratingKey, double rating) async {
     try {
       await _dio.post(

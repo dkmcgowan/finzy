@@ -16,7 +16,7 @@ import '../providers/hidden_libraries_provider.dart';
 import '../providers/libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../services/fullscreen_state_manager.dart';
-import '../utils/platform_detector.dart';
+import '../services/settings_service.dart';
 import '../theme/mono_tokens.dart';
 import '../i18n/strings.g.dart';
 
@@ -169,6 +169,7 @@ class SideNavigationRail extends StatefulWidget {
 
 class SideNavigationRailState extends State<SideNavigationRail> {
   bool _librariesExpanded = true;
+  bool _showDownloads = true;
 
   // Collapsed/expanded state
   bool _isHovered = false;
@@ -205,6 +206,13 @@ class SideNavigationRailState extends State<SideNavigationRail> {
       },
       debugLabelPrefix: 'nav',
     );
+    _loadShowDownloadsSetting();
+  }
+
+  Future<void> _loadShowDownloadsSetting() async {
+    final settings = await SettingsService.getInstance();
+    if (!mounted) return;
+    setState(() => _showDownloads = settings.getShowDownloads());
   }
 
   @override
@@ -312,7 +320,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
       _kHome,
       _kLibraries,
       _kSearch,
-      if (!PlatformDetector.isTV()) _kDownloads,
+      if (_showDownloads) _kDownloads,
       _kSettings,
       _kReconnect,
       'liveTv',
@@ -346,7 +354,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
         if (hasLiveTv) 'liveTv',
         _kSearch,
       ],
-      if (!PlatformDetector.isTV()) _kDownloads,
+      if (_showDownloads) _kDownloads,
       _kSettings,
     ];
   }
@@ -568,8 +576,8 @@ class SideNavigationRailState extends State<SideNavigationRail> {
                               const SizedBox(height: 8),
                             ],
 
-                            // Downloads (hidden on Android TV)
-                            if (!PlatformDetector.isTV())
+                            // Downloads (visibility controlled by setting)
+                            if (_showDownloads)
                               Builder(
                                 builder: (context) {
                                   final hasLiveTv = context.read<MultiServerProvider>().hasLiveTv;

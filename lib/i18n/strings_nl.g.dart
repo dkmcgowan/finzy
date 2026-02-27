@@ -126,6 +126,12 @@ class _TranslationsCommonNl implements TranslationsCommonEn {
 	@override String get confirm => 'Bevestigen';
 	@override String get retry => 'Opnieuw proberen';
 	@override String get logout => 'Uitloggen';
+	@override String get quickConnect => 'Quick Connect';
+	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
+	@override String get quickConnectCode => 'Quick Connect Code';
+	@override String get authorize => 'Authorize';
+	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
+	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
 	@override String get unknown => 'Onbekend';
 	@override String get refresh => 'Vernieuwen';
 	@override String get yes => 'Ja';
@@ -305,6 +311,8 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => 'Reclamefragmenten automatisch overslaan';
 	@override String get autoSkipDelay => 'Vertraging Automatisch Overslaan';
 	@override String autoSkipDelayDescription({required Object seconds}) => '${seconds} seconden wachten voor automatisch overslaan';
+	@override String get showDownloads => 'Show Downloads';
+	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
 	@override String get downloads => 'Downloads';
 	@override String get downloadLocationDescription => 'Kies waar gedownloade content wordt opgeslagen';
 	@override String get downloadLocationDefault => 'Standaard (App-opslag)';
@@ -1219,6 +1227,12 @@ extension on TranslationsNl {
 			'common.confirm' => 'Bevestigen',
 			'common.retry' => 'Opnieuw proberen',
 			'common.logout' => 'Uitloggen',
+			'common.quickConnect' => 'Quick Connect',
+			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
+			'common.quickConnectCode' => 'Quick Connect Code',
+			'common.authorize' => 'Authorize',
+			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
+			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
 			'common.unknown' => 'Onbekend',
 			'common.refresh' => 'Vernieuwen',
 			'common.yes' => 'Ja',
@@ -1371,6 +1385,8 @@ extension on TranslationsNl {
 			'settings.autoSkipCommercialDescription' => 'Reclamefragmenten automatisch overslaan',
 			'settings.autoSkipDelay' => 'Vertraging Automatisch Overslaan',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => '${seconds} seconden wachten voor automatisch overslaan',
+			'settings.showDownloads' => 'Show Downloads',
+			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
 			'settings.downloads' => 'Downloads',
 			'settings.downloadLocationDescription' => 'Kies waar gedownloade content wordt opgeslagen',
 			'settings.downloadLocationDefault' => 'Standaard (App-opslag)',
@@ -1697,6 +1713,8 @@ extension on TranslationsNl {
 			'liveTv.channels' => 'Zenders',
 			'liveTv.guide' => 'Gids',
 			'liveTv.recordings' => 'Opnames',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.subscriptions' => 'Opnameregels',
 			'liveTv.scheduled' => 'Gepland',
 			'liveTv.noChannels' => 'Geen zenders beschikbaar',
@@ -1705,8 +1723,6 @@ extension on TranslationsNl {
 			'liveTv.loading' => 'Zenders laden...',
 			'liveTv.nowPlaying' => 'Nu aan het afspelen',
 			'liveTv.record' => 'Opnemen',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordSeries' => 'Serie opnemen',
 			'liveTv.cancelRecording' => 'Opname annuleren',
 			'liveTv.deleteSubscription' => 'Opnameregel verwijderen',

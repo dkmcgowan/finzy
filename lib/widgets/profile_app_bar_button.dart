@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../i18n/strings.g.dart';
 import '../providers/jellyfin_profile_provider.dart';
 import '../providers/user_profile_provider.dart';
+import 'quick_connect_authorize_dialog.dart';
 
 /// Profile avatar + menu (Switch Profile / Logout) for app bars.
 /// Use in [actions] of [DesktopSliverAppBar] or [CustomAppBar] for a uniform header.
@@ -50,6 +51,11 @@ class ProfileAppBarButton extends StatelessWidget {
           onSelected: (value) {
             if (value == 'switch_profile') {
               onSwitchProfile?.call();
+            } else if (value == 'quick_connect') {
+              showDialog(
+                context: context,
+                builder: (_) => const QuickConnectAuthorizeDialog(),
+              );
             } else if (value == 'logout') {
               onLogout?.call();
             }
@@ -66,6 +72,16 @@ class ProfileAppBarButton extends StatelessWidget {
                   ],
                 ),
               ),
+            PopupMenuItem(
+              value: 'quick_connect',
+              child: Row(
+                children: [
+                  const AppIcon(Symbols.qr_code_2_rounded, fill: 1),
+                  const SizedBox(width: 8),
+                  Text(t.common.quickConnect),
+                ],
+              ),
+            ),
             PopupMenuItem(
               value: 'logout',
               child: Row(

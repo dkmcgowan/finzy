@@ -182,6 +182,24 @@ class TranslationsCommonEn {
 	/// en: 'Logout'
 	String get logout => 'Logout';
 
+	/// en: 'Quick Connect'
+	String get quickConnect => 'Quick Connect';
+
+	/// en: 'To sign in with Quick Connect, select the 'Quick Connect' button on the device you are logging in from and enter the displayed code below.'
+	String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
+
+	/// en: 'Quick Connect Code'
+	String get quickConnectCode => 'Quick Connect Code';
+
+	/// en: 'Authorize'
+	String get authorize => 'Authorize';
+
+	/// en: 'Quick Connect authorized successfully'
+	String get quickConnectSuccess => 'Quick Connect authorized successfully';
+
+	/// en: 'Failed to authorize Quick Connect code'
+	String get quickConnectError => 'Failed to authorize Quick Connect code';
+
 	/// en: 'Unknown'
 	String get unknown => 'Unknown';
 
@@ -664,6 +682,12 @@ class TranslationsSettingsEn {
 
 	/// en: 'Wait ${seconds} seconds before auto-skipping'
 	String autoSkipDelayDescription({required Object seconds}) => 'Wait ${seconds} seconds before auto-skipping';
+
+	/// en: 'Show Downloads'
+	String get showDownloads => 'Show Downloads';
+
+	/// en: 'Show the Downloads section in the navigation menu'
+	String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
 
 	/// en: 'Downloads'
 	String get downloads => 'Downloads';
@@ -2658,6 +2682,12 @@ extension on Translations {
 			'common.confirm' => 'Confirm',
 			'common.retry' => 'Retry',
 			'common.logout' => 'Logout',
+			'common.quickConnect' => 'Quick Connect',
+			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
+			'common.quickConnectCode' => 'Quick Connect Code',
+			'common.authorize' => 'Authorize',
+			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
+			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
 			'common.unknown' => 'Unknown',
 			'common.refresh' => 'Refresh',
 			'common.yes' => 'Yes',
@@ -2810,6 +2840,8 @@ extension on Translations {
 			'settings.autoSkipCommercialDescription' => 'Automatically skip commercial/ad segments',
 			'settings.autoSkipDelay' => 'Auto Skip Delay',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => 'Wait ${seconds} seconds before auto-skipping',
+			'settings.showDownloads' => 'Show Downloads',
+			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
 			'settings.downloads' => 'Downloads',
 			'settings.downloadLocationDescription' => 'Choose where to store downloaded content',
 			'settings.downloadLocationDefault' => 'Default (App Storage)',
@@ -3136,6 +3168,8 @@ extension on Translations {
 			'liveTv.channels' => 'Channels',
 			'liveTv.guide' => 'Guide',
 			'liveTv.recordings' => 'Recordings',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.subscriptions' => 'Subscriptions',
 			'liveTv.scheduled' => 'Scheduled',
 			'liveTv.noChannels' => 'No channels available',
@@ -3144,8 +3178,6 @@ extension on Translations {
 			'liveTv.loading' => 'Loading channels...',
 			'liveTv.nowPlaying' => 'Now Playing',
 			'liveTv.record' => 'Record',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordSeries' => 'Record Series',
 			'liveTv.cancelRecording' => 'Cancel Recording',
 			'liveTv.deleteSubscription' => 'Delete Recording Rule',

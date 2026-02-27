@@ -126,6 +126,12 @@ class _TranslationsCommonSv implements TranslationsCommonEn {
 	@override String get confirm => 'Bekräfta';
 	@override String get retry => 'Försök igen';
 	@override String get logout => 'Logga ut';
+	@override String get quickConnect => 'Quick Connect';
+	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
+	@override String get quickConnectCode => 'Quick Connect Code';
+	@override String get authorize => 'Authorize';
+	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
+	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
 	@override String get unknown => 'Okänd';
 	@override String get refresh => 'Uppdatera';
 	@override String get yes => 'Ja';
@@ -305,6 +311,8 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => 'Hoppa automatiskt över reklamsegment';
 	@override String get autoSkipDelay => 'Fördröjning Auto Hoppa Över';
 	@override String autoSkipDelayDescription({required Object seconds}) => 'Vänta ${seconds} sekunder innan automatisk överhoppning';
+	@override String get showDownloads => 'Show Downloads';
+	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
 	@override String get downloads => 'Nedladdningar';
 	@override String get downloadLocationDescription => 'Välj var nedladdat innehåll ska lagras';
 	@override String get downloadLocationDefault => 'Standard (App-lagring)';
@@ -1219,6 +1227,12 @@ extension on TranslationsSv {
 			'common.confirm' => 'Bekräfta',
 			'common.retry' => 'Försök igen',
 			'common.logout' => 'Logga ut',
+			'common.quickConnect' => 'Quick Connect',
+			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
+			'common.quickConnectCode' => 'Quick Connect Code',
+			'common.authorize' => 'Authorize',
+			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
+			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
 			'common.unknown' => 'Okänd',
 			'common.refresh' => 'Uppdatera',
 			'common.yes' => 'Ja',
@@ -1371,6 +1385,8 @@ extension on TranslationsSv {
 			'settings.autoSkipCommercialDescription' => 'Hoppa automatiskt över reklamsegment',
 			'settings.autoSkipDelay' => 'Fördröjning Auto Hoppa Över',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => 'Vänta ${seconds} sekunder innan automatisk överhoppning',
+			'settings.showDownloads' => 'Show Downloads',
+			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
 			'settings.downloads' => 'Nedladdningar',
 			'settings.downloadLocationDescription' => 'Välj var nedladdat innehåll ska lagras',
 			'settings.downloadLocationDefault' => 'Standard (App-lagring)',
@@ -1697,6 +1713,8 @@ extension on TranslationsSv {
 			'liveTv.channels' => 'Kanaler',
 			'liveTv.guide' => 'Programguide',
 			'liveTv.recordings' => 'Inspelningar',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.subscriptions' => 'Inspelningsregler',
 			'liveTv.scheduled' => 'Schemalagda',
 			'liveTv.noChannels' => 'Inga kanaler tillgängliga',
@@ -1705,8 +1723,6 @@ extension on TranslationsSv {
 			'liveTv.loading' => 'Laddar kanaler...',
 			'liveTv.nowPlaying' => 'Spelas nu',
 			'liveTv.record' => 'Spela in',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordSeries' => 'Spela in serie',
 			'liveTv.cancelRecording' => 'Avbryt inspelning',
 			'liveTv.deleteSubscription' => 'Ta bort inspelningsregel',

@@ -126,6 +126,12 @@ class _TranslationsCommonZh implements TranslationsCommonEn {
 	@override String get confirm => '确认';
 	@override String get retry => '重试';
 	@override String get logout => '登出';
+	@override String get quickConnect => 'Quick Connect';
+	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
+	@override String get quickConnectCode => 'Quick Connect Code';
+	@override String get authorize => 'Authorize';
+	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
+	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
 	@override String get unknown => '未知';
 	@override String get refresh => '刷新';
 	@override String get yes => '是';
@@ -305,6 +311,8 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => '自动跳过广告片段';
 	@override String get autoSkipDelay => '自动跳过延迟';
 	@override String autoSkipDelayDescription({required Object seconds}) => '自动跳过前等待 ${seconds} 秒';
+	@override String get showDownloads => 'Show Downloads';
+	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
 	@override String get downloads => '下载';
 	@override String get downloadLocationDescription => '选择下载内容的存储位置';
 	@override String get downloadLocationDefault => '默认（应用存储）';
@@ -1219,6 +1227,12 @@ extension on TranslationsZh {
 			'common.confirm' => '确认',
 			'common.retry' => '重试',
 			'common.logout' => '登出',
+			'common.quickConnect' => 'Quick Connect',
+			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
+			'common.quickConnectCode' => 'Quick Connect Code',
+			'common.authorize' => 'Authorize',
+			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
+			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
 			'common.unknown' => '未知',
 			'common.refresh' => '刷新',
 			'common.yes' => '是',
@@ -1371,6 +1385,8 @@ extension on TranslationsZh {
 			'settings.autoSkipCommercialDescription' => '自动跳过广告片段',
 			'settings.autoSkipDelay' => '自动跳过延迟',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => '自动跳过前等待 ${seconds} 秒',
+			'settings.showDownloads' => 'Show Downloads',
+			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
 			'settings.downloads' => '下载',
 			'settings.downloadLocationDescription' => '选择下载内容的存储位置',
 			'settings.downloadLocationDefault' => '默认（应用存储）',
@@ -1697,6 +1713,8 @@ extension on TranslationsZh {
 			'liveTv.channels' => '频道',
 			'liveTv.guide' => '节目指南',
 			'liveTv.recordings' => '录制',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.subscriptions' => '录制规则',
 			'liveTv.scheduled' => '已计划',
 			'liveTv.noChannels' => '没有可用的频道',
@@ -1705,8 +1723,6 @@ extension on TranslationsZh {
 			'liveTv.loading' => '正在加载频道...',
 			'liveTv.nowPlaying' => '正在播放',
 			'liveTv.record' => '录制',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordSeries' => '录制系列',
 			'liveTv.cancelRecording' => '取消录制',
 			'liveTv.deleteSubscription' => '删除录制规则',
