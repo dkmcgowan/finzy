@@ -756,6 +756,22 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R artifacts
 
+      - name: Delete existing release assets
+        continue-on-error: true
+        run: |
+          TAG="${{ github.ref_name }}"
+          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases/tags/$TAG --jq '.id' 2>/dev/null || echo "")
+          if [ -n "$RELEASE_ID" ]; then
+            for ASSET in $(gh api repos/${{ github.repository }}/releases/$RELEASE_ID/assets --jq '.[].id'); do
+              gh api -X DELETE repos/${{ github.repository }}/releases/assets/$ASSET
+            done
+            echo "Deleted existing assets from release $TAG"
+          else
+            echo "No existing release for tag $TAG, skipping asset cleanup"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
