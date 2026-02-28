@@ -52,12 +52,6 @@
 - **API:** `GET/POST /DisplayPreferences/{displayPreferencesId}`
 - Save library sort order, filter, and view mode preferences to the server so they persist across clients.
 
-### Change Password
-
-- **Effort:** Low
-- **API:** `POST /Users/{userId}/Password`
-- Allow users to change their own password or set a PIN from within the app.
-
 ## Not Adding
 
 ### Edit Subtitles
@@ -71,10 +65,6 @@
 ### Merge / Split Movie Versions
 
 - Combine alternate versions of a movie or split them apart. Server-side management best done in the web dashboard.
-
-### Download Original File
-
-- Download the raw (non-transcoded) media file via the API. Out of scope for a streaming client.
 
 ### Instant Mix
 
@@ -112,3 +102,10 @@
 ### Server Configuration / Backup
 
 - Full server settings, scheduled task management, branding, backup/restore. Admin features for the web dashboard.
+
+### Change Password
+
+- **Effort:** Low
+- **API:** `POST /Users/{userId}/Password`
+- Allow users to change their own password or set a PIN from within the app.
+
