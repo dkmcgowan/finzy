@@ -1052,7 +1052,10 @@ class JellyfinClient {
       final sources = item?['MediaSources'] as List?;
       if (sources == null || sources.isEmpty) return null;
       final source = sources.first as Map<String, dynamic>;
-      final streams = item?['MediaStreams'] as List? ?? [];
+      // Prefer stream data from the selected media source when available.
+      final sourceStreams = source['MediaStreams'] as List?;
+      final itemStreams = item?['MediaStreams'] as List?;
+      final streams = (sourceStreams != null && sourceStreams.isNotEmpty) ? sourceStreams : (itemStreams ?? []);
       Map<String, dynamic>? videoStream;
       Map<String, dynamic>? audioStream;
       for (final s in streams) {
@@ -1060,19 +1063,52 @@ class JellyfinClient {
         if (m['Type'] == 'Video' && videoStream == null) videoStream = m;
         if (m['Type'] == 'Audio' && audioStream == null) audioStream = m;
       }
+
+      double? parseAspectRatio(dynamic value) {
+        if (value == null) return null;
+        if (value is num) return value.toDouble();
+        final ratio = value.toString().trim();
+        if (ratio.isEmpty) return null;
+        if (ratio.contains(':')) {
+          final parts = ratio.split(':');
+          if (parts.length == 2) {
+            final w = double.tryParse(parts[0]);
+            final h = double.tryParse(parts[1]);
+            if (w != null && h != null && h > 0) return w / h;
+          }
+        }
+        return double.tryParse(ratio);
+      }
+
       return FileInfo(
-        container: source['Container'] as String?,
-        videoCodec: source['VideoCodec'] as String?,
+        container: (source['Container'] as String?) ?? (item?['Container'] as String?),
+        videoCodec: (videoStream?['Codec'] as String?) ?? (source['VideoCodec'] as String?),
         videoResolution: source['VideoType'] as String?,
-        width: _toInt(source['Width']),
-        height: _toInt(source['Height']),
-        bitrate: _toInt(source['Bitrate']),
-        duration: _ticksToMs(_toInt(source['RunTimeTicks'])),
-        audioCodec: source['AudioCodec'] as String?,
-        audioChannels: _toInt(source['AudioChannels']),
-        frameRate: _toDouble(videoStream?['FrameRate']),
+        videoFrameRate: videoStream?['DisplayTitle'] as String?,
+        videoProfile: (videoStream?['Profile'] as String?) ?? (source['VideoProfile'] as String?),
+        width: _toInt(videoStream?['Width']) ?? _toInt(source['Width']),
+        height: _toInt(videoStream?['Height']) ?? _toInt(source['Height']),
+        aspectRatio: parseAspectRatio(videoStream?['AspectRatio']) ?? parseAspectRatio(source['AspectRatio']),
+        bitrate: _toInt(videoStream?['BitRate']) ?? _toInt(source['Bitrate']),
+        duration: _ticksToMs(_toInt(source['RunTimeTicks']) ?? _toInt(item?['RunTimeTicks'])),
+        audioCodec: (audioStream?['Codec'] as String?) ?? (source['AudioCodec'] as String?),
+        audioProfile: audioStream?['Profile'] as String?,
+        audioChannels: _toInt(audioStream?['Channels']) ?? _toInt(source['AudioChannels']),
+        optimizedForStreaming: source['SupportsDirectPlay'] == true || source['SupportsDirectStream'] == true,
+        has64bitOffsets: source['Has64BitOffsets'] == true,
+        filePath: source['Path'] as String?,
+        fileSize: _toInt(source['Size']),
+        colorSpace: videoStream?['ColorSpace'] as String?,
+        colorRange: videoStream?['ColorRange'] as String?,
+        colorPrimaries: videoStream?['ColorPrimaries'] as String?,
+        colorTrc: videoStream?['ColorTransfer'] as String?,
+        chromaSubsampling: videoStream?['ChromaSubsampling'] as String?,
+        frameRate:
+            _toDouble(videoStream?['RealFrameRate']) ??
+            _toDouble(videoStream?['AverageFrameRate']) ??
+            _toDouble(videoStream?['FrameRate']),
         bitDepth: _toInt(videoStream?['BitDepth']),
-        audioChannelLayout: audioStream?['ChannelLayout'] as String?,
+        audioChannelLayout: (audioStream?['ChannelLayout'] as String?) ?? (audioStream?['DisplayTitle'] as String?),
       );
     } catch (_) {
       return null;
@@ -2242,6 +2278,13 @@ class JellyfinClient {
     final isSeries = m['IsSeries'] as bool? ?? false;
     final episodeTitle = m['EpisodeTitle'] as String?;
     final seriesName = isSeries ? (m['Name'] as String?) : null;
+    final imageTags = m['ImageTags'] as Map<String, dynamic>?;
+    final hasPrimaryTag = imageTags?['Primary'] != null;
+    final thumbId =
+        m['PrimaryImageItemId'] as String? ??
+        m['SeriesId'] as String? ??
+        m['ChannelId'] as String? ??
+        (hasPrimaryTag ? m['Id'] as String? : null);
 
     return LiveTvProgram(
       key: m['Id'] as String?,
@@ -2257,8 +2300,8 @@ class JellyfinClient {
       seasonTitle: null,
       index: (m['IndexNumber'] as num?)?.toInt(),
       parentIndex: (m['ParentIndexNumber'] as num?)?.toInt(),
-      thumb: m['SeriesId'] as String? ?? m['Id'] as String?,
-      art: m['Id'] as String?,
+      thumb: thumbId,
+      art: thumbId,
       channelIdentifier: m['ChannelId'] as String?,
       channelCallSign: m['ChannelName'] as String?,
       live: m['IsLive'] as bool? ?? false,
@@ -2351,14 +2394,21 @@ class JellyfinClient {
     for (final item in list) {
       final m = item as Map<String, dynamic>;
       final program = _jellyfinProgramToLiveTvProgram(m);
+      final imageTags = m['ImageTags'] as Map<String, dynamic>?;
+      final hasPrimaryTag = imageTags?['Primary'] != null;
+      final thumbId =
+          m['PrimaryImageItemId'] as String? ??
+          m['SeriesId'] as String? ??
+          m['ChannelId'] as String? ??
+          (hasPrimaryTag ? m['Id'] as String? : null);
       final metadata = MediaMetadata(
         itemId: m['Id'] as String? ?? '',
         key: m['Id'] as String? ?? '',
         type: (m['IsSeries'] == true) ? 'show' : (m['IsMovie'] == true ? 'movie' : 'clip'),
         title: m['Name'] as String? ?? '',
         summary: m['Overview'] as String?,
-        thumb: m['Id'] as String?,
-        art: m['Id'] as String?,
+        thumb: thumbId,
+        art: thumbId,
         serverId: serverId,
         seriesImageId: m['SeriesId'] as String?,
       );

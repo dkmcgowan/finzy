@@ -133,12 +133,18 @@ class _ChannelCardState extends State<_ChannelCard> {
               fit: StackFit.expand,
               children: [
                 if (widget.channel.thumb != null)
-                  OptimizedImage(
-                    client: context.getClientWithFallback(widget.channel.serverId),
-                    imagePath: widget.channel.thumb,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.contain,
+                  Center(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.70,
+                      heightFactor: 0.70,
+                      child: OptimizedImage(
+                        client: context.getClientWithFallback(widget.channel.serverId),
+                        imagePath: widget.channel.thumb,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   )
                 else
                   Center(

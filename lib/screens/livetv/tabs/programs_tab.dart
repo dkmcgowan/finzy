@@ -191,7 +191,10 @@ class ProgramsTabState extends State<ProgramsTab> {
 
     final multiServer = context.read<MultiServerProvider>();
     final client = multiServer.getClientForServer(metadata.serverId ?? '');
-    final posterImage = metadata.seriesImageId ?? metadata.thumb;
+    final channelFirst = program.isCurrentlyAiring && channel?.thumb != null;
+    final posterImage = channelFirst
+        ? (channel?.thumb ?? metadata.seriesImageId ?? metadata.thumb)
+        : (metadata.seriesImageId ?? metadata.thumb ?? channel?.thumb);
     String? posterUrl;
     if (posterImage != null && client != null) {
       posterUrl = MediaImageHelper.getOptimizedImageUrl(
@@ -234,6 +237,7 @@ class ProgramsTabState extends State<ProgramsTab> {
             hub: _hubs[index],
             onTap: _onItemTap,
             onLongPress: (entry) => _showProgramDetails(entry, _findChannel(entry.program.channelIdentifier)),
+            findChannel: _findChannel,
             onVerticalNavigation: (isUp) => _handleVerticalNavigation(index, isUp),
             onBack: widget.onBack,
           );
@@ -252,6 +256,7 @@ class _LiveTvHubSection extends StatefulWidget {
   final LiveTvHubResult hub;
   final void Function(LiveTvHubEntry) onTap;
   final void Function(LiveTvHubEntry) onLongPress;
+  final LiveTvChannel? Function(String? channelIdentifier)? findChannel;
   final bool Function(bool isUp)? onVerticalNavigation;
   final VoidCallback? onBack;
 
@@ -260,6 +265,7 @@ class _LiveTvHubSection extends StatefulWidget {
     required this.hub,
     required this.onTap,
     required this.onLongPress,
+    this.findChannel,
     this.onVerticalNavigation,
     this.onBack,
   });
@@ -548,12 +554,14 @@ class _LiveTvHubSectionState extends State<_LiveTvHubSection> {
                       itemCount: widget.hub.entries.length,
                       itemBuilder: (context, index) {
                         final entry = widget.hub.entries[index];
+                        final channel = widget.findChannel?.call(entry.program.channelIdentifier);
                         final isItemFocused = hasFocus && index == _focusedIndex;
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 2),
                           child: _LiveTvPosterCard(
                             entry: entry,
+                            channel: channel,
                             width: cardWidth,
                             posterHeight: posterHeight,
                             isFocused: isItemFocused,
@@ -585,6 +593,7 @@ class _LiveTvHubSectionState extends State<_LiveTvHubSection> {
 
 class _LiveTvPosterCard extends StatelessWidget {
   final LiveTvHubEntry entry;
+  final LiveTvChannel? channel;
   final double width;
   final double posterHeight;
   final bool isFocused;
@@ -593,6 +602,7 @@ class _LiveTvPosterCard extends StatelessWidget {
 
   const _LiveTvPosterCard({
     required this.entry,
+    this.channel,
     required this.width,
     required this.posterHeight,
     required this.isFocused,
@@ -603,8 +613,12 @@ class _LiveTvPosterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final metadata = entry.metadata;
-    // Always use poster image: show poster for episodes, thumb for others
-    final posterImage = metadata.seriesImageId ?? metadata.thumb;
+    final channelFirst = entry.program.isCurrentlyAiring && channel?.thumb != null;
+    // For currently airing rows, prefer channel logo first; otherwise use program/series art.
+    final posterImage = channelFirst
+        ? (channel?.thumb ?? metadata.seriesImageId ?? metadata.thumb)
+        : (metadata.seriesImageId ?? metadata.thumb ?? channel?.thumb);
+    final isChannelImage = channel?.thumb != null && posterImage == channel!.thumb;
 
     return FocusBuilders.buildLockedFocusWrapper(
       context: context,
@@ -629,7 +643,7 @@ class _LiveTvPosterCard extends StatelessWidget {
                     imagePath: posterImage,
                     width: double.infinity,
                     height: double.infinity,
-                    fit: BoxFit.cover,
+                    fit: isChannelImage ? BoxFit.contain : BoxFit.cover,
                   ),
                 ),
               ),

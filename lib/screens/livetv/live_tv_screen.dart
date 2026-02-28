@@ -61,8 +61,8 @@ class _LiveTvScreenState extends State<LiveTvScreen>
 
   @override
   List<FocusNode> get tabChipFocusNodes => [
-        _programsTabFocusNode,
         _guideTabFocusNode,
+        _programsTabFocusNode,
         _channelsTabFocusNode,
         _recordingsTabFocusNode,
         _scheduledTabFocusNode,
@@ -102,11 +102,11 @@ class _LiveTvScreenState extends State<LiveTvScreen>
       super.onTabChanged();
       final idx = tabController.index;
       if (idx == 0) {
-        _guideTabKey.currentState?.pauseRefresh();
-        _programsTabKey.currentState?.resumeRefresh();
-      } else if (idx == 1) {
         _programsTabKey.currentState?.pauseRefresh();
         _guideTabKey.currentState?.resumeRefresh();
+      } else if (idx == 1) {
+        _guideTabKey.currentState?.pauseRefresh();
+        _programsTabKey.currentState?.resumeRefresh();
       } else {
         _programsTabKey.currentState?.pauseRefresh();
         _guideTabKey.currentState?.pauseRefresh();
@@ -231,9 +231,9 @@ class _LiveTvScreenState extends State<LiveTvScreen>
   void _focusCurrentTab() {
     switch (tabController.index) {
       case 0:
-        _programsTabKey.currentState?.focusFirstHub();
-      case 1:
         _guideTabKey.currentState?.focusContent();
+      case 1:
+        _programsTabKey.currentState?.focusFirstHub();
       case 2:
         _channelsTabKey.currentState?.focusContent();
       case 3:
@@ -392,9 +392,9 @@ class _LiveTvScreenState extends State<LiveTvScreen>
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
-                              _buildTabChip(t.liveTv.programs, 0),
+                              _buildTabChip(t.liveTv.guide, 0),
                               const SizedBox(width: 8),
-                              _buildTabChip(t.liveTv.guide, 1),
+                              _buildTabChip(t.liveTv.programs, 1),
                               const SizedBox(width: 8),
                               _buildTabChip(t.liveTv.channels, 2),
                               const SizedBox(width: 8),
@@ -471,9 +471,9 @@ class _LiveTvScreenState extends State<LiveTvScreen>
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildTabChip(t.liveTv.programs, 0),
+                  _buildTabChip(t.liveTv.guide, 0),
                   const SizedBox(width: 8),
-                  _buildTabChip(t.liveTv.guide, 1),
+                  _buildTabChip(t.liveTv.programs, 1),
                   const SizedBox(width: 8),
                   _buildTabChip(t.liveTv.channels, 2),
                   const SizedBox(width: 8),
@@ -490,8 +490,8 @@ class _LiveTvScreenState extends State<LiveTvScreen>
           child: TabBarView(
             controller: tabController,
             children: [
-              ProgramsTab(key: _programsTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: onTabBarBack),
               GuideTab(key: _guideTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: onTabBarBack),
+              ProgramsTab(key: _programsTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: onTabBarBack),
               ChannelsTab(key: _channelsTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: onTabBarBack),
               RecordingsTab(key: _recordingsTabKey, onNavigateUp: focusTabBar, onBack: onTabBarBack),
               ScheduledTab(key: _scheduledTabKey, onNavigateUp: focusTabBar, onBack: onTabBarBack),

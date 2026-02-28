@@ -841,8 +841,8 @@ class TranslationsFileInfoEn {
 
 	// Translations
 
-	/// en: 'File Info'
-	String get title => 'File Info';
+	/// en: 'Media Info'
+	String get title => 'Media Info';
 
 	/// en: 'Video'
 	String get video => 'Video';
@@ -925,8 +925,8 @@ class TranslationsMediaMenuEn {
 	/// en: 'Mark as Unwatched'
 	String get markAsUnwatched => 'Mark as Unwatched';
 
-	/// en: 'Remove from Continue Watching'
-	String get removeFromContinueWatching => 'Remove from Continue Watching';
+	/// en: 'Remove from Continue'
+	String get removeFromContinueWatching => 'Remove from Continue';
 
 	/// en: 'Go to series'
 	String get goToSeries => 'Go to series';
@@ -937,8 +937,8 @@ class TranslationsMediaMenuEn {
 	/// en: 'Shuffle Play'
 	String get shufflePlay => 'Shuffle Play';
 
-	/// en: 'File Info'
-	String get fileInfo => 'File Info';
+	/// en: 'Media Info'
+	String get fileInfo => 'Media Info';
 
 	/// en: 'Are you sure you want to delete this item from your filesystem?'
 	String get confirmDelete => 'Are you sure you want to delete this item from your filesystem?';
@@ -3031,7 +3031,7 @@ extension on Translations {
 			'pinEntry.enterPin' => 'Enter PIN',
 			'pinEntry.showPin' => 'Show PIN',
 			'pinEntry.hidePin' => 'Hide PIN',
-			'fileInfo.title' => 'File Info',
+			'fileInfo.title' => 'Media Info',
 			'fileInfo.video' => 'Video',
 			'fileInfo.audio' => 'Audio',
 			'fileInfo.file' => 'File',
@@ -3056,11 +3056,11 @@ extension on Translations {
 			'fileInfo.has64bitOffsets' => '64-bit Offsets',
 			'mediaMenu.markAsWatched' => 'Mark as Watched',
 			'mediaMenu.markAsUnwatched' => 'Mark as Unwatched',
-			'mediaMenu.removeFromContinueWatching' => 'Remove from Continue Watching',
+			'mediaMenu.removeFromContinueWatching' => 'Remove from Continue',
 			'mediaMenu.goToSeries' => 'Go to series',
 			'mediaMenu.goToSeason' => 'Go to season',
 			'mediaMenu.shufflePlay' => 'Shuffle Play',
-			'mediaMenu.fileInfo' => 'File Info',
+			'mediaMenu.fileInfo' => 'Media Info',
 			'mediaMenu.confirmDelete' => 'Are you sure you want to delete this item from your filesystem?',
 			'mediaMenu.deleteMultipleWarning' => 'Multiple items may be deleted.',
 			'mediaMenu.mediaDeletedSuccessfully' => 'Media item deleted successfully',

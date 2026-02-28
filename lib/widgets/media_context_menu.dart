@@ -1065,7 +1065,8 @@ class _FocusableContextMenuSheetState extends State<_FocusableContextMenuSheet> 
                       leading: AppIcon(action.icon, fill: 1),
                       title: Text(action.label),
                       dense: true,
-                      visualDensity: const VisualDensity(vertical: -2),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                      visualDensity: const VisualDensity(vertical: -3),
                       onTap: () {
                         final controller = OverlaySheetController.maybeOf(context);
                         if (controller != null) {
@@ -1180,7 +1181,8 @@ class _FocusablePopupMenuState extends State<_FocusablePopupMenu> {
                       leading: AppIcon(action.icon, fill: 1, size: 20),
                       title: Text(action.label),
                       dense: true,
-                      visualDensity: const VisualDensity(vertical: -2),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                      visualDensity: const VisualDensity(vertical: -3),
                       onTap: () => Navigator.pop(context, action.value),
                       hoverColor: action.hoverColor,
                     );

@@ -26,7 +26,6 @@ import '../models/media_metadata.dart';
 import '../utils/content_utils.dart';
 import '../utils/rating_utils.dart';
 import '../models/download_models.dart';
-import '../providers/playback_state_provider.dart';
 import '../providers/download_provider.dart';
 import '../providers/offline_watch_provider.dart';
 import '../theme/mono_tokens.dart';
@@ -340,7 +339,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     );
   }
 
-  /// Build action buttons row (play, shuffle, download, mark watched)
+  /// Build action buttons row (play, download, mark watched)
   Widget _buildActionButtons(MediaMetadata metadata) {
     final playButtonLabel = _getPlayButtonLabel(metadata);
     final playButtonIcon = AppIcon(_getPlayButtonIcon(metadata), fill: 1, size: 20);
@@ -437,19 +436,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
               },
               icon: const AppIcon(Symbols.theaters_rounded, fill: 1),
               tooltip: t.tooltips.playTrailer,
-              iconSize: 20,
-              style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
-            ),
-            const SizedBox(width: 12),
-          ],
-          // Shuffle button (only for shows and seasons)
-          if (metadata.isShow || metadata.isSeason) ...[
-            IconButton.filledTonal(
-              onPressed: () async {
-                await _handleShufflePlayWithQueue(context, metadata);
-              },
-              icon: const AppIcon(Symbols.shuffle_rounded, fill: 1),
-              tooltip: t.tooltips.shufflePlay,
               iconSize: 20,
               style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
             ),
@@ -1679,91 +1665,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       }
     } catch (e) {
       if (mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
-      }
-    }
-  }
-
-  /// Handle shuffle play using play queues
-  /// Note: Shuffle requires server connectivity (play queue API)
-  Future<void> _handleShufflePlayWithQueue(BuildContext context, MediaMetadata metadata) async {
-    // Shuffle requires server connectivity
-    if (widget.isOffline) {
-      if (context.mounted) {
-        showErrorSnackBar(context, 'Shuffle not available offline');
-      }
-      return;
-    }
-
-    final client = _getClientForMetadata(context);
-    if (client == null) return;
-
-    final playbackState = context.read<PlaybackStateProvider>();
-
-    try {
-      // Show loading indicator
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(child: CircularProgressIndicator()),
-        );
-      }
-
-      // Determine the rating key for the play queue
-      String showRatingKey;
-      if (metadata.isShow) {
-        showRatingKey = metadata.itemId;
-      } else if (metadata.isSeason) {
-        // For seasons, we need the show's rating key
-        // The season's seasonId should point to the show
-        if (metadata.seasonId == null) {
-          throw Exception('Season is missing seasonId');
-        }
-        showRatingKey = metadata.seasonId!;
-      } else {
-        throw Exception('Shuffle play only works for shows and seasons');
-      }
-
-      // Create a shuffled play queue for the show
-      final playQueue = await client.createShowPlayQueue(showRatingKey: showRatingKey, shuffle: 1);
-
-      // Close loading indicator
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
-
-      if (playQueue == null || playQueue.items == null || playQueue.items!.isEmpty) {
-        if (context.mounted) {
-          showErrorSnackBar(context, t.messages.noEpisodesFound);
-        }
-        return;
-      }
-
-      // Initialize playback state with the play queue
-      await playbackState.setPlaybackFromPlayQueue(playQueue, showRatingKey);
-
-      // Set the client for the playback state provider
-      playbackState.setClient(client);
-
-      // Navigate to the first episode in the shuffled queue
-      final firstEpisode = playQueue.items!.first.copyWith(
-        serverId: metadata.serverId,
-        serverName: metadata.serverName,
-      );
-
-      if (context.mounted) {
-        await navigateToVideoPlayer(context, metadata: firstEpisode);
-        // Refresh metadata when returning from video player
-        _loadFullMetadata();
-      }
-    } catch (e) {
-      // Close loading indicator if it's still open
-      if (context.mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-
-      if (context.mounted) {
         showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
       }
     }
