@@ -76,8 +76,7 @@ jobs:
           if grep -qi "no unused code found" unused_code.txt; then
             echo "✅ No unused code found"
           else
-            echo "❌ Found unused code:"
-            cat unused_code.txt
+            echo "❌ Found unused code (see output above)."
             exit 1
           fi
 
@@ -88,8 +87,7 @@ jobs:
           if grep -qi "no unused files found" unused_files.txt; then
             echo "✅ No unused files found"
           else
-            echo "❌ Found unused files:"
-            cat unused_files.txt
+            echo "❌ Found unused files (see output above)."
             exit 1
           fi
 
