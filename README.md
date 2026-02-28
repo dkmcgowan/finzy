@@ -1,7 +1,4 @@
-<h1>
-  <img src="assets/finzy.png" alt="Finzy Logo" height="24" style="vertical-align: middle;" />
-  Finzy
-</h1>
+# Finzy
 
 A modern Jellyfin client for desktop and mobile. Built with Flutter for native performance and a clean interface.
 
@@ -9,25 +6,37 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 
 **Support development** — If you enjoy Finzy, you can leave a tip via [PayPal](https://paypal.me/dkmcgowan). Optional and much appreciated. You can also find this in Settings → Support Development.
 
-<p align="center">
-  <img src="assets/screenshots/macos-home.png" alt="Finzy macOS Home Screen" width="800" />
-</p>
+
 
 *More screenshots in the [screenshots folder](assets/screenshots/#readme)*
 
+## Platforms
+
+Finzy runs on:
+
+
+| Platform    | Variants                                                    |
+| ----------- | ----------------------------------------------------------- |
+| **iOS**     | iPhone, iPad                                                |
+| **Android** | Phone, Tablet, TV (arm64-v8a, armeabi-v7a, x86_64)          |
+| **Windows** | x64, arm64 — installer and portable (.7z)                   |
+| **macOS**   | x64, arm64 (universal .dmg)                                 |
+| **Linux**   | x64, arm64 — .deb, .rpm, .pkg.tar.zst, and portable .tar.gz |
+
+
 ## Download
 
-- [Windows (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest)
-- [macOS (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest)
-- [Linux (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest) - .deb, .rpm, .pkg.tar.zst, and portable tar.gz available
+All builds are available in the [releases](https://github.com/dkmcgowan/finzy/releases/latest) folder. Choose the build for your platform and architecture.
 
 ## Features
 
 ### 🔐 Authentication
+
 - Sign in with Jellyfin (server URL + username/password or Quick Connect)
 - Multi-user support with profile switching
 
 ### 📚 Media Browsing
+
 - Browse libraries with rich metadata
 - Advanced search across all media
 - Collections and playlists
@@ -35,6 +44,7 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 - Genre, favorites, and recommended tabs
 
 ### 🎬 Playback
+
 - Wide codec support (HEVC, AV1, VP9, and more)
 - HDR and Dolby Vision (iOS, macOS, Windows)
 - Full ASS/SSA subtitle support with custom styling
@@ -43,21 +53,25 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 - Chapter images and chapter navigation
 
 ### ⏭️ Media Segments
+
 - Skip Intro, Skip Outro, Skip Recap, Skip Preview, Skip Ads
 - Individual auto-skip toggles for each segment type
 - Configurable auto-skip delay
 - Manual skip button always available during playback
 
 ### 📥 Downloads
+
 - Download media for offline viewing
 - Background downloads with queue management
 
 ### 📺 Live TV & DVR
+
 - Watch live channels and browse the EPG
 - Schedule and manage recordings (timers, series timers)
 - Access recordings library
 
 ### 🔜 Coming Up
+
 - **SyncPlay** — Synchronized playback with friends (server-native, no relay)
 - **Remote control** — Cast to or control other Jellyfin sessions on your network
 
@@ -66,6 +80,7 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 ## Building from Source
 
 ### Prerequisites
+
 - Flutter SDK 3.8.1+
 - A Jellyfin server
 
@@ -96,7 +111,8 @@ dart run slang
 
 ## Acknowledgments
 
-- **Based on [Plezy](https://github.com/edde746/plezy)** — modern cross-platform Plex client built with Flutter; Finzy is a fork for Jellyfin.
+- **Based on [Plezy*](https://github.com/edde746/plezy)* — modern cross-platform Plex client built with Flutter; Finzy is a fork for Jellyfin.
 - Built with [Flutter](https://flutter.dev)
 - Designed for [Jellyfin](https://jellyfin.org)
 - Playback powered by [mpv](https://mpv.io) via [MPVKit](https://github.com/mpvkit/MPVKit) and [libmpv-android](https://github.com/jarnedemeulemeester/libmpv-android)
+
