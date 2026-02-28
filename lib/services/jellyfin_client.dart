@@ -5,6 +5,7 @@ import '../models/livetv_channel.dart';
 import '../models/livetv_dvr.dart';
 import '../models/livetv_hub_result.dart';
 import '../models/livetv_program.dart';
+import '../models/livetv_recording.dart';
 import '../models/livetv_scheduled_recording.dart';
 import '../models/livetv_subscription.dart';
 import '../models/play_queue_response.dart';
@@ -39,6 +40,12 @@ class JellyfinClient {
   final String serverId;
   final String? serverName;
 
+  /// Cached user policy permissions (fetched once via [loadUserPolicy]).
+  bool _canDeleteContent = false;
+  bool _isAdministrator = false;
+  bool get canDeleteContent => _canDeleteContent || _isAdministrator;
+  bool get isAdministrator => _isAdministrator;
+
   JellyfinClient(this.config, {required this.serverId, this.serverName}) {
     _dio = Dio(
       BaseOptions(
@@ -62,6 +69,21 @@ class JellyfinClient {
 
   void setOfflineMode(bool offline) {
     _offlineMode = offline;
+  }
+
+  /// Fetch and cache the current user's policy permissions.
+  /// Call once after login / server connection.
+  Future<void> loadUserPolicy() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/Users/${config.userId}');
+      final policy = response.data?['Policy'] as Map<String, dynamic>?;
+      if (policy != null) {
+        _isAdministrator = policy['IsAdministrator'] as bool? ?? false;
+        _canDeleteContent = policy['EnableContentDeletion'] as bool? ?? false;
+      }
+    } catch (e) {
+      appLogger.w('Failed to load user policy', error: e);
+    }
   }
 
   /// Jellyfin uses PascalCase; normalize type to lowercase and Series -> show, BoxSet/Boxsets -> collection.
@@ -123,7 +145,8 @@ class JellyfinClient {
     final thumbForItem = id.isEmpty
         ? null
         : (isCollection ? (hasPrimaryImage ? id : null) : id);
-    final hasBackdrop = item['BackdropImageTags'] != null;
+    final hasBackdrop = (item['BackdropImageTags'] as List?)?.isNotEmpty == true;
+    final hasParentBackdrop = (item['ParentBackdropImageTags'] as List?)?.isNotEmpty == true;
 
     final leafCount = _leafCountForItem(item, type);
     final viewedLeafCount = _viewedLeafCountForItem(item, type, userData);
@@ -131,7 +154,7 @@ class JellyfinClient {
     final unwatchedCount = (type == 'show' || type == 'season') ? _toInt(userData['UnplayedItemCount']) : null;
 
     return MediaMetadata(
-      ratingKey: id,
+      itemId: id,
       key: id,
       guid: item['Id']?.toString(),
       studio: _studioName(item['Studios']),
@@ -155,11 +178,14 @@ class JellyfinClient {
       addedAt: item['DateCreated'] != null ? _parseDateToEpochSeconds(item['DateCreated']) : null,
       updatedAt: item['DateLastMediaAdded'] != null ? _parseDateToEpochSeconds(item['DateLastMediaAdded']) : null,
       lastViewedAt: userData['LastPlayedDate'] != null ? _parseDateToEpochSeconds(userData['LastPlayedDate']) : null,
-      grandparentTitle: item['SeriesName'] as String?,
-      grandparentThumb: item['SeriesId']?.toString(),
-      grandparentRatingKey: item['SeriesId']?.toString(),
-      parentTitle: item['SeasonName'] as String?,
-      parentRatingKey: item['SeasonId']?.toString(),
+      seriesTitle: item['SeriesName'] as String?,
+      seriesImageId: item['SeriesId']?.toString(),
+      seriesArt: (type == 'episode' && hasParentBackdrop && item['SeriesId'] != null)
+          ? item['SeriesId'].toString()
+          : null,
+      seriesId: item['SeriesId']?.toString(),
+      seasonTitle: item['SeasonName'] as String?,
+      seasonId: item['SeasonId']?.toString(),
       parentIndex: _toInt(item['ParentIndexNumber']),
       index: _toInt(item['IndexNumber']),
       viewOffset: _positionTicksToMs(_toInt(userData['PlaybackPositionTicks'])),
@@ -169,7 +195,7 @@ class JellyfinClient {
       unwatchedCount: unwatchedCount,
       childCount: _toInt(item['ChildCount']),
       role: _peopleToRoles(item['People']),
-      librarySectionID: _toInt(item['ParentId']),
+      libraryId: _toInt(item['ParentId']),
       serverId: serverId,
       serverName: serverName,
       isFavorite: (userData['IsFavorite'] as bool?) == true ? true : null,
@@ -317,8 +343,6 @@ class JellyfinClient {
     final response = await _dio.get<Map<String, dynamic>>('/System/Info');
     return response.data ?? {};
   }
-
-  Future<String?> getMachineIdentifier() async => serverId;
 
   /// Synthetic library keys for top-level Collections and Playlists (Jellyfin treats these as libraries).
   static const String syntheticCollectionsKey = 'jellyfin_collections';
@@ -525,11 +549,11 @@ class JellyfinClient {
     }
   }
 
-  Future<MediaMetadata?> getMetadataWithImages(String ratingKey) async {
+  Future<MediaMetadata?> getMetadataWithImages(String itemId) async {
     if (_offlineMode) return null;
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/Users/${config.userId}/Items/$ratingKey',
+        '/Users/${config.userId}/Items/$itemId',
         queryParameters: {'Fields': 'Overview,Genres,UserData,RunTimeTicks,Chapters,People,ItemCounts,CustomRating'},
       );
       final item = response.data;
@@ -541,8 +565,8 @@ class JellyfinClient {
     }
   }
 
-  Future<Map<String, dynamic>> getMetadataWithImagesAndOnDeck(String ratingKey) async {
-    final metadata = await getMetadataWithImages(ratingKey);
+  Future<Map<String, dynamic>> getMetadataWithImagesAndOnDeck(String itemId) async {
+    final metadata = await getMetadataWithImages(itemId);
     MediaMetadata? onDeckEpisode;
     final type = metadata?.type.toLowerCase() ?? '';
     if (metadata != null && type == 'show' && !_offlineMode) {
@@ -550,7 +574,7 @@ class JellyfinClient {
       try {
         final query = {
           'UserId': config.userId,
-          'SeriesId': ratingKey,
+          'SeriesId': itemId,
           'Fields': 'Overview,Genres,UserData,RunTimeTicks,Chapters,People,ItemCounts',
         };
         final response = await _dio.get<Map<String, dynamic>>(
@@ -563,12 +587,16 @@ class JellyfinClient {
           final first = items[0] as Map<String, dynamic>;
           onDeckEpisode = _itemToMetadata(first);
         }
-      } catch (_) {}
+      } catch (e) {
+        appLogger.d('NextUp lookup failed for $itemId', error: e);
+      }
       // Fallback: if NextUp returned nothing, compute first unwatched episode from seasons
       if (onDeckEpisode == null) {
         try {
-          onDeckEpisode = await _getFirstUnwatchedEpisodeForShow(ratingKey);
-        } catch (_) {}
+          onDeckEpisode = await _getFirstUnwatchedEpisodeForShow(itemId);
+        } catch (e) {
+          appLogger.d('First-unwatched-episode fallback failed for $itemId', error: e);
+        }
       }
     }
     return {'metadata': metadata, 'onDeckEpisode': onDeckEpisode};
@@ -581,7 +609,7 @@ class JellyfinClient {
     seasons.sort((a, b) => (a.parentIndex ?? 0).compareTo(b.parentIndex ?? 0));
     for (final season in seasons) {
       if (season.type.toLowerCase() != 'season') continue;
-      final episodes = await getChildren(season.ratingKey);
+      final episodes = await getChildren(season.itemId);
       episodes.sort((a, b) => (a.index ?? 0).compareTo(b.index ?? 0));
       for (final ep in episodes) {
         if (ep.type.toLowerCase() != 'episode') continue;
@@ -591,23 +619,23 @@ class JellyfinClient {
     return null;
   }
 
-  Future<List<MediaMetadata>> getChildren(String ratingKey) async {
+  Future<List<MediaMetadata>> getChildren(String itemId) async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>(
       '/Users/${config.userId}/Items',
-      queryParameters: {'ParentId': ratingKey, 'Fields': _listFields},
+      queryParameters: {'ParentId': itemId, 'Fields': _listFields},
     );
     final list = response.data?['Items'] as List?;
     if (list == null) return [];
     return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
   }
 
-  Future<List<MediaMetadata>> getExtras(String ratingKey) async {
+  Future<List<MediaMetadata>> getExtras(String itemId) async {
     if (_offlineMode) return [];
     // Prefer local trailers (streamable in-app); fall back to remote (URLs open in browser).
     try {
       final localResponse = await _dio.get<dynamic>(
-        '/Users/${config.userId}/Items/$ratingKey/LocalTrailers',
+        '/Users/${config.userId}/Items/$itemId/LocalTrailers',
       );
       final localData = localResponse.data;
       final localList = localData is List ? localData : (localData is Map ? (localData['Items'] as List?) ?? [] : null);
@@ -620,11 +648,13 @@ class JellyfinClient {
         }
         return list;
       }
-    } catch (_) {}
+    } catch (e) {
+      appLogger.d('LocalTrailers lookup failed for $itemId', error: e);
+    }
 
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/Users/${config.userId}/Items/$ratingKey',
+        '/Users/${config.userId}/Items/$itemId',
         queryParameters: {'Fields': 'RemoteTrailers'},
       );
       final item = response.data;
@@ -637,7 +667,7 @@ class JellyfinClient {
         if (url == null || url.isEmpty) continue;
         final name = t['Name'] as String? ?? 'Trailer';
         list.add(MediaMetadata(
-          ratingKey: url,
+          itemId: url,
           key: url,
           type: 'clip',
           title: name,
@@ -658,15 +688,15 @@ class JellyfinClient {
     final all = <MediaMetadata>[];
     for (final s in seasons) {
       if (s.type.toLowerCase() == 'season') {
-        final episodes = await getChildren(s.ratingKey);
+        final episodes = await getChildren(s.itemId);
         all.addAll(episodes.where((e) => e.type.toLowerCase() == 'episode' && (e.viewCount ?? 0) == 0));
       }
     }
     return all;
   }
 
-  Future<List<MediaMetadata>> getUnwatchedEpisodesInSeason(String seasonRatingKey) async {
-    final episodes = await getChildren(seasonRatingKey);
+  Future<List<MediaMetadata>> getUnwatchedEpisodesInSeason(String seasonId) async {
+    final episodes = await getChildren(seasonId);
     return episodes.where((e) => e.type.toLowerCase() == 'episode' && (e.viewCount ?? 0) == 0).toList();
   }
 
@@ -681,7 +711,7 @@ class JellyfinClient {
 
   /// Build a trickplay (timeline scrub) thumbnail URL for the given position.
   /// Uses Jellyfin 10.9+ native trickplay. Returns null if token unavailable.
-  /// [itemId] is the video item id (ratingKey). [positionMs] is position in milliseconds.
+  /// [itemId] is the video item id (itemId). [positionMs] is position in milliseconds.
   /// Default interval is 10s per tile; width 320 is a common resolution.
   String? getTrickplayTileUrl(String itemId, int positionMs, {int width = 320, int intervalMs = 10000}) {
     final token = config.token;
@@ -711,10 +741,10 @@ class JellyfinClient {
     return false;
   }
 
-  Future<List<Chapter>> getChapters(String ratingKey, {bool includeImages = false}) async {
+  Future<List<Chapter>> getChapters(String itemId, {bool includeImages = false}) async {
     try {
       final item = await _dio.get<Map<String, dynamic>>(
-        '/Users/${config.userId}/Items/$ratingKey',
+        '/Users/${config.userId}/Items/$itemId',
         queryParameters: {'Fields': 'Chapters'},
       );
       final chapters = item.data?['Chapters'] as List?;
@@ -729,7 +759,7 @@ class JellyfinClient {
         final imageTag = c['ImageTag'] as String?;
         String? thumb;
         if (includeImages && imageTag != null && imageTag.isNotEmpty) {
-          thumb = '${base}Items/$ratingKey/Images/Chapter/$i?tag=$imageTag&ApiKey=${Uri.encodeComponent(token)}';
+          thumb = '${base}Items/$itemId/Images/Chapter/$i?tag=$imageTag&ApiKey=${Uri.encodeComponent(token)}';
         }
         list.add(Chapter(
           id: i,
@@ -746,10 +776,10 @@ class JellyfinClient {
     }
   }
 
-  Future<List<Marker>> getMarkers(String ratingKey) async {
+  Future<List<Marker>> getMarkers(String itemId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/MediaSegments/$ratingKey',
+        '/MediaSegments/$itemId',
       );
       final items = response.data?['Items'] as List?;
       if (items == null || items.isEmpty) return [];
@@ -775,7 +805,7 @@ class JellyfinClient {
       }
       return list;
     } catch (e) {
-      appLogger.d('Jellyfin getMarkers failed for $ratingKey: $e');
+      appLogger.d('Jellyfin getMarkers failed for $itemId: $e');
       return [];
     }
   }
@@ -819,24 +849,28 @@ class JellyfinClient {
     }
   }
 
-  /// Get person/actor details (name, biography, image info).
-  Future<Map<String, dynamic>?> getPersonDetails(String name) async {
+  /// Get person/actor details via the standard item endpoint (returns full fields).
+  Future<Map<String, dynamic>?> getPersonDetails(String personId) async {
     if (_offlineMode) return null;
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/Persons/${Uri.encodeComponent(name)}',
-        queryParameters: {'UserId': config.userId},
+        '/Users/${config.userId}/Items/$personId',
       );
       if (response.statusCode != 200 || response.data == null) return null;
       final d = response.data!;
       return {
-        'name': d['Name'] as String? ?? name,
+        'name': d['Name'] as String?,
         'id': d['Id'] as String?,
         'overview': d['Overview'] as String?,
         'imageTag': (d['ImageTags'] as Map?)?['Primary'] as String?,
+        'birthDate': d['PremiereDate'] as String?,
+        'deathDate': d['EndDate'] as String?,
+        'birthPlace': d['ProductionLocations'] is List
+            ? ((d['ProductionLocations'] as List).isNotEmpty ? (d['ProductionLocations'] as List).first as String? : null)
+            : null,
       };
     } catch (e) {
-      appLogger.d('Jellyfin getPersonDetails failed for $name: $e');
+      appLogger.d('Failed to get person details for $personId: $e');
       return null;
     }
   }
@@ -876,13 +910,13 @@ class JellyfinClient {
         : '${base}Items/$personId/Images/Primary?ApiKey=${Uri.encodeComponent(token)}';
   }
 
-  Future<PlaybackExtras> getPlaybackExtras(String ratingKey, {bool includeChapterImages = false}) async {
-    final chapters = await getChapters(ratingKey, includeImages: includeChapterImages);
-    final markers = await getMarkers(ratingKey);
+  Future<PlaybackExtras> getPlaybackExtras(String itemId, {bool includeChapterImages = false}) async {
+    final chapters = await getChapters(itemId, includeImages: includeChapterImages);
+    final markers = await getMarkers(itemId);
     return PlaybackExtras(chapters: chapters, markers: markers);
   }
 
-  Future<VideoPlaybackData> getVideoPlaybackData(String ratingKey, {int mediaIndex = 0}) async {
+  Future<VideoPlaybackData> getVideoPlaybackData(String itemId, {int mediaIndex = 0}) async {
     String? videoUrl;
     MediaInfo? mediaInfo;
     final versions = <MediaVersion>[];
@@ -891,7 +925,7 @@ class JellyfinClient {
     if (!_offlineMode) {
       try {
         final itemResponse = await _dio.get<Map<String, dynamic>>(
-          '/Users/${config.userId}/Items/$ratingKey',
+          '/Users/${config.userId}/Items/$itemId',
           queryParameters: {'Fields': 'MediaSources,MediaStreams,Chapters'},
         );
         final item = itemResponse.data;
@@ -911,7 +945,7 @@ class JellyfinClient {
               if (mediaSourceId != null && mediaSourceId.isNotEmpty) {
                 q.add('mediaSourceId=$mediaSourceId');
               }
-              videoUrl = '${base}Videos/$ratingKey/stream.$container?${q.join('&')}';
+              videoUrl = '${base}Videos/$itemId/stream.$container?${q.join('&')}';
             }
             if (videoUrl == null) {
               final directUrl = source['DirectStreamUrl'] as String?;
@@ -926,7 +960,7 @@ class JellyfinClient {
                 }
               }
             }
-            videoUrl ??= '${config.baseUrl}/Videos/$ratingKey/stream?api_key=${config.token}';
+            videoUrl ??= '${config.baseUrl}/Videos/$itemId/stream?api_key=${config.token}';
             final streams = item['MediaStreams'] as List? ?? [];
             final audioTracks = <MediaAudioTrack>[];
             final subtitleTracks = <MediaSubtitleTrack>[];
@@ -954,7 +988,7 @@ class JellyfinClient {
                 // Build Jellyfin subtitle URL path so getSubtitleUrl can build full URL.
                 // GET /Videos/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.{format}
                 final subtitleKey = mediaSourceId.isNotEmpty
-                    ? 'Videos/$ratingKey/$mediaSourceId/Subtitles/$streamIndex/Stream'
+                    ? 'Videos/$itemId/$mediaSourceId/Subtitles/$streamIndex/Stream'
                     : null;
                 subtitleTracks.add(MediaSubtitleTrack(
                   id: subIdx,
@@ -971,7 +1005,7 @@ class JellyfinClient {
                 subIdx++;
               }
             }
-            final chapters = await getChapters(ratingKey);
+            final chapters = await getChapters(itemId);
             mediaInfo = MediaInfo(
               videoUrl: videoUrl,
               audioTracks: audioTracks,
@@ -996,7 +1030,7 @@ class JellyfinClient {
         }
       } catch (e) {
         appLogger.e('Jellyfin getVideoPlaybackData failed', error: e);
-        videoUrl = '${config.baseUrl}/Videos/$ratingKey/stream?api_key=${config.token}';
+        videoUrl = '${config.baseUrl}/Videos/$itemId/stream?api_key=${config.token}';
       }
     }
 
@@ -1008,10 +1042,10 @@ class JellyfinClient {
     );
   }
 
-  Future<FileInfo?> getFileInfo(String ratingKey) async {
+  Future<FileInfo?> getFileInfo(String itemId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/Users/${config.userId}/Items/$ratingKey',
+        '/Users/${config.userId}/Items/$itemId',
         queryParameters: {'Fields': 'MediaSources,MediaStreams'},
       );
       final item = response.data;
@@ -1045,31 +1079,31 @@ class JellyfinClient {
     }
   }
 
-  Future<void> markAsWatched(String ratingKey, {MediaMetadata? metadata}) async {
+  Future<void> markAsWatched(String itemId, {MediaMetadata? metadata}) async {
     if (_offlineMode) return;
-    await _dio.post('/Users/${config.userId}/PlayedItems/$ratingKey');
+    await _dio.post('/Users/${config.userId}/PlayedItems/$itemId');
     if (metadata != null) {
       WatchStateNotifier().notifyWatched(metadata: metadata, isNowWatched: true);
     }
   }
 
-  Future<void> markAsUnwatched(String ratingKey, {MediaMetadata? metadata}) async {
+  Future<void> markAsUnwatched(String itemId, {MediaMetadata? metadata}) async {
     if (_offlineMode) return;
-    await _dio.delete('/Users/${config.userId}/PlayedItems/$ratingKey');
+    await _dio.delete('/Users/${config.userId}/PlayedItems/$itemId');
     if (metadata != null) {
       WatchStateNotifier().notifyWatched(metadata: metadata, isNowWatched: false);
     }
   }
 
-  Future<bool?> toggleFavorite(String ratingKey, {bool? isCurrentlyFavorite}) async {
+  Future<bool?> toggleFavorite(String itemId, {bool? isCurrentlyFavorite}) async {
     if (_offlineMode) return null;
     try {
       final isFavorite = isCurrentlyFavorite ?? false;
       if (isFavorite) {
-        await _dio.delete('/Users/${config.userId}/FavoriteItems/$ratingKey');
+        await _dio.delete('/Users/${config.userId}/FavoriteItems/$itemId');
         return false;
       } else {
-        await _dio.post('/Users/${config.userId}/FavoriteItems/$ratingKey');
+        await _dio.post('/Users/${config.userId}/FavoriteItems/$itemId');
         return true;
       }
     } catch (e) {
@@ -1079,7 +1113,7 @@ class JellyfinClient {
   }
 
   Future<void> updateProgress(
-    String ratingKey, {
+    String itemId, {
     required int time,
     required String state,
     int? duration,
@@ -1088,7 +1122,7 @@ class JellyfinClient {
     await _dio.post(
       '/Sessions/Playing/Progress',
       data: {
-        'ItemId': ratingKey,
+        'ItemId': itemId,
         'PositionTicks': time * 10000,
         'IsPaused': state == 'paused',
         if (duration != null) 'PlaybackDurationTicks': duration * 10000,
@@ -1096,7 +1130,12 @@ class JellyfinClient {
     );
   }
 
-  Future<void> removeFromOnDeck(String ratingKey) async {}
+  Future<void> removeFromOnDeck(String itemId) async {
+    if (_offlineMode) return;
+    await _dio.post('/Users/${config.userId}/Items/$itemId/HideFromResume', queryParameters: {
+      'Hide': 'true',
+    });
+  }
 
   /// Authorize a Quick Connect code from another device.
   /// The current authenticated user approves the code so the other device can sign in.
@@ -1113,10 +1152,10 @@ class JellyfinClient {
     }
   }
 
-  Future<bool> rateItem(String ratingKey, double rating) async {
+  Future<bool> rateItem(String itemId, double rating) async {
     try {
       await _dio.post(
-        '/Users/${config.userId}/Items/$ratingKey/Rating',
+        '/Users/${config.userId}/Items/$itemId/Rating',
         data: {'Rating': rating < 0 ? 0 : rating},
       );
       return true;
@@ -1125,9 +1164,9 @@ class JellyfinClient {
     }
   }
 
-  Future<bool> deleteMediaItem(String ratingKey) async {
+  Future<bool> deleteMediaItem(String itemId) async {
     try {
-      await _dio.delete('/Items/$ratingKey');
+      await _dio.delete('/Items/$itemId');
       return true;
     } catch (_) {
       return false;
@@ -1636,7 +1675,9 @@ class JellyfinClient {
           queryParameters: {'Limit': perHub, 'Fields': _listFields},
         );
         if (r.data != null && (r.data!['Items'] as List?)?.isNotEmpty == true) return r.data;
-      } catch (_) {}
+      } catch (e) {
+        appLogger.d('Jellyfin getGlobalHubs NextUp fallback failed: $e');
+      }
       return null;
     }
 
@@ -1775,7 +1816,7 @@ class JellyfinClient {
         final m = e as Map<String, dynamic>;
         final id = m['Id']?.toString() ?? '';
         return Playlist(
-          ratingKey: id,
+          itemId: id,
           key: id,
           type: 'playlist',
           title: m['Name'] as String? ?? 'Playlist',
@@ -1800,7 +1841,7 @@ class JellyfinClient {
       if (m == null) return null;
       final id = m['Id']?.toString() ?? playlistId;
       return Playlist(
-        ratingKey: id,
+        itemId: id,
         key: id,
         type: 'playlist',
         title: m['Name'] as String? ?? 'Playlist',
@@ -1819,12 +1860,16 @@ class JellyfinClient {
 
   Future<Playlist?> createPlaylist({required String title, String? uri, int? playQueueId}) async {
     try {
-      final response = await _dio.post<Map<String, dynamic>>('/Playlists', data: {'Name': title});
+      final data = <String, dynamic>{'Name': title};
+      if (uri != null && uri.isNotEmpty) {
+        data['Ids'] = [uri];
+      }
+      final response = await _dio.post<Map<String, dynamic>>('/Playlists', data: data);
       final m = response.data;
       if (m == null) return null;
       final id = m['Id']?.toString() ?? '';
       return Playlist(
-        ratingKey: id,
+        itemId: id,
         key: id,
         type: 'playlist',
         title: title,
@@ -1878,7 +1923,7 @@ class JellyfinClient {
     try {
       final items = await getPlaylist(playlistId);
       for (final item in items) {
-        await removeFromPlaylist(playlistId: playlistId, playlistItemId: item.ratingKey);
+        await removeFromPlaylist(playlistId: playlistId, playlistItemId: item.itemId);
       }
       return true;
     } catch (_) {
@@ -1959,7 +2004,7 @@ class JellyfinClient {
     return getChildren(collectionId);
   }
 
-  Future<bool> deleteCollection(String sectionId, String collectionId) async {
+  Future<bool> deleteCollection(String collectionId) async {
     try {
       await _dio.delete('/Items/$collectionId');
       return true;
@@ -1969,20 +2014,40 @@ class JellyfinClient {
   }
 
   Future<String?> createCollection({
-    required String sectionId,
     required String title,
-    required String uri,
-    int? type,
+    List<String>? itemIds,
   }) async {
-    return null;
+    try {
+      final params = <String, dynamic>{'Name': title};
+      if (itemIds != null && itemIds.isNotEmpty) {
+        params['Ids'] = itemIds;
+      }
+      final response = await _dio.post<Map<String, dynamic>>('/Collections', queryParameters: params);
+      return response.data?['Id']?.toString();
+    } catch (e) {
+      appLogger.e('Failed to create collection', error: e);
+      return null;
+    }
   }
 
-  Future<bool> addToCollection({required String collectionId, required String uri}) async {
-    return false;
+  Future<bool> addToCollection({required String collectionId, required List<String> itemIds}) async {
+    try {
+      await _dio.post('/Collections/$collectionId/Items', queryParameters: {'Ids': itemIds.join(',')});
+      return true;
+    } catch (e) {
+      appLogger.e('Failed to add to collection', error: e);
+      return false;
+    }
   }
 
   Future<bool> removeFromCollection({required String collectionId, required String itemId}) async {
-    return false;
+    try {
+      await _dio.delete('/Collections/$collectionId/Items', queryParameters: {'Ids': itemId});
+      return true;
+    } catch (e) {
+      appLogger.e('Failed to remove from collection', error: e);
+      return false;
+    }
   }
 
   Future<PlayQueueResponse?> createPlayQueue({
@@ -2035,13 +2100,22 @@ class JellyfinClient {
     return getPlaylists(playlistType: playlistType);
   }
 
-  Future<void> scanLibrary(String sectionId) async {}
+  Future<void> scanLibrary(String sectionId) async {
+    if (_offlineMode) return;
+    await _dio.post('/Library/Refresh', queryParameters: {
+      'ParentId': sectionId,
+    });
+  }
 
-  Future<void> refreshLibraryMetadata(String sectionId) async {}
-
-  Future<void> emptyLibraryTrash(String sectionId) async {}
-
-  Future<void> analyzeLibrary(String sectionId) async {}
+  Future<void> refreshLibraryMetadata(String sectionId) async {
+    if (_offlineMode) return;
+    await _dio.post('/Items/$sectionId/Refresh', queryParameters: {
+      'MetadataRefreshMode': 'FullRefresh',
+      'ImageRefreshMode': 'FullRefresh',
+      'ReplaceAllMetadata': 'true',
+      'ReplaceAllImages': 'false',
+    });
+  }
 
   Future<int> getLibraryTotalCount(String sectionId) async {
     try {
@@ -2063,86 +2137,650 @@ class JellyfinClient {
     return 0;
   }
 
+  /// Check if Jellyfin server has Live TV enabled by querying tuner info.
+  /// Returns a synthetic LiveTvDvr per server so the provider can track availability.
   Future<List<LiveTvDvr>> getDvrs() async {
-    return [];
+    if (_offlineMode) return [];
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/LiveTv/Info');
+      if (response.statusCode != 200 || response.data == null) return [];
+      final services = response.data!['Services'] as List?;
+      final enabled = response.data!['IsEnabled'] as bool? ?? (services != null && services.isNotEmpty);
+      if (!enabled) return [];
+      return [
+        LiveTvDvr(
+          key: serverId,
+          uuid: serverId,
+          make: 'Jellyfin',
+          model: 'Live TV',
+          status: 'connected',
+        ),
+      ];
+    } catch (e) {
+      appLogger.d('Jellyfin getDvrs (LiveTv/Info) failed: $e');
+      return [];
+    }
   }
 
   Future<bool> hasDvr() async {
-    return false;
+    final dvrs = await getDvrs();
+    return dvrs.isNotEmpty;
   }
 
+  /// Get Live TV channels from Jellyfin.
   Future<List<LiveTvChannel>> getEpgChannels({String? lineup}) async {
-    return [];
+    if (_offlineMode) return [];
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/LiveTv/Channels',
+        queryParameters: {
+          'UserId': config.userId,
+          'AddCurrentProgram': false,
+          'EnableUserData': false,
+          'SortBy': 'SortName',
+          'SortOrder': 'Ascending',
+        },
+      );
+      final list = response.data?['Items'] as List?;
+      if (list == null) return [];
+      return list.map((item) {
+        final m = item as Map<String, dynamic>;
+        return LiveTvChannel(
+          key: m['Id'] as String? ?? '',
+          identifier: m['Id'] as String?,
+          callSign: m['Name'] as String?,
+          title: m['Name'] as String?,
+          thumb: m['Id'] as String?,
+          number: m['ChannelNumber'] as String?,
+          hd: m['IsHD'] as bool? ?? false,
+          serverId: serverId,
+          serverName: serverName,
+        );
+      }).toList();
+    } catch (e) {
+      appLogger.e('Jellyfin getEpgChannels failed: $e');
+      return [];
+    }
   }
 
+  /// Get EPG grid (programs) for a time range.
+  /// [beginsAt] and [endsAt] are epoch seconds.
   Future<List<LiveTvProgram>> getEpgGrid({int? beginsAt, int? endsAt}) async {
-    return [];
+    if (_offlineMode) return [];
+    try {
+      final params = <String, dynamic>{
+        'UserId': config.userId,
+        'Fields': 'Overview',
+        'EnableImages': true,
+        'ImageTypeLimit': 1,
+        'EnableUserData': false,
+      };
+      if (beginsAt != null) {
+        params['MinStartDate'] = DateTime.fromMillisecondsSinceEpoch(beginsAt * 1000, isUtc: true).toIso8601String();
+      }
+      if (endsAt != null) {
+        params['MaxEndDate'] = DateTime.fromMillisecondsSinceEpoch(endsAt * 1000, isUtc: true).toIso8601String();
+      }
+
+      final response = await _dio.get<Map<String, dynamic>>('/LiveTv/Programs', queryParameters: params);
+      final list = response.data?['Items'] as List?;
+      if (list == null) return [];
+      return list.map((item) => _jellyfinProgramToLiveTvProgram(item as Map<String, dynamic>)).toList();
+    } catch (e) {
+      appLogger.e('Jellyfin getEpgGrid failed: $e');
+      return [];
+    }
   }
 
-  Future<List<LiveTvHubResult>> getLiveTvHubs({int count = 12}) async {
-    return [];
+  /// Map a Jellyfin program BaseItemDto to LiveTvProgram.
+  LiveTvProgram _jellyfinProgramToLiveTvProgram(Map<String, dynamic> m) {
+    final startStr = m['StartDate'] as String?;
+    final endStr = m['EndDate'] as String?;
+    final startEpoch = startStr != null ? (DateTime.tryParse(startStr)?.millisecondsSinceEpoch ?? 0) ~/ 1000 : null;
+    final endEpoch = endStr != null ? (DateTime.tryParse(endStr)?.millisecondsSinceEpoch ?? 0) ~/ 1000 : null;
+
+    final isSeries = m['IsSeries'] as bool? ?? false;
+    final episodeTitle = m['EpisodeTitle'] as String?;
+    final seriesName = isSeries ? (m['Name'] as String?) : null;
+
+    return LiveTvProgram(
+      key: m['Id'] as String?,
+      itemId: m['Id'] as String?,
+      guid: m['Id'] as String?,
+      title: isSeries ? (episodeTitle ?? m['Name'] as String? ?? 'Unknown Program') : (m['Name'] as String? ?? 'Unknown Program'),
+      summary: m['Overview'] as String?,
+      type: m['Type'] as String?,
+      year: (m['ProductionYear'] as num?)?.toInt(),
+      beginsAt: startEpoch,
+      endsAt: endEpoch,
+      seriesTitle: seriesName,
+      seasonTitle: null,
+      index: (m['IndexNumber'] as num?)?.toInt(),
+      parentIndex: (m['ParentIndexNumber'] as num?)?.toInt(),
+      thumb: m['SeriesId'] as String? ?? m['Id'] as String?,
+      art: m['Id'] as String?,
+      channelIdentifier: m['ChannelId'] as String?,
+      channelCallSign: m['ChannelName'] as String?,
+      live: m['IsLive'] as bool? ?? false,
+      premiere: m['IsPremiere'] as bool? ?? false,
+    );
   }
 
+  /// Get program hubs for the "Programs" tab: On Now + category rows.
+  Future<List<LiveTvHubResult>> getLiveTvHubs({int count = 24}) async {
+    if (_offlineMode) return [];
+    try {
+      final results = await Future.wait([
+        _fetchRecommendedPrograms(count),
+        _fetchProgramsByCategory(count, hubKey: 'shows', isSeries: true, isMovie: false, isSports: false, isKids: false, isNews: false),
+        _fetchProgramsByCategory(count, hubKey: 'movies', isMovie: true),
+        _fetchProgramsByCategory(count, hubKey: 'sports', isSports: true),
+        _fetchProgramsByCategory(count, hubKey: 'kids', isKids: true),
+        _fetchProgramsByCategory(count, hubKey: 'news', isNews: true),
+      ]);
+
+      return results.whereType<LiveTvHubResult>().toList();
+    } catch (e) {
+      appLogger.d('Jellyfin getLiveTvHubs failed: $e');
+      return [];
+    }
+  }
+
+  Future<LiveTvHubResult?> _fetchRecommendedPrograms(int count) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/LiveTv/Programs/Recommended',
+        queryParameters: {
+          'UserId': config.userId,
+          'Limit': count,
+          'IsAiring': true,
+          'Fields': 'Overview',
+          'ImageTypeLimit': 1,
+          'EnableImages': true,
+          'EnableImageTypes': 'Primary,Thumb,Backdrop',
+        },
+      );
+      final entries = _programListToHubEntries(response.data?['Items'] as List?);
+      if (entries.isEmpty) return null;
+      return LiveTvHubResult(title: 'on_now', hubKey: 'on_now', entries: entries);
+    } catch (e) {
+      appLogger.d('Failed to fetch recommended programs: $e');
+      return null;
+    }
+  }
+
+  Future<LiveTvHubResult?> _fetchProgramsByCategory(
+    int count, {
+    required String hubKey,
+    bool? isSeries,
+    bool? isMovie,
+    bool? isSports,
+    bool? isKids,
+    bool? isNews,
+  }) async {
+    try {
+      final params = <String, dynamic>{
+        'UserId': config.userId,
+        'Limit': count,
+        'HasAired': false,
+        'Fields': 'ChannelInfo,PrimaryImageAspectRatio',
+        'EnableTotalRecordCount': false,
+        'EnableImageTypes': 'Primary,Thumb',
+        'ImageTypeLimit': 1,
+        'EnableImages': true,
+      };
+      if (isSeries != null) params['IsSeries'] = isSeries;
+      if (isMovie != null) params['IsMovie'] = isMovie;
+      if (isSports != null) params['IsSports'] = isSports;
+      if (isKids != null) params['IsKids'] = isKids;
+      if (isNews != null) params['IsNews'] = isNews;
+
+      final response = await _dio.get<Map<String, dynamic>>('/LiveTv/Programs', queryParameters: params);
+      final entries = _programListToHubEntries(response.data?['Items'] as List?);
+      if (entries.isEmpty) return null;
+      return LiveTvHubResult(title: hubKey, hubKey: hubKey, entries: entries);
+    } catch (e) {
+      appLogger.d('Failed to fetch $hubKey programs: $e');
+      return null;
+    }
+  }
+
+  List<LiveTvHubEntry> _programListToHubEntries(List? list) {
+    if (list == null || list.isEmpty) return [];
+    final entries = <LiveTvHubEntry>[];
+    for (final item in list) {
+      final m = item as Map<String, dynamic>;
+      final program = _jellyfinProgramToLiveTvProgram(m);
+      final metadata = MediaMetadata(
+        itemId: m['Id'] as String? ?? '',
+        key: m['Id'] as String? ?? '',
+        type: (m['IsSeries'] == true) ? 'show' : (m['IsMovie'] == true ? 'movie' : 'clip'),
+        title: m['Name'] as String? ?? '',
+        summary: m['Overview'] as String?,
+        thumb: m['Id'] as String?,
+        art: m['Id'] as String?,
+        serverId: serverId,
+        seriesImageId: m['SeriesId'] as String?,
+      );
+      entries.add(LiveTvHubEntry(metadata: metadata, program: program));
+    }
+    return entries;
+  }
+
+  /// Reload the guide data. For Jellyfin, simply returns true to trigger a UI refresh.
   Future<bool> reloadGuide(String dvrKey) async {
-    return false;
+    return true;
   }
 
   Future<List<MediaMetadata>> getLiveTvSessions() async {
     return [];
   }
 
-  Future<List<LiveTvSubscription>> getSubscriptions() async {
-    return [];
+  /// Get series timers (recurring recording rules).
+  Future<List<LiveTvSubscription>> getSeriesTimers() async {
+    if (_offlineMode) return [];
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/LiveTv/SeriesTimers');
+      final list = response.data?['Items'] as List?;
+      if (list == null) return [];
+      return list.map((item) {
+        return LiveTvSubscription.fromJellyfinJson(item as Map<String, dynamic>, serverId: serverId);
+      }).toList();
+    } catch (e) {
+      appLogger.d('Failed to get series timers', error: e);
+      return [];
+    }
   }
 
-  Future<LiveTvSubscription?> createSubscription({
-    required String type,
-    required int targetSectionID,
-    required int targetLibrarySectionID,
-    Map<String, String>? prefs,
-    String? hint,
-    String? uri,
-  }) async {
-    return null;
+  /// Delete a series timer.
+  Future<bool> deleteSeriesTimer(String seriesTimerId) async {
+    if (_offlineMode) return false;
+    try {
+      final response = await _dio.delete('/LiveTv/SeriesTimers/$seriesTimerId');
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      appLogger.d('Failed to delete series timer', error: e);
+      return false;
+    }
   }
 
-  Future<bool> deleteSubscription(String subscriptionId) async {
-    return false;
+  /// Update a series timer's settings.
+  Future<bool> updateSeriesTimer(LiveTvSubscription seriesTimer) async {
+    if (_offlineMode) return false;
+    try {
+      final response = await _dio.post(
+        '/LiveTv/SeriesTimers/${seriesTimer.key}',
+        data: seriesTimer.toUpdateJson(),
+      );
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      appLogger.d('Failed to update series timer', error: e);
+      return false;
+    }
   }
 
-  Future<bool> editSubscription(String subscriptionId, Map<String, String> prefs) async {
-    return false;
+  /// Get scheduled recordings (individual timers).
+  Future<List<ScheduledRecording>> getTimers() async {
+    if (_offlineMode) return [];
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/LiveTv/Timers');
+      final list = response.data?['Items'] as List?;
+      if (list == null) return [];
+      final timers = list.map((item) {
+        return ScheduledRecording.fromJellyfinJson(item as Map<String, dynamic>);
+      }).toList();
+      timers.sort((a, b) => (a.startTime ?? DateTime(0)).compareTo(b.startTime ?? DateTime(0)));
+      return timers;
+    } catch (e) {
+      appLogger.d('Failed to get timers', error: e);
+      return [];
+    }
   }
 
-  Future<List<ScheduledRecording>> getScheduledRecordings() async {
-    return [];
+  /// Cancel an individual timer.
+  Future<bool> cancelTimer(String timerId) async {
+    if (_offlineMode) return false;
+    try {
+      final response = await _dio.delete('/LiveTv/Timers/$timerId');
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      appLogger.d('Failed to cancel timer', error: e);
+      return false;
+    }
   }
 
-  Future<Map<String, dynamic>?> getSubscriptionTemplate(String guid) async {
-    return null;
+  /// Get default timer settings pre-populated for a given program.
+  /// Used as the body for [createTimer] or [createSeriesTimer].
+  Future<Map<String, dynamic>?> getTimerDefaults(String programId) async {
+    if (_offlineMode) return null;
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/LiveTv/Timers/Defaults',
+        queryParameters: {'programId': programId},
+      );
+      return response.data;
+    } catch (e) {
+      appLogger.e('Failed to get timer defaults for program $programId', error: e);
+      return null;
+    }
   }
 
-  Future<String> buildMetadataUri(String ratingKey) async => ratingKey;
+  /// Create a single recording timer from defaults obtained via [getTimerDefaults].
+  Future<bool> createTimer(Map<String, dynamic> timerInfo) async {
+    if (_offlineMode) return false;
+    try {
+      final response = await _dio.post('/LiveTv/Timers', data: timerInfo);
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      appLogger.e('Failed to create timer', error: e);
+      return false;
+    }
+  }
+
+  /// Create a series timer from defaults obtained via [getTimerDefaults].
+  Future<bool> createSeriesTimer(Map<String, dynamic> timerInfo) async {
+    if (_offlineMode) return false;
+    try {
+      final response = await _dio.post('/LiveTv/SeriesTimers', data: timerInfo);
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      appLogger.e('Failed to create series timer', error: e);
+      return false;
+    }
+  }
+
+  /// Fetch full program details including recording state (TimerId, SeriesTimerId).
+  Future<Map<String, dynamic>?> getProgramDetails(String programId) async {
+    if (_offlineMode) return null;
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/LiveTv/Programs/$programId',
+        queryParameters: {'UserId': config.userId},
+      );
+      return response.data;
+    } catch (e) {
+      appLogger.e('Failed to get program details for $programId', error: e);
+      return null;
+    }
+  }
+
+  /// Get completed recordings.
+  Future<List<LiveTvRecording>> getRecordings() async {
+    if (_offlineMode) return [];
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/LiveTv/Recordings',
+        queryParameters: {'UserId': config.userId},
+      );
+      final list = response.data?['Items'] as List?;
+      if (list == null) return [];
+      return list.map((item) {
+        return LiveTvRecording.fromJellyfinJson(item as Map<String, dynamic>, serverId: serverId);
+      }).toList();
+    } catch (e) {
+      appLogger.d('Failed to get recordings', error: e);
+      return [];
+    }
+  }
+
+  /// Get completed recordings as [MediaMetadata] for hub/library display.
+  /// Recordings often lack their own Primary image, so we replicate the
+  /// fallback chain from jellyfin-web's cardBuilder to find the best image.
+  Future<List<MediaMetadata>> getRecordingsAsMetadata() async {
+    if (_offlineMode) return [];
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/LiveTv/Recordings',
+        queryParameters: {
+          'UserId': config.userId,
+          'SortBy': 'DateCreated',
+          'SortOrder': 'Descending',
+          'EnableImages': true,
+          'ImageTypeLimit': 1,
+          'EnableImageTypes': 'Primary,Backdrop,Thumb',
+          'Fields': 'Overview,ChannelInfo,MediaSources,PrimaryImageAspectRatio',
+        },
+      );
+      final list = response.data?['Items'] as List?;
+      if (list == null) return [];
+      return list.map((raw) {
+        final item = raw as Map<String, dynamic>;
+        return _recordingToMetadata(item);
+      }).toList();
+    } catch (e) {
+      appLogger.d('Failed to get recordings as metadata', error: e);
+      return [];
+    }
+  }
+
+  /// Converts a Jellyfin recording item to [MediaMetadata] with image
+  /// fallback matching jellyfin-web's cardBuilder `getCardImageUrl`.
+  /// Web does `item = item.ProgramInfo || item` — we merge ProgramInfo
+  /// image fields when the recording itself lacks images.
+  MediaMetadata _recordingToMetadata(Map<String, dynamic> item) {
+    final id = item['Id']?.toString() ?? '';
+    final name = item['Name'] as String? ?? 'Unknown';
+    final userData = item['UserData'] as Map<String, dynamic>? ?? {};
+
+    final isSeries = item['IsSeries'] == true
+        || item['EpisodeTitle'] != null
+        || item['SeriesId'] != null;
+    final isMovie = !isSeries && item['IsMovie'] == true;
+    final type = isSeries ? 'episode' : (isMovie ? 'movie' : 'movie');
+
+    // Jellyfin-web: item = item.ProgramInfo || item
+    // Use ProgramInfo for image fields when available (richer metadata).
+    final programInfo = item['ProgramInfo'] as Map<String, dynamic>?;
+    final imgSource = programInfo ?? item;
+    final imageTags = imgSource['ImageTags'] as Map<String, dynamic>?;
+
+    // Image fallback chain — mirrors jellyfin-web cardBuilder getCardImageUrl
+    String? thumbId;
+    final imgId = imgSource['Id']?.toString() ?? id;
+
+    if (imageTags?['Primary'] != null) {
+      thumbId = imgId;
+    } else if (imgSource['SeriesPrimaryImageTag'] != null && imgSource['SeriesId'] != null) {
+      thumbId = imgSource['SeriesId'] as String;
+    } else if (imgSource['PrimaryImageTag'] != null && imgSource['PrimaryImageItemId'] != null) {
+      thumbId = imgSource['PrimaryImageItemId'] as String;
+    } else if (imgSource['ParentPrimaryImageTag'] != null && imgSource['ParentPrimaryImageItemId'] != null) {
+      thumbId = imgSource['ParentPrimaryImageItemId'] as String;
+    } else {
+      final backdrop = imgSource['BackdropImageTags'] as List?;
+      final parentBackdrop = imgSource['ParentBackdropImageTags'] as List?;
+      if (backdrop != null && backdrop.isNotEmpty) {
+        thumbId = '$baseUrl/Items/$imgId/Images/Backdrop?quality=90'
+            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+      } else if (imageTags?['Thumb'] != null) {
+        thumbId = '$baseUrl/Items/$imgId/Images/Thumb?quality=90'
+            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+      } else if (imgSource['SeriesThumbImageTag'] != null && imgSource['SeriesId'] != null) {
+        final seriesId = imgSource['SeriesId'] as String;
+        thumbId = '$baseUrl/Items/$seriesId/Images/Thumb?quality=90'
+            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+      } else if (imgSource['ParentThumbImageTag'] != null && imgSource['ParentThumbItemId'] != null) {
+        final parentId = imgSource['ParentThumbItemId'] as String;
+        thumbId = '$baseUrl/Items/$parentId/Images/Thumb?quality=90'
+            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+      } else if (parentBackdrop != null && parentBackdrop.isNotEmpty && imgSource['ParentBackdropItemId'] != null) {
+        final parentId = imgSource['ParentBackdropItemId'] as String;
+        thumbId = '$baseUrl/Items/$parentId/Images/Backdrop?quality=90'
+            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+      } else if (item['SeriesId'] != null) {
+        thumbId = item['SeriesId'] as String;
+      }
+    }
+
+    final hasBackdrop = (imgSource['BackdropImageTags'] as List?)?.isNotEmpty == true
+        || (item['BackdropImageTags'] as List?)?.isNotEmpty == true;
+
+    return MediaMetadata(
+      itemId: id,
+      key: id,
+      guid: id,
+      studio: _studioName(item['Studios']),
+      type: type,
+      title: name,
+      titleSort: item['SortName'] as String?,
+      contentRating: item['OfficialRating'] as String?,
+      summary: item['Overview'] as String?,
+      year: _toInt(item['ProductionYear']),
+      originallyAvailableAt: item['PremiereDate'] as String?,
+      thumb: thumbId,
+      art: hasBackdrop ? id : null,
+      duration: _ticksToMs(_toInt(item['RunTimeTicks'])),
+      addedAt: item['DateCreated'] != null ? _parseDateToEpochSeconds(item['DateCreated']) : null,
+      seriesTitle: item['SeriesName'] as String?,
+      seriesImageId: isSeries && (imgSource['SeriesPrimaryImageTag'] != null || item['SeriesPrimaryImageTag'] != null)
+          ? (item['SeriesId']?.toString())
+          : null,
+      seriesId: item['SeriesId']?.toString(),
+      parentIndex: _toInt(item['ParentIndexNumber']),
+      index: _toInt(item['IndexNumber']),
+      viewOffset: _positionTicksToMs(_toInt(userData['PlaybackPositionTicks'])),
+      viewCount: _toInt(userData['PlayCount']),
+      serverId: serverId,
+      serverName: serverName,
+    );
+  }
+
+  Future<String> buildMetadataUri(String itemId) async => itemId;
 
   Future<void> updateLiveTimeline({
-    required String ratingKey,
+    required String itemId,
     required String sessionPath,
     required String sessionIdentifier,
     required String state,
     required int time,
     required int duration,
     required int playbackTime,
-  }) async {}
+  }) async {
+    if (_offlineMode) return;
+    await _dio.post(
+      '/Sessions/Playing/Progress',
+      data: {
+        'ItemId': itemId,
+        'MediaSourceId': sessionIdentifier,
+        'LiveStreamId': sessionIdentifier,
+        'PositionTicks': time * 10000,
+        'IsPaused': state == 'paused',
+        'CanSeek': false,
+        'PlayMethod': 'Transcode',
+        if (duration > 0) 'PlaybackDurationTicks': duration * 10000,
+      },
+    );
+  }
 
-  Future<bool> setMetadataPreferences(String ratingKey, {String? audioLanguage, String? subtitleLanguage}) async =>
-      true;
 
-  Future<bool> selectStreams(int partId, {int? audioStreamID, int? subtitleStreamID, bool allParts = true}) async =>
-      true;
-
+  /// Tune a Live TV channel by getting a playback stream URL via PlaybackInfo.
+  /// Follows the official jellyfin-web flow: PlaybackInfo -> LiveStreams/Open
+  /// (if needed) -> build stream URL from MediaSource capabilities.
   Future<({MediaMetadata metadata, String streamPath, String sessionIdentifier, String sessionPath})?> tuneChannel(
     String dvrKey,
     String channelKey,
-  ) async =>
-      null;
+  ) async {
+    if (_offlineMode) return null;
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/Items/$channelKey/PlaybackInfo',
+        data: {
+          'UserId': config.userId,
+          'EnableDirectPlay': true,
+          'EnableDirectStream': true,
+          'EnableTranscoding': true,
+          'AutoOpenLiveStream': true,
+          'AllowVideoStreamCopy': true,
+          'AllowAudioStreamCopy': true,
+        },
+      );
+      if (response.statusCode != 200 || response.data == null) return null;
+      final data = response.data!;
+
+      final mediaSources = data['MediaSources'] as List?;
+      if (mediaSources == null || mediaSources.isEmpty) return null;
+      var source = mediaSources[0] as Map<String, dynamic>;
+
+      appLogger.d('tuneChannel PlaybackInfo source: '
+          'TranscodingUrl=${source['TranscodingUrl']}, '
+          'SupportsDirectStream=${source['SupportsDirectStream']}, '
+          'SupportsTranscoding=${source['SupportsTranscoding']}, '
+          'RequiresOpening=${source['RequiresOpening']}, '
+          'LiveStreamId=${source['LiveStreamId']}, '
+          'OpenToken=${source['OpenToken']}, '
+          'Container=${source['Container']}, '
+          'Id=${source['Id']}');
+
+      final requiresOpening = source['RequiresOpening'] as bool? ?? false;
+      final existingLiveStreamId = source['LiveStreamId'] as String?;
+      if (requiresOpening && existingLiveStreamId == null) {
+        final openToken = source['OpenToken'] as String?;
+        final playSessionId = data['PlaySessionId'] as String?;
+        appLogger.d('tuneChannel: RequiresOpening=true, calling LiveStreams/Open');
+        final openResponse = await _dio.post<Map<String, dynamic>>(
+          '/LiveStreams/Open',
+          queryParameters: {
+            'UserId': config.userId,
+            'ItemId': channelKey,
+            if (playSessionId != null) 'PlaySessionId': playSessionId,
+          },
+          data: {
+            if (openToken != null) 'OpenToken': openToken,
+          },
+        );
+        if (openResponse.statusCode == 200 && openResponse.data != null) {
+          final openSource = openResponse.data!['MediaSource'] as Map<String, dynamic>?;
+          if (openSource != null) {
+            source = openSource;
+            appLogger.d('tuneChannel LiveStreams/Open source: '
+                'TranscodingUrl=${source['TranscodingUrl']}, '
+                'LiveStreamId=${source['LiveStreamId']}, '
+                'SupportsDirectStream=${source['SupportsDirectStream']}, '
+                'SupportsTranscoding=${source['SupportsTranscoding']}, '
+                'Container=${source['Container']}');
+          }
+        }
+      }
+
+      final liveStreamId = source['LiveStreamId'] as String? ?? source['Id'] as String? ?? channelKey;
+      final sourceId = source['Id'] as String? ?? liveStreamId;
+      final container = (source['Container'] as String?)?.toLowerCase() ?? 'ts';
+      final transcodingUrl = source['TranscodingUrl'] as String?;
+      final supportsTranscoding = source['SupportsTranscoding'] as bool? ?? false;
+      final supportsDirectStream = source['SupportsDirectStream'] as bool? ?? false;
+
+      String streamPath;
+      if (supportsTranscoding && transcodingUrl != null && transcodingUrl.isNotEmpty) {
+        streamPath = transcodingUrl.startsWith('/') ? transcodingUrl : '/$transcodingUrl';
+      } else if (supportsDirectStream) {
+        streamPath = '/Videos/$channelKey/stream.$container'
+            '?Static=true&mediaSourceId=$sourceId&LiveStreamId=$liveStreamId';
+      } else if (transcodingUrl != null && transcodingUrl.isNotEmpty) {
+        streamPath = transcodingUrl.startsWith('/') ? transcodingUrl : '/$transcodingUrl';
+      } else {
+        streamPath = '/Videos/$channelKey/stream.$container'
+            '?Static=true&LiveStreamId=$liveStreamId';
+      }
+
+      appLogger.d('tuneChannel final streamPath: $streamPath');
+
+      final metadata = MediaMetadata(
+        itemId: channelKey,
+        key: channelKey,
+        type: 'clip',
+        title: source['Name'] as String? ?? 'Live TV',
+        serverId: serverId,
+      );
+
+      return (
+        metadata: metadata,
+        streamPath: streamPath,
+        sessionIdentifier: liveStreamId,
+        sessionPath: '/Videos/$channelKey/stream.$container',
+      );
+    } catch (e) {
+      appLogger.e('Jellyfin tuneChannel failed for $channelKey: $e');
+      return null;
+    }
+  }
 }

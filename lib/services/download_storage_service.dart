@@ -181,26 +181,26 @@ class DownloadStorageService {
   }
 
   /// Get directory for a specific media item
-  Future<Directory> getMediaDirectory(String serverId, String ratingKey) async {
+  Future<Directory> getMediaDirectory(String serverId, String itemId) async {
     final baseDir = await getDownloadsDirectory();
-    return _ensureDirectoryExists(Directory(path.join(baseDir.path, serverId, ratingKey)));
+    return _ensureDirectoryExists(Directory(path.join(baseDir.path, serverId, itemId)));
   }
 
   /// Get video file path
-  Future<String> getVideoFilePath(String serverId, String ratingKey, String extension) async {
-    final mediaDir = await getMediaDirectory(serverId, ratingKey);
+  Future<String> getVideoFilePath(String serverId, String itemId, String extension) async {
+    final mediaDir = await getMediaDirectory(serverId, itemId);
     return path.join(mediaDir.path, 'video.$extension');
   }
 
   /// Get artwork file path (poster, art, thumb)
-  Future<String> getArtworkPath(String serverId, String ratingKey, String artworkType) async {
-    final mediaDir = await getMediaDirectory(serverId, ratingKey);
+  Future<String> getArtworkPath(String serverId, String itemId, String artworkType) async {
+    final mediaDir = await getMediaDirectory(serverId, itemId);
     return path.join(mediaDir.path, '$artworkType.jpg');
   }
 
   /// Get subtitles directory
-  Future<Directory> getSubtitlesDirectory(String serverId, String ratingKey) async {
-    final mediaDir = await getMediaDirectory(serverId, ratingKey);
+  Future<Directory> getSubtitlesDirectory(String serverId, String itemId) async {
+    final mediaDir = await getMediaDirectory(serverId, itemId);
     final subtitlesDir = Directory(path.join(mediaDir.path, 'subtitles'));
     if (!await subtitlesDir.exists()) {
       await subtitlesDir.create(recursive: true);
@@ -209,8 +209,8 @@ class DownloadStorageService {
   }
 
   /// Get subtitle file path
-  Future<String> getSubtitlePath(String serverId, String ratingKey, int trackId, String extension) async {
-    final subtitlesDir = await getSubtitlesDirectory(serverId, ratingKey);
+  Future<String> getSubtitlePath(String serverId, String itemId, int trackId, String extension) async {
+    final subtitlesDir = await getSubtitlesDirectory(serverId, itemId);
     return path.join(subtitlesDir.path, '$trackId.$extension');
   }
 
@@ -247,7 +247,7 @@ class DownloadStorageService {
   /// Get the folder name for a TV show: "Show Name (YYYY)"
   /// [showYear]: Pass explicitly for episodes (episode.year may differ from show's year)
   String _getShowFolderName(MediaMetadata metadata, {int? showYear}) {
-    final title = metadata.grandparentTitle ?? metadata.title;
+    final title = metadata.seriesTitle ?? metadata.title;
     final year = showYear ?? metadata.year;
     return _formatTitleWithYear(title, year);
   }
@@ -351,8 +351,8 @@ class DownloadStorageService {
   }
 
   /// Delete all files for a media item
-  Future<void> deleteMediaFiles(String serverId, String ratingKey) async {
-    final mediaDir = await getMediaDirectory(serverId, ratingKey);
+  Future<void> deleteMediaFiles(String serverId, String itemId) async {
+    final mediaDir = await getMediaDirectory(serverId, itemId);
     if (await mediaDir.exists()) {
       await mediaDir.delete(recursive: true);
     }

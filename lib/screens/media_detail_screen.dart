@@ -109,15 +109,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   final _castSectionKey = GlobalKey();
   final _seasonsSectionKey = GlobalKey();
 
-  String _toGlobalKey(String ratingKey, {String? serverId}) =>
-      '${serverId ?? widget.metadata.serverId ?? ''}:$ratingKey';
+  String _toGlobalKey(String itemId, {String? serverId}) =>
+      '${serverId ?? widget.metadata.serverId ?? ''}:$itemId';
 
-  // WatchStateAware: watch the show/movie and all season ratingKeys
+  // WatchStateAware: watch the show/movie and all season itemIds
   @override
   Set<String>? get watchedRatingKeys {
-    final keys = <String>{widget.metadata.ratingKey};
+    final keys = <String>{widget.metadata.itemId};
     for (final season in _seasons) {
-      keys.add(season.ratingKey);
+      keys.add(season.itemId);
     }
     return keys;
   }
@@ -130,9 +130,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     final serverId = widget.metadata.serverId;
     if (serverId == null) return null;
 
-    final keys = <String>{_toGlobalKey(widget.metadata.ratingKey, serverId: serverId)};
+    final keys = <String>{_toGlobalKey(widget.metadata.itemId, serverId: serverId)};
     for (final season in _seasons) {
-      keys.add(_toGlobalKey(season.ratingKey, serverId: season.serverId ?? serverId));
+      keys.add(_toGlobalKey(season.itemId, serverId: season.serverId ?? serverId));
     }
     return keys;
   }
@@ -147,9 +147,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
   @override
   Set<String>? get deletionRatingKeys {
-    final keys = <String>{widget.metadata.ratingKey};
+    final keys = <String>{widget.metadata.itemId};
     for (final season in _seasons) {
-      keys.add(season.ratingKey);
+      keys.add(season.itemId);
     }
     return keys;
   }
@@ -162,9 +162,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     final serverId = widget.metadata.serverId;
     if (serverId == null) return null;
 
-    final keys = <String>{_toGlobalKey(widget.metadata.ratingKey, serverId: serverId)};
+    final keys = <String>{_toGlobalKey(widget.metadata.itemId, serverId: serverId)};
     for (final season in _seasons) {
-      keys.add(_toGlobalKey(season.ratingKey, serverId: season.serverId ?? serverId));
+      keys.add(_toGlobalKey(season.itemId, serverId: season.serverId ?? serverId));
     }
     return keys;
   }
@@ -174,7 +174,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (widget.isOffline) return;
 
     // If we have a season that matches the rating key exactly, then remove it from our list
-    final seasonIndex = _seasons.indexWhere((s) => s.ratingKey == event.ratingKey);
+    final seasonIndex = _seasons.indexWhere((s) => s.itemId == event.itemId);
     if (seasonIndex != -1) {
       setState(() {
         _seasons.removeAt(seasonIndex);
@@ -193,7 +193,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     // If all children were deleted, remove our item.
     // Otherwise, just update the counts.
     for (final parentKey in event.parentChain) {
-      final idx = _seasons.indexWhere((s) => s.ratingKey == parentKey);
+      final idx = _seasons.indexWhere((s) => s.itemId == parentKey);
       if (idx != -1) {
         final season = _seasons[idx];
         final newLeafCount = (season.leafCount ?? 1) - 1;
@@ -227,7 +227,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
     try {
       // Fetch updated metadata + on-deck without showing loader
-      final result = await client.getMetadataWithImagesAndOnDeck(widget.metadata.ratingKey);
+      final result = await client.getMetadataWithImagesAndOnDeck(widget.metadata.itemId);
       final metadata = result['metadata'] as MediaMetadata?;
       final onDeckEpisode = result['onDeckEpisode'] as MediaMetadata?;
 
@@ -243,7 +243,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
       // Refresh seasons for updated watched counts (also without loader)
       if (widget.metadata.isShow) {
-        final seasons = await client.getChildren(widget.metadata.ratingKey);
+        final seasons = await client.getChildren(widget.metadata.itemId);
         if (mounted) {
           setState(() {
             _seasons = seasons
@@ -425,7 +425,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
           if (primaryTrailer != null) ...[
             IconButton.filledTonal(
               onPressed: () async {
-                final key = primaryTrailer.ratingKey;
+                final key = primaryTrailer.itemId;
                 if (key.startsWith('http://') || key.startsWith('https://')) {
                   final uri = Uri.parse(key);
                   if (await canLaunchUrl(uri)) {
@@ -459,7 +459,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
           if (!widget.isOffline)
             Consumer<DownloadProvider>(
               builder: (context, downloadProvider, _) {
-                final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
+                final globalKey = '${metadata.serverId}:${metadata.itemId}';
                 final progress = downloadProvider.getProgress(globalKey);
                 final isQueueing = downloadProvider.isQueueing(globalKey);
 
@@ -702,9 +702,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                   // Offline mode: queue action for later sync
                   final offlineWatch = context.read<OfflineWatchProvider>();
                   if (isWatched) {
-                    await offlineWatch.markAsUnwatched(serverId: metadata.serverId!, ratingKey: metadata.ratingKey);
+                    await offlineWatch.markAsUnwatched(serverId: metadata.serverId!, itemId: metadata.itemId);
                   } else {
-                    await offlineWatch.markAsWatched(serverId: metadata.serverId!, ratingKey: metadata.ratingKey);
+                    await offlineWatch.markAsWatched(serverId: metadata.serverId!, itemId: metadata.itemId);
                   }
                   if (mounted) {
                     showAppSnackBar(
@@ -720,9 +720,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                   if (client == null) return;
 
                   if (isWatched) {
-                    await client.markAsUnwatched(metadata.ratingKey);
+                    await client.markAsUnwatched(metadata.itemId);
                   } else {
-                    await client.markAsWatched(metadata.ratingKey);
+                    await client.markAsWatched(metadata.itemId);
                   }
                   if (mounted) {
                     _watchStateChanged = true;
@@ -752,7 +752,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                 final metadata = _fullMetadata ?? widget.metadata;
                 try {
                   final newState = await client.toggleFavorite(
-                    metadata.ratingKey,
+                    metadata.itemId,
                     isCurrentlyFavorite: metadata.isFavorite == true,
                   );
                   if (mounted && newState != null) {
@@ -923,7 +923,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (widget.isOffline) {
       final cachedMetadata = await ApiCache.instance.getMetadata(
         widget.metadata.serverId ?? '',
-        widget.metadata.ratingKey,
+        widget.metadata.itemId,
       );
       if (!mounted) return;
       setState(() {
@@ -952,7 +952,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       }
 
       // Fetch full metadata with clearLogo and OnDeck episode
-      final result = await client.getMetadataWithImagesAndOnDeck(widget.metadata.ratingKey);
+      final result = await client.getMetadataWithImagesAndOnDeck(widget.metadata.itemId);
       final metadata = result['metadata'] as MediaMetadata?;
       final onDeckEpisode = result['onDeckEpisode'] as MediaMetadata?;
 
@@ -1021,7 +1021,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       // Use server-specific client for this metadata
       final client = _getClientForMetadata(context);
 
-      final seasons = await client?.getChildren(widget.metadata.ratingKey) ?? [];
+      final seasons = await client?.getChildren(widget.metadata.itemId) ?? [];
       // Preserve serverId for each season
       final seasonsWithServerId = seasons
           .map((season) => season.copyWith(serverId: widget.metadata.serverId, serverName: widget.metadata.serverName))
@@ -1046,7 +1046,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     });
 
     final downloadProvider = context.read<DownloadProvider>();
-    final episodes = downloadProvider.getDownloadedEpisodesForShow(widget.metadata.ratingKey);
+    final episodes = downloadProvider.getDownloadedEpisodesForShow(widget.metadata.itemId);
 
     // Group episodes by season
     final Map<int, List<MediaMetadata>> seasonMap = {};
@@ -1059,13 +1059,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     final seasons = seasonMap.entries.map((entry) {
       final firstEp = entry.value.first;
       return MediaMetadata(
-        ratingKey: firstEp.parentRatingKey ?? '',
-        key: '${ApiCache.itemPrefix}${firstEp.parentRatingKey}',
+        itemId: firstEp.seasonId ?? '',
+        key: '${ApiCache.itemPrefix}${firstEp.seasonId}',
         type: 'season',
-        title: firstEp.parentTitle ?? 'Season ${entry.key}',
+        title: firstEp.seasonTitle ?? 'Season ${entry.key}',
         index: entry.key,
-        thumb: firstEp.parentThumb,
-        parentRatingKey: firstEp.grandparentRatingKey,
+        thumb: firstEp.seasonImageId,
+        seasonId: firstEp.seriesId,
         serverId: widget.metadata.serverId,
         serverName: widget.metadata.serverName,
       );
@@ -1095,7 +1095,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         return;
       }
 
-      final extras = await client.getExtras(widget.metadata.ratingKey);
+      final extras = await client.getExtras(widget.metadata.itemId);
 
       // Preserve serverId for each extra (needed for multi-server setups)
       final extrasWithServerId = extras
@@ -1121,7 +1121,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       final client = _getClientForMetadata(context);
       if (client == null) return;
 
-      final items = await client.getSimilarItems(widget.metadata.ratingKey);
+      final items = await client.getSimilarItems(widget.metadata.itemId);
 
       final itemsWithServerId = items
           .map((item) => item.copyWith(serverId: widget.metadata.serverId, serverName: widget.metadata.serverName))
@@ -1553,7 +1553,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   /// Load the next unwatched episode for offline mode (offline OnDeck)
   Future<void> _loadOfflineOnDeckEpisode() async {
     final offlineWatchProvider = context.read<OfflineWatchProvider>();
-    final nextEpisode = await offlineWatchProvider.getNextUnwatchedEpisode(widget.metadata.ratingKey);
+    final nextEpisode = await offlineWatchProvider.getNextUnwatchedEpisode(widget.metadata.itemId);
 
     if (nextEpisode != null && mounted) {
       setState(() {
@@ -1574,7 +1574,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       final client = _getClientForMetadata(context);
       if (client == null) return;
 
-      final metadata = await client.getMetadataWithImages(widget.metadata.ratingKey);
+      final metadata = await client.getMetadataWithImages(widget.metadata.itemId);
 
       if (metadata != null) {
         // Preserve serverId from original metadata
@@ -1586,7 +1586,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         // For shows, also refetch seasons to update their watch counts
         List<MediaMetadata>? updatedSeasons;
         if (metadata.isShow) {
-          final seasons = await client.getChildren(widget.metadata.ratingKey);
+          final seasons = await client.getChildren(widget.metadata.itemId);
           // Preserve serverId for each season
           updatedSeasons = seasons
               .map(
@@ -1644,14 +1644,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       if (widget.isOffline) {
         // In offline mode, get episodes from downloads
         final downloadProvider = context.read<DownloadProvider>();
-        final allEpisodes = downloadProvider.getDownloadedEpisodesForShow(widget.metadata.ratingKey);
+        final allEpisodes = downloadProvider.getDownloadedEpisodesForShow(widget.metadata.itemId);
         // Filter to episodes of this season
         episodes = allEpisodes.where((ep) => ep.parentIndex == firstSeason.index).toList()
           ..sort((a, b) => (a.index ?? 0).compareTo(b.index ?? 0));
       } else {
         final client = _getClientForMetadata(context);
         if (client == null) return;
-        episodes = await client.getChildren(firstSeason.ratingKey);
+        episodes = await client.getChildren(firstSeason.itemId);
       }
 
       if (episodes.isEmpty) {
@@ -1713,14 +1713,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       // Determine the rating key for the play queue
       String showRatingKey;
       if (metadata.isShow) {
-        showRatingKey = metadata.ratingKey;
+        showRatingKey = metadata.itemId;
       } else if (metadata.isSeason) {
         // For seasons, we need the show's rating key
-        // The season's parentRatingKey should point to the show
-        if (metadata.parentRatingKey == null) {
-          throw Exception('Season is missing parentRatingKey');
+        // The season's seasonId should point to the show
+        if (metadata.seasonId == null) {
+          throw Exception('Season is missing seasonId');
         }
-        showRatingKey = metadata.parentRatingKey!;
+        showRatingKey = metadata.seasonId!;
       } else {
         throw Exception('Shuffle play only works for shows and seasons');
       }
@@ -2216,7 +2216,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         // Extract rating key from primaryExtraKey (e.g., "/items/52601" -> "52601")
       final primaryKey = metadata.primaryExtraKey!.split('/').last;
       try {
-        return _extras!.firstWhere((extra) => extra.ratingKey == primaryKey);
+        return _extras!.firstWhere((extra) => extra.itemId == primaryKey);
       } catch (_) {
         // Primary key not found, fall through to find any trailer
       }
@@ -2484,12 +2484,12 @@ class _SeasonCardState extends State<_SeasonCard> {
         child: MediaContextMenu(
           key: _contextMenuKey,
           item: widget.season,
-          onRefresh: (ratingKey) => widget.onRefresh(),
+          onRefresh: (itemId) => widget.onRefresh(),
           onListRefresh: widget.onListRefresh,
           onTap: widget.onTap,
           child: Semantics(
-            label: "media-season-${widget.season.ratingKey}",
-            identifier: "media-season-${widget.season.ratingKey}",
+            label: "media-season-${widget.season.itemId}",
+            identifier: "media-season-${widget.season.itemId}",
             button: true,
             hint: "Tap to view ${widget.season.title}",
             child: InkWell(

@@ -39,7 +39,7 @@ class _LibraryGenreTabState extends BaseLibraryTabState<Hub, LibraryGenreTab> {
   String get emptyMessage => t.libraries.noGenres;
 
   @override
-  String get errorContext => t.libraries.tabs.genre;
+  String get errorContext => t.libraries.tabs.genres;
 
   @override
   Future<List<Hub>> loadData() async {

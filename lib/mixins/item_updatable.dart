@@ -19,12 +19,12 @@ mixin ItemUpdatable<T extends StatefulWidget> on State<T> {
   ///
   /// If the fetch fails, the error is silently caught and the item will
   /// be updated on the next full refresh.
-  Future<void> updateItem(String ratingKey) async {
+  Future<void> updateItem(String itemId) async {
     try {
-      final updatedMetadata = await client.getMetadataWithImages(ratingKey);
+      final updatedMetadata = await client.getMetadataWithImages(itemId);
       if (updatedMetadata != null) {
         setState(() {
-          updateItemInLists(ratingKey, updatedMetadata);
+          updateItemInLists(itemId, updatedMetadata);
         });
       }
     } catch (e) {
@@ -40,12 +40,12 @@ mixin ItemUpdatable<T extends StatefulWidget> on State<T> {
   /// Example:
   /// ```dart
   /// @override
-  /// void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata) {
-  ///   final index = _items.indexWhere((item) => item.ratingKey == ratingKey);
+  /// void updateItemInLists(String itemId, MediaMetadata updatedMetadata) {
+  ///   final index = _items.indexWhere((item) => item.itemId == itemId);
   ///   if (index != -1) {
   ///     _items[index] = updatedMetadata;
   ///   }
   /// }
   /// ```
-  void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata);
+  void updateItemInLists(String itemId, MediaMetadata updatedMetadata);
 }

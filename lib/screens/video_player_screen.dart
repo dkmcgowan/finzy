@@ -39,7 +39,6 @@ import '../services/video_pip_manager.dart';
 import '../services/pip_service.dart';
 import '../services/shader_service.dart';
 import '../providers/shader_provider.dart';
-import '../providers/user_profile_provider.dart';
 import '../utils/app_logger.dart';
 
 import '../utils/orientation_helper.dart';
@@ -172,22 +171,14 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     return context.getClientForServer(widget.metadata.serverId!);
   }
 
-  /// Timeline scrub thumbnails. For Jellyfin uses trickplay API; for Plex uses /library/parts (partId).
+  /// Timeline scrub thumbnails via Jellyfin trickplay API (10.9+).
   /// Returns null when unavailable (e.g. offline).
   String? _buildThumbnailUrl(BuildContext context, Duration time) {
     if (widget.isOffline) return null;
     final client = _getClientForMetadata(context);
-    final partId = _currentMediaInfo?.partId;
-    // Jellyfin: no partId; use native trickplay (10.9+)
-    if (partId == null) {
-      final url = client.getTrickplayTileUrl(widget.metadata.ratingKey, time.inMilliseconds);
-      if (url != null && url.isNotEmpty) return url;
-      return null;
-    }
-    // Plex-style timeline thumbnail URL
-    return '${client.baseUrl}/library/parts/$partId/indexes/sd/${time.inMilliseconds}'.withAuthToken(
-      client.token,
-    );
+    final url = client.getTrickplayTileUrl(widget.metadata.itemId, time.inMilliseconds);
+    if (url != null && url.isNotEmpty) return url;
+    return null;
   }
 
   final ValueNotifier<bool> _isBuffering = ValueNotifier<bool>(false); // Track if video is currently buffering
@@ -201,7 +192,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   void initState() {
     super.initState();
 
-    _activeRatingKey = widget.metadata.ratingKey;
+    _activeRatingKey = widget.metadata.itemId;
     _activeMediaIndex = widget.selectedMediaIndex;
 
     // Initialize live TV channel tracking
@@ -720,10 +711,10 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       final playbackState = context.read<PlaybackStateProvider>();
 
       // Determine the show's rating key
-      // For episodes, grandparentRatingKey points to the show
-      final showRatingKey = widget.metadata.grandparentRatingKey;
+      // For episodes, seriesId points to the show
+      final showRatingKey = widget.metadata.seriesId;
       if (showRatingKey == null) {
-        appLogger.d('Episode missing grandparentRatingKey, skipping play queue creation');
+        appLogger.d('Episode missing seriesId, skipping play queue creation');
         return;
       }
 
@@ -744,7 +735,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       final playQueue = await client.createShowPlayQueue(
         showRatingKey: showRatingKey,
         shuffle: 0, // Sequential order
-        startingEpisodeKey: widget.metadata.ratingKey,
+        startingEpisodeKey: widget.metadata.itemId,
       );
 
       if (playQueue != null && playQueue.items != null && playQueue.items!.isNotEmpty) {
@@ -794,7 +785,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   void _loadAdjacentEpisodesOffline() {
     if (!widget.metadata.isEpisode) return;
 
-    final showKey = widget.metadata.grandparentRatingKey;
+    final showKey = widget.metadata.seriesId;
     if (showKey == null) return;
 
     try {
@@ -812,7 +803,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         });
 
       // Find current episode in the sorted list
-      final currentIdx = sorted.indexWhere((ep) => ep.ratingKey == widget.metadata.ratingKey);
+      final currentIdx = sorted.indexWhere((ep) => ep.itemId == widget.metadata.itemId);
 
       if (currentIdx == -1) return;
 
@@ -857,7 +848,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
 
           _liveSessionIdentifier = result.sessionIdentifier;
           _liveSessionPath = result.sessionPath;
-          _liveRatingKey = result.metadata.ratingKey;
+          _liveRatingKey = result.metadata.itemId;
           _liveDurationMs = result.metadata.duration;
         }
 
@@ -923,7 +914,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         // since the user may have watched further since downloading.
         Duration? resumePosition;
         if (widget.isOffline) {
-          final globalKey = '${widget.metadata.serverId}:${widget.metadata.ratingKey}';
+          final globalKey = '${widget.metadata.serverId}:${widget.metadata.itemId}';
           final localOffset = await offlineWatchService!.getLocalViewOffset(globalKey);
           if (localOffset != null && localOffset > 0) {
             resumePosition = Duration(milliseconds: localOffset);
@@ -966,29 +957,17 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
           _hasThumbnails = false;
         });
 
-        // Check whether timeline thumbnails exist
+        // Check whether timeline scrub thumbnails (trickplay) are available
         if (!widget.isOffline) {
-          if (_currentMediaInfo?.partId != null) {
-            // Plex: probe part for thumbnails
-            final partId = _currentMediaInfo!.partId!;
-            final client = _getClientForMetadata(context);
-            client.checkThumbnailsAvailable(partId).then((available) {
-              if (mounted && _currentMediaInfo?.partId == partId) {
+          final client = _getClientForMetadata(context);
+          final trickplayEnabled = (await SettingsService.getInstance()).getEnableTrickplay();
+          if (trickplayEnabled) {
+            final itemId = widget.metadata.itemId;
+            client.checkTrickplayAvailable(itemId).then((available) {
+              if (mounted) {
                 setState(() => _hasThumbnails = available);
               }
             });
-          } else {
-            // Jellyfin: only enable trickplay if the setting is on and the server has data
-            final jellyfinClient = _getClientForMetadata(context);
-            final trickplayEnabled = (await SettingsService.getInstance()).getEnableTrickplay();
-            if (trickplayEnabled) {
-              final itemId = widget.metadata.ratingKey;
-              jellyfinClient.checkTrickplayAvailable(itemId).then((available) {
-                if (mounted) {
-                  setState(() => _hasThumbnails = available);
-                }
-              });
-            }
           }
         }
 
@@ -1047,9 +1026,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     final downloadProvider = context.read<DownloadProvider>();
 
     // Debug: log metadata info
-    appLogger.d('Offline playback - serverId: ${widget.metadata.serverId}, ratingKey: ${widget.metadata.ratingKey}');
+    appLogger.d('Offline playback - serverId: ${widget.metadata.serverId}, itemId: ${widget.metadata.itemId}');
 
-    final globalKey = '${widget.metadata.serverId}:${widget.metadata.ratingKey}';
+    final globalKey = '${widget.metadata.serverId}:${widget.metadata.itemId}';
     appLogger.d('Looking up video with globalKey: $globalKey');
 
     final videoPath = await downloadProvider.getVideoFilePath(globalKey);
@@ -1274,7 +1253,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     }
 
     player?.dispose();
-    if (_activeRatingKey == widget.metadata.ratingKey) {
+    if (_activeRatingKey == widget.metadata.itemId) {
       _activeRatingKey = null;
       _activeMediaIndex = null;
     }
@@ -1420,8 +1399,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     if (client == null) return;
 
     try {
-      // Use the program ratingKey from tune metadata, not the channel key
-      final ratingKey = _liveRatingKey ?? widget.metadata.ratingKey;
+      // Use the program itemId from tune metadata, not the channel key
+      final itemId = _liveRatingKey ?? widget.metadata.itemId;
 
       // playbackTime: wall-clock ms since playback started
       final playbackTime = _livePlaybackStartTime != null
@@ -1434,7 +1413,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       final duration = _liveDurationMs ?? 0;
 
       await client.updateLiveTimeline(
-        ratingKey: ratingKey,
+        itemId: itemId,
         sessionPath: sessionPath,
         sessionIdentifier: sessionId,
         state: state,
@@ -1448,16 +1427,13 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   }
 
   /// Configure MPV/FFmpeg options for live streaming resilience.
-  /// Enables automatic reconnection on EOF and network errors.
+  /// Uses stream-lavf-o (single-set) since stream-lavf-o-append is not
+  /// supported by all MPV builds.
   Future<void> _setLiveStreamOptions() async {
     final p = player!;
-    // FFmpeg HTTP protocol reconnection
-    await p.setProperty('stream-lavf-o-append', 'reconnect=1');
-    await p.setProperty('stream-lavf-o-append', 'reconnect_at_eof=1');
-    await p.setProperty('stream-lavf-o-append', 'reconnect_streamed=1');
-    await p.setProperty('stream-lavf-o-append', 'reconnect_on_network_error=1');
-    await p.setProperty('stream-lavf-o-append', 'reconnect_delay_max=30');
-    // Demuxer: retry up to 1000 times on stream reload failures
+    await p.setProperty('stream-lavf-o',
+        'reconnect=1,reconnect_at_eof=1,reconnect_streamed=1,'
+        'reconnect_on_network_error=1,reconnect_delay_max=30');
     await p.setProperty('demuxer-lavf-o', 'max_reload=1000');
     await p.setProperty('force-seekable', 'no');
   }
@@ -1503,7 +1479,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       await player!.open(Media(streamUrl, headers: const {'Accept-Language': 'en'}), play: true, isLive: true);
 
       _livePlaybackStartTime = DateTime.now();
-      _liveRatingKey = result.metadata.ratingKey;
+      _liveRatingKey = result.metadata.itemId;
       _liveDurationMs = result.metadata.duration;
 
       if (!mounted) return;
@@ -1560,11 +1536,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   Future<void> _applyTrackSelection() async {
     if (!mounted || player == null) return;
 
-    final profileSettings = context.read<UserProfileProvider>().profileSettings;
     final settingsService = await SettingsService.getInstance();
     final trackService = TrackSelectionService(
       player: player!,
-      profileSettings: profileSettings,
       metadata: widget.metadata,
       mediaInfo: _currentMediaInfo,
     );
@@ -1633,31 +1607,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       }
     }
 
-    final isEpisode = widget.metadata.isEpisode;
-    final languagePrefRatingKey = isEpisode
-        ? (widget.metadata.grandparentRatingKey ?? widget.metadata.ratingKey)
-        : widget.metadata.ratingKey;
-
-    try {
-      if (!mounted) return;
-      final client = _getClientForMetadata(context);
-
-      final futures = <Future>[];
-
-      // 1. Language preference (series/movie level)
-      if (languageCode != null && languageCode.isNotEmpty) {
-        futures.add(client.setMetadataPreferences(languagePrefRatingKey, audioLanguage: languageCode));
-      }
-      // 2. Exact stream selection (part level)
-      if (streamID != null) {
-        futures.add(client.selectStreams(partId, audioStreamID: streamID, allParts: true));
-      }
-
-      await Future.wait(futures);
-      appLogger.d('Successfully saved audio preferences (language + stream)');
-    } catch (e) {
-      appLogger.e('Failed to save audio preferences', error: e);
-    }
+    appLogger.d('Audio track changed: language=$languageCode, streamID=$streamID');
   }
 
   /// Handle subtitle track changes from the user - save both stream selection and language preference
@@ -1729,36 +1679,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       }
     }
 
-    // Determine ratingKeys
-    final isEpisode = widget.metadata.isEpisode;
-    final languagePrefRatingKey = isEpisode
-        ? (widget.metadata.grandparentRatingKey ?? widget.metadata.ratingKey)
-        : widget.metadata.ratingKey;
-
-    appLogger.i(
-      'Saving subtitle preference: language=$languageCode (ratingKey: $languagePrefRatingKey), streamID=$streamID (partId: $partId)',
-    );
-
-    try {
-      if (!mounted) return;
-      final client = _getClientForMetadata(context);
-
-      final futures = <Future>[];
-
-      // 1. Save language preference at series/movie level
-      if (languageCode != null) {
-        futures.add(client.setMetadataPreferences(languagePrefRatingKey, subtitleLanguage: languageCode));
-      }
-      // 2. Save exact stream selection using part ID
-      if (streamID != null) {
-        futures.add(client.selectStreams(partId, subtitleStreamID: streamID, allParts: true));
-      }
-
-      await Future.wait(futures);
-      appLogger.d('Successfully saved subtitle preferences (language + stream)');
-    } catch (e) {
-      appLogger.e('Failed to save subtitle preferences', error: e);
-    }
+    appLogger.d('Subtitle track changed: language=$languageCode, streamID=$streamID');
   }
 
   /// Set flag to skip orientation restoration when replacing with another video

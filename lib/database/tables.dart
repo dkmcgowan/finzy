@@ -33,11 +33,11 @@ class DownloadQueue extends Table {
 class DownloadedMedia extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get serverId => text()();
-  TextColumn get ratingKey => text()();
+  TextColumn get itemId => text()();
   TextColumn get globalKey => text().unique()();
   TextColumn get type => text()();
-  TextColumn get parentRatingKey => text().nullable()();
-  TextColumn get grandparentRatingKey => text().nullable()();
+  TextColumn get seasonId => text().nullable()();
+  TextColumn get seriesId => text().nullable()();
   IntColumn get status => integer()();
   IntColumn get progress => integer().withDefault(const Constant(0))();
   IntColumn get totalBytes => integer().nullable()();
@@ -62,10 +62,10 @@ class OfflineWatchProgress extends Table {
   /// Server ID this media belongs to
   TextColumn get serverId => text()();
 
-  /// Rating key of the media item
-  TextColumn get ratingKey => text()();
+  /// Item ID of the media item
+  TextColumn get itemId => text()();
 
-  /// Global key (serverId:ratingKey) for easy lookup
+  /// Global key (serverId:itemId) for easy lookup
   TextColumn get globalKey => text()();
 
   /// Type of action: 'progress', 'watched', 'unwatched'

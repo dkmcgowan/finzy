@@ -8,6 +8,7 @@ class SettingsProvider extends ChangeNotifier {
   LibraryDensity _libraryDensity = LibraryDensity.normal;
   ViewMode _viewMode = ViewMode.grid;
   EpisodePosterMode _episodePosterMode = EpisodePosterMode.seriesPoster;
+  TimeFormat _timeFormat = TimeFormat.twelveHour;
   bool _showHeroSection = true;
   bool _useGlobalHubs = true;
   bool _showServerNameOnHubs = false;
@@ -33,6 +34,7 @@ class SettingsProvider extends ChangeNotifier {
     _libraryDensity = _settingsService!.getLibraryDensity();
     _viewMode = _settingsService!.getViewMode();
     _episodePosterMode = _settingsService!.getEpisodePosterMode();
+    _timeFormat = _settingsService!.getTimeFormat();
     _showHeroSection = _settingsService!.getShowHeroSection();
     _useGlobalHubs = _settingsService!.getUseGlobalHubs();
     _showServerNameOnHubs = _settingsService!.getShowServerNameOnHubs();
@@ -51,6 +53,10 @@ class SettingsProvider extends ChangeNotifier {
   ViewMode get viewMode => _viewMode;
 
   EpisodePosterMode get episodePosterMode => _episodePosterMode;
+
+  TimeFormat get timeFormat => _timeFormat;
+
+  bool get use24HourTime => _timeFormat == TimeFormat.twentyFourHour;
 
   bool get showHeroSection => _showHeroSection;
 
@@ -87,6 +93,15 @@ class SettingsProvider extends ChangeNotifier {
     if (_episodePosterMode != mode) {
       _episodePosterMode = mode;
       await _settingsService!.setEpisodePosterMode(mode);
+      notifyListeners();
+    }
+  }
+
+  Future<void> setTimeFormat(TimeFormat format) async {
+    if (!_isInitialized) await _initializeSettings();
+    if (_timeFormat != format) {
+      _timeFormat = format;
+      await _settingsService!.setTimeFormat(format);
       notifyListeners();
     }
   }
@@ -165,6 +180,15 @@ class SettingsProvider extends ChangeNotifier {
         return t.settings.seasonPoster;
       case EpisodePosterMode.episodeThumbnail:
         return t.settings.episodeThumbnail;
+    }
+  }
+
+  String get timeFormatDisplayName {
+    switch (_timeFormat) {
+      case TimeFormat.twelveHour:
+        return t.settings.twelveHour;
+      case TimeFormat.twentyFourHour:
+        return t.settings.twentyFourHour;
     }
   }
 }

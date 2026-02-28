@@ -9,14 +9,19 @@ import '../../models/hotkey_model.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../constants/library_constants.dart';
 import '../../focus/focus_memory_tracker.dart';
 import '../../focus/input_mode_tracker.dart';
 import '../../i18n/strings.g.dart';
+import '../../models/media_library.dart';
 import '../main_screen.dart';
 import '../../mixins/refreshable.dart';
+import '../../providers/hidden_libraries_provider.dart';
+import '../../providers/libraries_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../providers/user_profile_provider.dart';
+import '../../utils/app_logger.dart';
+import '../../utils/provider_extensions.dart';
 
 import '../../services/download_storage_service.dart';
 import '../../services/saf_storage_service.dart';
@@ -29,7 +34,6 @@ import '../../widgets/desktop_app_bar.dart';
 import '../../widgets/tv_number_spinner.dart';
 import 'hotkey_recorder_widget.dart';
 import 'about_screen.dart';
-import 'external_player_screen.dart';
 import 'logs_screen.dart';
 import 'mpv_config_screen.dart';
 import 'subtitle_styling_screen.dart';
@@ -60,16 +64,15 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kLibraryDensity = 'library_density';
   static const _kViewMode = 'view_mode';
   static const _kEpisodePosterMode = 'episode_poster_mode';
+  static const _kTimeFormat = 'time_format';
   static const _kShowHeroSection = 'show_hero_section';
   static const _kUseGlobalHubs = 'use_global_hubs';
   static const _kShowServerNameOnHubs = 'show_server_name_on_hubs';
   static const _kShowJellyfinRecommendations = 'show_jellyfin_recommendations';
   static const _kAlwaysKeepSidebarOpen = 'always_keep_sidebar_open';
   static const _kShowUnwatchedCount = 'show_unwatched_count';
-  static const _kRequireProfileSelectionOnOpen = 'require_profile_selection_on_open';
   static const _kConfirmExitOnBack = 'confirm_exit_on_back';
   static const _kPlayerBackend = 'player_backend';
-  static const _kExternalPlayer = 'external_player';
   static const _kHardwareDecoding = 'hardware_decoding';
   static const _kMatchContentFrameRate = 'match_content_frame_rate';
   static const _kBufferSize = 'buffer_size';
@@ -130,10 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
 
   bool _matchContentFrameRate = false;
   bool _useExoPlayer = true; // Android only: ExoPlayer vs MPV
-  bool _requireProfileSelectionOnOpen = false;
-  bool _useExternalPlayer = false;
   bool _confirmExitOnBack = true;
-  String _selectedExternalPlayerName = '';
 
   // Update checking state
   bool _isCheckingForUpdate = false;
@@ -211,9 +211,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
 
       _matchContentFrameRate = _settingsService.getMatchContentFrameRate();
       _useExoPlayer = _settingsService.getUseExoPlayer();
-      _requireProfileSelectionOnOpen = _settingsService.getRequireProfileSelectionOnOpen();
-      _useExternalPlayer = _settingsService.getUseExternalPlayer();
-      _selectedExternalPlayerName = _settingsService.getSelectedExternalPlayer().name;
       _confirmExitOnBack = _settingsService.getConfirmExitOnBack();
       _isLoading = false;
     });
@@ -240,6 +237,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _buildAppearanceSection(),
+                  const SizedBox(height: 24),
+                  _buildLibrariesSection(),
                   const SizedBox(height: 24),
                   _buildVideoPlaybackSection(),
                   const SizedBox(height: 24),
@@ -332,6 +331,18 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           ),
           Consumer<SettingsProvider>(
             builder: (context, settingsProvider, child) {
+              return ListTile(
+                focusNode: _focusTracker.get(_kTimeFormat),
+                leading: const AppIcon(Symbols.schedule_rounded, fill: 1),
+                title: Text(t.settings.timeFormat),
+                subtitle: Text(settingsProvider.timeFormatDisplayName),
+                trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+                onTap: () => _showTimeFormatDialog(),
+              );
+            },
+          ),
+          Consumer<SettingsProvider>(
+            builder: (context, settingsProvider, child) {
               return SwitchListTile(
                 focusNode: _focusTracker.get(_kShowHeroSection),
                 secondary: const AppIcon(Symbols.featured_play_list_rounded, fill: 1),
@@ -415,22 +426,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               );
             },
           ),
-          Consumer<UserProfileProvider>(
-            builder: (context, userProfileProvider, child) {
-              if (!userProfileProvider.hasMultipleUsers) return const SizedBox.shrink();
-              return SwitchListTile(
-                focusNode: _focusTracker.get(_kRequireProfileSelectionOnOpen),
-                secondary: const AppIcon(Symbols.person_rounded, fill: 1),
-                title: Text(t.settings.requireProfileSelectionOnOpen),
-                subtitle: Text(t.settings.requireProfileSelectionOnOpenDescription),
-                value: _requireProfileSelectionOnOpen,
-                onChanged: (value) async {
-                  setState(() => _requireProfileSelectionOnOpen = value);
-                  await _settingsService.setRequireProfileSelectionOnOpen(value);
-                },
-              );
-            },
-          ),
           if (PlatformDetector.isTV())
             SwitchListTile(
               focusNode: _focusTracker.get(_kConfirmExitOnBack),
@@ -446,6 +441,208 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
         ],
       ),
     );
+  }
+
+  Widget _buildLibrariesSection() {
+    return Consumer2<LibrariesProvider, HiddenLibrariesProvider>(
+      builder: (context, librariesProvider, hiddenProvider, child) {
+        final allLibraries = _buildOrderedLibraries(librariesProvider);
+        final hiddenKeys = hiddenProvider.hiddenLibraryKeys;
+
+        return Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  t.navigation.libraries,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (allLibraries.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    t.discover.noItemsFound,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              else
+                ReorderableListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  buildDefaultDragHandles: false,
+                  itemCount: allLibraries.length,
+                  onReorder: (oldIndex, newIndex) {
+                    if (newIndex > oldIndex) newIndex--;
+                    final reordered = List<MediaLibrary>.from(allLibraries);
+                    final item = reordered.removeAt(oldIndex);
+                    reordered.insert(newIndex, item);
+                    librariesProvider.updateLibraryOrder(reordered);
+                  },
+                  itemBuilder: (context, index) {
+                    final library = allLibraries[index];
+                    final isFavorites = library.globalKey == kJellyfinFavoritesKey;
+                    final isHidden = hiddenKeys.contains(library.globalKey);
+
+                    return ListTile(
+                      key: ValueKey(library.globalKey),
+                      leading: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: const Icon(Icons.drag_handle, size: 20),
+                          ),
+                          const SizedBox(width: 8),
+                          AppIcon(_getLibraryIcon(library.type), fill: 1, size: 20),
+                        ],
+                      ),
+                      title: Text(
+                        library.title,
+                        style: TextStyle(
+                          color: isHidden ? Theme.of(context).colorScheme.onSurfaceVariant : null,
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!isFavorites) ...[
+                            IconButton(
+                              icon: const AppIcon(Symbols.refresh_rounded, fill: 1, size: 20),
+                              tooltip: t.libraries.scanLibraryFiles,
+                              onPressed: () => _scanLibrary(library),
+                            ),
+                            IconButton(
+                              icon: const AppIcon(Symbols.sync_rounded, fill: 1, size: 20),
+                              tooltip: t.libraries.refreshMetadata,
+                              onPressed: () => _refreshLibraryMetadata(library),
+                            ),
+                          ] else
+                            const SizedBox(width: 96),
+                          IconButton(
+                            icon: AppIcon(
+                              isHidden ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
+                              fill: 1,
+                              size: 20,
+                            ),
+                            tooltip: isHidden ? t.libraries.showLibrary : t.libraries.hideLibrary,
+                            onPressed: () => _toggleLibraryVisibility(library, hiddenProvider, librariesProvider),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  List<MediaLibrary> _buildOrderedLibraries(LibrariesProvider provider) {
+    final allLibraries = provider.libraries.where((lib) => lib.type != 'livetv').toList();
+    final fakeFavorites = MediaLibrary(
+      key: kJellyfinFavoritesKey,
+      title: t.libraries.tabs.favorites,
+      type: 'favorites',
+    );
+
+    final orderKeys = provider.displayOrderKeys;
+    if (orderKeys != null && orderKeys.isNotEmpty) {
+      final libMap = {for (var l in allLibraries) l.globalKey: l};
+      final result = <MediaLibrary>[];
+      for (final key in orderKeys) {
+        if (key == kJellyfinFavoritesKey) {
+          result.add(fakeFavorites);
+        } else {
+          final lib = libMap.remove(key);
+          if (lib != null) result.add(lib);
+        }
+      }
+      result.addAll(libMap.values);
+      return result;
+    }
+
+    final primary = allLibraries
+        .where((l) => l.type.toLowerCase() == 'movie' || l.type.toLowerCase() == 'show')
+        .toList();
+    final secondary = allLibraries
+        .where((l) => l.type.toLowerCase() != 'movie' && l.type.toLowerCase() != 'show')
+        .toList();
+    primary.sort((a, b) => a.title.compareTo(b.title));
+    secondary.sort((a, b) => a.title.compareTo(b.title));
+    return [...primary, fakeFavorites, ...secondary];
+  }
+
+  IconData _getLibraryIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'movie':
+        return Symbols.movie_rounded;
+      case 'show':
+        return Symbols.tv_rounded;
+      case 'favorites':
+        return Symbols.favorite_rounded;
+      case 'artist':
+        return Symbols.music_note_rounded;
+      case 'photo':
+        return Symbols.photo_rounded;
+      default:
+        return Symbols.folder_rounded;
+    }
+  }
+
+  Future<void> _toggleLibraryVisibility(
+    MediaLibrary library,
+    HiddenLibrariesProvider hiddenProvider,
+    LibrariesProvider librariesProvider,
+  ) async {
+    final isHidden = hiddenProvider.hiddenLibraryKeys.contains(library.globalKey);
+    if (isHidden) {
+      await hiddenProvider.unhideLibrary(library.globalKey);
+    } else {
+      await hiddenProvider.hideLibrary(library.globalKey);
+    }
+  }
+
+  Future<void> _scanLibrary(MediaLibrary library) async {
+    try {
+      final client = context.getClientForLibrary(library);
+      if (mounted) {
+        showAppSnackBar(context, t.messages.libraryScanning(title: library.title), duration: const Duration(seconds: 2));
+      }
+      await client.scanLibrary(library.key);
+      if (mounted) {
+        showSuccessSnackBar(context, t.messages.libraryScanStarted(title: library.title));
+      }
+    } catch (e) {
+      appLogger.e('Library scan failed', error: e);
+      if (mounted) {
+        showErrorSnackBar(context, t.messages.libraryScanFailed(error: e.toString()));
+      }
+    }
+  }
+
+  Future<void> _refreshLibraryMetadata(MediaLibrary library) async {
+    try {
+      final client = context.getClientForLibrary(library);
+      if (mounted) {
+        showAppSnackBar(context, t.messages.metadataRefreshing(title: library.title), duration: const Duration(seconds: 2));
+      }
+      await client.refreshLibraryMetadata(library.key);
+      if (mounted) {
+        showSuccessSnackBar(context, t.messages.metadataRefreshStarted(title: library.title));
+      }
+    } catch (e) {
+      appLogger.e('Metadata refresh failed', error: e);
+      if (mounted) {
+        showErrorSnackBar(context, t.messages.metadataRefreshFailed(error: e.toString()));
+      }
+    }
   }
 
   Widget _buildVideoPlaybackSection() {
@@ -471,23 +668,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
               onTap: () => _showPlayerBackendDialog(),
             ),
-          ListTile(
-            focusNode: _focusTracker.get(_kExternalPlayer),
-            leading: const AppIcon(Symbols.open_in_new_rounded, fill: 1),
-            title: Text(t.externalPlayer.title),
-            subtitle: Text(_useExternalPlayer ? _selectedExternalPlayerName : t.externalPlayer.off),
-            trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-            onTap: () async {
-              await Navigator.push(context, MaterialPageRoute(builder: (context) => const ExternalPlayerScreen()));
-              // Reload to reflect any changes
-              final s = await settings.SettingsService.getInstance();
-              if (!mounted) return;
-              setState(() {
-                _useExternalPlayer = s.getUseExternalPlayer();
-                _selectedExternalPlayerName = s.getSelectedExternalPlayer().name;
-              });
-            },
-          ),
           SwitchListTile(
             focusNode: _focusTracker.get(_kHardwareDecoding),
             secondary: const AppIcon(Symbols.hardware_rounded, fill: 1),
@@ -1764,6 +1944,26 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       ],
       getCurrentValue: (p) => p.episodePosterMode,
       onSelect: (value, provider) => provider.setEpisodePosterMode(value),
+    );
+  }
+
+  void _showTimeFormatDialog() {
+    _showOptionSelectionDialog<settings.TimeFormat>(
+      title: t.settings.timeFormat,
+      options: [
+        _DialogOption(
+          value: settings.TimeFormat.twelveHour,
+          title: t.settings.twelveHour,
+          subtitle: t.settings.twelveHourDescription,
+        ),
+        _DialogOption(
+          value: settings.TimeFormat.twentyFourHour,
+          title: t.settings.twentyFourHour,
+          subtitle: t.settings.twentyFourHourDescription,
+        ),
+      ],
+      getCurrentValue: (p) => p.timeFormat,
+      onSelect: (value, provider) => provider.setTimeFormat(value),
     );
   }
 }

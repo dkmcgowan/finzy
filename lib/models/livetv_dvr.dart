@@ -1,3 +1,5 @@
+import '../utils/app_logger.dart';
+
 /// Represents a Live TV DVR device (e.g., HDHomeRun tuner, IPTV provider)
 class LiveTvDvr {
   final String key;
@@ -38,7 +40,9 @@ class LiveTvDvr {
       for (final item in json['ChannelMapping'] as List) {
         try {
           mappings.add(ChannelMapping.fromJson(item as Map<String, dynamic>));
-        } catch (_) {}
+        } catch (e) {
+          appLogger.w('Skipping malformed ChannelMapping', error: e);
+        }
       }
     }
 

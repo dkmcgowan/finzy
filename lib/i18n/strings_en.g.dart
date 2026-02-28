@@ -263,6 +263,9 @@ class TranslationsCommonEn {
 	/// en: 'OK'
 	String get ok => 'OK';
 
+	/// en: 'None'
+	String get none => 'None';
+
 	/// en: 'Loading...'
 	String get loading => 'Loading...';
 
@@ -385,6 +388,21 @@ class TranslationsSettingsEn {
 
 	/// en: 'Show 16:9 episode screenshot thumbnails'
 	String get episodeThumbnailDescription => 'Show 16:9 episode screenshot thumbnails';
+
+	/// en: 'Time Format'
+	String get timeFormat => 'Time Format';
+
+	/// en: '12-hour'
+	String get twelveHour => '12-hour';
+
+	/// en: '24-hour'
+	String get twentyFourHour => '24-hour';
+
+	/// en: 'e.g. 1:00 PM'
+	String get twelveHourDescription => 'e.g. 1:00 PM';
+
+	/// en: 'e.g. 13:00'
+	String get twentyFourHourDescription => 'e.g. 13:00';
 
 	/// en: 'Display featured content carousel on home screen'
 	String get showHeroSectionDescription => 'Display featured content carousel on home screen';
@@ -1782,11 +1800,17 @@ class TranslationsLiveTvEn {
 	/// en: 'Subscriptions'
 	String get subscriptions => 'Subscriptions';
 
+	/// en: 'Series Timers'
+	String get seriesTimers => 'Series Timers';
+
 	/// en: 'Scheduled'
 	String get scheduled => 'Scheduled';
 
 	/// en: 'No channels available'
 	String get noChannels => 'No channels available';
+
+	/// en: 'DVR'
+	String get dvr => 'DVR';
 
 	/// en: 'No DVR configured on any server'
 	String get noDvr => 'No DVR configured on any server';
@@ -1821,11 +1845,62 @@ class TranslationsLiveTvEn {
 	/// en: 'No program data available'
 	String get noPrograms => 'No program data available';
 
-	/// en: 'No recordings scheduled'
-	String get noRecordings => 'No recordings scheduled';
+	/// en: 'No recordings'
+	String get noRecordings => 'No recordings';
 
-	/// en: 'No recording rules'
-	String get noSubscriptions => 'No recording rules';
+	/// en: 'No scheduled recordings'
+	String get noScheduled => 'No scheduled recordings';
+
+	/// en: 'No series timers'
+	String get noSubscriptions => 'No series timers';
+
+	/// en: 'Cancel Recording'
+	String get cancelTimer => 'Cancel Recording';
+
+	/// en: 'Are you sure you want to cancel this scheduled recording?'
+	String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
+
+	/// en: 'Recording cancelled'
+	String get timerCancelled => 'Recording cancelled';
+
+	/// en: 'Delete Series Timer'
+	String get deleteSeriesTimer => 'Delete Series Timer';
+
+	/// en: 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.'
+	String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
+
+	/// en: 'Series timer deleted'
+	String get seriesTimerDeleted => 'Series timer deleted';
+
+	/// en: 'Series timer updated'
+	String get seriesTimerUpdated => 'Series timer updated';
+
+	/// en: 'Record new episodes only'
+	String get recordNewOnly => 'Record new episodes only';
+
+	/// en: 'Keep up to'
+	String get keepUpTo => 'Keep up to';
+
+	/// en: 'Keep all'
+	String get keepAll => 'Keep all';
+
+	/// en: '${count} episodes'
+	String keepEpisodes({required Object count}) => '${count} episodes';
+
+	/// en: 'Start recording early'
+	String get prePadding => 'Start recording early';
+
+	/// en: 'Continue recording after'
+	String get postPadding => 'Continue recording after';
+
+	/// en: '${count} min'
+	String minutes({required Object count}) => '${count} min';
+
+	/// en: 'Days'
+	String get days => 'Days';
+
+	/// en: 'Priority'
+	String get priority => 'Priority';
 
 	/// en: 'Ch. ${number}'
 	String channelNumber({required Object number}) => 'Ch. ${number}';
@@ -1872,11 +1947,50 @@ class TranslationsLiveTvEn {
 	/// en: 'Late Night'
 	String get lateNight => 'Late Night';
 
-	/// en: 'What's On'
-	String get whatsOn => 'What\'s On';
+	/// en: 'Programs'
+	String get programs => 'Programs';
+
+	/// en: 'On Now'
+	String get onNow => 'On Now';
+
+	/// en: 'Shows'
+	String get upcomingShows => 'Shows';
+
+	/// en: 'Movies'
+	String get upcomingMovies => 'Movies';
+
+	/// en: 'Sports'
+	String get upcomingSports => 'Sports';
+
+	/// en: 'For Kids'
+	String get forKids => 'For Kids';
+
+	/// en: 'News'
+	String get upcomingNews => 'News';
 
 	/// en: 'Watch Channel'
 	String get watchChannel => 'Watch Channel';
+
+	/// en: 'Recently Added'
+	String get recentlyAdded => 'Recently Added';
+
+	/// en: 'Recording scheduled'
+	String get recordingScheduled => 'Recording scheduled';
+
+	/// en: 'Series recording scheduled'
+	String get seriesRecordingScheduled => 'Series recording scheduled';
+
+	/// en: 'Failed to schedule recording'
+	String get recordingFailed => 'Failed to schedule recording';
+
+	/// en: 'Cancel Series'
+	String get cancelSeries => 'Cancel Series';
+
+	/// en: 'Stop Recording'
+	String get stopRecording => 'Stop Recording';
+
+	/// en: 'Do Not Record'
+	String get doNotRecord => 'Do Not Record';
 }
 
 // Path: collections
@@ -1892,6 +2006,9 @@ class TranslationsCollectionsEn {
 
 	/// en: 'Collection'
 	String get collection => 'Collection';
+
+	/// en: 'Add to Collection'
+	String get addToCollection => 'Add to Collection';
 
 	/// en: 'Collection is empty'
 	String get empty => 'Collection is empty';
@@ -1967,6 +2084,9 @@ class TranslationsPlaylistsEn {
 
 	/// en: 'Playlist'
 	String get playlist => 'Playlist';
+
+	/// en: 'Add to Playlist'
+	String get addToPlaylist => 'Add to Playlist';
 
 	/// en: 'No playlists found'
 	String get noPlaylists => 'No playlists found';
@@ -2350,14 +2470,20 @@ class TranslationsLibrariesTabsEn {
 
 	// Translations
 
-	/// en: 'Recommended'
-	String get recommended => 'Recommended';
+	/// en: 'Movies'
+	String get movies => 'Movies';
+
+	/// en: 'Shows'
+	String get shows => 'Shows';
+
+	/// en: 'Suggestions'
+	String get suggestions => 'Suggestions';
 
 	/// en: 'Browse'
 	String get browse => 'Browse';
 
-	/// en: 'Genre'
-	String get genre => 'Genre';
+	/// en: 'Genres'
+	String get genres => 'Genres';
 
 	/// en: 'Favorites'
 	String get favorites => 'Favorites';
@@ -2715,6 +2841,7 @@ extension on Translations {
 			'common.settings' => 'Settings',
 			'common.mute' => 'Mute',
 			'common.ok' => 'OK',
+			'common.none' => 'None',
 			'common.loading' => 'Loading...',
 			'common.reconnect' => 'Reconnect',
 			'common.exitConfirmTitle' => 'Exit app?',
@@ -2747,6 +2874,11 @@ extension on Translations {
 			'settings.seasonPosterDescription' => 'Show the season-specific poster for episodes',
 			'settings.episodeThumbnail' => 'Episode Thumbnail',
 			'settings.episodeThumbnailDescription' => 'Show 16:9 episode screenshot thumbnails',
+			'settings.timeFormat' => 'Time Format',
+			'settings.twelveHour' => '12-hour',
+			'settings.twentyFourHour' => '24-hour',
+			'settings.twelveHourDescription' => 'e.g. 1:00 PM',
+			'settings.twentyFourHourDescription' => 'e.g. 13:00',
 			'settings.showHeroSectionDescription' => 'Display featured content carousel on home screen',
 			'settings.secondsLabel' => 'Seconds',
 			'settings.minutesLabel' => 'Minutes',
@@ -3136,9 +3268,11 @@ extension on Translations {
 			'libraries.noGenres' => 'No genres in this library',
 			'libraries.noFoldersFound' => 'No folders found',
 			'libraries.folders' => 'folders',
-			'libraries.tabs.recommended' => 'Recommended',
+			'libraries.tabs.movies' => 'Movies',
+			'libraries.tabs.shows' => 'Shows',
+			'libraries.tabs.suggestions' => 'Suggestions',
 			'libraries.tabs.browse' => 'Browse',
-			'libraries.tabs.genre' => 'Genre',
+			'libraries.tabs.genres' => 'Genres',
 			'libraries.tabs.favorites' => 'Favorites',
 			'libraries.tabs.collections' => 'Collections',
 			'libraries.tabs.playlists' => 'Playlists',
@@ -3166,6 +3300,8 @@ extension on Translations {
 			'logs.error' => 'Error:',
 			'logs.stackTrace' => 'Stack Trace:',
 			'licenses.relatedPackages' => 'Related Packages',
+			_ => null,
+		} ?? switch (path) {
 			'licenses.license' => 'License',
 			'licenses.licenseNumber' => ({required Object number}) => 'License ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licenses',
@@ -3174,13 +3310,13 @@ extension on Translations {
 			'navigation.liveTv' => 'Live TV',
 			'liveTv.title' => 'Live TV',
 			'liveTv.channels' => 'Channels',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guide' => 'Guide',
 			'liveTv.recordings' => 'Recordings',
 			'liveTv.subscriptions' => 'Subscriptions',
+			'liveTv.seriesTimers' => 'Series Timers',
 			'liveTv.scheduled' => 'Scheduled',
 			'liveTv.noChannels' => 'No channels available',
+			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => 'No DVR configured on any server',
 			'liveTv.tuneFailed' => 'Failed to tune channel',
 			'liveTv.loading' => 'Loading channels...',
@@ -3192,8 +3328,25 @@ extension on Translations {
 			'liveTv.deleteSubscriptionConfirm' => 'Are you sure you want to delete this recording rule?',
 			'liveTv.subscriptionDeleted' => 'Recording rule deleted',
 			'liveTv.noPrograms' => 'No program data available',
-			'liveTv.noRecordings' => 'No recordings scheduled',
-			'liveTv.noSubscriptions' => 'No recording rules',
+			'liveTv.noRecordings' => 'No recordings',
+			'liveTv.noScheduled' => 'No scheduled recordings',
+			'liveTv.noSubscriptions' => 'No series timers',
+			'liveTv.cancelTimer' => 'Cancel Recording',
+			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
+			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
+			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
+			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
+			'liveTv.seriesTimerUpdated' => 'Series timer updated',
+			'liveTv.recordNewOnly' => 'Record new episodes only',
+			'liveTv.keepUpTo' => 'Keep up to',
+			'liveTv.keepAll' => 'Keep all',
+			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
+			'liveTv.prePadding' => 'Start recording early',
+			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.minutes' => ({required Object count}) => '${count} min',
+			'liveTv.days' => 'Days',
+			'liveTv.priority' => 'Priority',
 			'liveTv.channelNumber' => ({required Object number}) => 'Ch. ${number}',
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
@@ -3209,10 +3362,24 @@ extension on Translations {
 			'liveTv.daytime' => 'Daytime',
 			'liveTv.evening' => 'Evening',
 			'liveTv.lateNight' => 'Late Night',
-			'liveTv.whatsOn' => 'What\'s On',
+			'liveTv.programs' => 'Programs',
+			'liveTv.onNow' => 'On Now',
+			'liveTv.upcomingShows' => 'Shows',
+			'liveTv.upcomingMovies' => 'Movies',
+			'liveTv.upcomingSports' => 'Sports',
+			'liveTv.forKids' => 'For Kids',
+			'liveTv.upcomingNews' => 'News',
 			'liveTv.watchChannel' => 'Watch Channel',
+			'liveTv.recentlyAdded' => 'Recently Added',
+			'liveTv.recordingScheduled' => 'Recording scheduled',
+			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
+			'liveTv.recordingFailed' => 'Failed to schedule recording',
+			'liveTv.cancelSeries' => 'Cancel Series',
+			'liveTv.stopRecording' => 'Stop Recording',
+			'liveTv.doNotRecord' => 'Do Not Record',
 			'collections.title' => 'Collections',
 			'collections.collection' => 'Collection',
+			'collections.addToCollection' => 'Add to Collection',
 			'collections.empty' => 'Collection is empty',
 			'collections.unknownLibrarySection' => 'Cannot delete: Unknown library section',
 			'collections.deleteCollection' => 'Delete Collection',
@@ -3235,6 +3402,7 @@ extension on Translations {
 			'collections.removeFromCollectionError' => ({required Object error}) => 'Error removing from collection: ${error}',
 			'playlists.title' => 'Playlists',
 			'playlists.playlist' => 'Playlist',
+			'playlists.addToPlaylist' => 'Add to Playlist',
 			'playlists.noPlaylists' => 'No playlists found',
 			'playlists.create' => 'Create Playlist',
 			'playlists.playlistName' => 'Playlist Name',

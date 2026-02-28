@@ -840,12 +840,12 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
     if (widget.isLive) return;
 
     try {
-      appLogger.d('_loadPlaybackExtras: starting for ${widget.metadata.ratingKey}');
+      appLogger.d('_loadPlaybackExtras: starting for ${widget.metadata.itemId}');
       final client = _getClientForMetadata();
       appLogger.d('_loadPlaybackExtras: got client with serverId=${client.serverId}');
 
       final chapterImagesEnabled = (await SettingsService.getInstance()).getEnableChapterImages();
-      final extras = await client.getPlaybackExtras(widget.metadata.ratingKey, includeChapterImages: chapterImagesEnabled);
+      final extras = await client.getPlaybackExtras(widget.metadata.itemId, includeChapterImages: chapterImagesEnabled);
       appLogger.d('_loadPlaybackExtras: got ${extras.chapters.length} chapters, ${extras.markers.length} markers');
 
       if (mounted) {
@@ -863,7 +863,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
         try {
           await ApiCache.instance.put(
             serverId,
-            _jellyfinPlaybackExtrasCacheKey(widget.metadata.ratingKey),
+            _jellyfinPlaybackExtrasCacheKey(widget.metadata.itemId),
             _playbackExtrasToCacheMap(extras),
           );
         } catch (cacheErr) {
@@ -876,7 +876,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
       final serverId = widget.metadata.serverId;
       if (serverId != null) {
         // 1) Jellyfin playback extras cache (chapters + markers stored when we had network)
-        final jellyfinKey = _jellyfinPlaybackExtrasCacheKey(widget.metadata.ratingKey);
+        final jellyfinKey = _jellyfinPlaybackExtrasCacheKey(widget.metadata.itemId);
         final jellyfinCached = await ApiCache.instance.get(serverId, jellyfinKey);
         if (jellyfinCached != null) {
           final extras = _parseJellyfinPlaybackExtrasFromCache(jellyfinCached);
@@ -892,8 +892,8 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
           return;
         }
 
-        // 2) Legacy item cache (Plex-shaped envelope for CacheParser)
-        final cacheKey = '${ApiCache.itemPrefix}${widget.metadata.ratingKey}';
+        // 2) Item cache fallback
+        final cacheKey = '${ApiCache.itemPrefix}${widget.metadata.itemId}';
         final cached = await ApiCache.instance.get(serverId, cacheKey);
         if (cached != null) {
           final extras = _parsePlaybackExtrasFromCache(cached);
@@ -913,8 +913,8 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
     }
   }
 
-  static String _jellyfinPlaybackExtrasCacheKey(String ratingKey) =>
-      '/jellyfin/playback_extras/$ratingKey';
+  static String _jellyfinPlaybackExtrasCacheKey(String itemId) =>
+      '/jellyfin/playback_extras/$itemId';
 
   Map<String, dynamic> _playbackExtrasToCacheMap(PlaybackExtras extras) {
     return <String, dynamic>{
@@ -2192,7 +2192,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
 
       // Save the preference
       final settingsService = await SettingsService.getInstance();
-      final seriesKey = widget.metadata.grandparentRatingKey ?? widget.metadata.ratingKey;
+      final seriesKey = widget.metadata.seriesId ?? widget.metadata.itemId;
       await settingsService.setMediaVersionPreference(seriesKey, newMediaIndex);
 
       // Set flag on parent VideoPlayerScreen to skip orientation restoration

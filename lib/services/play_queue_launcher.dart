@@ -61,7 +61,7 @@ class PlayQueueLauncher {
       showLoading: showLoadingIndicator,
       action: t.common.shuffle,
       execute: (dismissLoading) async {
-        final String ratingKey = item.ratingKey;
+        final String itemId = item.itemId;
         final String? itemServerId = item.serverId ?? serverId;
         final String? itemServerName = item.serverName ?? serverName;
 
@@ -69,7 +69,7 @@ class PlayQueueLauncher {
 
         if (isCollection) {
           // Build queue from collection items (Jellyfin has no server-side play queue API)
-          final items = await client.getCollectionItems(item.ratingKey);
+          final items = await client.getCollectionItems(item.itemId);
           if (items.isEmpty) {
             await dismissLoading();
             return const PlayQueueEmpty();
@@ -96,7 +96,7 @@ class PlayQueueLauncher {
           );
         } else {
           // Playlists: build queue from playlist items
-          final items = await client.getPlaylist(item.ratingKey);
+          final items = await client.getPlaylist(item.itemId);
           if (items.isEmpty) {
             await dismissLoading();
             return const PlayQueueEmpty();
@@ -136,7 +136,7 @@ class PlayQueueLauncher {
 
         return _launchFromQueue(
           playQueue: playQueue,
-          ratingKey: ratingKey,
+          itemId: itemId,
           serverId: itemServerId,
           serverName: itemServerName,
         );
@@ -157,12 +157,12 @@ class PlayQueueLauncher {
         PlayQueueResponse? playQueue;
         MediaMetadata? selected;
         // Build queue from playlist items
-        final items = await client.getPlaylist(playlist.ratingKey);
+        final items = await client.getPlaylist(playlist.itemId);
         if (items.isEmpty) {
           await dismissLoading();
           return const PlayQueueEmpty();
         }
-        final selectedIndex = items.indexWhere((e) => e.ratingKey == selectedItem.ratingKey);
+        final selectedIndex = items.indexWhere((e) => e.itemId == selectedItem.itemId);
         final startIndex = selectedIndex >= 0 ? selectedIndex : 0;
         final tagged = items
             .asMap()
@@ -189,7 +189,7 @@ class PlayQueueLauncher {
 
         return _launchFromQueue(
           playQueue: playQueue,
-          ratingKey: playlist.ratingKey,
+          itemId: playlist.itemId,
           serverId: serverId,
           serverName: serverName,
           selectedItem: selected,
@@ -213,13 +213,13 @@ class PlayQueueLauncher {
         // Determine the rating key for the play queue
         String showRatingKey;
         if (mediaType == MediaType.show) {
-          showRatingKey = metadata.ratingKey;
+          showRatingKey = metadata.itemId;
         } else {
           // For seasons, we need the show's rating key
-          if (metadata.parentRatingKey == null) {
-            throw Exception('Season is missing parentRatingKey');
+          if (metadata.seasonId == null) {
+            throw Exception('Season is missing seasonId');
           }
-          showRatingKey = metadata.parentRatingKey!;
+          showRatingKey = metadata.seasonId!;
         }
 
         final playQueue = await client.createShowPlayQueue(showRatingKey: showRatingKey, shuffle: 1);
@@ -229,7 +229,7 @@ class PlayQueueLauncher {
 
         return _launchFromQueue(
           playQueue: playQueue,
-          ratingKey: showRatingKey,
+          itemId: showRatingKey,
           serverId: metadata.serverId ?? serverId,
           serverName: metadata.serverName ?? serverName,
           copyServerInfo: true,
@@ -241,7 +241,7 @@ class PlayQueueLauncher {
   /// Core method to launch playback from a play queue.
   Future<PlayQueueResult> _launchFromQueue({
     required PlayQueueResponse? playQueue,
-    required String ratingKey,
+    required String itemId,
     String? serverId,
     String? serverName,
     MediaMetadata? selectedItem,
@@ -256,7 +256,7 @@ class PlayQueueLauncher {
     // Set up playback state
     final playbackState = context.read<PlaybackStateProvider>();
     playbackState.setClient(client);
-    await playbackState.setPlaybackFromPlayQueue(playQueue, ratingKey);
+    await playbackState.setPlaybackFromPlayQueue(playQueue, itemId);
 
     if (!context.mounted) return const PlayQueueError('Context not mounted');
 

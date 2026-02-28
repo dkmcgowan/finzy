@@ -33,7 +33,7 @@ class PlaybackStateProvider with ChangeNotifier {
   final int _windowSize = 50; // Number of items to keep in memory
 
   // Legacy state for backward compatibility
-  String? _contextKey; // The show/season/playlist ratingKey for this session
+  String? _contextKey; // The show/season/playlist itemId for this session
   PlaybackMode? _playbackMode;
 
   // Client reference for loading more items
@@ -51,7 +51,7 @@ class PlaybackStateProvider with ChangeNotifier {
   /// Whether any queue-based playback is active
   bool get isQueueActive => _playQueueId != null && _playbackMode == PlaybackMode.playQueue;
 
-  /// The context key (show/season/playlist ratingKey) for the current session
+  /// The context key (show/season/playlist itemId) for the current session
   String? get shuffleContextKey => _contextKey;
 
   /// Current play queue ID

@@ -153,6 +153,7 @@ class _TranslationsCommonSv implements TranslationsCommonEn {
 	@override String get settings => 'Inställningar';
 	@override String get mute => 'Ljud av';
 	@override String get ok => 'OK';
+	@override String get none => 'None';
 	@override String get loading => 'Laddar...';
 	@override String get reconnect => 'Återanslut';
 	@override String get exitConfirmTitle => 'Avsluta appen?';
@@ -212,6 +213,11 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get seasonPosterDescription => 'Visa säsongens affisch för avsnitt';
 	@override String get episodeThumbnail => 'Avsnittsminiatyr';
 	@override String get episodeThumbnailDescription => 'Visa 16:9 skärmbild från avsnittet';
+	@override String get timeFormat => 'Tidsformat';
+	@override String get twelveHour => '12-timmar';
+	@override String get twentyFourHour => '24-timmar';
+	@override String get twelveHourDescription => 't.ex. 1:00 PM';
+	@override String get twentyFourHourDescription => 't.ex. 13:00';
 	@override String get showHeroSectionDescription => 'Visa utvalda innehållskarusell på startsidan';
 	@override String get secondsLabel => 'Sekunder';
 	@override String get minutesLabel => 'Minuter';
@@ -818,7 +824,9 @@ class _TranslationsLiveTvSv implements TranslationsLiveTvEn {
 	@override String get recordings => 'Inspelningar';
 	@override String get subscriptions => 'Inspelningsregler';
 	@override String get scheduled => 'Schemalagda';
+	@override String get seriesTimers => 'Series Timers';
 	@override String get noChannels => 'Inga kanaler tillgängliga';
+	@override String get dvr => 'DVR';
 	@override String get noDvr => 'Ingen DVR konfigurerad på någon server';
 	@override String get tuneFailed => 'Kunde inte ställa in kanalen';
 	@override String get loading => 'Laddar kanaler...';
@@ -830,8 +838,25 @@ class _TranslationsLiveTvSv implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => 'Är du säker på att du vill ta bort denna inspelningsregel?';
 	@override String get subscriptionDeleted => 'Inspelningsregel borttagen';
 	@override String get noPrograms => 'Ingen programdata tillgänglig';
-	@override String get noRecordings => 'Inga inspelningar schemalagda';
-	@override String get noSubscriptions => 'Inga inspelningsregler';
+	@override String get noRecordings => 'No recordings';
+	@override String get noScheduled => 'No scheduled recordings';
+	@override String get noSubscriptions => 'No series timers';
+	@override String get cancelTimer => 'Cancel Recording';
+	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
+	@override String get timerCancelled => 'Recording cancelled';
+	@override String get deleteSeriesTimer => 'Delete Series Timer';
+	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
+	@override String get seriesTimerDeleted => 'Series timer deleted';
+	@override String get seriesTimerUpdated => 'Series timer updated';
+	@override String get recordNewOnly => 'Record new episodes only';
+	@override String get keepUpTo => 'Keep up to';
+	@override String get keepAll => 'Keep all';
+	@override String keepEpisodes({required Object count}) => '${count} episodes';
+	@override String get prePadding => 'Start recording early';
+	@override String get postPadding => 'Continue recording after';
+	@override String minutes({required Object count}) => '${count} min';
+	@override String get days => 'Days';
+	@override String get priority => 'Priority';
 	@override String channelNumber({required Object number}) => 'Kanal ${number}';
 	@override String get live => 'LIVE';
 	@override String get hd => 'HD';
@@ -847,8 +872,21 @@ class _TranslationsLiveTvSv implements TranslationsLiveTvEn {
 	@override String get daytime => 'Dagtid';
 	@override String get evening => 'Kväll';
 	@override String get lateNight => 'Sen kväll';
-	@override String get whatsOn => 'På TV nu';
+	@override String get programs => 'Programs';
+	@override String get onNow => 'On Now';
+	@override String get upcomingShows => 'Shows';
+	@override String get upcomingMovies => 'Movies';
+	@override String get upcomingSports => 'Sports';
+	@override String get forKids => 'For Kids';
+	@override String get upcomingNews => 'News';
 	@override String get watchChannel => 'Titta på kanal';
+	@override String get recentlyAdded => 'Recently Added';
+	@override String get recordingScheduled => 'Recording scheduled';
+	@override String get seriesRecordingScheduled => 'Series recording scheduled';
+	@override String get recordingFailed => 'Failed to schedule recording';
+	@override String get cancelSeries => 'Cancel Series';
+	@override String get stopRecording => 'Stop Recording';
+	@override String get doNotRecord => 'Do Not Record';
 }
 
 // Path: downloads
@@ -911,6 +949,7 @@ class _TranslationsPlaylistsSv implements TranslationsPlaylistsEn {
 	@override String get errorReordering => 'Det gick inte att omordna spellisteobjekt';
 	@override String get errorRemoving => 'Det gick inte att ta bort från spellista';
 	@override String get playlist => 'Spellista';
+	@override String get addToPlaylist => 'Lägg till i spellista';
 }
 
 // Path: collections
@@ -922,6 +961,7 @@ class _TranslationsCollectionsSv implements TranslationsCollectionsEn {
 	// Translations
 	@override String get title => 'Samlingar';
 	@override String get collection => 'Samling';
+	@override String get addToCollection => 'Lägg till i samling';
 	@override String get empty => 'Samlingen är tom';
 	@override String get unknownLibrarySection => 'Kan inte ta bort: okänd bibliotekssektion';
 	@override String get deleteCollection => 'Ta bort samling';
@@ -1068,9 +1108,11 @@ class _TranslationsLibrariesTabsSv implements TranslationsLibrariesTabsEn {
 	final TranslationsSv _root; // ignore: unused_field
 
 	// Translations
-	@override String get recommended => 'Rekommenderat';
+	@override String get movies => 'Filmer';
+	@override String get shows => 'Serier';
+	@override String get suggestions => 'Förslag';
 	@override String get browse => 'Bläddra';
-	@override String get genre => 'Genre';
+	@override String get genres => 'Genrer';
 	@override String get favorites => 'Favoriter';
 	@override String get collections => 'Samlingar';
 	@override String get playlists => 'Spellistor';
@@ -1256,6 +1298,7 @@ extension on TranslationsSv {
 			'common.settings' => 'Inställningar',
 			'common.mute' => 'Ljud av',
 			'common.ok' => 'OK',
+			'common.none' => 'None',
 			'common.loading' => 'Laddar...',
 			'common.reconnect' => 'Återanslut',
 			'common.exitConfirmTitle' => 'Avsluta appen?',
@@ -1288,6 +1331,11 @@ extension on TranslationsSv {
 			'settings.seasonPosterDescription' => 'Visa säsongens affisch för avsnitt',
 			'settings.episodeThumbnail' => 'Avsnittsminiatyr',
 			'settings.episodeThumbnailDescription' => 'Visa 16:9 skärmbild från avsnittet',
+			'settings.timeFormat' => 'Tidsformat',
+			'settings.twelveHour' => '12-timmar',
+			'settings.twentyFourHour' => '24-timmar',
+			'settings.twelveHourDescription' => 't.ex. 1:00 PM',
+			'settings.twentyFourHourDescription' => 't.ex. 13:00',
 			'settings.showHeroSectionDescription' => 'Visa utvalda innehållskarusell på startsidan',
 			'settings.secondsLabel' => 'Sekunder',
 			'settings.minutesLabel' => 'Minuter',
@@ -1677,9 +1725,11 @@ extension on TranslationsSv {
 			'libraries.noGenres' => 'Inga genrer i detta bibliotek',
 			'libraries.noFoldersFound' => 'Inga mappar hittades',
 			'libraries.folders' => 'mappar',
-			'libraries.tabs.recommended' => 'Rekommenderat',
+			'libraries.tabs.movies' => 'Filmer',
+			'libraries.tabs.shows' => 'Serier',
+			'libraries.tabs.suggestions' => 'Förslag',
 			'libraries.tabs.browse' => 'Bläddra',
-			'libraries.tabs.genre' => 'Genre',
+			'libraries.tabs.genres' => 'Genrer',
 			'libraries.tabs.favorites' => 'Favoriter',
 			'libraries.tabs.collections' => 'Samlingar',
 			'libraries.tabs.playlists' => 'Spellistor',
@@ -1707,6 +1757,8 @@ extension on TranslationsSv {
 			'logs.error' => 'Fel:',
 			'logs.stackTrace' => 'Stack trace:',
 			'licenses.relatedPackages' => 'Relaterade paket',
+			_ => null,
+		} ?? switch (path) {
 			'licenses.license' => 'Licens',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licens ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licenser',
@@ -1715,13 +1767,13 @@ extension on TranslationsSv {
 			'navigation.liveTv' => 'Live-TV',
 			'liveTv.title' => 'Live-TV',
 			'liveTv.channels' => 'Kanaler',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guide' => 'Programguide',
 			'liveTv.recordings' => 'Inspelningar',
 			'liveTv.subscriptions' => 'Inspelningsregler',
 			'liveTv.scheduled' => 'Schemalagda',
+			'liveTv.seriesTimers' => 'Series Timers',
 			'liveTv.noChannels' => 'Inga kanaler tillgängliga',
+			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => 'Ingen DVR konfigurerad på någon server',
 			'liveTv.tuneFailed' => 'Kunde inte ställa in kanalen',
 			'liveTv.loading' => 'Laddar kanaler...',
@@ -1733,8 +1785,25 @@ extension on TranslationsSv {
 			'liveTv.deleteSubscriptionConfirm' => 'Är du säker på att du vill ta bort denna inspelningsregel?',
 			'liveTv.subscriptionDeleted' => 'Inspelningsregel borttagen',
 			'liveTv.noPrograms' => 'Ingen programdata tillgänglig',
-			'liveTv.noRecordings' => 'Inga inspelningar schemalagda',
-			'liveTv.noSubscriptions' => 'Inga inspelningsregler',
+			'liveTv.noRecordings' => 'No recordings',
+			'liveTv.noScheduled' => 'No scheduled recordings',
+			'liveTv.noSubscriptions' => 'No series timers',
+			'liveTv.cancelTimer' => 'Cancel Recording',
+			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
+			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
+			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
+			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
+			'liveTv.seriesTimerUpdated' => 'Series timer updated',
+			'liveTv.recordNewOnly' => 'Record new episodes only',
+			'liveTv.keepUpTo' => 'Keep up to',
+			'liveTv.keepAll' => 'Keep all',
+			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
+			'liveTv.prePadding' => 'Start recording early',
+			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.minutes' => ({required Object count}) => '${count} min',
+			'liveTv.days' => 'Days',
+			'liveTv.priority' => 'Priority',
 			'liveTv.channelNumber' => ({required Object number}) => 'Kanal ${number}',
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
@@ -1750,8 +1819,21 @@ extension on TranslationsSv {
 			'liveTv.daytime' => 'Dagtid',
 			'liveTv.evening' => 'Kväll',
 			'liveTv.lateNight' => 'Sen kväll',
-			'liveTv.whatsOn' => 'På TV nu',
+			'liveTv.programs' => 'Programs',
+			'liveTv.onNow' => 'On Now',
+			'liveTv.upcomingShows' => 'Shows',
+			'liveTv.upcomingMovies' => 'Movies',
+			'liveTv.upcomingSports' => 'Sports',
+			'liveTv.forKids' => 'For Kids',
+			'liveTv.upcomingNews' => 'News',
 			'liveTv.watchChannel' => 'Titta på kanal',
+			'liveTv.recentlyAdded' => 'Recently Added',
+			'liveTv.recordingScheduled' => 'Recording scheduled',
+			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
+			'liveTv.recordingFailed' => 'Failed to schedule recording',
+			'liveTv.cancelSeries' => 'Cancel Series',
+			'liveTv.stopRecording' => 'Stop Recording',
+			'liveTv.doNotRecord' => 'Do Not Record',
 			'downloads.title' => 'Nedladdningar',
 			'downloads.manage' => 'Hantera',
 			'downloads.tvShows' => 'TV-serier',
@@ -1796,8 +1878,10 @@ extension on TranslationsSv {
 			'playlists.errorReordering' => 'Det gick inte att omordna spellisteobjekt',
 			'playlists.errorRemoving' => 'Det gick inte att ta bort från spellista',
 			'playlists.playlist' => 'Spellista',
+			'playlists.addToPlaylist' => 'Lägg till i spellista',
 			'collections.title' => 'Samlingar',
 			'collections.collection' => 'Samling',
+			'collections.addToCollection' => 'Lägg till i samling',
 			'collections.empty' => 'Samlingen är tom',
 			'collections.unknownLibrarySection' => 'Kan inte ta bort: okänd bibliotekssektion',
 			'collections.deleteCollection' => 'Ta bort samling',

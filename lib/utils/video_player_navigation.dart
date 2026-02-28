@@ -49,7 +49,7 @@ Future<bool?> navigateToVideoPlayer(
   if (selectedMediaIndex == null) {
     try {
       final settingsService = await SettingsService.getInstance();
-      final seriesKey = metadata.grandparentRatingKey ?? metadata.ratingKey;
+      final seriesKey = metadata.seriesId ?? metadata.itemId;
       final savedPreference = settingsService.getMediaVersionPreference(seriesKey);
       if (savedPreference != null) {
         mediaIndex = savedPreference;
@@ -68,7 +68,7 @@ Future<bool?> navigateToVideoPlayer(
       if (isOffline) {
         // Offline mode: resolve local file path for the external player
         final downloadProvider = context.read<DownloadProvider>();
-        final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
+        final globalKey = '${metadata.serverId}:${metadata.itemId}';
         final videoPath = await downloadProvider.getVideoFilePath(globalKey);
         if (videoPath != null) {
           final videoUrl = videoPath.contains('://') ? videoPath : 'file://$videoPath';
@@ -93,10 +93,10 @@ Future<bool?> navigateToVideoPlayer(
 
   // Prevent stacking an identical video player when already active
   if (!usePushReplacement &&
-      VideoPlayerScreenState.activeRatingKey == metadata.ratingKey &&
+      VideoPlayerScreenState.activeRatingKey == metadata.itemId &&
       VideoPlayerScreenState.activeMediaIndex == mediaIndex) {
     appLogger.d(
-      'Video player already active for ${metadata.ratingKey} (mediaIndex=$mediaIndex), skipping duplicate navigation',
+      'Video player already active for ${metadata.itemId} (mediaIndex=$mediaIndex), skipping duplicate navigation',
     );
     return null;
   }

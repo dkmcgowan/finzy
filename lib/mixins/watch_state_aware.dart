@@ -14,12 +14,12 @@ import '../utils/watch_state_notifier.dart';
 ///
 ///   @override
 ///   Set<String>? get watchedRatingKeys =>
-///       _items.map((e) => e.ratingKey).toSet();
+///       _items.map((e) => e.itemId).toSet();
 ///
 ///   @override
 ///   void onWatchStateChanged(WatchStateEvent event) {
 ///     // Refresh affected item
-///     _refreshItem(event.ratingKey);
+///     _refreshItem(event.itemId);
 ///   }
 /// }
 /// ```
@@ -33,18 +33,18 @@ mixin WatchStateAware<T extends StatefulWidget> on State<T> {
 
   /// Override to specify which global keys this screen cares about.
   ///
-  /// Use format `serverId:ratingKey`.
+  /// Use format `serverId:itemId`.
   /// Return null to fall back to [watchedRatingKeys] matching.
   Set<String>? get watchedGlobalKeys => null;
 
-  /// Override to specify which ratingKeys this screen cares about.
+  /// Override to specify which itemIds this screen cares about.
   ///
   /// Return null to receive ALL events (not recommended for performance).
   /// Return an empty set to receive no events.
   ///
   /// The set should include:
-  /// - Direct items displayed (e.g., episode ratingKeys in a season view)
-  /// - Parent items that affect display (e.g., show ratingKey for on-deck)
+  /// - Direct items displayed (e.g., episode itemIds in a season view)
+  /// - Parent items that affect display (e.g., show itemId for on-deck)
   Set<String>? get watchedRatingKeys;
 
   /// Called when a relevant watch state change occurs.

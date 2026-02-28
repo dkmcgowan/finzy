@@ -14,12 +14,12 @@ import '../utils/deletion_notifier.dart';
 ///
 ///   @override
 ///   Set<String>? get deletionRatingKeys =>
-///       _items.map((e) => e.ratingKey).toSet();
+///       _items.map((e) => e.itemId).toSet();
 ///
 ///   @override
 ///   void onDeletionEvent(DeletionEvent event) {
 ///     setState(() {
-///       _items.removeWhere((e) => e.ratingKey == event.ratingKey);
+///       _items.removeWhere((e) => e.itemId == event.itemId);
 ///     });
 ///   }
 /// }
@@ -34,18 +34,18 @@ mixin DeletionAware<T extends StatefulWidget> on State<T> {
 
   /// Override to specify which global keys this screen cares about.
   ///
-  /// Use format `serverId:ratingKey`.
+  /// Use format `serverId:itemId`.
   /// Return null to fall back to [deletionRatingKeys] matching.
   Set<String>? get deletionGlobalKeys => null;
 
-  /// Override to specify which ratingKeys this screen cares about.
+  /// Override to specify which itemIds this screen cares about.
   ///
   /// Return null to receive ALL events (not recommended for performance).
   /// Return an empty set to receive no events.
   ///
   /// The set should include:
-  /// - Direct items displayed (e.g., episode ratingKeys in a season view)
-  /// - Parent items that affect display (e.g., show ratingKey for seasons)
+  /// - Direct items displayed (e.g., episode itemIds in a season view)
+  /// - Parent items that affect display (e.g., show itemId for seasons)
   Set<String>? get deletionRatingKeys;
 
   /// Called when a relevant deletion event occurs.
@@ -74,10 +74,10 @@ mixin DeletionAware<T extends StatefulWidget> on State<T> {
         return;
       }
 
-      final ratingKeys = deletionRatingKeys;
+      final itemIds = deletionRatingKeys;
       // If keys is null, receive all events
       // Otherwise, filter to events that affect our keys
-      if (ratingKeys == null || event.affectsAnyOf(ratingKeys)) {
+      if (itemIds == null || event.affectsAnyOf(itemIds)) {
         onDeletionEvent(event);
       }
     });

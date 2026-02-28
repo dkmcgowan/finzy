@@ -8,9 +8,9 @@ import '../utils/cache_parser.dart';
 
 /// Key-value cache for API responses using Drift/SQLite.
 /// Stores raw JSON responses keyed by serverId:endpoint format.
-/// Item metadata uses keys like /items/{ratingKey} and /items/{ratingKey}/children.
+/// Item metadata uses keys like /items/{itemId} and /items/{itemId}/children.
 class ApiCache {
-  /// Cache key prefix for item metadata (replaces legacy /library/metadata/)
+  /// Cache key prefix for item metadata
   static const String itemPrefix = '/items/';
 
   static ApiCache? _instance;
@@ -65,9 +65,9 @@ class ApiCache {
   }
 
   /// Delete cached data for a specific item (when removing a download)
-  Future<void> deleteForItem(String serverId, String ratingKey) async {
-    final metadataKey = _buildKey(serverId, '$itemPrefix$ratingKey');
-    final childrenKey = _buildKey(serverId, '$itemPrefix$ratingKey/children');
+  Future<void> deleteForItem(String serverId, String itemId) async {
+    final metadataKey = _buildKey(serverId, '$itemPrefix$itemId');
+    final childrenKey = _buildKey(serverId, '$itemPrefix$itemId/children');
 
     await (_db.delete(
       _db.apiCache,
@@ -75,24 +75,24 @@ class ApiCache {
   }
 
   /// Mark an item as pinned for offline access
-  Future<void> pinForOffline(String serverId, String ratingKey) async {
-    final metadataKey = _buildKey(serverId, '$itemPrefix$ratingKey');
+  Future<void> pinForOffline(String serverId, String itemId) async {
+    final metadataKey = _buildKey(serverId, '$itemPrefix$itemId');
     await (_db.update(
       _db.apiCache,
     )..where((t) => t.cacheKey.equals(metadataKey))).write(const ApiCacheCompanion(pinned: Value(true)));
   }
 
   /// Unpin an item
-  Future<void> unpinForOffline(String serverId, String ratingKey) async {
-    final metadataKey = _buildKey(serverId, '$itemPrefix$ratingKey');
+  Future<void> unpinForOffline(String serverId, String itemId) async {
+    final metadataKey = _buildKey(serverId, '$itemPrefix$itemId');
     await (_db.update(
       _db.apiCache,
     )..where((t) => t.cacheKey.equals(metadataKey))).write(const ApiCacheCompanion(pinned: Value(false)));
   }
 
   /// Check if an item is pinned for offline
-  Future<bool> isPinned(String serverId, String ratingKey) async {
-    final metadataKey = _buildKey(serverId, '$itemPrefix$ratingKey');
+  Future<bool> isPinned(String serverId, String itemId) async {
+    final metadataKey = _buildKey(serverId, '$itemPrefix$itemId');
     final result = await (_db.select(_db.apiCache)..where((t) => t.cacheKey.equals(metadataKey))).getSingleOrNull();
     return result?.pinned ?? false;
   }
@@ -105,7 +105,7 @@ class ApiCache {
 
     final keys = <String>{};
     for (final row in results) {
-      // Extract ratingKey from cache key like "serverId:/items/12345" or "serverId:/items/abc-def/children"
+      // Extract itemId from cache key like "serverId:/items/12345" or "serverId:/items/abc-def/children"
       final match = RegExp(r'/items/([^/]+)(?:/children)?\$').firstMatch(row.cacheKey);
       if (match != null) {
         keys.add(match.group(1)!);
@@ -117,8 +117,8 @@ class ApiCache {
   /// Fetch and parse a [MediaMetadata] item from cache.
   ///
   /// Returns `null` when the endpoint is not cached or contains no metadata.
-  Future<MediaMetadata?> getMetadata(String serverId, String ratingKey) async {
-    final cached = await get(serverId, '$itemPrefix$ratingKey');
+  Future<MediaMetadata?> getMetadata(String serverId, String itemId) async {
+    final cached = await get(serverId, '$itemPrefix$itemId');
     final json = CacheParser.extractFirstMetadata(cached);
     if (json == null) return null;
     return MediaMetadata.fromJsonWithImages(json).copyWith(serverId: serverId);
@@ -126,7 +126,7 @@ class ApiCache {
 
   /// Load all pinned metadata in a single query.
   ///
-  /// Returns a map keyed by `serverId:ratingKey` for O(1) lookups.
+  /// Returns a map keyed by `serverId:itemId` for O(1) lookups.
   /// Used by DownloadProvider to batch-load metadata on startup instead of
   /// issuing per-item DB queries.
   Future<Map<String, MediaMetadata>> getAllPinnedMetadata() async {
@@ -134,20 +134,20 @@ class ApiCache {
 
     final result = <String, MediaMetadata>{};
     for (final row in rows) {
-      // Extract serverId and ratingKey from cache key like "serverId:/items/12345"
+      // Extract serverId and itemId from cache key like "serverId:/items/12345"
       final colonIdx = row.cacheKey.indexOf(':');
       if (colonIdx < 0) continue;
       final serverId = row.cacheKey.substring(0, colonIdx);
       final match = RegExp(r'/items/([^/]+)(?:/children)?\$').firstMatch(row.cacheKey);
       if (match == null) continue;
-      final ratingKey = match.group(1)!;
+      final itemId = match.group(1)!;
 
       try {
         final data = jsonDecode(row.data) as Map<String, dynamic>;
         final json = CacheParser.extractFirstMetadata(data);
         if (json == null) continue;
         final metadata = MediaMetadata.fromJsonWithImages(json).copyWith(serverId: serverId);
-        result['$serverId:$ratingKey'] = metadata;
+        result['$serverId:$itemId'] = metadata;
       } catch (_) {
         // Skip malformed entries
       }

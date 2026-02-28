@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../i18n/strings.g.dart';
 import '../providers/jellyfin_profile_provider.dart';
-import '../providers/user_profile_provider.dart';
 import 'quick_connect_authorize_dialog.dart';
 
 /// Profile avatar + menu (Switch Profile / Logout) for app bars.
@@ -23,8 +22,8 @@ class ProfileAppBarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<UserProfileProvider, JellyfinProfileProvider>(
-      builder: (context, userProvider, jellyfinProvider, child) {
+    return Consumer<JellyfinProfileProvider>(
+      builder: (context, jellyfinProvider, child) {
         final showSwitch = jellyfinProvider.currentUser != null;
         Widget avatar;
         final jUser = jellyfinProvider.currentUser;

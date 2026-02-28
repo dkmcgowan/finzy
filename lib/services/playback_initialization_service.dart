@@ -26,15 +26,15 @@ class PlaybackInitializationService {
   ///
   /// Returns the local file path if the video is downloaded and completed.
   /// Returns null if not available offline or database is not provided.
-  Future<String?> getOfflineVideoPath(String serverId, String ratingKey) async {
+  Future<String?> getOfflineVideoPath(String serverId, String itemId) async {
     if (database == null) {
       return null;
     }
 
     try {
-      // Query database for downloaded media with matching serverId and ratingKey
+      // Query database for downloaded media with matching serverId and itemId
       final query = database!.select(database!.downloadedMedia)
-        ..where((tbl) => tbl.serverId.equals(serverId) & tbl.ratingKey.equals(ratingKey));
+        ..where((tbl) => tbl.serverId.equals(serverId) & tbl.itemId.equals(itemId));
 
       final downloadedItem = await query.getSingleOrNull();
 
@@ -86,17 +86,17 @@ class PlaybackInitializationService {
       // Check for offline content first if preferOffline is enabled
       String? offlineVideoPath;
       if (preferOffline && database != null) {
-        offlineVideoPath = await getOfflineVideoPath(client.serverId, metadata.ratingKey);
+        offlineVideoPath = await getOfflineVideoPath(client.serverId, metadata.itemId);
       }
 
       // If offline video is available, use it
       if (offlineVideoPath != null) {
-        appLogger.d('Using offline playback for ${metadata.ratingKey}');
+        appLogger.d('Using offline playback for ${metadata.itemId}');
 
         // For offline playback, we still need to fetch media info for subtitles
         // but use the local file path for video
         try {
-          final playbackData = await client.getVideoPlaybackData(metadata.ratingKey, mediaIndex: selectedMediaIndex);
+          final playbackData = await client.getVideoPlaybackData(metadata.itemId, mediaIndex: selectedMediaIndex);
 
           final externalSubtitles = enableExternalSubtitles ? _buildExternalSubtitles(playbackData.mediaInfo) : <SubtitleTrack>[];
 
@@ -121,7 +121,7 @@ class PlaybackInitializationService {
       }
 
       // Fall back to network streaming
-      final playbackData = await client.getVideoPlaybackData(metadata.ratingKey, mediaIndex: selectedMediaIndex);
+      final playbackData = await client.getVideoPlaybackData(metadata.itemId, mediaIndex: selectedMediaIndex);
 
       if (!playbackData.hasValidVideoUrl) {
         throw PlaybackException(t.messages.fileInfoNotAvailable);

@@ -271,7 +271,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       return;
     }
 
-    final (serverId, ratingKey) = parsed;
+    final (serverId, itemId) = parsed;
 
     try {
       final multiServer = context.read<MultiServerProvider>();
@@ -282,7 +282,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
         return;
       }
 
-      final metadata = await client.getMetadataWithImages(ratingKey);
+      final metadata = await client.getMetadataWithImages(itemId);
 
       if (metadata == null || !mounted) return;
 

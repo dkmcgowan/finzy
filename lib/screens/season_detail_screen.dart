@@ -55,11 +55,11 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
   bool _suppressNextBackKeyUp = false;
   bool _routeSubscribed = false;
 
-  String _toGlobalKey(String ratingKey, {String? serverId}) => '${serverId ?? widget.season.serverId ?? ''}:$ratingKey';
+  String _toGlobalKey(String itemId, {String? serverId}) => '${serverId ?? widget.season.serverId ?? ''}:$itemId';
 
-  // WatchStateAware: watch all episode ratingKeys
+  // WatchStateAware: watch all episode itemIds
   @override
-  Set<String>? get watchedRatingKeys => _episodes.map((e) => e.ratingKey).toSet();
+  Set<String>? get watchedRatingKeys => _episodes.map((e) => e.itemId).toSet();
 
   @override
   String? get watchStateServerId => widget.season.serverId;
@@ -69,21 +69,21 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     final serverId = widget.season.serverId;
     if (serverId == null) return null;
 
-    return _episodes.map((e) => _toGlobalKey(e.ratingKey, serverId: e.serverId ?? serverId)).toSet();
+    return _episodes.map((e) => _toGlobalKey(e.itemId, serverId: e.serverId ?? serverId)).toSet();
   }
 
   @override
   void onWatchStateChanged(WatchStateEvent event) {
     // Update the affected episode
     if (!widget.isOffline && _client != null) {
-      updateItem(event.ratingKey);
+      updateItem(event.itemId);
     }
   }
 
   @override
   Set<String>? get deletionRatingKeys {
-    final keys = _episodes.map((e) => e.ratingKey).toSet();
-    keys.add(widget.season.ratingKey);
+    final keys = _episodes.map((e) => e.itemId).toSet();
+    keys.add(widget.season.itemId);
     return keys;
   }
 
@@ -95,8 +95,8 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     final serverId = widget.season.serverId;
     if (serverId == null) return null;
 
-    final keys = _episodes.map((e) => _toGlobalKey(e.ratingKey, serverId: e.serverId ?? serverId)).toSet();
-    keys.add(_toGlobalKey(widget.season.ratingKey, serverId: serverId));
+    final keys = _episodes.map((e) => _toGlobalKey(e.itemId, serverId: e.serverId ?? serverId)).toSet();
+    keys.add(_toGlobalKey(widget.season.itemId, serverId: serverId));
     return keys;
   }
 
@@ -106,7 +106,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     if (event.isDownloadOnly && !widget.isOffline) return;
 
     // If we have an episode that matches the rating key exactly, then remove it from our list
-    final index = _episodes.indexWhere((e) => e.ratingKey == event.ratingKey);
+    final index = _episodes.indexWhere((e) => e.itemId == event.itemId);
     if (index != -1) {
       setState(() {
         _episodes.removeAt(index);
@@ -151,7 +151,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
 
     try {
       // Episodes are automatically tagged with server info by JellyfinClient
-      final episodes = await _client!.getChildren(widget.season.ratingKey);
+      final episodes = await _client!.getChildren(widget.season.itemId);
 
       if (!mounted) return;
       setState(() {
@@ -170,8 +170,8 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
   void _loadEpisodesFromDownloads() {
     final downloadProvider = context.read<DownloadProvider>();
 
-    // Get all downloaded episodes for the show (grandparentRatingKey)
-    final allEpisodes = downloadProvider.getDownloadedEpisodesForShow(widget.season.parentRatingKey ?? '');
+    // Get all downloaded episodes for the show (seriesId)
+    final allEpisodes = downloadProvider.getDownloadedEpisodesForShow(widget.season.seasonId ?? '');
 
     // Filter to only this season's episodes
     final seasonEpisodes = allEpisodes.where((ep) => ep.parentIndex == widget.season.index).toList()
@@ -184,14 +184,14 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
   }
 
   @override
-  Future<void> updateItem(String ratingKey) async {
+  Future<void> updateItem(String itemId) async {
     _watchStateChanged = true;
-    await super.updateItem(ratingKey);
+    await super.updateItem(itemId);
   }
 
   @override
-  void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata) {
-    final index = _episodes.indexWhere((item) => item.ratingKey == ratingKey);
+  void updateItemInLists(String itemId, MediaMetadata updatedMetadata) {
+    final index = _episodes.indexWhere((item) => item.itemId == itemId);
     if (index != -1) {
       _episodes[index] = updatedMetadata;
     }
@@ -270,7 +270,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
                   String? localPosterPath;
                   if (widget.isOffline && episode.serverId != null) {
                     final downloadProvider = context.read<DownloadProvider>();
-                    final globalKey = '${episode.serverId}:${episode.ratingKey}';
+                    final globalKey = '${episode.serverId}:${episode.itemId}';
                     // Get the artwork reference and convert to local file path
                     final artworkRef = downloadProvider.getArtworkPaths(globalKey);
                     localPosterPath = artworkRef?.getLocalPath(DownloadStorageService.instance, episode.serverId!);
@@ -402,7 +402,7 @@ class _EpisodeCardState extends State<_EpisodeCard> {
         onListRefresh: widget.onListRefresh,
         onTap: widget.onTap,
         child: InkWell(
-          key: Key(widget.episode.ratingKey),
+          key: Key(widget.episode.itemId),
           onTap: widget.onTap,
           hoverColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.05),
           child: Container(
@@ -499,7 +499,7 @@ class _EpisodeCardState extends State<_EpisodeCard> {
 
                           // Only show download status in online mode
                           if (!widget.isOffline && widget.episode.serverId != null) {
-                            final globalKey = '${widget.episode.serverId}:${widget.episode.ratingKey}';
+                            final globalKey = '${widget.episode.serverId}:${widget.episode.itemId}';
                             final progress = downloadProvider.getProgress(globalKey);
                             final isQueueing = downloadProvider.isQueueing(globalKey);
 

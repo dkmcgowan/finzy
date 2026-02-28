@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
 
-import '../../focus/focusable_wrapper.dart';
 import '../../i18n/strings.g.dart';
 import '../../models/livetv_channel.dart';
 import '../../models/livetv_program.dart';
+import '../../providers/multi_server_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../services/jellyfin_client.dart';
+import '../../utils/app_logger.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/overlay_sheet.dart';
@@ -63,37 +67,159 @@ class _ProgramDetailsSheetContent extends StatefulWidget {
 }
 
 class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent> {
-  final List<FocusNode> _buttonFocusNodes = [];
+  // Recording state fetched from the full program details
+  bool _loadingRecordingState = true;
+  String? _timerId;
+  String? _seriesTimerId;
+  String? _timerStatus;
+  bool _isSeries = false;
+  bool _recordingBusy = false;
+
+  JellyfinClient? _client;
 
   @override
   void initState() {
     super.initState();
-    _buildButtonFocusNodes();
+    _fetchRecordingState();
   }
 
-  @override
-  void dispose() {
-    for (final node in _buttonFocusNodes) {
-      node.dispose();
+  Future<void> _fetchRecordingState() async {
+    final programId = widget.program.itemId ?? widget.program.key;
+    if (programId == null) {
+      if (mounted) setState(() => _loadingRecordingState = false);
+      return;
     }
-    super.dispose();
-  }
 
-  void _buildButtonFocusNodes() {
-    int count = 0;
-    if (widget.program.isCurrentlyAiring && widget.onTuneChannel != null) count++;
-    // TODO: Implement recording
-    // count++; // Record button
-    if (!widget.program.isCurrentlyAiring && widget.onTuneChannel != null) count++;
+    try {
+      final multiServer = context.read<MultiServerProvider>();
+      final serverId = widget.channel?.serverId;
+      final client = serverId != null
+          ? multiServer.getClientForServer(serverId)
+          : multiServer.liveTvServers.isNotEmpty
+              ? multiServer.getClientForServer(multiServer.liveTvServers.first.serverId)
+              : null;
 
-    for (int i = 0; i < count; i++) {
-      _buttonFocusNodes.add(FocusNode(debugLabel: 'program_sheet_btn_$i'));
+      if (client == null) {
+        if (mounted) setState(() => _loadingRecordingState = false);
+        return;
+      }
+
+      _client = client;
+      final details = await client.getProgramDetails(programId);
+
+      if (!mounted) return;
+      setState(() {
+        _timerId = details?['TimerId'] as String?;
+        _seriesTimerId = details?['SeriesTimerId'] as String?;
+        _timerStatus = details?['Status'] as String?;
+        _isSeries = details?['IsSeries'] == true;
+        _loadingRecordingState = false;
+      });
+    } catch (e) {
+      appLogger.e('Failed to fetch program recording state', error: e);
+      if (mounted) setState(() => _loadingRecordingState = false);
     }
   }
 
-  void _focusButton(int index) {
-    if (index >= 0 && index < _buttonFocusNodes.length) {
-      _buttonFocusNodes[index].requestFocus();
+  bool get _hasActiveTimer => _timerId != null && _timerStatus != 'Cancelled';
+  bool get _hasSeriesTimer => _seriesTimerId != null;
+
+  Future<void> _handleRecord() async {
+    final programId = widget.program.itemId ?? widget.program.key;
+    if (programId == null || _client == null) return;
+
+    setState(() => _recordingBusy = true);
+
+    try {
+      if (_hasActiveTimer) {
+        final success = await _client!.cancelTimer(_timerId!);
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(t.liveTv.timerCancelled)),
+          );
+        }
+      } else {
+        final defaults = await _client!.getTimerDefaults(programId);
+        if (defaults == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(t.liveTv.recordingFailed)),
+            );
+          }
+          setState(() => _recordingBusy = false);
+          return;
+        }
+        final success = await _client!.createTimer(defaults);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(success ? t.liveTv.recordingScheduled : t.liveTv.recordingFailed)),
+          );
+        }
+      }
+    } catch (e) {
+      appLogger.e('Failed to toggle recording', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t.liveTv.recordingFailed)),
+        );
+      }
+    }
+
+    setState(() => _recordingBusy = false);
+    await _fetchRecordingState();
+  }
+
+  Future<void> _handleRecordSeries() async {
+    final programId = widget.program.itemId ?? widget.program.key;
+    if (programId == null || _client == null) return;
+
+    setState(() => _recordingBusy = true);
+
+    try {
+      if (_hasSeriesTimer) {
+        final success = await _client!.deleteSeriesTimer(_seriesTimerId!);
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(t.liveTv.seriesTimerDeleted)),
+          );
+        }
+      } else {
+        final defaults = await _client!.getTimerDefaults(programId);
+        if (defaults == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(t.liveTv.recordingFailed)),
+            );
+          }
+          setState(() => _recordingBusy = false);
+          return;
+        }
+        final success = await _client!.createSeriesTimer(defaults);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(success ? t.liveTv.seriesRecordingScheduled : t.liveTv.recordingFailed)),
+          );
+        }
+      }
+    } catch (e) {
+      appLogger.e('Failed to toggle series recording', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t.liveTv.recordingFailed)),
+        );
+      }
+    }
+
+    setState(() => _recordingBusy = false);
+    await _fetchRecordingState();
+  }
+
+  void _closeSheet() {
+    final controller = OverlaySheetController.maybeOf(context);
+    if (controller != null) {
+      controller.close();
+    } else {
+      Navigator.of(context).pop();
     }
   }
 
@@ -102,110 +228,6 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
     final theme = Theme.of(context);
     final program = widget.program;
     final channel = widget.channel;
-
-    // Build the list of action buttons with their focus wrappers
-    final buttons = <Widget>[];
-    int buttonIndex = 0;
-
-    void closeSheet() {
-      final controller = OverlaySheetController.maybeOf(context);
-      if (controller != null) {
-        controller.close();
-      } else {
-        Navigator.of(context).pop();
-      }
-    }
-
-    if (program.isCurrentlyAiring && widget.onTuneChannel != null) {
-      final idx = buttonIndex;
-      buttons.add(
-        FocusableWrapper(
-          focusNode: _buttonFocusNodes[idx],
-          onSelect: () {
-            closeSheet();
-            widget.onTuneChannel!();
-          },
-          onNavigateLeft: idx > 0 ? () => _focusButton(idx - 1) : null,
-          onNavigateRight: idx < _buttonFocusNodes.length - 1 ? () => _focusButton(idx + 1) : null,
-          onBack: closeSheet,
-          borderRadius: 100,
-          useBackgroundFocus: true,
-          disableScale: true,
-          child: FilledButton.icon(
-            style: FilledButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-            onPressed: () {
-              closeSheet();
-              widget.onTuneChannel!();
-            },
-            icon: const AppIcon(Symbols.play_arrow_rounded),
-            label: Text(t.common.play),
-          ),
-        ),
-      );
-      buttonIndex++;
-    }
-
-    // TODO: Implement recording
-    // if (program.isCurrentlyAiring && widget.onTuneChannel != null) {
-    //   buttons.add(const SizedBox(width: 8));
-    // }
-    // // Record button
-    // {
-    //   final idx = buttonIndex;
-    //   buttons.add(
-    //     FocusableWrapper(
-    //       focusNode: _buttonFocusNodes[idx],
-    //       onSelect: () {
-    //         Navigator.of(context).pop();
-    //       },
-    //       onNavigateLeft: idx > 0 ? () => _focusButton(idx - 1) : null,
-    //       onNavigateRight: idx < _buttonFocusNodes.length - 1 ? () => _focusButton(idx + 1) : null,
-    //       onBack: () => Navigator.of(context).pop(),
-    //       borderRadius: 100,
-    //       useBackgroundFocus: true,
-    //       disableScale: true,
-    //       child: OutlinedButton.icon(
-    //         style: OutlinedButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-    //         onPressed: () {
-    //           Navigator.of(context).pop();
-    //         },
-    //         icon: const AppIcon(Symbols.fiber_manual_record_rounded),
-    //         label: Text(t.liveTv.record),
-    //       ),
-    //     ),
-    //   );
-    //   buttonIndex++;
-    // }
-
-    if (!program.isCurrentlyAiring && widget.onTuneChannel != null) {
-      buttons.add(const SizedBox(width: 8));
-      final idx = buttonIndex;
-      buttons.add(
-        FocusableWrapper(
-          focusNode: _buttonFocusNodes[idx],
-          onSelect: () {
-            closeSheet();
-            widget.onTuneChannel!();
-          },
-          onNavigateLeft: idx > 0 ? () => _focusButton(idx - 1) : null,
-          onNavigateRight: idx < _buttonFocusNodes.length - 1 ? () => _focusButton(idx + 1) : null,
-          onBack: closeSheet,
-          borderRadius: 100,
-          useBackgroundFocus: true,
-          disableScale: true,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-            onPressed: () {
-              closeSheet();
-              widget.onTuneChannel!();
-            },
-            icon: const AppIcon(Symbols.live_tv_rounded),
-            label: Text(t.liveTv.watchChannel),
-          ),
-        ),
-      );
-      buttonIndex++;
-    }
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -255,7 +277,7 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
                       [
                         if (channel != null) channel.displayName,
                         if (program.startTime != null && program.endTime != null)
-                          '${program.startTime!.hour.toString().padLeft(2, '0')}:${program.startTime!.minute.toString().padLeft(2, '0')} - ${program.endTime!.hour.toString().padLeft(2, '0')}:${program.endTime!.minute.toString().padLeft(2, '0')}',
+                          '${formatGuideTime(program.startTime!, use24Hour: context.read<SettingsProvider>().use24HourTime)} - ${formatGuideTime(program.endTime!, use24Hour: context.read<SettingsProvider>().use24HourTime)}',
                         if (program.durationMinutes > 0) formatDurationTextual(program.durationMinutes * 60000),
                       ].join(' · '),
                       style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -275,9 +297,119 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
             ],
           ),
           const SizedBox(height: 16),
-          Row(children: buttons),
+          _buildActionButtons(theme),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionButtons(ThemeData theme) {
+    final buttons = <Widget>[];
+
+    // Play / Watch Channel button
+    if (widget.onTuneChannel != null) {
+      if (program.isCurrentlyAiring) {
+        buttons.add(
+          _actionButton(
+            icon: Symbols.play_arrow_rounded,
+            label: t.common.play,
+            filled: true,
+            onPressed: () {
+              _closeSheet();
+              widget.onTuneChannel!();
+            },
+          ),
+        );
+      } else {
+        buttons.add(
+          _actionButton(
+            icon: Symbols.live_tv_rounded,
+            label: t.liveTv.watchChannel,
+            onPressed: () {
+              _closeSheet();
+              widget.onTuneChannel!();
+            },
+          ),
+        );
+      }
+    }
+
+    // Record button
+    if (!_loadingRecordingState) {
+      if (buttons.isNotEmpty) buttons.add(const SizedBox(width: 8));
+
+      final String recordLabel;
+      final Color? recordColor;
+      if (_hasActiveTimer) {
+        recordLabel = _timerStatus == 'InProgress' ? t.liveTv.stopRecording : t.liveTv.doNotRecord;
+        recordColor = Colors.red;
+      } else {
+        recordLabel = t.liveTv.record;
+        recordColor = null;
+      }
+
+      buttons.add(
+        _actionButton(
+          icon: Symbols.fiber_manual_record_rounded,
+          label: recordLabel,
+          iconColor: _hasActiveTimer ? Colors.red : recordColor,
+          onPressed: _recordingBusy ? null : _handleRecord,
+        ),
+      );
+
+      // Record Series button (only for series programs)
+      if (_isSeries) {
+        buttons.add(const SizedBox(width: 8));
+
+        buttons.add(
+          _actionButton(
+            icon: Symbols.fiber_manual_record_rounded,
+            label: _hasSeriesTimer ? t.liveTv.cancelSeries : t.liveTv.recordSeries,
+            iconColor: _hasSeriesTimer ? Colors.red : null,
+            onPressed: _recordingBusy ? null : _handleRecordSeries,
+          ),
+        );
+      }
+    } else {
+      if (buttons.isNotEmpty) buttons.add(const SizedBox(width: 8));
+      buttons.add(
+        const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: buttons,
+    );
+  }
+
+  LiveTvProgram get program => widget.program;
+
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    bool filled = false,
+    Color? iconColor,
+    VoidCallback? onPressed,
+  }) {
+    if (filled) {
+      return FilledButton.icon(
+        style: FilledButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+        onPressed: onPressed,
+        icon: AppIcon(icon),
+        label: Text(label),
+      );
+    }
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+      onPressed: onPressed,
+      icon: AppIcon(icon, color: iconColor),
+      label: Text(label),
     );
   }
 }

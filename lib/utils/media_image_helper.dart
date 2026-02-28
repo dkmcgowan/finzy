@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'package:flutter/widgets.dart';
 import '../services/jellyfin_client.dart';
-import 'auth_url_helper.dart';
 
 /// Image types for different transcoding strategies
 enum ImageType {
@@ -97,32 +96,34 @@ class MediaImageHelper {
     }
   }
 
-  /// Builds a photo transcode URL with optimized parameters
-  static String buildTranscodeUrl({
+  /// Builds a Jellyfin image URL with resize parameters.
+  ///
+  /// Uses `fillWidth`/`fillHeight` (Jellyfin 10.7+) so the server returns an
+  /// image large enough to *cover* the requested dimensions, matching
+  /// jellyfin-web behaviour. A generous `maxWidth` cap prevents the server
+  /// from returning excessively large images on older versions that ignore
+  /// the fill parameters.
+  static String buildImageUrl({
     required JellyfinClient client,
-    required String originalPath,
+    required String itemId,
     required int width,
     int? height,
+    String imageType = 'Primary',
   }) {
     final baseUrl = client.baseUrl;
     final token = client.token;
 
-    // URL encode the original path with token
-    final encodedPath = Uri.encodeComponent(originalPath.withAuthToken(token));
-
-    // Build the transcode URL (Jellyfin uses ApiKey in query)
-    final transcodeParams = {
-      'width': width.toString(),
-      if (height != null) 'height': height.toString(),
-      'minSize': '1',
-      'upscale': '1',
-      'url': encodedPath,
-      'ApiKey': token ?? '',
+    final params = <String, String>{
+      'fillWidth': width.toString(),
+      if (height != null) 'fillHeight': height.toString(),
+      'maxWidth': (width * 2).clamp(width, _maxTranscodedWidth).toString(),
+      'quality': '90',
+      if (token != null && token.isNotEmpty) 'ApiKey': token,
     };
 
-    final queryString = transcodeParams.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+    final queryString = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
 
-    return '$baseUrl/photo/:/transcode?$queryString';
+    return '$baseUrl/Items/$itemId/Images/$imageType?$queryString';
   }
 
   /// Creates an optimized image URL for server content
@@ -143,20 +144,9 @@ class MediaImageHelper {
 
     final basePath = thumbPath;
 
-    // External URLs (e.g. EPG provider images) — proxy through the server's
-    // photo transcoder so the server fetches them on our behalf.
+    // External URLs (e.g. EPG provider images) — use directly
     if (basePath.startsWith('http://') || basePath.startsWith('https://')) {
-      if (client == null) return basePath;
-      final (width, height) = calculateOptimalDimensions(
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
-        devicePixelRatio: devicePixelRatio,
-        imageType: imageType,
-      );
-      // Don't append token to the inner URL — only on the outer request
-      final encodedUrl = Uri.encodeComponent(basePath);
-      final token = client.token;
-      return '${client.baseUrl}/photo/:/transcode?width=$width&height=$height&minSize=1&upscale=1&url=$encodedUrl&ApiKey=${Uri.encodeComponent(token ?? '')}';
+      return basePath;
     }
 
     // If no client (offline mode), we can't build URLs for relative paths
@@ -191,9 +181,14 @@ class MediaImageHelper {
     }
 
     try {
-      return buildTranscodeUrl(client: client, originalPath: basePath, width: width, height: height);
+      return buildImageUrl(
+        client: client,
+        itemId: basePath,
+        width: width,
+        height: height,
+        imageType: _jellyfinApiImageType(imageType),
+      );
     } catch (e) {
-      // Fallback to original URL on any error
       return client.getThumbnailUrl(basePath);
     }
   }
@@ -210,24 +205,26 @@ class MediaImageHelper {
     return (scaledWidth.clamp(120, 1200), scaledHeight.clamp(180, 1800));
   }
 
-  /// Determines if an image path is suitable for transcoding
+  /// Determines if an image path is suitable for resizing via the Jellyfin Images API.
+  /// Jellyfin item IDs (GUIDs or 32-char hex) can be resized; external URLs cannot.
   static bool shouldTranscode(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) return false;
 
-    // Don't transcode already processed images or external URLs
-    if (imagePath.contains('/photo/:/transcode') ||
-        imagePath.startsWith('http://') ||
-        imagePath.startsWith('https://')) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return false;
     }
 
-    // Jellyfin uses item IDs (GUIDs or 32-char hex) as paths; server /photo/:/transcode may not apply
-    if (!imagePath.contains('/')) {
-      if (_looksLikeGuid(imagePath)) return false;
-      if (_looksLikeJellyfinIdOrTag(imagePath)) return false;
+    // Already a full Jellyfin image URL
+    if (imagePath.contains('/Items/') && imagePath.contains('/Images/')) {
+      return false;
     }
 
-    return true;
+    // Jellyfin item IDs (GUIDs or 32-char hex) are valid for resizing
+    if (!imagePath.contains('/')) {
+      return _looksLikeGuid(imagePath) || _looksLikeJellyfinIdOrTag(imagePath);
+    }
+
+    return false;
   }
 
   static bool _looksLikeGuid(String s) {
@@ -241,10 +238,25 @@ class MediaImageHelper {
         parts[4].length == 12;
   }
 
-  /// Jellyfin item IDs or image tags can be 32-char hex (no hyphens); never send to server transcode.
+  /// Jellyfin item IDs or image tags can be 32-char hex (no hyphens).
   static bool _looksLikeJellyfinIdOrTag(String s) {
     if (s.length != 32) return false;
     return s.split('').every((c) => '0123456789abcdefABCDEF'.contains(c));
+  }
+
+  /// Maps the internal [ImageType] enum to the Jellyfin API image type
+  /// path segment (Primary, Backdrop, Logo, etc.).
+  static String _jellyfinApiImageType(ImageType type) {
+    switch (type) {
+      case ImageType.art:
+        return 'Backdrop';
+      case ImageType.logo:
+        return 'Logo';
+      case ImageType.poster:
+      case ImageType.thumb:
+      case ImageType.avatar:
+        return 'Primary';
+    }
   }
 
   /// Creates a consistent cache key for rounded dimensions

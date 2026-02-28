@@ -178,7 +178,7 @@ class _LibraryInlineFavoritesViewState extends State<LibraryInlineFavoritesView>
                               }
                               final item = _items[index];
                               return FocusableMediaCard(
-                                key: Key(item.ratingKey),
+                                key: Key(item.itemId),
                                 item: item,
                                 onListRefresh: () async {
                                   _items = List.from(widget.hub.items);
@@ -215,7 +215,7 @@ class _LibraryInlineFavoritesViewState extends State<LibraryInlineFavoritesView>
                             }
                             final item = _items[index];
                             return FocusableMediaCard(
-                              key: Key(item.ratingKey),
+                              key: Key(item.itemId),
                               item: item,
                               onListRefresh: () async {
                                 _items = List.from(widget.hub.items);

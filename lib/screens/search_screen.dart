@@ -377,10 +377,10 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
                           final isFirstColumn = isList || GridSizeCalculator.isFirstColumn(index, columnCount);
                           final isFirstRow = isList ? index == 0 : GridSizeCalculator.isFirstRow(index, columnCount);
                           return FocusableMediaCard(
-                            key: Key(item.ratingKey),
+                            key: Key(item.itemId),
                             item: item,
                             focusNode: index == 0 ? _firstResultFocusNode : null,
-                            onListRefresh: () => updateItem(item.ratingKey),
+                            onListRefresh: () => updateItem(item.itemId),
                             onNavigateLeft: isFirstColumn ? _navigateToSidebar : null,
                             onNavigateUp: isFirstRow ? focusSearchInput : null,
                           );

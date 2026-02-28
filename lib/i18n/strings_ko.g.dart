@@ -153,6 +153,7 @@ class _TranslationsCommonKo implements TranslationsCommonEn {
 	@override String get settings => '설정';
 	@override String get mute => '음소거';
 	@override String get ok => '확인';
+	@override String get none => 'None';
 	@override String get loading => '로딩 중...';
 	@override String get reconnect => '다시 연결';
 	@override String get exitConfirmTitle => '앱을 종료하시겠습니까?';
@@ -212,6 +213,11 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get seasonPosterDescription => '에피소드에 시즌별 포스터 표시';
 	@override String get episodeThumbnail => '에피소드 썸네일';
 	@override String get episodeThumbnailDescription => '16:9 에피소드 스크린샷 썸네일 표시';
+	@override String get timeFormat => '시간 형식';
+	@override String get twelveHour => '12시간';
+	@override String get twentyFourHour => '24시간';
+	@override String get twelveHourDescription => '예: 1:00 PM';
+	@override String get twentyFourHourDescription => '예: 13:00';
 	@override String get showHeroSectionDescription => '홈 화면에 주요 콘텐츠 캐러셀(슬라이드) 표시';
 	@override String get secondsLabel => '초';
 	@override String get minutesLabel => '분';
@@ -818,7 +824,9 @@ class _TranslationsLiveTvKo implements TranslationsLiveTvEn {
 	@override String get recordings => '녹화';
 	@override String get subscriptions => '녹화 규칙';
 	@override String get scheduled => '예약됨';
+	@override String get seriesTimers => 'Series Timers';
 	@override String get noChannels => '사용 가능한 채널이 없습니다';
+	@override String get dvr => 'DVR';
 	@override String get noDvr => '서버에 DVR이 구성되어 있지 않습니다';
 	@override String get tuneFailed => '채널 튜닝에 실패했습니다';
 	@override String get loading => '채널 로딩 중...';
@@ -830,8 +838,25 @@ class _TranslationsLiveTvKo implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => '이 녹화 규칙을 삭제하시겠습니까?';
 	@override String get subscriptionDeleted => '녹화 규칙이 삭제되었습니다';
 	@override String get noPrograms => '프로그램 데이터가 없습니다';
-	@override String get noRecordings => '예약된 녹화가 없습니다';
-	@override String get noSubscriptions => '녹화 규칙이 없습니다';
+	@override String get noRecordings => 'No recordings';
+	@override String get noScheduled => 'No scheduled recordings';
+	@override String get noSubscriptions => 'No series timers';
+	@override String get cancelTimer => 'Cancel Recording';
+	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
+	@override String get timerCancelled => 'Recording cancelled';
+	@override String get deleteSeriesTimer => 'Delete Series Timer';
+	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
+	@override String get seriesTimerDeleted => 'Series timer deleted';
+	@override String get seriesTimerUpdated => 'Series timer updated';
+	@override String get recordNewOnly => 'Record new episodes only';
+	@override String get keepUpTo => 'Keep up to';
+	@override String get keepAll => 'Keep all';
+	@override String keepEpisodes({required Object count}) => '${count} episodes';
+	@override String get prePadding => 'Start recording early';
+	@override String get postPadding => 'Continue recording after';
+	@override String minutes({required Object count}) => '${count} min';
+	@override String get days => 'Days';
+	@override String get priority => 'Priority';
 	@override String channelNumber({required Object number}) => '채널 ${number}';
 	@override String get live => '실시간';
 	@override String get hd => 'HD';
@@ -847,8 +872,21 @@ class _TranslationsLiveTvKo implements TranslationsLiveTvEn {
 	@override String get daytime => '낮';
 	@override String get evening => '저녁';
 	@override String get lateNight => '심야 방송';
-	@override String get whatsOn => '지금 방송 중';
+	@override String get programs => 'Programs';
+	@override String get onNow => 'On Now';
+	@override String get upcomingShows => 'Shows';
+	@override String get upcomingMovies => 'Movies';
+	@override String get upcomingSports => 'Sports';
+	@override String get forKids => 'For Kids';
+	@override String get upcomingNews => 'News';
 	@override String get watchChannel => '채널 시청';
+	@override String get recentlyAdded => 'Recently Added';
+	@override String get recordingScheduled => 'Recording scheduled';
+	@override String get seriesRecordingScheduled => 'Series recording scheduled';
+	@override String get recordingFailed => 'Failed to schedule recording';
+	@override String get cancelSeries => 'Cancel Series';
+	@override String get stopRecording => 'Stop Recording';
+	@override String get doNotRecord => 'Do Not Record';
 }
 
 // Path: collections
@@ -860,6 +898,7 @@ class _TranslationsCollectionsKo implements TranslationsCollectionsEn {
 	// Translations
 	@override String get title => '컬렉션';
 	@override String get collection => '컬렉션';
+	@override String get addToCollection => '컬렉션에 추가';
 	@override String get empty => '컬렉션이 비어 있습니다';
 	@override String get unknownLibrarySection => '삭제할 수 없습니다: 알 수 없는 미디어 라이브러리 섹션입니다';
 	@override String get deleteCollection => '컬렉션 삭제';
@@ -891,6 +930,7 @@ class _TranslationsPlaylistsKo implements TranslationsPlaylistsEn {
 	// Translations
 	@override String get title => '플레이리스트';
 	@override String get playlist => '재생 목록';
+	@override String get addToPlaylist => '재생목록에 추가';
 	@override String get noPlaylists => '재생 목록을 찾을 수 없습니다';
 	@override String get create => '재생 목록 생성';
 	@override String get playlistName => '재생 목록 이름';
@@ -1068,9 +1108,11 @@ class _TranslationsLibrariesTabsKo implements TranslationsLibrariesTabsEn {
 	final TranslationsKo _root; // ignore: unused_field
 
 	// Translations
-	@override String get recommended => '추천';
+	@override String get movies => '영화';
+	@override String get shows => '시리즈';
+	@override String get suggestions => '추천';
 	@override String get browse => '찾아보기';
-	@override String get genre => '장르';
+	@override String get genres => '장르';
 	@override String get favorites => '즐겨찾기';
 	@override String get collections => '컬렉션';
 	@override String get playlists => '재생 목록';
@@ -1256,6 +1298,7 @@ extension on TranslationsKo {
 			'common.settings' => '설정',
 			'common.mute' => '음소거',
 			'common.ok' => '확인',
+			'common.none' => 'None',
 			'common.loading' => '로딩 중...',
 			'common.reconnect' => '다시 연결',
 			'common.exitConfirmTitle' => '앱을 종료하시겠습니까?',
@@ -1288,6 +1331,11 @@ extension on TranslationsKo {
 			'settings.seasonPosterDescription' => '에피소드에 시즌별 포스터 표시',
 			'settings.episodeThumbnail' => '에피소드 썸네일',
 			'settings.episodeThumbnailDescription' => '16:9 에피소드 스크린샷 썸네일 표시',
+			'settings.timeFormat' => '시간 형식',
+			'settings.twelveHour' => '12시간',
+			'settings.twentyFourHour' => '24시간',
+			'settings.twelveHourDescription' => '예: 1:00 PM',
+			'settings.twentyFourHourDescription' => '예: 13:00',
 			'settings.showHeroSectionDescription' => '홈 화면에 주요 콘텐츠 캐러셀(슬라이드) 표시',
 			'settings.secondsLabel' => '초',
 			'settings.minutesLabel' => '분',
@@ -1677,9 +1725,11 @@ extension on TranslationsKo {
 			'libraries.noGenres' => '이 라이브러리에 장르가 없습니다',
 			'libraries.noFoldersFound' => '폴더를 찾을 수 없습니다',
 			'libraries.folders' => '폴더',
-			'libraries.tabs.recommended' => '추천',
+			'libraries.tabs.movies' => '영화',
+			'libraries.tabs.shows' => '시리즈',
+			'libraries.tabs.suggestions' => '추천',
 			'libraries.tabs.browse' => '찾아보기',
-			'libraries.tabs.genre' => '장르',
+			'libraries.tabs.genres' => '장르',
 			'libraries.tabs.favorites' => '즐겨찾기',
 			'libraries.tabs.collections' => '컬렉션',
 			'libraries.tabs.playlists' => '재생 목록',
@@ -1707,6 +1757,8 @@ extension on TranslationsKo {
 			'logs.error' => '오류:',
 			'logs.stackTrace' => '스택 추적 (Stack Trace):',
 			'licenses.relatedPackages' => '관련 소프트웨어 패키지',
+			_ => null,
+		} ?? switch (path) {
 			'licenses.license' => '라이선스',
 			'licenses.licenseNumber' => ({required Object number}) => '라이선스 ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} 개의 라이선스',
@@ -1715,13 +1767,13 @@ extension on TranslationsKo {
 			'navigation.liveTv' => '실시간 TV',
 			'liveTv.title' => '실시간 TV',
 			'liveTv.channels' => '채널',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guide' => '편성표',
 			'liveTv.recordings' => '녹화',
 			'liveTv.subscriptions' => '녹화 규칙',
 			'liveTv.scheduled' => '예약됨',
+			'liveTv.seriesTimers' => 'Series Timers',
 			'liveTv.noChannels' => '사용 가능한 채널이 없습니다',
+			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => '서버에 DVR이 구성되어 있지 않습니다',
 			'liveTv.tuneFailed' => '채널 튜닝에 실패했습니다',
 			'liveTv.loading' => '채널 로딩 중...',
@@ -1733,8 +1785,25 @@ extension on TranslationsKo {
 			'liveTv.deleteSubscriptionConfirm' => '이 녹화 규칙을 삭제하시겠습니까?',
 			'liveTv.subscriptionDeleted' => '녹화 규칙이 삭제되었습니다',
 			'liveTv.noPrograms' => '프로그램 데이터가 없습니다',
-			'liveTv.noRecordings' => '예약된 녹화가 없습니다',
-			'liveTv.noSubscriptions' => '녹화 규칙이 없습니다',
+			'liveTv.noRecordings' => 'No recordings',
+			'liveTv.noScheduled' => 'No scheduled recordings',
+			'liveTv.noSubscriptions' => 'No series timers',
+			'liveTv.cancelTimer' => 'Cancel Recording',
+			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
+			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
+			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
+			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
+			'liveTv.seriesTimerUpdated' => 'Series timer updated',
+			'liveTv.recordNewOnly' => 'Record new episodes only',
+			'liveTv.keepUpTo' => 'Keep up to',
+			'liveTv.keepAll' => 'Keep all',
+			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
+			'liveTv.prePadding' => 'Start recording early',
+			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.minutes' => ({required Object count}) => '${count} min',
+			'liveTv.days' => 'Days',
+			'liveTv.priority' => 'Priority',
 			'liveTv.channelNumber' => ({required Object number}) => '채널 ${number}',
 			'liveTv.live' => '실시간',
 			'liveTv.hd' => 'HD',
@@ -1750,10 +1819,24 @@ extension on TranslationsKo {
 			'liveTv.daytime' => '낮',
 			'liveTv.evening' => '저녁',
 			'liveTv.lateNight' => '심야 방송',
-			'liveTv.whatsOn' => '지금 방송 중',
+			'liveTv.programs' => 'Programs',
+			'liveTv.onNow' => 'On Now',
+			'liveTv.upcomingShows' => 'Shows',
+			'liveTv.upcomingMovies' => 'Movies',
+			'liveTv.upcomingSports' => 'Sports',
+			'liveTv.forKids' => 'For Kids',
+			'liveTv.upcomingNews' => 'News',
 			'liveTv.watchChannel' => '채널 시청',
+			'liveTv.recentlyAdded' => 'Recently Added',
+			'liveTv.recordingScheduled' => 'Recording scheduled',
+			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
+			'liveTv.recordingFailed' => 'Failed to schedule recording',
+			'liveTv.cancelSeries' => 'Cancel Series',
+			'liveTv.stopRecording' => 'Stop Recording',
+			'liveTv.doNotRecord' => 'Do Not Record',
 			'collections.title' => '컬렉션',
 			'collections.collection' => '컬렉션',
+			'collections.addToCollection' => '컬렉션에 추가',
 			'collections.empty' => '컬렉션이 비어 있습니다',
 			'collections.unknownLibrarySection' => '삭제할 수 없습니다: 알 수 없는 미디어 라이브러리 섹션입니다',
 			'collections.deleteCollection' => '컬렉션 삭제',
@@ -1776,6 +1859,7 @@ extension on TranslationsKo {
 			'collections.removeFromCollectionError' => ({required Object error}) => '컬렉션에서 제거 중 오류 발생: ${error}',
 			'playlists.title' => '플레이리스트',
 			'playlists.playlist' => '재생 목록',
+			'playlists.addToPlaylist' => '재생목록에 추가',
 			'playlists.noPlaylists' => '재생 목록을 찾을 수 없습니다',
 			'playlists.create' => '재생 목록 생성',
 			'playlists.playlistName' => '재생 목록 이름',

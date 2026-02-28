@@ -147,14 +147,10 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
 
       // Get the library key from the hub key
       // Hub keys can have various formats:
-      // - /hubs/sections/1/...
-      // - /library/sections/1/all?...
       final hubKey = widget.hub.hubKey;
       appLogger.d('Hub key: $hubKey');
 
-      // Try different patterns
       RegExpMatch? match = RegExp(r'/hubs/sections/(\d+)').firstMatch(hubKey);
-      match ??= RegExp(r'/library/sections/(\d+)').firstMatch(hubKey);
       match ??= RegExp(r'sections/(\d+)').firstMatch(hubKey);
 
       if (match != null) {
@@ -296,13 +292,13 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     }
   }
 
-  void _handleItemRefresh(String ratingKey) {
+  void _handleItemRefresh(String itemId) {
     // Refresh the specific item in the list
     setState(() {
-      final index = _items.indexWhere((item) => item.ratingKey == ratingKey);
+      final index = _items.indexWhere((item) => item.itemId == itemId);
       if (index != -1) {
         // The item will be refreshed by the MediaCard itself
-        appLogger.d('Item refresh requested for: $ratingKey');
+        appLogger.d('Item refresh requested for: $itemId');
       }
     });
   }

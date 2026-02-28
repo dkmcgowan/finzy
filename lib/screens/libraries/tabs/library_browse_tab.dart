@@ -60,14 +60,14 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   @override
   JellyfinClient get client => getClientForLibrary();
 
-  String _toGlobalKey(String ratingKey, {String? serverId}) =>
-      '${serverId ?? widget.library.serverId ?? ''}:$ratingKey';
+  String _toGlobalKey(String itemId, {String? serverId}) =>
+      '${serverId ?? widget.library.serverId ?? ''}:$itemId';
 
   @override
   String? get deletionServerId => widget.library.serverId;
 
   @override
-  Set<String>? get deletionRatingKeys => items.map((e) => e.ratingKey).toSet();
+  Set<String>? get deletionRatingKeys => items.map((e) => e.itemId).toSet();
 
   @override
   Set<String>? get deletionGlobalKeys {
@@ -77,7 +77,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     for (final item in items) {
       final serverId = item.serverId ?? widget.library.serverId;
       if (serverId == null) return null;
-      keys.add(_toGlobalKey(item.ratingKey, serverId: serverId));
+      keys.add(_toGlobalKey(item.itemId, serverId: serverId));
     }
     return keys;
   }
@@ -85,7 +85,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   @override
   void onDeletionEvent(DeletionEvent event) {
     // If we have an item that matches the rating key exactly, then remove it from our list
-    final index = items.indexWhere((e) => e.ratingKey == event.ratingKey);
+    final index = items.indexWhere((e) => e.itemId == event.itemId);
     if (index != -1) {
       setState(() {
         items.removeAt(index);
@@ -97,7 +97,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     // If all children were deleted, remove our item.
     // Otherwise, just update the counts.
     for (final parentKey in event.parentChain) {
-      final parentIndex = items.indexWhere((e) => e.ratingKey == parentKey);
+      final parentIndex = items.indexWhere((e) => e.itemId == parentKey);
       if (parentIndex != -1) {
         final item = items[parentIndex];
         final newLeafCount = (item.leafCount ?? 1) - event.leafCount;
@@ -122,9 +122,9 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   int get itemCount => items.length;
 
   @override
-  void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata) {
+  void updateItemInLists(String itemId, MediaMetadata updatedMetadata) {
     setState(() {
-      final index = items.indexWhere((item) => item.ratingKey == ratingKey);
+      final index = items.indexWhere((item) => item.itemId == itemId);
       if (index != -1) {
         items[index] = updatedMetadata;
       }
@@ -1077,7 +1077,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     final focusNode = index == 0 ? firstItemFocusNode : getGridItemFocusNode(index, prefix: 'browse_grid_item');
 
     return FocusableMediaCard(
-      key: Key(item.ratingKey),
+      key: Key(item.itemId),
       item: item,
       focusNode: focusNode,
       onRefresh: updateItem,

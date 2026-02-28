@@ -231,7 +231,9 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
           try {
             final parsed = jsonDecode(value);
             if (parsed is List) deviceList = parsed;
-          } catch (_) {}
+          } catch (e) {
+            appLogger.d('Failed to parse audio device list JSON', error: e);
+          }
         }
         if (deviceList != null) {
           final devices = deviceList
@@ -266,12 +268,12 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     if (_disposed) return;
     switch (name) {
       case 'end-file':
-        final reason = data?['reason'] as String?;
+        final reason = data?['reason']?.toString();
         if (reason == 'eof') {
           _state = _state.copyWith(completed: true);
           completedController.add(true);
         } else if (reason == 'error') {
-          errorController.add(data?['message'] as String? ?? 'Playback error');
+          errorController.add(data?['message']?.toString() ?? 'Playback error');
         }
         break;
 

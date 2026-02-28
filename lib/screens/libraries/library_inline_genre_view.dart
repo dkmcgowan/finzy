@@ -190,7 +190,7 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
                               }
                               final item = _items[index];
                               return FocusableMediaCard(
-                                key: Key(item.ratingKey),
+                                key: Key(item.itemId),
                                 item: item,
                                 onListRefresh: () async {
                                   _items = List.from(widget.hub.items);
@@ -226,7 +226,7 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
                             }
                             final item = _items[index];
                             return FocusableMediaCard(
-                              key: Key(item.ratingKey),
+                              key: Key(item.itemId),
                               item: item,
                               onListRefresh: () async {
                                 _items = List.from(widget.hub.items);

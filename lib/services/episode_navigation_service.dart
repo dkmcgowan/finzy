@@ -44,8 +44,8 @@ class EpisodeNavigationService {
       }
 
       // Use the play queue for next/previous navigation
-      final next = await playbackState.getNextEpisode(metadata.ratingKey, loopQueue: false);
-      final previous = await playbackState.getPreviousEpisode(metadata.ratingKey);
+      final next = await playbackState.getNextEpisode(metadata.itemId, loopQueue: false);
+      final previous = await playbackState.getPreviousEpisode(metadata.itemId);
 
       final mode = playbackState.isShuffleActive ? 'Shuffle' : 'Sequential';
       appLogger.d('$mode mode - Next: ${next?.title}, Previous: ${previous?.title}');

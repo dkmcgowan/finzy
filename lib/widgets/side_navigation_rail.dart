@@ -444,7 +444,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
 
     // Get libraries from provider and filter visible ones; build ordered display (saved or default, Favorites can be hidden)
     final allLibraries = librariesProvider.libraries;
-    final visibleLibraries = allLibraries.where((lib) => !hiddenKeys.contains(lib.globalKey)).toList();
+    final visibleLibraries = allLibraries.where((lib) => !hiddenKeys.contains(lib.globalKey) && lib.type != 'livetv').toList();
     final displayOrderKeys = librariesProvider.displayOrderKeys;
     final (orderedLibraries, favoritesInsertIndex) =
         _buildOrderedDisplay(visibleLibraries, hiddenKeys, displayOrderKeys);

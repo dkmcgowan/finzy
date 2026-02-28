@@ -1,119 +1,97 @@
-/// Represents a DVR recording subscription (recording rule)
+/// Represents a Jellyfin SeriesTimer (recurring recording rule).
 class LiveTvSubscription {
   final String key;
-  final String? ratingKey;
-  final String? guid;
   final String title;
-  final String? summary;
-  final String? type;
-  final String? thumb;
-  final String? art;
-  final int? targetLibrarySectionID;
-  final int? targetSectionID;
-  final int? createdAt;
-  final List<SubscriptionSetting> settings;
-
-  // Multi-server support
+  final String? overview;
+  final String? channelId;
+  final String? channelName;
+  final String? programId;
   final String? serverId;
+  final bool recordNewOnly;
+  final int keepUpTo;
+  final int priority;
+  final int prePaddingSeconds;
+  final int postPaddingSeconds;
+  final List<String> days;
 
   LiveTvSubscription({
     required this.key,
-    this.ratingKey,
-    this.guid,
     required this.title,
-    this.summary,
-    this.type,
-    this.thumb,
-    this.art,
-    this.targetLibrarySectionID,
-    this.targetSectionID,
-    this.createdAt,
-    this.settings = const [],
+    this.overview,
+    this.channelId,
+    this.channelName,
+    this.programId,
     this.serverId,
+    this.recordNewOnly = false,
+    this.keepUpTo = 0,
+    this.priority = 0,
+    this.prePaddingSeconds = 0,
+    this.postPaddingSeconds = 0,
+    this.days = const [],
   });
 
-  factory LiveTvSubscription.fromJson(Map<String, dynamic> json) {
-    final settingsList = <SubscriptionSetting>[];
-    if (json['Setting'] != null) {
-      for (final item in json['Setting'] as List) {
-        try {
-          settingsList.add(SubscriptionSetting.fromJson(item as Map<String, dynamic>));
-        } catch (_) {}
+  factory LiveTvSubscription.fromJellyfinJson(Map<String, dynamic> json, {String? serverId}) {
+    final daysList = <String>[];
+    if (json['Days'] != null) {
+      for (final d in json['Days'] as List) {
+        daysList.add(d.toString());
       }
     }
 
     return LiveTvSubscription(
-      key: json['key'] as String? ?? '',
-      ratingKey: json['ratingKey'] as String?,
-      guid: json['guid'] as String?,
-      title: json['title'] as String? ?? 'Unknown',
-      summary: json['summary'] as String?,
-      type: json['type'] as String?,
-      thumb: json['thumb'] as String?,
-      art: json['art'] as String?,
-      targetLibrarySectionID: (json['targetLibrarySectionID'] as num?)?.toInt(),
-      targetSectionID: (json['targetSectionID'] as num?)?.toInt(),
-      createdAt: (json['createdAt'] as num?)?.toInt(),
-      settings: settingsList,
+      key: json['Id'] as String? ?? '',
+      title: json['Name'] as String? ?? 'Unknown',
+      overview: json['Overview'] as String?,
+      channelId: json['ChannelId'] as String?,
+      channelName: json['ChannelName'] as String?,
+      programId: json['ProgramId'] as String?,
+      serverId: serverId,
+      recordNewOnly: json['RecordNewOnly'] as bool? ?? false,
+      keepUpTo: (json['KeepUpTo'] as num?)?.toInt() ?? 0,
+      priority: (json['Priority'] as num?)?.toInt() ?? 0,
+      prePaddingSeconds: (json['PrePaddingSeconds'] as num?)?.toInt() ?? 0,
+      postPaddingSeconds: (json['PostPaddingSeconds'] as num?)?.toInt() ?? 0,
+      days: daysList,
     );
   }
 
-  /// Creation time as DateTime
-  DateTime? get createdAtTime => createdAt != null ? DateTime.fromMillisecondsSinceEpoch(createdAt! * 1000) : null;
-}
+  /// Convert to JSON for updating via POST /LiveTv/SeriesTimers/{id}
+  Map<String, dynamic> toUpdateJson() {
+    return {
+      'Id': key,
+      'Name': title,
+      'RecordNewOnly': recordNewOnly,
+      'KeepUpTo': keepUpTo,
+      'Priority': priority,
+      'PrePaddingSeconds': prePaddingSeconds,
+      'PostPaddingSeconds': postPaddingSeconds,
+      'Days': days,
+      if (channelId != null) 'ChannelId': channelId,
+    };
+  }
 
-/// Represents a setting within a DVR subscription
-class SubscriptionSetting {
-  final String id;
-  final String? label;
-  final String? summary;
-  final String type; // e.g., "bool", "enum", "int"
-  final String? value;
-  final String? defaultValue;
-  final bool? hidden;
-  final bool? advanced;
-  final List<SubscriptionSettingOption>? enumValues;
-
-  SubscriptionSetting({
-    required this.id,
-    this.label,
-    this.summary,
-    required this.type,
-    this.value,
-    this.defaultValue,
-    this.hidden,
-    this.advanced,
-    this.enumValues,
-  });
-
-  factory SubscriptionSetting.fromJson(Map<String, dynamic> json) {
-    List<SubscriptionSettingOption>? options;
-    if (json['enumValues'] != null) {
-      final parts = (json['enumValues'] as String).split('|');
-      options = parts.map((part) {
-        final kv = part.split(':');
-        return SubscriptionSettingOption(value: kv.first, label: kv.length > 1 ? kv[1] : kv.first);
-      }).toList();
-    }
-
-    return SubscriptionSetting(
-      id: json['id'] as String? ?? '',
-      label: json['label'] as String?,
-      summary: json['summary'] as String?,
-      type: json['type'] as String? ?? 'text',
-      value: json['value']?.toString(),
-      defaultValue: json['default']?.toString(),
-      hidden: json['hidden'] == true || json['hidden'] == 1,
-      advanced: json['advanced'] == true || json['advanced'] == 1,
-      enumValues: options,
+  LiveTvSubscription copyWith({
+    bool? recordNewOnly,
+    int? keepUpTo,
+    int? priority,
+    int? prePaddingSeconds,
+    int? postPaddingSeconds,
+    List<String>? days,
+  }) {
+    return LiveTvSubscription(
+      key: key,
+      title: title,
+      overview: overview,
+      channelId: channelId,
+      channelName: channelName,
+      programId: programId,
+      serverId: serverId,
+      recordNewOnly: recordNewOnly ?? this.recordNewOnly,
+      keepUpTo: keepUpTo ?? this.keepUpTo,
+      priority: priority ?? this.priority,
+      prePaddingSeconds: prePaddingSeconds ?? this.prePaddingSeconds,
+      postPaddingSeconds: postPaddingSeconds ?? this.postPaddingSeconds,
+      days: days ?? this.days,
     );
   }
-}
-
-/// Represents an option in an enum-type subscription setting
-class SubscriptionSettingOption {
-  final String value;
-  final String label;
-
-  SubscriptionSettingOption({required this.value, required this.label});
 }

@@ -5,11 +5,11 @@ import 'hierarchical_event_mixin.dart';
 
 /// Event representing a media item deletion with parent chain for hierarchical invalidation
 class DeletionEvent with HierarchicalEventMixin {
-  /// The ratingKey of the deleted item
+  /// The itemId of the deleted item
   @override
-  final String ratingKey;
+  final String itemId;
 
-  /// Composite key: serverId:ratingKey
+  /// Composite key: serverId:itemId
   @override
   final String globalKey;
 
@@ -36,13 +36,13 @@ class DeletionEvent with HierarchicalEventMixin {
   final bool isDownloadOnly;
 
   DeletionEvent({
-    required this.ratingKey,
+    required this.itemId,
     required this.serverId,
     required this.parentChain,
     required this.mediaType,
     this.leafCount = 1,
     this.isDownloadOnly = false,
-  }) : globalKey = '$serverId:$ratingKey';
+  }) : globalKey = '$serverId:$itemId';
 
   @override
   String toString() => 'DeletionEvent(deleted: $globalKey, type: $mediaType, parents: $parentChain)';
@@ -63,7 +63,7 @@ class DeletionNotifier extends BaseNotifier<DeletionEvent> {
   Stream<DeletionEvent> forServer(String serverId) => stream.where((e) => e.serverId == serverId);
 
   /// Filter for events affecting a specific item or its children
-  Stream<DeletionEvent> forItem(String ratingKey) => stream.where((e) => e.affectsItem(ratingKey));
+  Stream<DeletionEvent> forItem(String itemId) => stream.where((e) => e.affectsItem(itemId));
 
   /// Emit a deletion event with logging
   @override
@@ -76,7 +76,7 @@ class DeletionNotifier extends BaseNotifier<DeletionEvent> {
   void notifyDeleted({required MediaMetadata metadata, bool isDownloadOnly = false}) {
     notify(
       DeletionEvent(
-        ratingKey: metadata.ratingKey,
+        itemId: metadata.itemId,
         serverId: metadata.serverId ?? '',
         parentChain: _buildParentChain(metadata),
         mediaType: metadata.type,
@@ -89,11 +89,11 @@ class DeletionNotifier extends BaseNotifier<DeletionEvent> {
   /// Build parent chain from metadata's parent keys
   List<String> _buildParentChain(MediaMetadata metadata) {
     final chain = <String>[];
-    if (metadata.parentRatingKey != null) {
-      chain.add(metadata.parentRatingKey!);
+    if (metadata.seasonId != null) {
+      chain.add(metadata.seasonId!);
     }
-    if (metadata.grandparentRatingKey != null) {
-      chain.add(metadata.grandparentRatingKey!);
+    if (metadata.seriesId != null) {
+      chain.add(metadata.seriesId!);
     }
     return chain;
   }

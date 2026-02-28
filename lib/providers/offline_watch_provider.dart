@@ -170,11 +170,11 @@ class OfflineWatchProvider extends ChangeNotifier {
   /// Emit a watch state change event for immediate UI update.
   void _emitWatchStateChange({
     required String serverId,
-    required String ratingKey,
+    required String itemId,
     required bool isNowWatched,
     required WatchStateChangeType changeType,
   }) {
-    final globalKey = '$serverId:$ratingKey';
+    final globalKey = '$serverId:$itemId';
     final metadata = _downloadProvider.getMetadata(globalKey);
     if (metadata != null) {
       WatchStateNotifier().notifyWatched(metadata: metadata, isNowWatched: isNowWatched);
@@ -182,7 +182,7 @@ class OfflineWatchProvider extends ChangeNotifier {
       // Fallback: emit minimal event without parent chain
       WatchStateNotifier().notify(
         WatchStateEvent(
-          ratingKey: ratingKey,
+          itemId: itemId,
           serverId: serverId,
           changeType: changeType,
           parentChain: [],
@@ -196,11 +196,11 @@ class OfflineWatchProvider extends ChangeNotifier {
   /// Mark an item as watched while offline.
   ///
   /// This queues the action for sync when online and emits a [WatchStateEvent].
-  Future<void> markAsWatched({required String serverId, required String ratingKey}) async {
-    await _syncService.queueMarkWatched(serverId: serverId, ratingKey: ratingKey);
+  Future<void> markAsWatched({required String serverId, required String itemId}) async {
+    await _syncService.queueMarkWatched(serverId: serverId, itemId: itemId);
     _emitWatchStateChange(
       serverId: serverId,
-      ratingKey: ratingKey,
+      itemId: itemId,
       isNowWatched: true,
       changeType: WatchStateChangeType.watched,
     );
@@ -210,11 +210,11 @@ class OfflineWatchProvider extends ChangeNotifier {
   /// Mark an item as unwatched while offline.
   ///
   /// This queues the action for sync when online and emits a [WatchStateEvent].
-  Future<void> markAsUnwatched({required String serverId, required String ratingKey}) async {
-    await _syncService.queueMarkUnwatched(serverId: serverId, ratingKey: ratingKey);
+  Future<void> markAsUnwatched({required String serverId, required String itemId}) async {
+    await _syncService.queueMarkUnwatched(serverId: serverId, itemId: itemId);
     _emitWatchStateChange(
       serverId: serverId,
-      ratingKey: ratingKey,
+      itemId: itemId,
       isNowWatched: false,
       changeType: WatchStateChangeType.unwatched,
     );

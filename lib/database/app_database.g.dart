@@ -33,12 +33,10 @@ class $DownloadedMediaTable extends DownloadedMedia
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _ratingKeyMeta = const VerificationMeta(
-    'ratingKey',
-  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
   @override
-  late final GeneratedColumn<String> ratingKey = GeneratedColumn<String>(
-    'rating_key',
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -65,28 +63,28 @@ class $DownloadedMediaTable extends DownloadedMedia
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _parentRatingKeyMeta = const VerificationMeta(
-    'parentRatingKey',
+  static const VerificationMeta _seasonIdMeta = const VerificationMeta(
+    'seasonId',
   );
   @override
-  late final GeneratedColumn<String> parentRatingKey = GeneratedColumn<String>(
-    'parent_rating_key',
+  late final GeneratedColumn<String> seasonId = GeneratedColumn<String>(
+    'season_id',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _grandparentRatingKeyMeta =
-      const VerificationMeta('grandparentRatingKey');
+  static const VerificationMeta _seriesIdMeta = const VerificationMeta(
+    'seriesId',
+  );
   @override
-  late final GeneratedColumn<String> grandparentRatingKey =
-      GeneratedColumn<String>(
-        'grandparent_rating_key',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
+  late final GeneratedColumn<String> seriesId = GeneratedColumn<String>(
+    'series_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<int> status = GeneratedColumn<int>(
@@ -202,11 +200,11 @@ class $DownloadedMediaTable extends DownloadedMedia
   List<GeneratedColumn> get $columns => [
     id,
     serverId,
-    ratingKey,
+    itemId,
     globalKey,
     type,
-    parentRatingKey,
-    grandparentRatingKey,
+    seasonId,
+    seriesId,
     status,
     progress,
     totalBytes,
@@ -241,13 +239,13 @@ class $DownloadedMediaTable extends DownloadedMedia
     } else if (isInserting) {
       context.missing(_serverIdMeta);
     }
-    if (data.containsKey('rating_key')) {
+    if (data.containsKey('item_id')) {
       context.handle(
-        _ratingKeyMeta,
-        ratingKey.isAcceptableOrUnknown(data['rating_key']!, _ratingKeyMeta),
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_ratingKeyMeta);
+      context.missing(_itemIdMeta);
     }
     if (data.containsKey('global_key')) {
       context.handle(
@@ -265,22 +263,16 @@ class $DownloadedMediaTable extends DownloadedMedia
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
-    if (data.containsKey('parent_rating_key')) {
+    if (data.containsKey('season_id')) {
       context.handle(
-        _parentRatingKeyMeta,
-        parentRatingKey.isAcceptableOrUnknown(
-          data['parent_rating_key']!,
-          _parentRatingKeyMeta,
-        ),
+        _seasonIdMeta,
+        seasonId.isAcceptableOrUnknown(data['season_id']!, _seasonIdMeta),
       );
     }
-    if (data.containsKey('grandparent_rating_key')) {
+    if (data.containsKey('series_id')) {
       context.handle(
-        _grandparentRatingKeyMeta,
-        grandparentRatingKey.isAcceptableOrUnknown(
-          data['grandparent_rating_key']!,
-          _grandparentRatingKeyMeta,
-        ),
+        _seriesIdMeta,
+        seriesId.isAcceptableOrUnknown(data['series_id']!, _seriesIdMeta),
       );
     }
     if (data.containsKey('status')) {
@@ -374,9 +366,9 @@ class $DownloadedMediaTable extends DownloadedMedia
         DriftSqlType.string,
         data['${effectivePrefix}server_id'],
       )!,
-      ratingKey: attachedDatabase.typeMapping.read(
+      itemId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}rating_key'],
+        data['${effectivePrefix}item_id'],
       )!,
       globalKey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -386,13 +378,13 @@ class $DownloadedMediaTable extends DownloadedMedia
         DriftSqlType.string,
         data['${effectivePrefix}type'],
       )!,
-      parentRatingKey: attachedDatabase.typeMapping.read(
+      seasonId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}parent_rating_key'],
+        data['${effectivePrefix}season_id'],
       ),
-      grandparentRatingKey: attachedDatabase.typeMapping.read(
+      seriesId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}grandparent_rating_key'],
+        data['${effectivePrefix}series_id'],
       ),
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -447,11 +439,11 @@ class DownloadedMediaItem extends DataClass
     implements Insertable<DownloadedMediaItem> {
   final int id;
   final String serverId;
-  final String ratingKey;
+  final String itemId;
   final String globalKey;
   final String type;
-  final String? parentRatingKey;
-  final String? grandparentRatingKey;
+  final String? seasonId;
+  final String? seriesId;
   final int status;
   final int progress;
   final int? totalBytes;
@@ -465,11 +457,11 @@ class DownloadedMediaItem extends DataClass
   const DownloadedMediaItem({
     required this.id,
     required this.serverId,
-    required this.ratingKey,
+    required this.itemId,
     required this.globalKey,
     required this.type,
-    this.parentRatingKey,
-    this.grandparentRatingKey,
+    this.seasonId,
+    this.seriesId,
     required this.status,
     required this.progress,
     this.totalBytes,
@@ -486,14 +478,14 @@ class DownloadedMediaItem extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['server_id'] = Variable<String>(serverId);
-    map['rating_key'] = Variable<String>(ratingKey);
+    map['item_id'] = Variable<String>(itemId);
     map['global_key'] = Variable<String>(globalKey);
     map['type'] = Variable<String>(type);
-    if (!nullToAbsent || parentRatingKey != null) {
-      map['parent_rating_key'] = Variable<String>(parentRatingKey);
+    if (!nullToAbsent || seasonId != null) {
+      map['season_id'] = Variable<String>(seasonId);
     }
-    if (!nullToAbsent || grandparentRatingKey != null) {
-      map['grandparent_rating_key'] = Variable<String>(grandparentRatingKey);
+    if (!nullToAbsent || seriesId != null) {
+      map['series_id'] = Variable<String>(seriesId);
     }
     map['status'] = Variable<int>(status);
     map['progress'] = Variable<int>(progress);
@@ -524,15 +516,15 @@ class DownloadedMediaItem extends DataClass
     return DownloadedMediaCompanion(
       id: Value(id),
       serverId: Value(serverId),
-      ratingKey: Value(ratingKey),
+      itemId: Value(itemId),
       globalKey: Value(globalKey),
       type: Value(type),
-      parentRatingKey: parentRatingKey == null && nullToAbsent
+      seasonId: seasonId == null && nullToAbsent
           ? const Value.absent()
-          : Value(parentRatingKey),
-      grandparentRatingKey: grandparentRatingKey == null && nullToAbsent
+          : Value(seasonId),
+      seriesId: seriesId == null && nullToAbsent
           ? const Value.absent()
-          : Value(grandparentRatingKey),
+          : Value(seriesId),
       status: Value(status),
       progress: Value(progress),
       totalBytes: totalBytes == null && nullToAbsent
@@ -566,13 +558,11 @@ class DownloadedMediaItem extends DataClass
     return DownloadedMediaItem(
       id: serializer.fromJson<int>(json['id']),
       serverId: serializer.fromJson<String>(json['serverId']),
-      ratingKey: serializer.fromJson<String>(json['ratingKey']),
+      itemId: serializer.fromJson<String>(json['itemId']),
       globalKey: serializer.fromJson<String>(json['globalKey']),
       type: serializer.fromJson<String>(json['type']),
-      parentRatingKey: serializer.fromJson<String?>(json['parentRatingKey']),
-      grandparentRatingKey: serializer.fromJson<String?>(
-        json['grandparentRatingKey'],
-      ),
+      seasonId: serializer.fromJson<String?>(json['seasonId']),
+      seriesId: serializer.fromJson<String?>(json['seriesId']),
       status: serializer.fromJson<int>(json['status']),
       progress: serializer.fromJson<int>(json['progress']),
       totalBytes: serializer.fromJson<int?>(json['totalBytes']),
@@ -591,11 +581,11 @@ class DownloadedMediaItem extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'serverId': serializer.toJson<String>(serverId),
-      'ratingKey': serializer.toJson<String>(ratingKey),
+      'itemId': serializer.toJson<String>(itemId),
       'globalKey': serializer.toJson<String>(globalKey),
       'type': serializer.toJson<String>(type),
-      'parentRatingKey': serializer.toJson<String?>(parentRatingKey),
-      'grandparentRatingKey': serializer.toJson<String?>(grandparentRatingKey),
+      'seasonId': serializer.toJson<String?>(seasonId),
+      'seriesId': serializer.toJson<String?>(seriesId),
       'status': serializer.toJson<int>(status),
       'progress': serializer.toJson<int>(progress),
       'totalBytes': serializer.toJson<int?>(totalBytes),
@@ -612,11 +602,11 @@ class DownloadedMediaItem extends DataClass
   DownloadedMediaItem copyWith({
     int? id,
     String? serverId,
-    String? ratingKey,
+    String? itemId,
     String? globalKey,
     String? type,
-    Value<String?> parentRatingKey = const Value.absent(),
-    Value<String?> grandparentRatingKey = const Value.absent(),
+    Value<String?> seasonId = const Value.absent(),
+    Value<String?> seriesId = const Value.absent(),
     int? status,
     int? progress,
     Value<int?> totalBytes = const Value.absent(),
@@ -630,15 +620,11 @@ class DownloadedMediaItem extends DataClass
   }) => DownloadedMediaItem(
     id: id ?? this.id,
     serverId: serverId ?? this.serverId,
-    ratingKey: ratingKey ?? this.ratingKey,
+    itemId: itemId ?? this.itemId,
     globalKey: globalKey ?? this.globalKey,
     type: type ?? this.type,
-    parentRatingKey: parentRatingKey.present
-        ? parentRatingKey.value
-        : this.parentRatingKey,
-    grandparentRatingKey: grandparentRatingKey.present
-        ? grandparentRatingKey.value
-        : this.grandparentRatingKey,
+    seasonId: seasonId.present ? seasonId.value : this.seasonId,
+    seriesId: seriesId.present ? seriesId.value : this.seriesId,
     status: status ?? this.status,
     progress: progress ?? this.progress,
     totalBytes: totalBytes.present ? totalBytes.value : this.totalBytes,
@@ -656,15 +642,11 @@ class DownloadedMediaItem extends DataClass
     return DownloadedMediaItem(
       id: data.id.present ? data.id.value : this.id,
       serverId: data.serverId.present ? data.serverId.value : this.serverId,
-      ratingKey: data.ratingKey.present ? data.ratingKey.value : this.ratingKey,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
       globalKey: data.globalKey.present ? data.globalKey.value : this.globalKey,
       type: data.type.present ? data.type.value : this.type,
-      parentRatingKey: data.parentRatingKey.present
-          ? data.parentRatingKey.value
-          : this.parentRatingKey,
-      grandparentRatingKey: data.grandparentRatingKey.present
-          ? data.grandparentRatingKey.value
-          : this.grandparentRatingKey,
+      seasonId: data.seasonId.present ? data.seasonId.value : this.seasonId,
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
       status: data.status.present ? data.status.value : this.status,
       progress: data.progress.present ? data.progress.value : this.progress,
       totalBytes: data.totalBytes.present
@@ -695,11 +677,11 @@ class DownloadedMediaItem extends DataClass
     return (StringBuffer('DownloadedMediaItem(')
           ..write('id: $id, ')
           ..write('serverId: $serverId, ')
-          ..write('ratingKey: $ratingKey, ')
+          ..write('itemId: $itemId, ')
           ..write('globalKey: $globalKey, ')
           ..write('type: $type, ')
-          ..write('parentRatingKey: $parentRatingKey, ')
-          ..write('grandparentRatingKey: $grandparentRatingKey, ')
+          ..write('seasonId: $seasonId, ')
+          ..write('seriesId: $seriesId, ')
           ..write('status: $status, ')
           ..write('progress: $progress, ')
           ..write('totalBytes: $totalBytes, ')
@@ -718,11 +700,11 @@ class DownloadedMediaItem extends DataClass
   int get hashCode => Object.hash(
     id,
     serverId,
-    ratingKey,
+    itemId,
     globalKey,
     type,
-    parentRatingKey,
-    grandparentRatingKey,
+    seasonId,
+    seriesId,
     status,
     progress,
     totalBytes,
@@ -740,11 +722,11 @@ class DownloadedMediaItem extends DataClass
       (other is DownloadedMediaItem &&
           other.id == this.id &&
           other.serverId == this.serverId &&
-          other.ratingKey == this.ratingKey &&
+          other.itemId == this.itemId &&
           other.globalKey == this.globalKey &&
           other.type == this.type &&
-          other.parentRatingKey == this.parentRatingKey &&
-          other.grandparentRatingKey == this.grandparentRatingKey &&
+          other.seasonId == this.seasonId &&
+          other.seriesId == this.seriesId &&
           other.status == this.status &&
           other.progress == this.progress &&
           other.totalBytes == this.totalBytes &&
@@ -760,11 +742,11 @@ class DownloadedMediaItem extends DataClass
 class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
   final Value<int> id;
   final Value<String> serverId;
-  final Value<String> ratingKey;
+  final Value<String> itemId;
   final Value<String> globalKey;
   final Value<String> type;
-  final Value<String?> parentRatingKey;
-  final Value<String?> grandparentRatingKey;
+  final Value<String?> seasonId;
+  final Value<String?> seriesId;
   final Value<int> status;
   final Value<int> progress;
   final Value<int?> totalBytes;
@@ -778,11 +760,11 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
   const DownloadedMediaCompanion({
     this.id = const Value.absent(),
     this.serverId = const Value.absent(),
-    this.ratingKey = const Value.absent(),
+    this.itemId = const Value.absent(),
     this.globalKey = const Value.absent(),
     this.type = const Value.absent(),
-    this.parentRatingKey = const Value.absent(),
-    this.grandparentRatingKey = const Value.absent(),
+    this.seasonId = const Value.absent(),
+    this.seriesId = const Value.absent(),
     this.status = const Value.absent(),
     this.progress = const Value.absent(),
     this.totalBytes = const Value.absent(),
@@ -797,11 +779,11 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
   DownloadedMediaCompanion.insert({
     this.id = const Value.absent(),
     required String serverId,
-    required String ratingKey,
+    required String itemId,
     required String globalKey,
     required String type,
-    this.parentRatingKey = const Value.absent(),
-    this.grandparentRatingKey = const Value.absent(),
+    this.seasonId = const Value.absent(),
+    this.seriesId = const Value.absent(),
     required int status,
     this.progress = const Value.absent(),
     this.totalBytes = const Value.absent(),
@@ -813,18 +795,18 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     this.retryCount = const Value.absent(),
     this.bgTaskId = const Value.absent(),
   }) : serverId = Value(serverId),
-       ratingKey = Value(ratingKey),
+       itemId = Value(itemId),
        globalKey = Value(globalKey),
        type = Value(type),
        status = Value(status);
   static Insertable<DownloadedMediaItem> custom({
     Expression<int>? id,
     Expression<String>? serverId,
-    Expression<String>? ratingKey,
+    Expression<String>? itemId,
     Expression<String>? globalKey,
     Expression<String>? type,
-    Expression<String>? parentRatingKey,
-    Expression<String>? grandparentRatingKey,
+    Expression<String>? seasonId,
+    Expression<String>? seriesId,
     Expression<int>? status,
     Expression<int>? progress,
     Expression<int>? totalBytes,
@@ -839,12 +821,11 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (serverId != null) 'server_id': serverId,
-      if (ratingKey != null) 'rating_key': ratingKey,
+      if (itemId != null) 'item_id': itemId,
       if (globalKey != null) 'global_key': globalKey,
       if (type != null) 'type': type,
-      if (parentRatingKey != null) 'parent_rating_key': parentRatingKey,
-      if (grandparentRatingKey != null)
-        'grandparent_rating_key': grandparentRatingKey,
+      if (seasonId != null) 'season_id': seasonId,
+      if (seriesId != null) 'series_id': seriesId,
       if (status != null) 'status': status,
       if (progress != null) 'progress': progress,
       if (totalBytes != null) 'total_bytes': totalBytes,
@@ -861,11 +842,11 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
   DownloadedMediaCompanion copyWith({
     Value<int>? id,
     Value<String>? serverId,
-    Value<String>? ratingKey,
+    Value<String>? itemId,
     Value<String>? globalKey,
     Value<String>? type,
-    Value<String?>? parentRatingKey,
-    Value<String?>? grandparentRatingKey,
+    Value<String?>? seasonId,
+    Value<String?>? seriesId,
     Value<int>? status,
     Value<int>? progress,
     Value<int?>? totalBytes,
@@ -880,11 +861,11 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     return DownloadedMediaCompanion(
       id: id ?? this.id,
       serverId: serverId ?? this.serverId,
-      ratingKey: ratingKey ?? this.ratingKey,
+      itemId: itemId ?? this.itemId,
       globalKey: globalKey ?? this.globalKey,
       type: type ?? this.type,
-      parentRatingKey: parentRatingKey ?? this.parentRatingKey,
-      grandparentRatingKey: grandparentRatingKey ?? this.grandparentRatingKey,
+      seasonId: seasonId ?? this.seasonId,
+      seriesId: seriesId ?? this.seriesId,
       status: status ?? this.status,
       progress: progress ?? this.progress,
       totalBytes: totalBytes ?? this.totalBytes,
@@ -907,8 +888,8 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     if (serverId.present) {
       map['server_id'] = Variable<String>(serverId.value);
     }
-    if (ratingKey.present) {
-      map['rating_key'] = Variable<String>(ratingKey.value);
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
     }
     if (globalKey.present) {
       map['global_key'] = Variable<String>(globalKey.value);
@@ -916,13 +897,11 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     if (type.present) {
       map['type'] = Variable<String>(type.value);
     }
-    if (parentRatingKey.present) {
-      map['parent_rating_key'] = Variable<String>(parentRatingKey.value);
+    if (seasonId.present) {
+      map['season_id'] = Variable<String>(seasonId.value);
     }
-    if (grandparentRatingKey.present) {
-      map['grandparent_rating_key'] = Variable<String>(
-        grandparentRatingKey.value,
-      );
+    if (seriesId.present) {
+      map['series_id'] = Variable<String>(seriesId.value);
     }
     if (status.present) {
       map['status'] = Variable<int>(status.value);
@@ -962,11 +941,11 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     return (StringBuffer('DownloadedMediaCompanion(')
           ..write('id: $id, ')
           ..write('serverId: $serverId, ')
-          ..write('ratingKey: $ratingKey, ')
+          ..write('itemId: $itemId, ')
           ..write('globalKey: $globalKey, ')
           ..write('type: $type, ')
-          ..write('parentRatingKey: $parentRatingKey, ')
-          ..write('grandparentRatingKey: $grandparentRatingKey, ')
+          ..write('seasonId: $seasonId, ')
+          ..write('seriesId: $seriesId, ')
           ..write('status: $status, ')
           ..write('progress: $progress, ')
           ..write('totalBytes: $totalBytes, ')
@@ -1533,7 +1512,7 @@ class $ApiCacheTable extends ApiCache
 }
 
 class ApiCacheData extends DataClass implements Insertable<ApiCacheData> {
-  /// Composite key: serverId:endpoint (e.g., "abc123:/library/metadata/12345")
+  /// Composite key: serverId:endpoint (e.g., "abc123:/items/12345")
   final String cacheKey;
 
   /// JSON response data
@@ -1752,12 +1731,10 @@ class $OfflineWatchProgressTable extends OfflineWatchProgress
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _ratingKeyMeta = const VerificationMeta(
-    'ratingKey',
-  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
   @override
-  late final GeneratedColumn<String> ratingKey = GeneratedColumn<String>(
-    'rating_key',
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -1871,7 +1848,7 @@ class $OfflineWatchProgressTable extends OfflineWatchProgress
   List<GeneratedColumn> get $columns => [
     id,
     serverId,
-    ratingKey,
+    itemId,
     globalKey,
     actionType,
     viewOffset,
@@ -1905,13 +1882,13 @@ class $OfflineWatchProgressTable extends OfflineWatchProgress
     } else if (isInserting) {
       context.missing(_serverIdMeta);
     }
-    if (data.containsKey('rating_key')) {
+    if (data.containsKey('item_id')) {
       context.handle(
-        _ratingKeyMeta,
-        ratingKey.isAcceptableOrUnknown(data['rating_key']!, _ratingKeyMeta),
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_ratingKeyMeta);
+      context.missing(_itemIdMeta);
     }
     if (data.containsKey('global_key')) {
       context.handle(
@@ -2001,9 +1978,9 @@ class $OfflineWatchProgressTable extends OfflineWatchProgress
         DriftSqlType.string,
         data['${effectivePrefix}server_id'],
       )!,
-      ratingKey: attachedDatabase.typeMapping.read(
+      itemId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}rating_key'],
+        data['${effectivePrefix}item_id'],
       )!,
       globalKey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -2058,10 +2035,10 @@ class OfflineWatchProgressItem extends DataClass
   /// Server ID this media belongs to
   final String serverId;
 
-  /// Rating key of the media item
-  final String ratingKey;
+  /// Item ID of the media item
+  final String itemId;
 
-  /// Global key (serverId:ratingKey) for easy lookup
+  /// Global key (serverId:itemId) for easy lookup
   final String globalKey;
 
   /// Type of action: 'progress', 'watched', 'unwatched'
@@ -2091,7 +2068,7 @@ class OfflineWatchProgressItem extends DataClass
   const OfflineWatchProgressItem({
     required this.id,
     required this.serverId,
-    required this.ratingKey,
+    required this.itemId,
     required this.globalKey,
     required this.actionType,
     this.viewOffset,
@@ -2107,7 +2084,7 @@ class OfflineWatchProgressItem extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['server_id'] = Variable<String>(serverId);
-    map['rating_key'] = Variable<String>(ratingKey);
+    map['item_id'] = Variable<String>(itemId);
     map['global_key'] = Variable<String>(globalKey);
     map['action_type'] = Variable<String>(actionType);
     if (!nullToAbsent || viewOffset != null) {
@@ -2130,7 +2107,7 @@ class OfflineWatchProgressItem extends DataClass
     return OfflineWatchProgressCompanion(
       id: Value(id),
       serverId: Value(serverId),
-      ratingKey: Value(ratingKey),
+      itemId: Value(itemId),
       globalKey: Value(globalKey),
       actionType: Value(actionType),
       viewOffset: viewOffset == null && nullToAbsent
@@ -2157,7 +2134,7 @@ class OfflineWatchProgressItem extends DataClass
     return OfflineWatchProgressItem(
       id: serializer.fromJson<int>(json['id']),
       serverId: serializer.fromJson<String>(json['serverId']),
-      ratingKey: serializer.fromJson<String>(json['ratingKey']),
+      itemId: serializer.fromJson<String>(json['itemId']),
       globalKey: serializer.fromJson<String>(json['globalKey']),
       actionType: serializer.fromJson<String>(json['actionType']),
       viewOffset: serializer.fromJson<int?>(json['viewOffset']),
@@ -2175,7 +2152,7 @@ class OfflineWatchProgressItem extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'serverId': serializer.toJson<String>(serverId),
-      'ratingKey': serializer.toJson<String>(ratingKey),
+      'itemId': serializer.toJson<String>(itemId),
       'globalKey': serializer.toJson<String>(globalKey),
       'actionType': serializer.toJson<String>(actionType),
       'viewOffset': serializer.toJson<int?>(viewOffset),
@@ -2191,7 +2168,7 @@ class OfflineWatchProgressItem extends DataClass
   OfflineWatchProgressItem copyWith({
     int? id,
     String? serverId,
-    String? ratingKey,
+    String? itemId,
     String? globalKey,
     String? actionType,
     Value<int?> viewOffset = const Value.absent(),
@@ -2204,7 +2181,7 @@ class OfflineWatchProgressItem extends DataClass
   }) => OfflineWatchProgressItem(
     id: id ?? this.id,
     serverId: serverId ?? this.serverId,
-    ratingKey: ratingKey ?? this.ratingKey,
+    itemId: itemId ?? this.itemId,
     globalKey: globalKey ?? this.globalKey,
     actionType: actionType ?? this.actionType,
     viewOffset: viewOffset.present ? viewOffset.value : this.viewOffset,
@@ -2221,7 +2198,7 @@ class OfflineWatchProgressItem extends DataClass
     return OfflineWatchProgressItem(
       id: data.id.present ? data.id.value : this.id,
       serverId: data.serverId.present ? data.serverId.value : this.serverId,
-      ratingKey: data.ratingKey.present ? data.ratingKey.value : this.ratingKey,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
       globalKey: data.globalKey.present ? data.globalKey.value : this.globalKey,
       actionType: data.actionType.present
           ? data.actionType.value
@@ -2247,7 +2224,7 @@ class OfflineWatchProgressItem extends DataClass
     return (StringBuffer('OfflineWatchProgressItem(')
           ..write('id: $id, ')
           ..write('serverId: $serverId, ')
-          ..write('ratingKey: $ratingKey, ')
+          ..write('itemId: $itemId, ')
           ..write('globalKey: $globalKey, ')
           ..write('actionType: $actionType, ')
           ..write('viewOffset: $viewOffset, ')
@@ -2265,7 +2242,7 @@ class OfflineWatchProgressItem extends DataClass
   int get hashCode => Object.hash(
     id,
     serverId,
-    ratingKey,
+    itemId,
     globalKey,
     actionType,
     viewOffset,
@@ -2282,7 +2259,7 @@ class OfflineWatchProgressItem extends DataClass
       (other is OfflineWatchProgressItem &&
           other.id == this.id &&
           other.serverId == this.serverId &&
-          other.ratingKey == this.ratingKey &&
+          other.itemId == this.itemId &&
           other.globalKey == this.globalKey &&
           other.actionType == this.actionType &&
           other.viewOffset == this.viewOffset &&
@@ -2298,7 +2275,7 @@ class OfflineWatchProgressCompanion
     extends UpdateCompanion<OfflineWatchProgressItem> {
   final Value<int> id;
   final Value<String> serverId;
-  final Value<String> ratingKey;
+  final Value<String> itemId;
   final Value<String> globalKey;
   final Value<String> actionType;
   final Value<int?> viewOffset;
@@ -2311,7 +2288,7 @@ class OfflineWatchProgressCompanion
   const OfflineWatchProgressCompanion({
     this.id = const Value.absent(),
     this.serverId = const Value.absent(),
-    this.ratingKey = const Value.absent(),
+    this.itemId = const Value.absent(),
     this.globalKey = const Value.absent(),
     this.actionType = const Value.absent(),
     this.viewOffset = const Value.absent(),
@@ -2325,7 +2302,7 @@ class OfflineWatchProgressCompanion
   OfflineWatchProgressCompanion.insert({
     this.id = const Value.absent(),
     required String serverId,
-    required String ratingKey,
+    required String itemId,
     required String globalKey,
     required String actionType,
     this.viewOffset = const Value.absent(),
@@ -2336,7 +2313,7 @@ class OfflineWatchProgressCompanion
     this.syncAttempts = const Value.absent(),
     this.lastError = const Value.absent(),
   }) : serverId = Value(serverId),
-       ratingKey = Value(ratingKey),
+       itemId = Value(itemId),
        globalKey = Value(globalKey),
        actionType = Value(actionType),
        createdAt = Value(createdAt),
@@ -2344,7 +2321,7 @@ class OfflineWatchProgressCompanion
   static Insertable<OfflineWatchProgressItem> custom({
     Expression<int>? id,
     Expression<String>? serverId,
-    Expression<String>? ratingKey,
+    Expression<String>? itemId,
     Expression<String>? globalKey,
     Expression<String>? actionType,
     Expression<int>? viewOffset,
@@ -2358,7 +2335,7 @@ class OfflineWatchProgressCompanion
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (serverId != null) 'server_id': serverId,
-      if (ratingKey != null) 'rating_key': ratingKey,
+      if (itemId != null) 'item_id': itemId,
       if (globalKey != null) 'global_key': globalKey,
       if (actionType != null) 'action_type': actionType,
       if (viewOffset != null) 'view_offset': viewOffset,
@@ -2374,7 +2351,7 @@ class OfflineWatchProgressCompanion
   OfflineWatchProgressCompanion copyWith({
     Value<int>? id,
     Value<String>? serverId,
-    Value<String>? ratingKey,
+    Value<String>? itemId,
     Value<String>? globalKey,
     Value<String>? actionType,
     Value<int?>? viewOffset,
@@ -2388,7 +2365,7 @@ class OfflineWatchProgressCompanion
     return OfflineWatchProgressCompanion(
       id: id ?? this.id,
       serverId: serverId ?? this.serverId,
-      ratingKey: ratingKey ?? this.ratingKey,
+      itemId: itemId ?? this.itemId,
       globalKey: globalKey ?? this.globalKey,
       actionType: actionType ?? this.actionType,
       viewOffset: viewOffset ?? this.viewOffset,
@@ -2410,8 +2387,8 @@ class OfflineWatchProgressCompanion
     if (serverId.present) {
       map['server_id'] = Variable<String>(serverId.value);
     }
-    if (ratingKey.present) {
-      map['rating_key'] = Variable<String>(ratingKey.value);
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
     }
     if (globalKey.present) {
       map['global_key'] = Variable<String>(globalKey.value);
@@ -2448,7 +2425,7 @@ class OfflineWatchProgressCompanion
     return (StringBuffer('OfflineWatchProgressCompanion(')
           ..write('id: $id, ')
           ..write('serverId: $serverId, ')
-          ..write('ratingKey: $ratingKey, ')
+          ..write('itemId: $itemId, ')
           ..write('globalKey: $globalKey, ')
           ..write('actionType: $actionType, ')
           ..write('viewOffset: $viewOffset, ')
@@ -2489,11 +2466,11 @@ typedef $$DownloadedMediaTableCreateCompanionBuilder =
     DownloadedMediaCompanion Function({
       Value<int> id,
       required String serverId,
-      required String ratingKey,
+      required String itemId,
       required String globalKey,
       required String type,
-      Value<String?> parentRatingKey,
-      Value<String?> grandparentRatingKey,
+      Value<String?> seasonId,
+      Value<String?> seriesId,
       required int status,
       Value<int> progress,
       Value<int?> totalBytes,
@@ -2509,11 +2486,11 @@ typedef $$DownloadedMediaTableUpdateCompanionBuilder =
     DownloadedMediaCompanion Function({
       Value<int> id,
       Value<String> serverId,
-      Value<String> ratingKey,
+      Value<String> itemId,
       Value<String> globalKey,
       Value<String> type,
-      Value<String?> parentRatingKey,
-      Value<String?> grandparentRatingKey,
+      Value<String?> seasonId,
+      Value<String?> seriesId,
       Value<int> status,
       Value<int> progress,
       Value<int?> totalBytes,
@@ -2545,8 +2522,8 @@ class $$DownloadedMediaTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get ratingKey => $composableBuilder(
-    column: $table.ratingKey,
+  ColumnFilters<String> get itemId => $composableBuilder(
+    column: $table.itemId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2560,13 +2537,13 @@ class $$DownloadedMediaTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get parentRatingKey => $composableBuilder(
-    column: $table.parentRatingKey,
+  ColumnFilters<String> get seasonId => $composableBuilder(
+    column: $table.seasonId,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get grandparentRatingKey => $composableBuilder(
-    column: $table.grandparentRatingKey,
+  ColumnFilters<String> get seriesId => $composableBuilder(
+    column: $table.seriesId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2640,8 +2617,8 @@ class $$DownloadedMediaTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get ratingKey => $composableBuilder(
-    column: $table.ratingKey,
+  ColumnOrderings<String> get itemId => $composableBuilder(
+    column: $table.itemId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2655,13 +2632,13 @@ class $$DownloadedMediaTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get parentRatingKey => $composableBuilder(
-    column: $table.parentRatingKey,
+  ColumnOrderings<String> get seasonId => $composableBuilder(
+    column: $table.seasonId,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get grandparentRatingKey => $composableBuilder(
-    column: $table.grandparentRatingKey,
+  ColumnOrderings<String> get seriesId => $composableBuilder(
+    column: $table.seriesId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2731,8 +2708,8 @@ class $$DownloadedMediaTableAnnotationComposer
   GeneratedColumn<String> get serverId =>
       $composableBuilder(column: $table.serverId, builder: (column) => column);
 
-  GeneratedColumn<String> get ratingKey =>
-      $composableBuilder(column: $table.ratingKey, builder: (column) => column);
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
 
   GeneratedColumn<String> get globalKey =>
       $composableBuilder(column: $table.globalKey, builder: (column) => column);
@@ -2740,15 +2717,11 @@ class $$DownloadedMediaTableAnnotationComposer
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
 
-  GeneratedColumn<String> get parentRatingKey => $composableBuilder(
-    column: $table.parentRatingKey,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get seasonId =>
+      $composableBuilder(column: $table.seasonId, builder: (column) => column);
 
-  GeneratedColumn<String> get grandparentRatingKey => $composableBuilder(
-    column: $table.grandparentRatingKey,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get seriesId =>
+      $composableBuilder(column: $table.seriesId, builder: (column) => column);
 
   GeneratedColumn<int> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
@@ -2832,11 +2805,11 @@ class $$DownloadedMediaTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> serverId = const Value.absent(),
-                Value<String> ratingKey = const Value.absent(),
+                Value<String> itemId = const Value.absent(),
                 Value<String> globalKey = const Value.absent(),
                 Value<String> type = const Value.absent(),
-                Value<String?> parentRatingKey = const Value.absent(),
-                Value<String?> grandparentRatingKey = const Value.absent(),
+                Value<String?> seasonId = const Value.absent(),
+                Value<String?> seriesId = const Value.absent(),
                 Value<int> status = const Value.absent(),
                 Value<int> progress = const Value.absent(),
                 Value<int?> totalBytes = const Value.absent(),
@@ -2850,11 +2823,11 @@ class $$DownloadedMediaTableTableManager
               }) => DownloadedMediaCompanion(
                 id: id,
                 serverId: serverId,
-                ratingKey: ratingKey,
+                itemId: itemId,
                 globalKey: globalKey,
                 type: type,
-                parentRatingKey: parentRatingKey,
-                grandparentRatingKey: grandparentRatingKey,
+                seasonId: seasonId,
+                seriesId: seriesId,
                 status: status,
                 progress: progress,
                 totalBytes: totalBytes,
@@ -2870,11 +2843,11 @@ class $$DownloadedMediaTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String serverId,
-                required String ratingKey,
+                required String itemId,
                 required String globalKey,
                 required String type,
-                Value<String?> parentRatingKey = const Value.absent(),
-                Value<String?> grandparentRatingKey = const Value.absent(),
+                Value<String?> seasonId = const Value.absent(),
+                Value<String?> seriesId = const Value.absent(),
                 required int status,
                 Value<int> progress = const Value.absent(),
                 Value<int?> totalBytes = const Value.absent(),
@@ -2888,11 +2861,11 @@ class $$DownloadedMediaTableTableManager
               }) => DownloadedMediaCompanion.insert(
                 id: id,
                 serverId: serverId,
-                ratingKey: ratingKey,
+                itemId: itemId,
                 globalKey: globalKey,
                 type: type,
-                parentRatingKey: parentRatingKey,
-                grandparentRatingKey: grandparentRatingKey,
+                seasonId: seasonId,
+                seriesId: seriesId,
                 status: status,
                 progress: progress,
                 totalBytes: totalBytes,
@@ -3341,7 +3314,7 @@ typedef $$OfflineWatchProgressTableCreateCompanionBuilder =
     OfflineWatchProgressCompanion Function({
       Value<int> id,
       required String serverId,
-      required String ratingKey,
+      required String itemId,
       required String globalKey,
       required String actionType,
       Value<int?> viewOffset,
@@ -3356,7 +3329,7 @@ typedef $$OfflineWatchProgressTableUpdateCompanionBuilder =
     OfflineWatchProgressCompanion Function({
       Value<int> id,
       Value<String> serverId,
-      Value<String> ratingKey,
+      Value<String> itemId,
       Value<String> globalKey,
       Value<String> actionType,
       Value<int?> viewOffset,
@@ -3387,8 +3360,8 @@ class $$OfflineWatchProgressTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get ratingKey => $composableBuilder(
-    column: $table.ratingKey,
+  ColumnFilters<String> get itemId => $composableBuilder(
+    column: $table.itemId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3457,8 +3430,8 @@ class $$OfflineWatchProgressTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get ratingKey => $composableBuilder(
-    column: $table.ratingKey,
+  ColumnOrderings<String> get itemId => $composableBuilder(
+    column: $table.itemId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3523,8 +3496,8 @@ class $$OfflineWatchProgressTableAnnotationComposer
   GeneratedColumn<String> get serverId =>
       $composableBuilder(column: $table.serverId, builder: (column) => column);
 
-  GeneratedColumn<String> get ratingKey =>
-      $composableBuilder(column: $table.ratingKey, builder: (column) => column);
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
 
   GeneratedColumn<String> get globalKey =>
       $composableBuilder(column: $table.globalKey, builder: (column) => column);
@@ -3607,7 +3580,7 @@ class $$OfflineWatchProgressTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> serverId = const Value.absent(),
-                Value<String> ratingKey = const Value.absent(),
+                Value<String> itemId = const Value.absent(),
                 Value<String> globalKey = const Value.absent(),
                 Value<String> actionType = const Value.absent(),
                 Value<int?> viewOffset = const Value.absent(),
@@ -3620,7 +3593,7 @@ class $$OfflineWatchProgressTableTableManager
               }) => OfflineWatchProgressCompanion(
                 id: id,
                 serverId: serverId,
-                ratingKey: ratingKey,
+                itemId: itemId,
                 globalKey: globalKey,
                 actionType: actionType,
                 viewOffset: viewOffset,
@@ -3635,7 +3608,7 @@ class $$OfflineWatchProgressTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String serverId,
-                required String ratingKey,
+                required String itemId,
                 required String globalKey,
                 required String actionType,
                 Value<int?> viewOffset = const Value.absent(),
@@ -3648,7 +3621,7 @@ class $$OfflineWatchProgressTableTableManager
               }) => OfflineWatchProgressCompanion.insert(
                 id: id,
                 serverId: serverId,
-                ratingKey: ratingKey,
+                itemId: itemId,
                 globalKey: globalKey,
                 actionType: actionType,
                 viewOffset: viewOffset,

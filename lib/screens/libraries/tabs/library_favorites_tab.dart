@@ -47,7 +47,7 @@ class _LibraryFavoritesTabState extends LibraryGridTabState<MediaMetadata, Libra
   @override
   Widget buildGridItem(BuildContext context, MediaMetadata item, int index, [GridItemContext? gridContext]) {
     return FocusableMediaCard(
-      key: Key(item.ratingKey),
+      key: Key(item.itemId),
       item: item,
       focusNode: index == 0 ? firstItemFocusNode : null,
       onListRefresh: loadItems,

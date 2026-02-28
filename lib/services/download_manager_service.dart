@@ -26,21 +26,21 @@ extension DownloadDatabaseOperations on AppDatabase {
   /// Insert a new download into the database
   Future<void> insertDownload({
     required String serverId,
-    required String ratingKey,
+    required String itemId,
     required String globalKey,
     required String type,
-    String? parentRatingKey,
-    String? grandparentRatingKey,
+    String? seasonId,
+    String? seriesId,
     required int status,
   }) async {
     await into(downloadedMedia).insert(
       DownloadedMediaCompanion.insert(
         serverId: serverId,
-        ratingKey: ratingKey,
+        itemId: itemId,
         globalKey: globalKey,
         type: type,
-        parentRatingKey: Value(parentRatingKey),
-        grandparentRatingKey: Value(grandparentRatingKey),
+        seasonId: Value(seasonId),
+        seriesId: Value(seriesId),
         status: status,
       ),
       mode: InsertMode.insertOrReplace,
@@ -157,12 +157,12 @@ extension DownloadDatabaseOperations on AppDatabase {
 
   /// Get all downloaded episodes for a season
   Future<List<DownloadedMediaItem>> getEpisodesBySeason(String seasonKey) {
-    return (select(downloadedMedia)..where((t) => t.parentRatingKey.equals(seasonKey))).get();
+    return (select(downloadedMedia)..where((t) => t.seasonId.equals(seasonKey))).get();
   }
 
   /// Get all downloaded episodes for a show
   Future<List<DownloadedMediaItem>> getEpisodesByShow(String showKey) {
-    return (select(downloadedMedia)..where((t) => t.grandparentRatingKey.equals(showKey))).get();
+    return (select(downloadedMedia)..where((t) => t.seriesId.equals(showKey))).get();
   }
 
   /// Get all downloaded items for a specific server
@@ -379,12 +379,12 @@ class DownloadManagerService {
 
         // Look up show year for episodes
         int? showYear;
-        if (metadata.type == 'episode' && metadata.grandparentRatingKey != null) {
+        if (metadata.type == 'episode' && metadata.seriesId != null) {
           final parsed = parseGlobalKey(globalKey);
           if (parsed != null) {
             final showCached = await _apiCache.get(
               parsed.serverId,
-              '${ApiCache.itemPrefix}${metadata.grandparentRatingKey}',
+              '${ApiCache.itemPrefix}${metadata.seriesId}',
             );
             final showJson = CacheParser.extractFirstMetadata(showCached);
             if (showJson != null) showYear = MediaMetadata.fromJson(showJson).year;
@@ -392,11 +392,11 @@ class DownloadManagerService {
         }
 
         await _downloadArtwork(globalKey, metadata, client);
-        await _downloadChapterThumbnails(metadata.serverId!, metadata.ratingKey, client);
+        await _downloadChapterThumbnails(metadata.serverId!, metadata.itemId, client);
 
         // Attempt subtitles
         try {
-          final playbackData = await client.getVideoPlaybackData(metadata.ratingKey);
+          final playbackData = await client.getVideoPlaybackData(metadata.itemId);
           if (playbackData.mediaInfo != null) {
             await _downloadSubtitles(globalKey, metadata, playbackData.mediaInfo!, client, showYear: showYear);
           }
@@ -430,7 +430,7 @@ class DownloadManagerService {
     bool downloadSubtitles = true,
     bool downloadArtwork = true,
   }) async {
-    final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
+    final globalKey = '${metadata.serverId}:${metadata.itemId}';
 
     // Check if already downloading or completed
     final existing = await _database.getDownloadedMedia(globalKey);
@@ -443,18 +443,18 @@ class DownloadManagerService {
     // Insert into database
     await _database.insertDownload(
       serverId: metadata.serverId!,
-      ratingKey: metadata.ratingKey,
+      itemId: metadata.itemId,
       globalKey: globalKey,
       type: metadata.type,
-      parentRatingKey: metadata.parentRatingKey,
-      grandparentRatingKey: metadata.grandparentRatingKey,
+      seasonId: metadata.seasonId,
+      seriesId: metadata.seriesId,
       status: DownloadStatus.queued.index,
     );
 
     // Ensure metadata is in API cache for offline use and for _prepareAndEnqueueDownload.
     // JellyfinClient does not cache when it fetches — so we always cache here
     // in a format the cache parser expects (MediaContainer.Metadata).
-    await _cacheMetadataForOffline(metadata.serverId!, metadata.ratingKey, metadata);
+    await _cacheMetadataForOffline(metadata.serverId!, metadata.itemId, metadata);
 
     // Add to queue
     await _database.addToQueue(
@@ -500,27 +500,27 @@ class DownloadManagerService {
       final parsed = parseGlobalKey(globalKey);
       if (parsed == null) throw Exception('Invalid globalKey: $globalKey');
       final serverId = parsed.serverId;
-      final ratingKey = parsed.ratingKey;
+      final itemId = parsed.itemId;
 
-      final metadata = await _apiCache.getMetadata(serverId, ratingKey);
+      final metadata = await _apiCache.getMetadata(serverId, itemId);
       if (metadata == null) throw Exception('Metadata not found in cache for $globalKey');
 
-      final playbackData = await client.getVideoPlaybackData(metadata.ratingKey);
+      final playbackData = await client.getVideoPlaybackData(metadata.itemId);
       if (playbackData.videoUrl == null) throw Exception('Could not get video URL');
 
       final ext = _getExtensionFromUrl(playbackData.videoUrl!) ?? 'mp4';
 
       // Look up show year for episodes
       int? showYear;
-      if (metadata.type == 'episode' && metadata.grandparentRatingKey != null) {
-        final showCached = await _apiCache.get(serverId, '${ApiCache.itemPrefix}${metadata.grandparentRatingKey}');
+      if (metadata.type == 'episode' && metadata.seriesId != null) {
+        final showCached = await _apiCache.get(serverId, '${ApiCache.itemPrefix}${metadata.seriesId}');
         final showJson = CacheParser.extractFirstMetadata(showCached);
         if (showJson != null) showYear = MediaMetadata.fromJson(showJson).year;
       }
 
       // Build display name for notifications
       final displayName = metadata.type == 'episode'
-          ? '${metadata.grandparentTitle ?? metadata.title} - ${metadata.title}'
+          ? '${metadata.seriesTitle ?? metadata.title} - ${metadata.title}'
           : metadata.title;
 
       // Get WiFi-only setting for native enforcement
@@ -538,7 +538,7 @@ class DownloadManagerService {
           pathComponents = _storageService.getEpisodeSafPathComponents(metadata, showYear: showYear);
           safFileName = _storageService.getEpisodeSafFileName(metadata, ext);
         } else {
-          pathComponents = [serverId, metadata.ratingKey];
+          pathComponents = [serverId, metadata.itemId];
           safFileName = 'video.$ext';
         }
 
@@ -583,7 +583,7 @@ class DownloadManagerService {
         } else if (metadata.type == 'episode') {
           downloadFilePath = await _storageService.getEpisodeVideoPath(metadata, ext, showYear: showYear);
         } else {
-          downloadFilePath = await _storageService.getVideoFilePath(serverId, metadata.ratingKey, ext);
+          downloadFilePath = await _storageService.getVideoFilePath(serverId, metadata.itemId, ext);
         }
 
         await File(downloadFilePath).parent.create(recursive: true);
@@ -765,7 +765,7 @@ class DownloadManagerService {
           // SAF mode recovery: re-derive path from metadata
           final parsed = parseGlobalKey(globalKey);
           if (parsed == null) throw Exception('Invalid globalKey for recovery: $globalKey');
-          final metadata = await _apiCache.getMetadata(parsed.serverId, parsed.ratingKey);
+          final metadata = await _apiCache.getMetadata(parsed.serverId, parsed.itemId);
           if (metadata == null) throw Exception('No metadata for SAF recovery of $globalKey');
           final ext = _getExtensionFromUrl(task.url) ?? 'mp4';
           storedPath = await _resolveSafStoredPath(metadata, ext, null) ?? '';
@@ -798,13 +798,13 @@ class DownloadManagerService {
         if (metadata != null && client != null) {
           if (downloadArtwork) {
             await _downloadArtwork(globalKey, metadata, client);
-            await _downloadChapterThumbnails(metadata.serverId!, metadata.ratingKey, client);
+            await _downloadChapterThumbnails(metadata.serverId!, metadata.itemId, client);
           }
           if (downloadSubtitles) {
             MediaInfo? mediaInfo = ctx?.mediaInfo;
             if (mediaInfo == null) {
               try {
-                final playbackData = await client.getVideoPlaybackData(metadata.ratingKey);
+                final playbackData = await client.getVideoPlaybackData(metadata.itemId);
                 mediaInfo = playbackData.mediaInfo;
               } catch (e) {
                 appLogger.w('Could not re-fetch playback data for subtitles', error: e);
@@ -838,7 +838,7 @@ class DownloadManagerService {
   Future<MediaMetadata?> _resolveMetadata(String globalKey) async {
     final parsed = parseGlobalKey(globalKey);
     if (parsed == null) return null;
-    return _apiCache.getMetadata(parsed.serverId, parsed.ratingKey);
+    return _apiCache.getMetadata(parsed.serverId, parsed.itemId);
   }
 
   /// Re-derive the SAF file URI from metadata (for recovery when context is lost)
@@ -855,7 +855,7 @@ class DownloadManagerService {
       pathComponents = _storageService.getEpisodeSafPathComponents(metadata, showYear: showYear);
       safFileName = _storageService.getEpisodeSafFileName(metadata, ext);
     } else {
-      pathComponents = [metadata.serverId!, metadata.ratingKey];
+      pathComponents = [metadata.serverId!, metadata.itemId];
       safFileName = 'video.$ext';
     }
 
@@ -955,10 +955,10 @@ class DownloadManagerService {
   }
 
   /// Download chapter thumbnail images for a media item
-  Future<void> _downloadChapterThumbnails(String serverId, String ratingKey, JellyfinClient client) async {
+  Future<void> _downloadChapterThumbnails(String serverId, String itemId, JellyfinClient client) async {
     try {
       // Get chapters from the cached API response
-      final extras = await client.getPlaybackExtras(ratingKey);
+      final extras = await client.getPlaybackExtras(itemId);
 
       for (final chapter in extras.chapters) {
         if (chapter.thumb != null) {
@@ -1015,7 +1015,7 @@ class DownloadManagerService {
           // Fallback to old structure
           subtitlePath = await _storageService.getSubtitlePath(
             metadata.serverId!,
-            metadata.ratingKey,
+            metadata.itemId,
             subtitle.id,
             extension,
           );
@@ -1181,13 +1181,13 @@ class DownloadManagerService {
     }
 
     final serverId = parsed.serverId;
-    final ratingKey = parsed.ratingKey;
-    final metadata = await _apiCache.getMetadata(serverId, ratingKey);
+    final itemId = parsed.itemId;
+    final metadata = await _apiCache.getMetadata(serverId, itemId);
 
     if (metadata == null) {
       // Fallback deletion without progress
-      await _deleteMediaFilesWithMetadata(serverId, ratingKey);
-      await _apiCache.deleteForItem(serverId, ratingKey);
+      await _deleteMediaFilesWithMetadata(serverId, itemId);
+      await _apiCache.deleteForItem(serverId, itemId);
       await _database.deleteDownload(globalKey);
       return;
     }
@@ -1201,10 +1201,10 @@ class DownloadManagerService {
     );
 
     // Delete files from storage (with progress updates)
-    await _deleteMediaFilesWithMetadata(serverId, ratingKey);
+    await _deleteMediaFilesWithMetadata(serverId, itemId);
 
     // Delete from API cache
-    await _apiCache.deleteForItem(serverId, ratingKey);
+    await _apiCache.deleteForItem(serverId, itemId);
 
     // Delete from database
     await _database.deleteDownload(globalKey);
@@ -1234,11 +1234,11 @@ class DownloadManagerService {
         return 1; // Single movie
       case 'season':
         // Count episodes in season
-        final episodes = await _database.getEpisodesBySeason(metadata.ratingKey);
+        final episodes = await _database.getEpisodesBySeason(metadata.itemId);
         return episodes.length;
       case 'show':
         // Count all episodes in show
-        final episodes = await _database.getEpisodesByShow(metadata.ratingKey);
+        final episodes = await _database.getEpisodesByShow(metadata.itemId);
         return episodes.length;
       default:
         return 1;
@@ -1246,19 +1246,19 @@ class DownloadManagerService {
   }
 
   /// Delete media files using metadata to find correct paths
-  Future<void> _deleteMediaFilesWithMetadata(String serverId, String ratingKey) async {
+  Future<void> _deleteMediaFilesWithMetadata(String serverId, String itemId) async {
     try {
       // Get metadata from API cache
-      final metadata = await _apiCache.getMetadata(serverId, ratingKey);
+      final metadata = await _apiCache.getMetadata(serverId, itemId);
 
       if (metadata == null) {
         // Fallback: Try database record
-        final downloadRecord = await _database.getDownloadedMedia('$serverId:$ratingKey');
+        final downloadRecord = await _database.getDownloadedMedia('$serverId:$itemId');
         if (downloadRecord?.videoFilePath != null) {
           await _deleteByFilePath(downloadRecord!);
           return;
         }
-        appLogger.w('Cannot delete - no metadata for $serverId:$ratingKey');
+        appLogger.w('Cannot delete - no metadata for $serverId:$itemId');
         return;
       }
 
@@ -1285,9 +1285,9 @@ class DownloadManagerService {
   }
 
   /// Get chapter thumb paths from cached metadata
-  Future<List<String>> _getChapterThumbPaths(String serverId, String ratingKey) async {
+  Future<List<String>> _getChapterThumbPaths(String serverId, String itemId) async {
     try {
-      final cachedData = await _apiCache.get(serverId, '${ApiCache.itemPrefix}$ratingKey');
+      final cachedData = await _apiCache.get(serverId, '${ApiCache.itemPrefix}$itemId');
       final chapters = CacheParser.extractChapters(cachedData);
       if (chapters == null) return [];
 
@@ -1297,7 +1297,7 @@ class DownloadManagerService {
           .cast<String>()
           .toList();
     } catch (e) {
-      appLogger.w('Error getting chapter thumb paths for $ratingKey', error: e);
+      appLogger.w('Error getting chapter thumb paths for $itemId', error: e);
       return [];
     }
   }
@@ -1307,12 +1307,12 @@ class DownloadManagerService {
   /// Pre-loads all chapter paths for other items on the same server in one pass,
   /// then checks membership in a Set — O(items * chapters) instead of
   /// O(thumbs * items * chapters) with repeated DB queries.
-  Future<void> _deleteChapterThumbnails(String serverId, String ratingKey) async {
+  Future<void> _deleteChapterThumbnails(String serverId, String itemId) async {
     try {
-      final thumbPaths = await _getChapterThumbPaths(serverId, ratingKey);
+      final thumbPaths = await _getChapterThumbPaths(serverId, itemId);
 
       if (thumbPaths.isEmpty) {
-        appLogger.d('No chapter thumbnails to delete for $ratingKey');
+        appLogger.d('No chapter thumbnails to delete for $itemId');
         return;
       }
 
@@ -1320,8 +1320,8 @@ class DownloadManagerService {
       final otherItems = await _database.getDownloadsByServerId(serverId);
       final inUseThumbPaths = <String>{};
       for (final item in otherItems) {
-        if (item.ratingKey == ratingKey) continue;
-        final itemChapterPaths = await _getChapterThumbPaths(serverId, item.ratingKey);
+        if (item.itemId == itemId) continue;
+        final itemChapterPaths = await _getChapterThumbPaths(serverId, item.itemId);
         inUseThumbPaths.addAll(itemChapterPaths);
       }
 
@@ -1350,15 +1350,15 @@ class DownloadManagerService {
         appLogger.i('Deleted $deletedCount of ${thumbPaths.length} chapter thumbnails ($preservedCount preserved)');
       }
     } catch (e, stack) {
-      appLogger.w('Error deleting chapter thumbnails for $ratingKey', error: e, stackTrace: stack);
+      appLogger.w('Error deleting chapter thumbnails for $itemId', error: e, stackTrace: stack);
     }
   }
 
   /// Delete episode files
   Future<void> _deleteEpisodeFiles(MediaMetadata episode, String serverId) async {
     try {
-      final parentMetadata = episode.grandparentRatingKey != null
-          ? await _apiCache.getMetadata(serverId, episode.grandparentRatingKey!)
+      final parentMetadata = episode.seriesId != null
+          ? await _apiCache.getMetadata(serverId, episode.seriesId!)
           : null;
       final showYear = parentMetadata?.year;
 
@@ -1384,7 +1384,7 @@ class DownloadManagerService {
       }
 
       // Delete chapter thumbnails (with reference counting)
-      await _deleteChapterThumbnails(serverId, episode.ratingKey);
+      await _deleteChapterThumbnails(serverId, episode.itemId);
 
       // Clean up parent directories if empty
       await _cleanupEmptyDirectories(episode, showYear);
@@ -1396,20 +1396,20 @@ class DownloadManagerService {
   /// Delete season files
   Future<void> _deleteSeasonFiles(MediaMetadata season, String serverId) async {
     try {
-      final parentMetadata = season.parentRatingKey != null
-          ? await _apiCache.getMetadata(serverId, season.parentRatingKey!)
+      final parentMetadata = season.seasonId != null
+          ? await _apiCache.getMetadata(serverId, season.seasonId!)
           : null;
       final showYear = parentMetadata?.year;
 
       // Get all episodes in this season
-      final episodesInSeason = await _database.getEpisodesBySeason(season.ratingKey);
+      final episodesInSeason = await _database.getEpisodesBySeason(season.itemId);
 
-      appLogger.d('Deleting ${episodesInSeason.length} episodes in season ${season.ratingKey}');
+      appLogger.d('Deleting ${episodesInSeason.length} episodes in season ${season.itemId}');
       await _deleteEpisodesInCollection(
         episodes: episodesInSeason,
         serverId: serverId,
-        parentKey: season.ratingKey,
-        parentTitle: season.title,
+        parentKey: season.itemId,
+        seasonTitle: season.title,
       );
 
       final seasonDir = await _storageService.getSeasonDirectory(season, showYear: showYear);
@@ -1430,17 +1430,17 @@ class DownloadManagerService {
     required List<DownloadedMediaItem> episodes,
     required String serverId,
     required String parentKey,
-    required String parentTitle,
+    required String seasonTitle,
   }) async {
     for (int i = 0; i < episodes.length; i++) {
       final episode = episodes[i];
-      final episodeGlobalKey = '$serverId:${episode.ratingKey}';
+      final episodeGlobalKey = '$serverId:${episode.itemId}';
 
       // Emit progress update
       _emitDeletionProgress(
         DeletionProgress(
           globalKey: '$serverId:$parentKey',
-          itemTitle: parentTitle,
+          itemTitle: seasonTitle,
           currentItem: i + 1,
           totalItems: episodes.length,
           currentOperation: 'Deleting episode ${i + 1} of ${episodes.length}',
@@ -1448,13 +1448,13 @@ class DownloadManagerService {
       );
 
       // Delete chapter thumbnails
-      await _deleteChapterThumbnails(serverId, episode.ratingKey);
+      await _deleteChapterThumbnails(serverId, episode.itemId);
 
       // Delete episode files (video, subtitles)
       await _deleteByFilePath(episode);
 
       // Delete episode from API cache
-      await _apiCache.deleteForItem(serverId, episode.ratingKey);
+      await _apiCache.deleteForItem(serverId, episode.itemId);
 
       // Delete episode DB entry
       await _database.deleteDownload(episodeGlobalKey);
@@ -1465,14 +1465,14 @@ class DownloadManagerService {
   Future<void> _deleteShowFiles(MediaMetadata show, String serverId) async {
     try {
       // Get all episodes in this show
-      final episodesInShow = await _database.getEpisodesByShow(show.ratingKey);
+      final episodesInShow = await _database.getEpisodesByShow(show.itemId);
 
-      appLogger.d('Deleting ${episodesInShow.length} episodes in show ${show.ratingKey}');
+      appLogger.d('Deleting ${episodesInShow.length} episodes in show ${show.itemId}');
       await _deleteEpisodesInCollection(
         episodes: episodesInShow,
         serverId: serverId,
-        parentKey: show.ratingKey,
-        parentTitle: show.title,
+        parentKey: show.itemId,
+        seasonTitle: show.title,
       );
 
       final showDir = await _storageService.getShowDirectory(show);
@@ -1495,7 +1495,7 @@ class DownloadManagerService {
       }
 
       // Delete chapter thumbnails (with reference counting)
-      await _deleteChapterThumbnails(serverId, movie.ratingKey);
+      await _deleteChapterThumbnails(serverId, movie.itemId);
     } catch (e, stack) {
       appLogger.e('Error deleting movie files', error: e, stackTrace: stack);
     }
@@ -1546,24 +1546,24 @@ class DownloadManagerService {
 
   /// Check if season artwork is in use
   Future<bool> _isSeasonArtworkInUse(MediaMetadata episode, int? _) async {
-    final seasonKey = episode.parentRatingKey;
+    final seasonKey = episode.seasonId;
     if (seasonKey == null) return false;
 
     final otherEpisodes = await _database.getEpisodesBySeason(seasonKey);
 
     // Check if any episodes besides this one
-    return otherEpisodes.any((e) => e.globalKey != '${episode.serverId}:${episode.ratingKey}');
+    return otherEpisodes.any((e) => e.globalKey != '${episode.serverId}:${episode.itemId}');
   }
 
   /// Check if show artwork is in use
   Future<bool> _isShowArtworkInUse(MediaMetadata metadata, int? _) async {
-    final showKey = metadata.grandparentRatingKey ?? metadata.parentRatingKey ?? metadata.ratingKey;
+    final showKey = metadata.seriesId ?? metadata.seasonId ?? metadata.itemId;
 
     // Use targeted query instead of full table scan
     final showEpisodes = await _database.getEpisodesByShow(showKey);
 
     // Check if any episodes belong to this show besides the current item
-    return showEpisodes.any((item) => item.globalKey != '${metadata.serverId}:${metadata.ratingKey}');
+    return showEpisodes.any((item) => item.globalKey != '${metadata.serverId}:${metadata.itemId}');
   }
 
   /// Find file with any extension
@@ -1637,13 +1637,13 @@ class DownloadManagerService {
     }
 
     // Cache to API cache for offline use
-    await _cacheMetadataForOffline(metadata.serverId!, metadata.ratingKey, metadata);
+    await _cacheMetadataForOffline(metadata.serverId!, metadata.itemId, metadata);
   }
 
   /// Cache metadata in the API response format for offline access
   /// This simulates the metadata response from the server
-  Future<void> _cacheMetadataForOffline(String serverId, String ratingKey, MediaMetadata metadata) async {
-    final endpoint = '${ApiCache.itemPrefix}$ratingKey';
+  Future<void> _cacheMetadataForOffline(String serverId, String itemId, MediaMetadata metadata) async {
+    final endpoint = '${ApiCache.itemPrefix}$itemId';
 
     // Build a response structure that matches the expected API format
     final cachedResponse = {
@@ -1653,12 +1653,12 @@ class DownloadManagerService {
     };
 
     await _apiCache.put(serverId, endpoint, cachedResponse);
-    await _apiCache.pinForOffline(serverId, ratingKey);
+    await _apiCache.pinForOffline(serverId, itemId);
   }
 
   /// Cache children (seasons or episodes) in the API response format
-  Future<void> cacheChildrenForOffline(String serverId, String parentRatingKey, List<MediaMetadata> children) async {
-    final endpoint = '${ApiCache.itemPrefix}$parentRatingKey/children';
+  Future<void> cacheChildrenForOffline(String serverId, String seasonId, List<MediaMetadata> children) async {
+    final endpoint = '${ApiCache.itemPrefix}$seasonId/children';
 
     // Build a response structure that matches the expected API format
     final cachedResponse = {

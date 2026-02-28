@@ -7,7 +7,9 @@ import '../../i18n/strings.g.dart';
 import '../../models/livetv_channel.dart';
 import '../../models/livetv_program.dart';
 import '../../providers/multi_server_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../theme/mono_tokens.dart';
+import '../../utils/formatters.dart';
 import '../../utils/live_tv_player_navigation.dart';
 import '../../utils/media_image_helper.dart';
 import '../../widgets/app_icon.dart';
@@ -17,7 +19,7 @@ import 'program_details_sheet.dart';
 
 /// Shows all upcoming airings of a show, matching the "upcoming episodes" view.
 class LiveTvShowScheduleScreen extends StatefulWidget {
-  /// The show title to filter for (grandparentTitle for episodes, title for movies).
+  /// The show title to filter for (seriesTitle for episodes, title for movies).
   final String showTitle;
 
   /// Server ID to scope the EPG query.
@@ -59,8 +61,8 @@ class _LiveTvShowScheduleScreenState extends State<LiveTvShowScheduleScreen> {
 
     // Filter for this show
     final filtered = programs.where((p) {
-      if (p.grandparentTitle == widget.showTitle) return true;
-      if (p.grandparentTitle == null && p.title == widget.showTitle) return true;
+      if (p.seriesTitle == widget.showTitle) return true;
+      if (p.seriesTitle == null && p.title == widget.showTitle) return true;
       return false;
     }).toList();
 
@@ -173,7 +175,7 @@ class _ScheduleListTile extends StatelessWidget {
 
   const _ScheduleListTile({required this.program, required this.channel, required this.onTap});
 
-  String _formatTimeInfo() {
+  String _formatTimeInfo(bool use24Hour) {
     final now = DateTime.now();
     final start = program.startTime;
     final end = program.endTime;
@@ -186,17 +188,16 @@ class _ScheduleListTile extends StatelessWidget {
 
     final minutesUntil = start.difference(now).inMinutes;
     if (minutesUntil <= 0) {
-      // Just started
-      return _formatAbsoluteTime(start, now);
+      return _formatAbsoluteTime(start, now, use24Hour);
     } else if (minutesUntil < 90) {
       return 'Starting in ${minutesUntil}min';
     } else {
-      return _formatAbsoluteTime(start, now);
+      return _formatAbsoluteTime(start, now, use24Hour);
     }
   }
 
-  String _formatAbsoluteTime(DateTime start, DateTime now) {
-    final time = '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
+  String _formatAbsoluteTime(DateTime start, DateTime now, bool use24Hour) {
+    final time = formatGuideTime(start, use24Hour: use24Hour);
     final today = DateTime(now.year, now.month, now.day);
     final startDay = DateTime(start.year, start.month, start.day);
     final diff = startDay.difference(today).inDays;
@@ -217,7 +218,8 @@ class _ScheduleListTile extends StatelessWidget {
         ? 'S${program.parentIndex} · E${program.index} — ${program.title}'
         : program.title;
 
-    final timeInfo = _formatTimeInfo();
+    final use24Hour = context.read<SettingsProvider>().use24HourTime;
+    final timeInfo = _formatTimeInfo(use24Hour);
     final subtitle = [
       timeInfo,
       if (program.summary != null && program.summary!.isNotEmpty) program.summary!,

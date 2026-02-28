@@ -54,7 +54,7 @@ class VideoControlsHeader extends StatelessWidget {
 
   Widget _buildSingleLineTitle() {
     // Build single-line title combining series and episode info
-    final seriesName = metadata.grandparentTitle ?? metadata.title;
+    final seriesName = metadata.seriesTitle ?? metadata.title;
     final hasEpisodeInfo = metadata.parentIndex != null && metadata.index != null;
 
     List<String> parts = [seriesName];
@@ -89,7 +89,7 @@ class VideoControlsHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          metadata.grandparentTitle ?? metadata.title,
+          metadata.seriesTitle ?? metadata.title,
           style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,

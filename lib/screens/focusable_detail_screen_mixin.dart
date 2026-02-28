@@ -234,7 +234,7 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
   /// Used by collection and smart playlist detail screens.
   Widget buildFocusableGrid({
     required List<dynamic> items,
-    required void Function(String ratingKey) onRefresh,
+    required void Function(String itemId) onRefresh,
     String? collectionId,
     VoidCallback? onListRefresh,
   }) {
@@ -260,7 +260,7 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                       : getGridItemFocusNode(index, prefix: 'detail_grid_item');
 
                   return FocusableMediaCard(
-                    key: Key(item.ratingKey),
+                    key: Key(item.itemId),
                     item: item,
                     focusNode: focusNode,
                     onRefresh: onRefresh,

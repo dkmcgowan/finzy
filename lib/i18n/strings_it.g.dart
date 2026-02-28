@@ -153,6 +153,7 @@ class _TranslationsCommonIt implements TranslationsCommonEn {
 	@override String get settings => 'Impostazioni';
 	@override String get mute => 'Muto';
 	@override String get ok => 'OK';
+	@override String get none => 'None';
 	@override String get loading => 'Caricamento...';
 	@override String get reconnect => 'Riconnetti';
 	@override String get exitConfirmTitle => 'Uscire dall\'app?';
@@ -212,6 +213,11 @@ class _TranslationsSettingsIt implements TranslationsSettingsEn {
 	@override String get seasonPosterDescription => 'Mostra il poster specifico della stagione per gli episodi';
 	@override String get episodeThumbnail => 'Miniatura episodio';
 	@override String get episodeThumbnailDescription => 'Mostra miniature 16:9 degli episodi';
+	@override String get timeFormat => 'Formato ora';
+	@override String get twelveHour => '12 ore';
+	@override String get twentyFourHour => '24 ore';
+	@override String get twelveHourDescription => 'es. 1:00 PM';
+	@override String get twentyFourHourDescription => 'es. 13:00';
 	@override String get showHeroSectionDescription => 'Visualizza il carosello dei contenuti in primo piano sulla schermata iniziale';
 	@override String get secondsLabel => 'Secondi';
 	@override String get minutesLabel => 'Minuti';
@@ -818,7 +824,9 @@ class _TranslationsLiveTvIt implements TranslationsLiveTvEn {
 	@override String get recordings => 'Registrazioni';
 	@override String get subscriptions => 'Regole di registrazione';
 	@override String get scheduled => 'Programmati';
+	@override String get seriesTimers => 'Series Timers';
 	@override String get noChannels => 'Nessun canale disponibile';
+	@override String get dvr => 'DVR';
 	@override String get noDvr => 'Nessun DVR configurato su nessun server';
 	@override String get tuneFailed => 'Impossibile sintonizzare il canale';
 	@override String get loading => 'Caricamento canali...';
@@ -830,8 +838,25 @@ class _TranslationsLiveTvIt implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => 'Sei sicuro di voler eliminare questa regola di registrazione?';
 	@override String get subscriptionDeleted => 'Regola di registrazione eliminata';
 	@override String get noPrograms => 'Nessun dato di programma disponibile';
-	@override String get noRecordings => 'Nessuna registrazione programmata';
-	@override String get noSubscriptions => 'Nessuna regola di registrazione';
+	@override String get noRecordings => 'No recordings';
+	@override String get noScheduled => 'No scheduled recordings';
+	@override String get noSubscriptions => 'No series timers';
+	@override String get cancelTimer => 'Cancel Recording';
+	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
+	@override String get timerCancelled => 'Recording cancelled';
+	@override String get deleteSeriesTimer => 'Delete Series Timer';
+	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
+	@override String get seriesTimerDeleted => 'Series timer deleted';
+	@override String get seriesTimerUpdated => 'Series timer updated';
+	@override String get recordNewOnly => 'Record new episodes only';
+	@override String get keepUpTo => 'Keep up to';
+	@override String get keepAll => 'Keep all';
+	@override String keepEpisodes({required Object count}) => '${count} episodes';
+	@override String get prePadding => 'Start recording early';
+	@override String get postPadding => 'Continue recording after';
+	@override String minutes({required Object count}) => '${count} min';
+	@override String get days => 'Days';
+	@override String get priority => 'Priority';
 	@override String channelNumber({required Object number}) => 'Canale ${number}';
 	@override String get live => 'IN DIRETTA';
 	@override String get hd => 'HD';
@@ -847,8 +872,21 @@ class _TranslationsLiveTvIt implements TranslationsLiveTvEn {
 	@override String get daytime => 'Giorno';
 	@override String get evening => 'Sera';
 	@override String get lateNight => 'Notte tarda';
-	@override String get whatsOn => 'In onda ora';
+	@override String get programs => 'Programs';
+	@override String get onNow => 'On Now';
+	@override String get upcomingShows => 'Shows';
+	@override String get upcomingMovies => 'Movies';
+	@override String get upcomingSports => 'Sports';
+	@override String get forKids => 'For Kids';
+	@override String get upcomingNews => 'News';
 	@override String get watchChannel => 'Guarda canale';
+	@override String get recentlyAdded => 'Recently Added';
+	@override String get recordingScheduled => 'Recording scheduled';
+	@override String get seriesRecordingScheduled => 'Series recording scheduled';
+	@override String get recordingFailed => 'Failed to schedule recording';
+	@override String get cancelSeries => 'Cancel Series';
+	@override String get stopRecording => 'Stop Recording';
+	@override String get doNotRecord => 'Do Not Record';
 }
 
 // Path: downloads
@@ -911,6 +949,7 @@ class _TranslationsPlaylistsIt implements TranslationsPlaylistsEn {
 	@override String get errorReordering => 'Errore durante il riordino dell\'elemento della playlist';
 	@override String get errorRemoving => 'Errore durante la rimozione dalla playlist';
 	@override String get playlist => 'Playlist';
+	@override String get addToPlaylist => 'Aggiungi alla playlist';
 }
 
 // Path: collections
@@ -922,6 +961,7 @@ class _TranslationsCollectionsIt implements TranslationsCollectionsEn {
 	// Translations
 	@override String get title => 'Raccolte';
 	@override String get collection => 'Raccolta';
+	@override String get addToCollection => 'Aggiungi alla collezione';
 	@override String get empty => 'La raccolta è vuota';
 	@override String get unknownLibrarySection => 'Impossibile eliminare: sezione libreria sconosciuta';
 	@override String get deleteCollection => 'Elimina raccolta';
@@ -1068,9 +1108,11 @@ class _TranslationsLibrariesTabsIt implements TranslationsLibrariesTabsEn {
 	final TranslationsIt _root; // ignore: unused_field
 
 	// Translations
-	@override String get recommended => 'Consigliati';
+	@override String get movies => 'Film';
+	@override String get shows => 'Serie';
+	@override String get suggestions => 'Suggerimenti';
 	@override String get browse => 'Esplora';
-	@override String get genre => 'Genere';
+	@override String get genres => 'Generi';
 	@override String get favorites => 'Preferiti';
 	@override String get collections => 'Raccolte';
 	@override String get playlists => 'Playlist';
@@ -1256,6 +1298,7 @@ extension on TranslationsIt {
 			'common.settings' => 'Impostazioni',
 			'common.mute' => 'Muto',
 			'common.ok' => 'OK',
+			'common.none' => 'None',
 			'common.loading' => 'Caricamento...',
 			'common.reconnect' => 'Riconnetti',
 			'common.exitConfirmTitle' => 'Uscire dall\'app?',
@@ -1288,6 +1331,11 @@ extension on TranslationsIt {
 			'settings.seasonPosterDescription' => 'Mostra il poster specifico della stagione per gli episodi',
 			'settings.episodeThumbnail' => 'Miniatura episodio',
 			'settings.episodeThumbnailDescription' => 'Mostra miniature 16:9 degli episodi',
+			'settings.timeFormat' => 'Formato ora',
+			'settings.twelveHour' => '12 ore',
+			'settings.twentyFourHour' => '24 ore',
+			'settings.twelveHourDescription' => 'es. 1:00 PM',
+			'settings.twentyFourHourDescription' => 'es. 13:00',
 			'settings.showHeroSectionDescription' => 'Visualizza il carosello dei contenuti in primo piano sulla schermata iniziale',
 			'settings.secondsLabel' => 'Secondi',
 			'settings.minutesLabel' => 'Minuti',
@@ -1677,9 +1725,11 @@ extension on TranslationsIt {
 			'libraries.noGenres' => 'Nessun genere in questa libreria',
 			'libraries.noFoldersFound' => 'Nessuna cartella trovata',
 			'libraries.folders' => 'cartelle',
-			'libraries.tabs.recommended' => 'Consigliati',
+			'libraries.tabs.movies' => 'Film',
+			'libraries.tabs.shows' => 'Serie',
+			'libraries.tabs.suggestions' => 'Suggerimenti',
 			'libraries.tabs.browse' => 'Esplora',
-			'libraries.tabs.genre' => 'Genere',
+			'libraries.tabs.genres' => 'Generi',
 			'libraries.tabs.favorites' => 'Preferiti',
 			'libraries.tabs.collections' => 'Raccolte',
 			'libraries.tabs.playlists' => 'Playlist',
@@ -1707,6 +1757,8 @@ extension on TranslationsIt {
 			'logs.error' => 'Errore:',
 			'logs.stackTrace' => 'Traccia dello stack:',
 			'licenses.relatedPackages' => 'Pacchetti correlati',
+			_ => null,
+		} ?? switch (path) {
 			'licenses.license' => 'Licenza',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licenza ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licenze',
@@ -1715,13 +1767,13 @@ extension on TranslationsIt {
 			'navigation.liveTv' => 'TV in diretta',
 			'liveTv.title' => 'TV in diretta',
 			'liveTv.channels' => 'Canali',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guide' => 'Guida',
 			'liveTv.recordings' => 'Registrazioni',
 			'liveTv.subscriptions' => 'Regole di registrazione',
 			'liveTv.scheduled' => 'Programmati',
+			'liveTv.seriesTimers' => 'Series Timers',
 			'liveTv.noChannels' => 'Nessun canale disponibile',
+			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => 'Nessun DVR configurato su nessun server',
 			'liveTv.tuneFailed' => 'Impossibile sintonizzare il canale',
 			'liveTv.loading' => 'Caricamento canali...',
@@ -1733,8 +1785,25 @@ extension on TranslationsIt {
 			'liveTv.deleteSubscriptionConfirm' => 'Sei sicuro di voler eliminare questa regola di registrazione?',
 			'liveTv.subscriptionDeleted' => 'Regola di registrazione eliminata',
 			'liveTv.noPrograms' => 'Nessun dato di programma disponibile',
-			'liveTv.noRecordings' => 'Nessuna registrazione programmata',
-			'liveTv.noSubscriptions' => 'Nessuna regola di registrazione',
+			'liveTv.noRecordings' => 'No recordings',
+			'liveTv.noScheduled' => 'No scheduled recordings',
+			'liveTv.noSubscriptions' => 'No series timers',
+			'liveTv.cancelTimer' => 'Cancel Recording',
+			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
+			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
+			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
+			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
+			'liveTv.seriesTimerUpdated' => 'Series timer updated',
+			'liveTv.recordNewOnly' => 'Record new episodes only',
+			'liveTv.keepUpTo' => 'Keep up to',
+			'liveTv.keepAll' => 'Keep all',
+			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
+			'liveTv.prePadding' => 'Start recording early',
+			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.minutes' => ({required Object count}) => '${count} min',
+			'liveTv.days' => 'Days',
+			'liveTv.priority' => 'Priority',
 			'liveTv.channelNumber' => ({required Object number}) => 'Canale ${number}',
 			'liveTv.live' => 'IN DIRETTA',
 			'liveTv.hd' => 'HD',
@@ -1750,8 +1819,21 @@ extension on TranslationsIt {
 			'liveTv.daytime' => 'Giorno',
 			'liveTv.evening' => 'Sera',
 			'liveTv.lateNight' => 'Notte tarda',
-			'liveTv.whatsOn' => 'In onda ora',
+			'liveTv.programs' => 'Programs',
+			'liveTv.onNow' => 'On Now',
+			'liveTv.upcomingShows' => 'Shows',
+			'liveTv.upcomingMovies' => 'Movies',
+			'liveTv.upcomingSports' => 'Sports',
+			'liveTv.forKids' => 'For Kids',
+			'liveTv.upcomingNews' => 'News',
 			'liveTv.watchChannel' => 'Guarda canale',
+			'liveTv.recentlyAdded' => 'Recently Added',
+			'liveTv.recordingScheduled' => 'Recording scheduled',
+			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
+			'liveTv.recordingFailed' => 'Failed to schedule recording',
+			'liveTv.cancelSeries' => 'Cancel Series',
+			'liveTv.stopRecording' => 'Stop Recording',
+			'liveTv.doNotRecord' => 'Do Not Record',
 			'downloads.title' => 'Download',
 			'downloads.manage' => 'Gestisci',
 			'downloads.tvShows' => 'Serie TV',
@@ -1796,8 +1878,10 @@ extension on TranslationsIt {
 			'playlists.errorReordering' => 'Errore durante il riordino dell\'elemento della playlist',
 			'playlists.errorRemoving' => 'Errore durante la rimozione dalla playlist',
 			'playlists.playlist' => 'Playlist',
+			'playlists.addToPlaylist' => 'Aggiungi alla playlist',
 			'collections.title' => 'Raccolte',
 			'collections.collection' => 'Raccolta',
+			'collections.addToCollection' => 'Aggiungi alla collezione',
 			'collections.empty' => 'La raccolta è vuota',
 			'collections.unknownLibrarySection' => 'Impossibile eliminare: sezione libreria sconosciuta',
 			'collections.deleteCollection' => 'Elimina raccolta',

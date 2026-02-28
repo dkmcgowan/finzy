@@ -78,19 +78,19 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   SettingsProvider? _settingsProviderForHubs;
   bool? _lastUseGlobalHubs;
 
-  String _toGlobalKey(String ratingKey, String serverId) => '$serverId:$ratingKey';
+  String _toGlobalKey(String itemId, String serverId) => '$serverId:$itemId';
 
   // WatchStateAware: watch on-deck items and their parent shows/seasons
   @override
   Set<String>? get watchedRatingKeys {
     final keys = <String>{};
     for (final item in _onDeck) {
-      keys.add(item.ratingKey);
-      if (item.parentRatingKey != null) {
-        keys.add(item.parentRatingKey!);
+      keys.add(item.itemId);
+      if (item.seasonId != null) {
+        keys.add(item.seasonId!);
       }
-      if (item.grandparentRatingKey != null) {
-        keys.add(item.grandparentRatingKey!);
+      if (item.seriesId != null) {
+        keys.add(item.seriesId!);
       }
     }
     return keys;
@@ -103,12 +103,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       final serverId = item.serverId;
       if (serverId == null) return null;
 
-      keys.add(_toGlobalKey(item.ratingKey, serverId));
-      if (item.parentRatingKey != null) {
-        keys.add(_toGlobalKey(item.parentRatingKey!, serverId));
+      keys.add(_toGlobalKey(item.itemId, serverId));
+      if (item.seasonId != null) {
+        keys.add(_toGlobalKey(item.seasonId!, serverId));
       }
-      if (item.grandparentRatingKey != null) {
-        keys.add(_toGlobalKey(item.grandparentRatingKey!, serverId));
+      if (item.seriesId != null) {
+        keys.add(_toGlobalKey(item.seriesId!, serverId));
       }
     }
     return keys;
@@ -425,9 +425,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     // SELECT: Show user menu
     if (key.isSelectKey) {
-      final userProvider = context.read<UserProfileProvider>();
       final jellyfinProvider = context.read<JellyfinProfileProvider>();
-      _showUserMenu(context, userProvider, jellyfinProvider);
+      _showUserMenu(context, jellyfinProvider);
       return KeyEventResult.handled;
     }
 
@@ -846,16 +845,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   @override
-  void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata) {
+  void updateItemInLists(String itemId, MediaMetadata updatedMetadata) {
     // Check and update in _onDeck list
-    final onDeckIndex = _onDeck.indexWhere((item) => item.ratingKey == ratingKey);
+    final onDeckIndex = _onDeck.indexWhere((item) => item.itemId == itemId);
     if (onDeckIndex != -1) {
       _onDeck[onDeckIndex] = updatedMetadata;
     }
 
     // Check and update in hub items
     for (final hub in _hubs) {
-      final itemIndex = hub.items.indexWhere((item) => item.ratingKey == ratingKey);
+      final itemIndex = hub.items.indexWhere((item) => item.itemId == itemId);
       if (itemIndex != -1) {
         hub.items[itemIndex] = updatedMetadata;
       }
@@ -900,7 +899,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   /// Show user menu programmatically (for D-pad select).
   /// Profile switch is shown when a Jellyfin user is loaded.
-  void _showUserMenu(BuildContext context, UserProfileProvider userProvider, JellyfinProfileProvider jellyfinProvider) {
+  void _showUserMenu(BuildContext context, JellyfinProfileProvider jellyfinProvider) {
     final showSwitch = jellyfinProvider.currentUser != null;
     final RenderBox? button = _userButtonFocusNode.context?.findRenderObject() as RenderBox?;
     if (button == null) return;
@@ -992,8 +991,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                 ),
               ),
-              Consumer2<UserProfileProvider, JellyfinProfileProvider>(
-                builder: (context, userProvider, jellyfinProvider, child) {
+              Consumer<JellyfinProfileProvider>(
+                builder: (context, jellyfinProvider, child) {
                   final showSwitch = jellyfinProvider.currentUser != null;
                   Widget avatar;
                   final jUser = jellyfinProvider.currentUser;
@@ -1340,7 +1339,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Widget _buildHeroItem(MediaMetadata heroItem) {
     final isEpisode = heroItem.isEpisode;
-    final showName = heroItem.grandparentTitle ?? heroItem.title;
+    final showName = heroItem.seriesTitle ?? heroItem.title;
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = ScreenBreakpoints.isWideTabletOrLarger(screenWidth);
 
@@ -1348,7 +1347,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final contentTypeLabel = heroItem.isMovie ? t.discover.movie : t.discover.tvShow;
 
     // Build semantic label for hero item
-    final heroLabel = isEpisode ? "${heroItem.grandparentTitle}, ${heroItem.title}" : heroItem.title;
+    final heroLabel = isEpisode ? "${heroItem.seriesTitle}, ${heroItem.title}" : heroItem.title;
 
     return Semantics(
       label: heroLabel,
@@ -1364,7 +1363,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           clipBehavior: Clip.none,
           children: [
             // Background Image with fade/zoom animation and parallax
-            if (heroItem.art != null || heroItem.grandparentArt != null)
+            if (heroItem.art != null || heroItem.seriesArt != null || heroItem.thumb != null || heroItem.seriesImageId != null)
               ClipRect(
                 child: AnimatedBuilder(
                   animation: _scrollController,
@@ -1387,13 +1386,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         final client = _getClientForItem(heroItem);
                         final mediaQuery = MediaQuery.of(context);
                         final dpr = MediaImageHelper.effectiveDevicePixelRatio(context);
+                        final hasBackdrop = heroItem.art != null || heroItem.seriesArt != null;
+                        final thumbPath = hasBackdrop
+                            ? (heroItem.art ?? heroItem.seriesArt)
+                            : (heroItem.seriesImageId ?? heroItem.thumb);
                         final imageUrl = MediaImageHelper.getOptimizedImageUrl(
                           client: client,
-                          thumbPath: heroItem.art ?? heroItem.grandparentArt,
+                          thumbPath: thumbPath,
                           maxWidth: mediaQuery.size.width,
                           maxHeight: mediaQuery.size.height * 0.7,
                           devicePixelRatio: dpr,
-                          imageType: ImageType.art,
+                          imageType: hasBackdrop ? ImageType.art : ImageType.poster,
                         );
 
                         return blurArtwork(CachedNetworkImage(

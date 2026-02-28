@@ -11,6 +11,7 @@ import '../providers/settings_provider.dart';
 import '../services/settings_service.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/formatters.dart';
+import '../utils/media_image_helper.dart';
 import '../utils/media_navigation_helper.dart';
 import '../utils/snackbar_helper.dart';
 import '../theme/mono_tokens.dart';
@@ -23,7 +24,7 @@ class MediaCard extends StatefulWidget {
   final dynamic item; // Can be MediaMetadata or Playlist
   final double? width;
   final double? height;
-  final void Function(String ratingKey)? onRefresh;
+  final void Function(String itemId)? onRefresh;
   final VoidCallback? onRemoveFromContinueWatching;
   final VoidCallback? onListRefresh; // Callback to refresh the entire parent list
   final bool forceGridMode;
@@ -158,7 +159,7 @@ class MediaCardState extends State<MediaCard> {
     if (metadata.serverId == null) return null;
 
     final downloadProvider = context.read<DownloadProvider>();
-    final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
+    final globalKey = '${metadata.serverId}:${metadata.itemId}';
 
     // Get artwork reference and resolve to local path using hash (includes serverId)
     final artwork = downloadProvider.getArtworkPaths(globalKey);
@@ -492,8 +493,8 @@ class _MediaCardList extends StatelessWidget {
       if (metadata.mediaType == MediaType.episode &&
           metadata.parentIndex != null &&
           metadata.index != null &&
-          metadata.grandparentTitle != null) {
-        return metadata.grandparentTitle;
+          metadata.seriesTitle != null) {
+        return metadata.seriesTitle;
       }
       // For TV episodes without numbers, show S#E# format
       if (metadata.parentIndex != null && metadata.index != null) {
@@ -503,8 +504,8 @@ class _MediaCardList extends StatelessWidget {
       // Otherwise use existing subtitle logic
       if (metadata.displaySubtitle != null) {
         return metadata.displaySubtitle;
-      } else if (metadata.parentTitle != null) {
-        return metadata.parentTitle;
+      } else if (metadata.seasonTitle != null) {
+        return metadata.seasonTitle;
       }
     }
 
@@ -635,16 +636,33 @@ Widget _buildPosterImage(
     final episodePosterMode = context.watch<SettingsProvider>().episodePosterMode;
     posterUrl = item.posterThumb(mode: episodePosterMode, mixedHubContext: mixedHubContext);
 
-    // Use thumb image type for 16:9 content (episodes, or movies in mixed hubs)
+    // Use wide image type for 16:9 content (episodes, or movies in mixed hubs)
     if (item.usesWideAspectRatio(episodePosterMode, mixedHubContext: mixedHubContext)) {
-      return OptimizedImage.thumb(
-        client: isOffline ? null : context.getClientWithFallback(item.serverId),
-        imagePath: posterUrl,
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.cover,
-        localFilePath: localPosterPath,
-      );
+      final itemType = item.type.toLowerCase();
+      final isEpisodeOrClip = itemType == 'episode' || itemType == 'clip';
+
+      if (isEpisodeOrClip) {
+        // Episodes/clips: Primary image IS the 16:9 thumbnail
+        return OptimizedImage.thumb(
+          client: isOffline ? null : context.getClientWithFallback(item.serverId),
+          imagePath: posterUrl,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.cover,
+          localFilePath: localPosterPath,
+        );
+      } else {
+        // Movies/shows: use Backdrop (art) for proper 16:9 image
+        return OptimizedImage(
+          client: isOffline ? null : context.getClientWithFallback(item.serverId),
+          imagePath: posterUrl,
+          imageType: ImageType.art,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.cover,
+          localFilePath: localPosterPath,
+        );
+      }
     }
 
     return OptimizedImage.poster(
@@ -730,9 +748,9 @@ class _MediaCardHelpers {
     if (metadata.mediaType == MediaType.episode &&
         metadata.parentIndex != null &&
         metadata.index != null &&
-        metadata.grandparentTitle != null) {
+        metadata.seriesTitle != null) {
       return Text(
-        metadata.grandparentTitle!,
+        metadata.seriesTitle!,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(
@@ -751,9 +769,9 @@ class _MediaCardHelpers {
           context,
         ).textTheme.bodySmall?.copyWith(color: tokens(context).textMuted, fontSize: 11, height: 1.1),
       );
-    } else if (metadata.parentTitle != null) {
+    } else if (metadata.seasonTitle != null) {
       return Text(
-        metadata.parentTitle!,
+        metadata.seasonTitle!,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(

@@ -17,6 +17,8 @@ enum ViewMode { grid, list }
 
 enum EpisodePosterMode { seriesPoster, seasonPoster, episodeThumbnail }
 
+enum TimeFormat { twelveHour, twentyFourHour }
+
 class SettingsService extends BaseSharedPreferencesService {
   static const String _keyThemeMode = 'theme_mode';
   static const String _keyEnableDebugLogging = 'enable_debug_logging';
@@ -84,6 +86,7 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keySelectedExternalPlayer = 'selected_external_player';
   static const String _keyCustomExternalPlayers = 'custom_external_players';
   static const String _keyConfirmExitOnBack = 'confirm_exit_on_back';
+  static const String _keyTimeFormat = 'time_format';
 
   SettingsService._();
 
@@ -203,6 +206,15 @@ class SettingsService extends BaseSharedPreferencesService {
       return migratedMode;
     }
     return _getEnumValue(_keyEpisodePosterMode, EpisodePosterMode.values, EpisodePosterMode.episodeThumbnail);
+  }
+
+  // Time Format
+  Future<void> setTimeFormat(TimeFormat format) async {
+    await prefs.setString(_keyTimeFormat, format.name);
+  }
+
+  TimeFormat getTimeFormat() {
+    return _getEnumValue(_keyTimeFormat, TimeFormat.values, TimeFormat.twelveHour);
   }
 
   // Show Hero Section
@@ -782,7 +794,7 @@ class SettingsService extends BaseSharedPreferencesService {
 
   // Media Version Preferences
   /// Save media version preference for a series
-  /// [seriesRatingKey] is the grandparentRatingKey for TV series, or ratingKey for movies
+  /// [seriesRatingKey] is the seriesId for TV series, or itemId for movies
   /// [mediaIndex] is the index of the selected media version
   Future<void> setMediaVersionPreference(String seriesRatingKey, int mediaIndex) async {
     final preferences = _getMediaVersionPreferences();

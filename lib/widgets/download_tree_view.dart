@@ -137,7 +137,7 @@ class _DownloadTreeViewState extends State<DownloadTreeView> {
 
       if (meta.isEpisode) {
         // Group episodes by show
-        final showKey = meta.grandparentRatingKey ?? 'unknown';
+        final showKey = meta.seriesId ?? 'unknown';
         showGroups.putIfAbsent(showKey, () => []);
         showGroups[showKey]!.add(entry);
       } else if (meta.isMovie) {
@@ -166,7 +166,7 @@ class _DownloadTreeViewState extends State<DownloadTreeView> {
 
       // Get show metadata from first episode
       final firstEpisode = widget.metadata[episodes.first.key];
-      final showTitle = firstEpisode?.grandparentTitle ?? 'Unknown Show';
+      final showTitle = firstEpisode?.seriesTitle ?? 'Unknown Show';
 
       // Group episodes by season
       final Map<String, List<MapEntry<String, DownloadProgress>>> seasonGroups = {};
@@ -174,7 +174,7 @@ class _DownloadTreeViewState extends State<DownloadTreeView> {
         final meta = widget.metadata[episode.key];
         if (meta == null) continue;
 
-        final seasonKey = meta.parentRatingKey ?? 'unknown';
+        final seasonKey = meta.seasonId ?? 'unknown';
         seasonGroups.putIfAbsent(seasonKey, () => []);
         seasonGroups[seasonKey]!.add(episode);
       }
@@ -189,7 +189,7 @@ class _DownloadTreeViewState extends State<DownloadTreeView> {
 
         // Get season metadata from first episode
         final firstEpisode = widget.metadata[seasonEpisodes.first.key];
-        final seasonTitle = firstEpisode?.parentTitle ?? 'Unknown Season';
+        final seasonTitle = firstEpisode?.seasonTitle ?? 'Unknown Season';
         final seasonNumber = firstEpisode?.parentIndex;
 
         // Build episode nodes

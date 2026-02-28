@@ -1,7 +1,7 @@
 /// Represents an EPG program entry (what's on a channel at a given time)
 class LiveTvProgram {
   final String? key;
-  final String? ratingKey;
+  final String? itemId;
   final String? guid;
   final String title;
   final String? summary;
@@ -9,8 +9,8 @@ class LiveTvProgram {
   final int? year;
   final int? beginsAt; // epoch seconds
   final int? endsAt; // epoch seconds
-  final String? grandparentTitle; // series name for episodes
-  final String? parentTitle; // season name
+  final String? seriesTitle; // series name for episodes
+  final String? seasonTitle; // season name
   final int? index; // episode number
   final int? parentIndex; // season number
   final String? thumb;
@@ -22,7 +22,7 @@ class LiveTvProgram {
 
   LiveTvProgram({
     this.key,
-    this.ratingKey,
+    this.itemId,
     this.guid,
     required this.title,
     this.summary,
@@ -30,8 +30,8 @@ class LiveTvProgram {
     this.year,
     this.beginsAt,
     this.endsAt,
-    this.grandparentTitle,
-    this.parentTitle,
+    this.seriesTitle,
+    this.seasonTitle,
     this.index,
     this.parentIndex,
     this.thumb,
@@ -49,7 +49,7 @@ class LiveTvProgram {
 
     return LiveTvProgram(
       key: json['key'] as String?,
-      ratingKey: json['ratingKey'] as String?,
+      itemId: json['itemId'] as String?,
       guid: json['guid'] as String?,
       title: json['title'] as String? ?? 'Unknown Program',
       summary: json['summary'] as String?,
@@ -57,11 +57,11 @@ class LiveTvProgram {
       year: (json['year'] as num?)?.toInt(),
       beginsAt: (json['beginsAt'] as num?)?.toInt() ?? (media?['beginsAt'] as num?)?.toInt(),
       endsAt: (json['endsAt'] as num?)?.toInt() ?? (media?['endsAt'] as num?)?.toInt(),
-      grandparentTitle: json['grandparentTitle'] as String?,
-      parentTitle: json['parentTitle'] as String?,
+      seriesTitle: json['seriesTitle'] as String?,
+      seasonTitle: json['seasonTitle'] as String?,
       index: (json['index'] as num?)?.toInt(),
       parentIndex: (json['parentIndex'] as num?)?.toInt(),
-      thumb: json['thumb'] as String? ?? json['grandparentThumb'] as String?,
+      thumb: json['thumb'] as String? ?? json['seriesImageId'] as String?,
       art: json['art'] as String?,
       channelIdentifier:
           json['channelIdentifier'] as String? ?? media?['channelIdentifier']?.toString() ?? channel?['id']?.toString(),
@@ -101,9 +101,9 @@ class LiveTvProgram {
 
   /// Display title including series info for episodes
   String get displayTitle {
-    if (grandparentTitle != null && index != null) {
+    if (seriesTitle != null && index != null) {
       final seasonEpisode = parentIndex != null ? 'S${parentIndex}E$index' : 'E$index';
-      return '$grandparentTitle - $seasonEpisode - $title';
+      return '$seriesTitle - $seasonEpisode - $title';
     }
     return title;
   }

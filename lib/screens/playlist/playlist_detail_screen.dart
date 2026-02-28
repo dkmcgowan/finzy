@@ -95,7 +95,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
 
   @override
   Future<List<MediaMetadata>> fetchItems() async {
-    return await client.getPlaylist(widget.playlist.ratingKey);
+    return await client.getPlaylist(widget.playlist.itemId);
   }
 
   @override
@@ -145,7 +145,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     for (final item in displayItems) {
       if (item.mediaType != MediaType.show) continue;
       if (item.effectiveUnwatchedCount != null) continue;
-      final key = item.ratingKey;
+      final key = item.itemId;
       if (key.isEmpty || _enrichedShowCounts.containsKey(key)) continue;
       toFetch.add(key);
     }
@@ -172,47 +172,47 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     final result = <MediaMetadata>[];
     for (final item in items) {
       if (item.mediaType == MediaType.episode || item.mediaType == MediaType.clip) {
-        final showKey = item.grandparentRatingKey ?? item.parentRatingKey ?? item.ratingKey;
+        final showKey = item.seriesId ?? item.seasonId ?? item.itemId;
         if (showKey.isEmpty) continue;
         if (seenShowKeys.add(showKey)) {
           // Build synthetic show metadata from this episode so the card shows the series poster and title
           result.add(item.copyWith(
-            ratingKey: showKey,
+            itemId: showKey,
             key: showKey,
             type: 'show',
-            title: item.grandparentTitle ?? item.title,
-            thumb: item.grandparentThumb,
-            art: item.grandparentArt,
-            grandparentRatingKey: null,
-            grandparentTitle: null,
-            grandparentThumb: null,
-            grandparentArt: null,
-            parentRatingKey: null,
-            parentTitle: null,
-            parentThumb: null,
+            title: item.seriesTitle ?? item.title,
+            thumb: item.seriesImageId,
+            art: item.seriesArt,
+            seriesId: null,
+            seriesTitle: null,
+            seriesImageId: null,
+            seriesArt: null,
+            seasonId: null,
+            seasonTitle: null,
+            seasonImageId: null,
             parentIndex: null,
             index: null,
           ));
         }
       } else if (item.mediaType == MediaType.season) {
         // Group season under its show; preserve unwatched/leaf counts so badge can show
-        final showKey = item.parentRatingKey ?? item.ratingKey;
+        final showKey = item.seasonId ?? item.itemId;
         if (showKey.isEmpty) continue;
         if (seenShowKeys.add(showKey)) {
           result.add(item.copyWith(
-            ratingKey: showKey,
+            itemId: showKey,
             key: showKey,
             type: 'show',
-            title: item.parentTitle ?? item.grandparentTitle ?? item.title,
-            thumb: item.parentThumb ?? item.grandparentThumb,
-            art: item.grandparentArt,
-            grandparentRatingKey: null,
-            grandparentTitle: null,
-            grandparentThumb: null,
-            grandparentArt: null,
-            parentRatingKey: null,
-            parentTitle: null,
-            parentThumb: null,
+            title: item.seasonTitle ?? item.seriesTitle ?? item.title,
+            thumb: item.seasonImageId ?? item.seriesImageId,
+            art: item.seriesArt,
+            seriesId: null,
+            seriesTitle: null,
+            seriesImageId: null,
+            seriesArt: null,
+            seasonId: null,
+            seasonTitle: null,
+            seasonImageId: null,
             parentIndex: null,
             index: null,
             unwatchedCount: item.unwatchedCount,
@@ -225,7 +225,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
       }
       // Other types (e.g. show already in playlist) add as-is
       else if (item.mediaType == MediaType.show) {
-        if (seenShowKeys.add(item.ratingKey)) result.add(item);
+        if (seenShowKeys.add(item.itemId)) result.add(item);
       } else {
         result.add(item);
       }
@@ -233,7 +233,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     // Merge enriched series metadata (unwatched count) when playlist API didn't provide it
     final merged = result.map((item) {
       if (item.mediaType != MediaType.show) return item;
-      final enriched = _enrichedShowCounts[item.ratingKey];
+      final enriched = _enrichedShowCounts[item.itemId];
       if (enriched == null) return item;
       final m = item.copyWith(
         unwatchedCount: enriched.unwatchedCount,
@@ -253,7 +253,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     );
 
     if (confirmed && mounted) {
-      final success = await client.deletePlaylist(widget.playlist.ratingKey);
+      final success = await client.deletePlaylist(widget.playlist.itemId);
 
       if (mounted) {
         if (success) {

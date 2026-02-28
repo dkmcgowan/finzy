@@ -48,6 +48,9 @@ class FocusableListTile extends StatefulWidget {
   /// An optional color to display behind the menu item when being hovered.
   final Color? hoverColor;
 
+  /// Controls how compact the list tile layout is.
+  final VisualDensity? visualDensity;
+
   const FocusableListTile({
     super.key,
     this.title,
@@ -64,6 +67,7 @@ class FocusableListTile extends StatefulWidget {
     this.contentPadding,
     this.suppressInitialSelect = false,
     this.hoverColor,
+    this.visualDensity,
   });
 
   @override
@@ -86,6 +90,7 @@ class _FocusableListTileState extends State<FocusableListTile> {
       enabled: widget.enabled,
       selected: widget.selected,
       contentPadding: widget.contentPadding,
+      visualDensity: widget.visualDensity,
       focusNode: widget.suppressInitialSelect ? null : widget.focusNode,
       autofocus: widget.suppressInitialSelect ? false : widget.autofocus,
       hoverColor: widget.hoverColor,

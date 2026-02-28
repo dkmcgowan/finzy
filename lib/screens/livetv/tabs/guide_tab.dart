@@ -11,6 +11,7 @@ import '../../../i18n/strings.g.dart';
 import '../../../models/livetv_channel.dart';
 import '../../../models/livetv_program.dart';
 import '../../../providers/multi_server_provider.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../services/jellyfin_client.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/formatters.dart';
@@ -774,8 +775,7 @@ class GuideTabState extends State<GuideTab> {
   }
 
   Widget _buildTimeNavigation(ThemeData theme) {
-    final format = MaterialLocalizations.of(context);
-    final timeLabel = format.formatTimeOfDay(TimeOfDay.fromDateTime(_gridStart));
+    final timeLabel = formatGuideTime(_gridStart, use24Hour: context.read<SettingsProvider>().use24HourTime);
     final dayLabel = _dayLabel(_gridStart);
 
     return Container(
@@ -843,11 +843,12 @@ class GuideTabState extends State<GuideTab> {
   // ---------------------------------------------------------------------------
 
   Widget _buildTimeHeader(ThemeData theme) {
+    final use24h = context.read<SettingsProvider>().use24HourTime;
     final slots = <Widget>[];
     var current = _gridStart;
 
     while (current.isBefore(_gridEnd)) {
-      final timeStr = '${current.hour.toString().padLeft(2, '0')}:${current.minute.toString().padLeft(2, '0')}';
+      final timeStr = formatGuideTime(current, use24Hour: use24h);
       slots.add(
         SizedBox(
           width: _slotWidth,
@@ -1047,7 +1048,7 @@ class GuideTabState extends State<GuideTab> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  program.grandparentTitle ?? program.title,
+                  program.seriesTitle ?? program.title,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: isCurrentlyAiring ? FontWeight.w600 : FontWeight.normal,
                     color: titleColor,
@@ -1055,7 +1056,7 @@ class GuideTabState extends State<GuideTab> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (program.grandparentTitle != null)
+                if (program.seriesTitle != null)
                   Text(
                     '${program.parentIndex != null && program.index != null ? 'S${program.parentIndex}E${program.index} · ' : ''}${program.title}',
                     style: theme.textTheme.labelSmall?.copyWith(color: subtitleColor),
@@ -1064,7 +1065,7 @@ class GuideTabState extends State<GuideTab> {
                   ),
                 if (program.startTime != null)
                   Text(
-                    '${program.startTime!.hour.toString().padLeft(2, '0')}:${program.startTime!.minute.toString().padLeft(2, '0')} · ${formatDurationTextual(program.durationMinutes * 60000)}',
+                    '${formatGuideTime(program.startTime!, use24Hour: context.read<SettingsProvider>().use24HourTime)} · ${formatDurationTextual(program.durationMinutes * 60000)}',
                     style: theme.textTheme.labelSmall?.copyWith(color: subtitleColor),
                     maxLines: 1,
                   ),

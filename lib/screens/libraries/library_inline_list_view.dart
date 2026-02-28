@@ -58,29 +58,29 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
     for (final item in raw) {
       switch (item.mediaType) {
         case MediaType.episode:
-          final showKey = item.grandparentRatingKey;
+          final showKey = item.seriesId;
           if (showKey != null && showKey.isNotEmpty && seenShowKeys.add(showKey)) {
             final key = item.key.contains('/') ? '${ApiCache.itemPrefix}$showKey' : showKey;
             result.add(item.copyWith(
-              ratingKey: showKey,
+              itemId: showKey,
               key: key,
               type: 'show',
-              title: item.grandparentTitle ?? item.title,
-              thumb: item.grandparentThumb ?? item.thumb,
-              art: item.grandparentArt ?? item.art,
+              title: item.seriesTitle ?? item.title,
+              thumb: item.seriesImageId ?? item.thumb,
+              art: item.seriesArt ?? item.art,
             ));
           }
           break;
         case MediaType.season:
-          final showKey = item.parentRatingKey;
+          final showKey = item.seasonId;
           if (showKey != null && showKey.isNotEmpty && seenShowKeys.add(showKey)) {
             final key = item.key.contains('/') ? '${ApiCache.itemPrefix}$showKey' : showKey;
             result.add(item.copyWith(
-              ratingKey: showKey,
+              itemId: showKey,
               key: key,
               type: 'show',
-              title: item.parentTitle ?? item.title,
-              thumb: item.parentThumb ?? item.thumb,
+              title: item.seasonTitle ?? item.title,
+              thumb: item.seasonImageId ?? item.thumb,
               art: item.art,
               unwatchedCount: item.unwatchedCount,
               leafCount: item.leafCount,
@@ -91,7 +91,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
         default:
           // movie, show, collection, etc. — add as-is
           if (item.mediaType == MediaType.show) {
-            if (!seenShowKeys.add(item.ratingKey)) continue;
+            if (!seenShowKeys.add(item.itemId)) continue;
           }
           result.add(item);
       }
@@ -110,11 +110,11 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
       List<MediaMetadata> list;
       if (widget.item is Playlist) {
         final playlist = widget.item as Playlist;
-        list = await client.getPlaylist(playlist.ratingKey);
+        list = await client.getPlaylist(playlist.itemId);
         list = _collapsePlaylistToShows(list);
       } else {
         final collection = widget.item as MediaMetadata;
-        list = await client.getChildren(collection.ratingKey);
+        list = await client.getChildren(collection.itemId);
       }
       if (mounted) {
         setState(() {
@@ -142,7 +142,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
     for (final item in _items) {
       if (item.mediaType != MediaType.show) continue;
       if (item.effectiveUnwatchedCount != null) continue;
-      final key = item.ratingKey;
+      final key = item.itemId;
       if (key.isEmpty || _enrichedShowCounts.containsKey(key)) continue;
       toFetch.add(key);
     }
@@ -166,7 +166,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
     if (_enrichedShowCounts.isEmpty) return _items;
     return _items.map((item) {
       if (item.mediaType != MediaType.show) return item;
-      final enriched = _enrichedShowCounts[item.ratingKey];
+      final enriched = _enrichedShowCounts[item.itemId];
       if (enriched == null) return item;
       return item.copyWith(
         unwatchedCount: enriched.unwatchedCount,
@@ -241,7 +241,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
                                   itemBuilder: (context, index) {
                                     final item = displayItems[index];
                                     return FocusableMediaCard(
-                                      key: Key(item.ratingKey),
+                                      key: Key(item.itemId),
                                       item: item,
                                       onListRefresh: _loadItems,
                                       onBack: widget.onBack,

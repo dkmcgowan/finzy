@@ -37,10 +37,10 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<Hub, LibraryRecomm
   JellyfinClient get client => getClientForLibrary();
 
   @override
-  void updateItemInLists(String ratingKey, MediaMetadata updatedMetadata) {
+  void updateItemInLists(String itemId, MediaMetadata updatedMetadata) {
     // Update the item in any hub that contains it
     for (final hub in items) {
-      final itemIndex = hub.items.indexWhere((item) => item.ratingKey == ratingKey);
+      final itemIndex = hub.items.indexWhere((item) => item.itemId == itemId);
       if (itemIndex != -1) {
         hub.items[itemIndex] = updatedMetadata;
       }
@@ -54,7 +54,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<Hub, LibraryRecomm
   String get emptyMessage => t.libraries.noRecommendations;
 
   @override
-  String get errorContext => t.libraries.tabs.recommended;
+  String get errorContext => t.libraries.tabs.suggestions;
 
   @override
   Stream<void>? getRefreshStream() => LibraryRefreshNotifier().recommendationsStream;

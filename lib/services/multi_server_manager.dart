@@ -106,6 +106,7 @@ class MultiServerManager {
         appLogger.d('Attempting connection to server: $serverName');
 
         final client = _createJellyfinClient(registered.jellyfinData);
+        await client.loadUserPolicy();
 
         _clients[serverId] = client;
         _servers[serverId] = registered;
@@ -159,6 +160,7 @@ class MultiServerManager {
       appLogger.d('Adding server: ${registered.serverName}');
 
       final client = _createJellyfinClient(registered.jellyfinData);
+      await client.loadUserPolicy();
 
       _clients[serverId] = client;
       _servers[serverId] = registered;
@@ -283,6 +285,7 @@ class MultiServerManager {
       appLogger.d('Attempting reconnection for ${registered.serverName}');
 
       final client = _createJellyfinClient(registered.jellyfinData);
+      await client.loadUserPolicy();
 
       _clients[serverId] = client;
       updateServerStatus(serverId, true);

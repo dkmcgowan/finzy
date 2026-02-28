@@ -58,7 +58,7 @@ class _LibraryPlaylistsTabState extends LibraryGridTabState<Playlist, LibraryPla
   @override
   Widget buildGridItem(BuildContext context, Playlist playlist, int index, [GridItemContext? gridContext]) {
     return FocusableMediaCard(
-      key: Key(playlist.ratingKey),
+      key: Key(playlist.itemId),
       item: playlist,
       focusNode: index == 0 ? firstItemFocusNode : null,
       onListRefresh: loadItems,

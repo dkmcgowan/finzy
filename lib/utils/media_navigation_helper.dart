@@ -30,7 +30,7 @@ enum MediaNavigationResult {
 /// For other types (shows), navigates to media detail screen.
 /// For music types (artist, album, track), returns [MediaNavigationResult.unsupported].
 ///
-/// The [onRefresh] callback is invoked with the item's ratingKey after
+/// The [onRefresh] callback is invoked with the item's itemId after
 /// returning from the detail screen, allowing the caller to refresh state.
 ///
 /// Set [isOffline] to true for downloaded content without server access.
@@ -79,7 +79,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
       // For episodes and clips (trailers/extras), start playback directly
       final result = await navigateToVideoPlayer(context, metadata: metadata, isOffline: isOffline);
       if (result == true) {
-        onRefresh?.call(metadata.ratingKey);
+        onRefresh?.call(metadata.itemId);
       }
       return MediaNavigationResult.navigated;
 
@@ -88,7 +88,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
         // For movies in continue watching, start playback directly
         final result = await navigateToVideoPlayer(context, metadata: metadata, isOffline: isOffline);
         if (result == true) {
-          onRefresh?.call(metadata.ratingKey);
+          onRefresh?.call(metadata.itemId);
         }
         return MediaNavigationResult.navigated;
       }
@@ -102,7 +102,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
           builder: (context) => SeasonDetailScreen(season: metadata, isOffline: isOffline),
         ),
       );
-      onRefresh?.call(metadata.ratingKey);
+      onRefresh?.call(metadata.itemId);
       return MediaNavigationResult.navigated;
 
     defaultCase:
@@ -115,7 +115,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
         ),
       );
       if (result == true) {
-        onRefresh?.call(metadata.ratingKey);
+        onRefresh?.call(metadata.itemId);
       }
       return MediaNavigationResult.navigated;
   }

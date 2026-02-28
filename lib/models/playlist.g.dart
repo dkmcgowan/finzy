@@ -7,7 +7,7 @@ part of 'playlist.dart';
 // **************************************************************************
 
 Playlist _$PlaylistFromJson(Map<String, dynamic> json) => Playlist(
-  ratingKey: json['ratingKey'] as String,
+  itemId: json['itemId'] as String,
   key: json['key'] as String,
   type: json['type'] as String,
   title: json['title'] as String,
@@ -27,7 +27,7 @@ Playlist _$PlaylistFromJson(Map<String, dynamic> json) => Playlist(
 );
 
 Map<String, dynamic> _$PlaylistToJson(Playlist instance) => <String, dynamic>{
-  'ratingKey': instance.ratingKey,
+  'itemId': instance.itemId,
   'key': instance.key,
   'type': instance.type,
   'title': instance.title,

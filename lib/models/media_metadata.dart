@@ -37,7 +37,7 @@ enum MediaType {
 
 @JsonSerializable()
 class MediaMetadata with MultiServerFields {
-  final String ratingKey;
+  final String itemId;
   final String key;
   final String? guid;
   final String? studio;
@@ -57,16 +57,16 @@ class MediaMetadata with MultiServerFields {
   final int? addedAt;
   final int? updatedAt;
   final int? lastViewedAt; // Timestamp when item was last viewed
-  final String? grandparentTitle; // Show title for episodes
-  final String? grandparentThumb; // Show poster for episodes
-  final String? grandparentArt; // Show art for episodes
-  final String? grandparentRatingKey; // Show rating key for episodes
-  final String? parentTitle; // Season title for episodes
-  final String? parentThumb; // Season poster for episodes
-  final String? parentRatingKey; // Season rating key for episodes
+  final String? seriesTitle; // Show title for episodes
+  final String? seriesImageId; // Show poster for episodes
+  final String? seriesArt; // Show art for episodes
+  final String? seriesId; // Show rating key for episodes
+  final String? seasonTitle; // Season title for episodes
+  final String? seasonImageId; // Season poster for episodes
+  final String? seasonId; // Season rating key for episodes
   final int? parentIndex; // Season number
   final int? index; // Episode number
-  final String? grandparentTheme; // Show theme music
+  final String? seriesTheme; // Show theme music
   final int? viewOffset; // Resume position in ms
   final int? viewCount;
   final int? leafCount; // Total number of episodes in a series/season
@@ -81,7 +81,7 @@ class MediaMetadata with MultiServerFields {
   final String? subtitleLanguage; // Per-media preferred subtitle language
   final int? playlistItemID; // Playlist item ID (for dumb playlists only)
   final int? playQueueItemID; // Play queue item ID (unique even for duplicates)
-  final int? librarySectionID; // Library section ID this item belongs to
+  final int? libraryId; // Library section ID this item belongs to
   final String? ratingImage; // Rating source URI (e.g. rottentomatoes://image.rating.ripe)
   final String? audienceRatingImage; // Audience rating source URI
   final String? subtype; // Clip subtype: "trailer", "behindTheScenes", "deleted", etc.
@@ -111,8 +111,8 @@ class MediaMetadata with MultiServerFields {
   @JsonKey(includeFromJson: false, includeToJson: false)
   final String? seriesStatus;
 
-  /// Global unique identifier across all servers (serverId:ratingKey)
-  String get globalKey => serverId != null ? '$serverId:$ratingKey' : ratingKey;
+  /// Global unique identifier across all servers (serverId:itemId)
+  String get globalKey => serverId != null ? '$serverId:$itemId' : itemId;
 
   /// Parsed media type enum for type-safe comparisons
   MediaType get mediaType {
@@ -133,7 +133,7 @@ class MediaMetadata with MultiServerFields {
   }
 
   MediaMetadata({
-    required this.ratingKey,
+    required this.itemId,
     required this.key,
     this.guid,
     this.studio,
@@ -153,16 +153,16 @@ class MediaMetadata with MultiServerFields {
     this.addedAt,
     this.updatedAt,
     this.lastViewedAt,
-    this.grandparentTitle,
-    this.grandparentThumb,
-    this.grandparentArt,
-    this.grandparentRatingKey,
-    this.parentTitle,
-    this.parentThumb,
-    this.parentRatingKey,
+    this.seriesTitle,
+    this.seriesImageId,
+    this.seriesArt,
+    this.seriesId,
+    this.seasonTitle,
+    this.seasonImageId,
+    this.seasonId,
     this.parentIndex,
     this.index,
-    this.grandparentTheme,
+    this.seriesTheme,
     this.viewOffset,
     this.viewCount,
     this.leafCount,
@@ -174,7 +174,7 @@ class MediaMetadata with MultiServerFields {
     this.subtitleLanguage,
     this.playlistItemID,
     this.playQueueItemID,
-    this.librarySectionID,
+    this.libraryId,
     this.ratingImage,
     this.audienceRatingImage,
     this.subtype,
@@ -190,7 +190,7 @@ class MediaMetadata with MultiServerFields {
 
   /// Create a copy of this metadata with optional field overrides
   MediaMetadata copyWith({
-    String? ratingKey,
+    String? itemId,
     String? key,
     String? guid,
     String? studio,
@@ -210,16 +210,16 @@ class MediaMetadata with MultiServerFields {
     int? addedAt,
     int? updatedAt,
     int? lastViewedAt,
-    String? grandparentTitle,
-    String? grandparentThumb,
-    String? grandparentArt,
-    String? grandparentRatingKey,
-    String? parentTitle,
-    String? parentThumb,
-    String? parentRatingKey,
+    String? seriesTitle,
+    String? seriesImageId,
+    String? seriesArt,
+    String? seriesId,
+    String? seasonTitle,
+    String? seasonImageId,
+    String? seasonId,
     int? parentIndex,
     int? index,
-    String? grandparentTheme,
+    String? seriesTheme,
     int? viewOffset,
     int? viewCount,
     int? leafCount,
@@ -231,7 +231,7 @@ class MediaMetadata with MultiServerFields {
     String? subtitleLanguage,
     int? playlistItemID,
     int? playQueueItemID,
-    int? librarySectionID,
+    int? libraryId,
     String? ratingImage,
     String? audienceRatingImage,
     String? subtype,
@@ -245,7 +245,7 @@ class MediaMetadata with MultiServerFields {
     String? seriesStatus,
   }) {
     return MediaMetadata(
-      ratingKey: ratingKey ?? this.ratingKey,
+      itemId: itemId ?? this.itemId,
       key: key ?? this.key,
       guid: guid ?? this.guid,
       studio: studio ?? this.studio,
@@ -265,16 +265,16 @@ class MediaMetadata with MultiServerFields {
       addedAt: addedAt ?? this.addedAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastViewedAt: lastViewedAt ?? this.lastViewedAt,
-      grandparentTitle: grandparentTitle ?? this.grandparentTitle,
-      grandparentThumb: grandparentThumb ?? this.grandparentThumb,
-      grandparentArt: grandparentArt ?? this.grandparentArt,
-      grandparentRatingKey: grandparentRatingKey ?? this.grandparentRatingKey,
-      parentTitle: parentTitle ?? this.parentTitle,
-      parentThumb: parentThumb ?? this.parentThumb,
-      parentRatingKey: parentRatingKey ?? this.parentRatingKey,
+      seriesTitle: seriesTitle ?? this.seriesTitle,
+      seriesImageId: seriesImageId ?? this.seriesImageId,
+      seriesArt: seriesArt ?? this.seriesArt,
+      seriesId: seriesId ?? this.seriesId,
+      seasonTitle: seasonTitle ?? this.seasonTitle,
+      seasonImageId: seasonImageId ?? this.seasonImageId,
+      seasonId: seasonId ?? this.seasonId,
       parentIndex: parentIndex ?? this.parentIndex,
       index: index ?? this.index,
-      grandparentTheme: grandparentTheme ?? this.grandparentTheme,
+      seriesTheme: seriesTheme ?? this.seriesTheme,
       viewOffset: viewOffset ?? this.viewOffset,
       viewCount: viewCount ?? this.viewCount,
       leafCount: leafCount ?? this.leafCount,
@@ -286,7 +286,7 @@ class MediaMetadata with MultiServerFields {
       subtitleLanguage: subtitleLanguage ?? this.subtitleLanguage,
       playlistItemID: playlistItemID ?? this.playlistItemID,
       playQueueItemID: playQueueItemID ?? this.playQueueItemID,
-      librarySectionID: librarySectionID ?? this.librarySectionID,
+      libraryId: libraryId ?? this.libraryId,
       ratingImage: ratingImage ?? this.ratingImage,
       audienceRatingImage: audienceRatingImage ?? this.audienceRatingImage,
       subtype: subtype ?? this.subtype,
@@ -344,12 +344,12 @@ class MediaMetadata with MultiServerFields {
     final itemType = type.toLowerCase();
 
     // For episodes and seasons, prefer grandparent title (show name)
-    if ((itemType == 'episode' || itemType == 'season') && grandparentTitle != null) {
-      return grandparentTitle!;
+    if ((itemType == 'episode' || itemType == 'season') && seriesTitle != null) {
+      return seriesTitle!;
     }
-    // For seasons without grandparent, check if this IS the show (parentTitle might have show name)
-    if (itemType == 'season' && parentTitle != null) {
-      return parentTitle!;
+    // For seasons without grandparent, check if this IS the show (seasonTitle might have show name)
+    if (itemType == 'season' && seasonTitle != null) {
+      return seasonTitle!;
     }
     return title;
   }
@@ -360,7 +360,7 @@ class MediaMetadata with MultiServerFields {
 
     if (itemType == 'episode' || itemType == 'season') {
       // If we showed grandparent/parent as title, show this item's title as subtitle
-      if (grandparentTitle != null || (itemType == 'season' && parentTitle != null)) {
+      if (seriesTitle != null || (itemType == 'season' && seasonTitle != null)) {
         return title;
       }
     }
@@ -369,10 +369,10 @@ class MediaMetadata with MultiServerFields {
 
   /// Returns the appropriate image path based on episode poster mode.
   /// For episodes:
-  ///   - seriesPoster: grandparentThumb (series poster)
-  ///   - seasonPoster: parentThumb (season poster)
+  ///   - seriesPoster: seriesImageId (series poster)
+  ///   - seasonPoster: seasonImageId (season poster)
   ///   - episodeThumbnail: thumb (16:9 episode still)
-  /// For seasons: returns grandparentThumb (series poster), or art/thumb in mixed hub context
+  /// For seasons: returns seriesImageId (series poster), or art/thumb in mixed hub context
   /// For movies/shows/seasons in mixed hub context: returns art (16:9 background)
   /// For other types: returns thumb
   String? posterThumb({EpisodePosterMode mode = EpisodePosterMode.seriesPoster, bool mixedHubContext = false}) {
@@ -381,11 +381,14 @@ class MediaMetadata with MultiServerFields {
     if (itemType == 'episode') {
       switch (mode) {
         case EpisodePosterMode.episodeThumbnail:
-          return thumb; // 16:9 episode thumbnail
+          if (thumb == itemId || (thumb != null && thumb!.startsWith('http'))) {
+            return thumb; // has own 16:9 episode thumbnail
+          }
+          return seriesImageId ?? thumb; // no own thumbnail — match seriesPoster
         case EpisodePosterMode.seasonPoster:
-          return parentThumb ?? grandparentThumb ?? thumb;
+          return seasonImageId ?? seriesImageId ?? thumb;
         case EpisodePosterMode.seriesPoster:
-          return grandparentThumb ?? thumb;
+          return seriesImageId ?? thumb;
       }
     } else if (itemType == 'season') {
       // In mixed hub with episode thumbnail mode, use art/thumb (16:9)
@@ -393,8 +396,8 @@ class MediaMetadata with MultiServerFields {
         return art ?? thumb;
       }
       // Otherwise use series poster (2:3)
-      if (grandparentThumb != null) {
-        return grandparentThumb!;
+      if (seriesImageId != null) {
+        return seriesImageId!;
       }
     }
 
@@ -415,7 +418,10 @@ class MediaMetadata with MultiServerFields {
     // Clips (trailers, extras) are always 16:9
     if (itemType == 'clip') return true;
     if (itemType == 'episode' && mode == EpisodePosterMode.episodeThumbnail) {
-      return true;
+      // Only use 16:9 when the item has its own thumbnail (thumb == itemId) or
+      // a URL-based wide image (Backdrop/Thumb). Borrowed poster IDs (e.g.
+      // SeriesId) are 2:3 and should not be stretched into a 16:9 card.
+      return thumb == itemId || (thumb != null && thumb!.startsWith('http'));
     }
     // Movies, shows, and seasons use 16:9 in mixed hubs with episode thumbnail mode
     if (mixedHubContext &&
@@ -459,7 +465,7 @@ class MediaMetadata with MultiServerFields {
 
   static Map<String, dynamic> _obfuscateJson(Map<String, dynamic> json) {
     final copy = Map<String, dynamic>.from(json);
-    for (final key in const ['title', 'summary', 'tagline', 'grandparentTitle', 'parentTitle', 'studio']) {
+    for (final key in const ['title', 'summary', 'tagline', 'seriesTitle', 'seasonTitle', 'studio']) {
       if (copy[key] is String) copy[key] = obfuscateText(copy[key] as String);
     }
     return copy;

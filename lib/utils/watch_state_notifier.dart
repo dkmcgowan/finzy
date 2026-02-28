@@ -10,9 +10,9 @@ enum WatchStateChangeType { watched, unwatched, progressUpdate }
 class WatchStateEvent with HierarchicalEventMixin {
   /// The item that changed
   @override
-  final String ratingKey;
+  final String itemId;
 
-  /// Composite key: serverId:ratingKey
+  /// Composite key: serverId:itemId
   @override
   final String globalKey;
 
@@ -40,14 +40,14 @@ class WatchStateEvent with HierarchicalEventMixin {
   final bool? isNowWatched;
 
   WatchStateEvent({
-    required this.ratingKey,
+    required this.itemId,
     required this.serverId,
     required this.changeType,
     required this.parentChain,
     required this.mediaType,
     this.viewOffset,
     this.isNowWatched,
-  }) : globalKey = '$serverId:$ratingKey';
+  }) : globalKey = '$serverId:$itemId';
 
   @override
   String toString() => 'WatchStateEvent($changeType, $globalKey, parents: $parentChain)';
@@ -68,7 +68,7 @@ class WatchStateNotifier extends BaseNotifier<WatchStateEvent> {
   Stream<WatchStateEvent> forServer(String serverId) => stream.where((e) => e.serverId == serverId);
 
   /// Filter for events affecting a specific item or its children
-  Stream<WatchStateEvent> forItem(String ratingKey) => stream.where((e) => e.affectsItem(ratingKey));
+  Stream<WatchStateEvent> forItem(String itemId) => stream.where((e) => e.affectsItem(itemId));
 
   /// Emit a watch state event with logging
   @override
@@ -81,7 +81,7 @@ class WatchStateNotifier extends BaseNotifier<WatchStateEvent> {
   void notifyWatched({required MediaMetadata metadata, bool isNowWatched = true}) {
     notify(
       WatchStateEvent(
-        ratingKey: metadata.ratingKey,
+        itemId: metadata.itemId,
         serverId: metadata.serverId ?? '',
         changeType: isNowWatched ? WatchStateChangeType.watched : WatchStateChangeType.unwatched,
         parentChain: _buildParentChain(metadata),
@@ -98,7 +98,7 @@ class WatchStateNotifier extends BaseNotifier<WatchStateEvent> {
 
     notify(
       WatchStateEvent(
-        ratingKey: metadata.ratingKey,
+        itemId: metadata.itemId,
         serverId: metadata.serverId ?? '',
         changeType: WatchStateChangeType.progressUpdate,
         parentChain: _buildParentChain(metadata),
@@ -112,11 +112,11 @@ class WatchStateNotifier extends BaseNotifier<WatchStateEvent> {
   /// Build parent chain from metadata's parent keys
   List<String> _buildParentChain(MediaMetadata metadata) {
     final chain = <String>[];
-    if (metadata.parentRatingKey != null) {
-      chain.add(metadata.parentRatingKey!);
+    if (metadata.seasonId != null) {
+      chain.add(metadata.seasonId!);
     }
-    if (metadata.grandparentRatingKey != null) {
-      chain.add(metadata.grandparentRatingKey!);
+    if (metadata.seriesId != null) {
+      chain.add(metadata.seriesId!);
     }
     return chain;
   }

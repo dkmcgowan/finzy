@@ -4,7 +4,6 @@ import '../services/jellyfin_client.dart';
 import '../i18n/strings.g.dart';
 import '../models/media_library.dart';
 import '../models/media_metadata.dart';
-import '../models/user_profile_preferences.dart';
 import '../providers/hidden_libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../providers/user_profile_provider.dart';
@@ -18,9 +17,6 @@ extension ProviderExtensions on BuildContext {
   HiddenLibrariesProvider get hiddenLibraries => Provider.of<HiddenLibrariesProvider>(this, listen: false);
 
   HiddenLibrariesProvider watchHiddenLibraries() => Provider.of<HiddenLibrariesProvider>(this, listen: true);
-
-  // Direct profile settings access (nullable)
-  UserProfilePreferences? get profileSettings => userProfile.profileSettings;
 
   /// Get Jellyfin client for a specific server ID
   JellyfinClient getClientForServer(String serverId) {

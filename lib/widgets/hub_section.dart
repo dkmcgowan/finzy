@@ -418,18 +418,24 @@ class HubSectionState extends State<HubSection> {
                 final episodePosterMode = settings.episodePosterMode;
 
                 // Determine hub content type for layout decisions
-                final hasEpisodes = widget.hub.items.any((item) => item.usesWideAspectRatio(episodePosterMode));
-                final hasNonEpisodes = widget.hub.items.any((item) => !item.usesWideAspectRatio(episodePosterMode));
+                final hasWideItems = widget.hub.items.any((item) => item.usesWideAspectRatio(episodePosterMode));
+                final hasNonWideItems = widget.hub.items.any((item) => !item.usesWideAspectRatio(episodePosterMode));
 
-                // Mixed hub = has both episodes AND non-episodes (like Continue Watching)
-                final isMixedHub = hasEpisodes && hasNonEpisodes;
+                // All items are wide (e.g. Next Up where every episode has a thumbnail)
+                final isAllWideHub = hasWideItems && !hasNonWideItems;
 
-                // Episode-only = all items are episodes with thumbnails
-                final isEpisodeOnlyHub = hasEpisodes && !hasNonEpisodes;
+                // Truly mixed hub = different item types (episodes + movies, like Continue Watching).
+                // An episode-only hub where some episodes lack thumbnails is NOT truly mixed —
+                // those items should fall back to poster layout, not be forced into 16:9.
+                final isTrulyMixedHub = hasWideItems && hasNonWideItems && widget.hub.items.any((item) {
+                  if (item.usesWideAspectRatio(episodePosterMode)) return false;
+                  final t = item.type.toLowerCase();
+                  return t != 'episode' && t != 'clip';
+                });
 
-                // Use 16:9 for episode-only hubs OR mixed hubs (with episode thumbnail mode)
+                // Use 16:9 for all-wide hubs OR truly mixed hubs (with episode thumbnail mode)
                 final useWideLayout =
-                    episodePosterMode == EpisodePosterMode.episodeThumbnail && (isEpisodeOnlyHub || isMixedHub);
+                    episodePosterMode == EpisodePosterMode.episodeThumbnail && (isAllWideHub || isTrulyMixedHub);
 
                 // Card dimensions based on hub type
                 const wideCardMultiplier = 1.5;
@@ -513,7 +519,7 @@ class HubSectionState extends State<HubSection> {
                               onRemoveFromContinueWatching: widget.onRemoveFromContinueWatching,
                               forceGridMode: true,
                               isInContinueWatching: widget.isInContinueWatching,
-                              mixedHubContext: isMixedHub,
+                              mixedHubContext: isTrulyMixedHub,
                             ),
                           ),
                         );

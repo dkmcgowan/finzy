@@ -153,6 +153,7 @@ class _TranslationsCommonZh implements TranslationsCommonEn {
 	@override String get settings => '设置';
 	@override String get mute => '静音';
 	@override String get ok => '确定';
+	@override String get none => 'None';
 	@override String get loading => '加载中...';
 	@override String get reconnect => '重新连接';
 	@override String get exitConfirmTitle => '退出应用？';
@@ -212,6 +213,11 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get seasonPosterDescription => '为剧集显示特定季的海报';
 	@override String get episodeThumbnail => '剧集缩略图';
 	@override String get episodeThumbnailDescription => '显示16:9剧集截图缩略图';
+	@override String get timeFormat => '时间格式';
+	@override String get twelveHour => '12小时制';
+	@override String get twentyFourHour => '24小时制';
+	@override String get twelveHourDescription => '例如 1:00 PM';
+	@override String get twentyFourHourDescription => '例如 13:00';
 	@override String get showHeroSectionDescription => '在主屏幕上显示精选内容轮播区';
 	@override String get secondsLabel => '秒';
 	@override String get minutesLabel => '分钟';
@@ -818,7 +824,9 @@ class _TranslationsLiveTvZh implements TranslationsLiveTvEn {
 	@override String get recordings => '录制';
 	@override String get subscriptions => '录制规则';
 	@override String get scheduled => '已计划';
+	@override String get seriesTimers => 'Series Timers';
 	@override String get noChannels => '没有可用的频道';
+	@override String get dvr => 'DVR';
 	@override String get noDvr => '没有服务器配置了DVR';
 	@override String get tuneFailed => '无法调谐频道';
 	@override String get loading => '正在加载频道...';
@@ -830,8 +838,25 @@ class _TranslationsLiveTvZh implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => '确定要删除此录制规则吗？';
 	@override String get subscriptionDeleted => '录制规则已删除';
 	@override String get noPrograms => '没有可用的节目数据';
-	@override String get noRecordings => '没有计划的录制';
-	@override String get noSubscriptions => '没有录制规则';
+	@override String get noRecordings => 'No recordings';
+	@override String get noScheduled => 'No scheduled recordings';
+	@override String get noSubscriptions => 'No series timers';
+	@override String get cancelTimer => 'Cancel Recording';
+	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
+	@override String get timerCancelled => 'Recording cancelled';
+	@override String get deleteSeriesTimer => 'Delete Series Timer';
+	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
+	@override String get seriesTimerDeleted => 'Series timer deleted';
+	@override String get seriesTimerUpdated => 'Series timer updated';
+	@override String get recordNewOnly => 'Record new episodes only';
+	@override String get keepUpTo => 'Keep up to';
+	@override String get keepAll => 'Keep all';
+	@override String keepEpisodes({required Object count}) => '${count} episodes';
+	@override String get prePadding => 'Start recording early';
+	@override String get postPadding => 'Continue recording after';
+	@override String minutes({required Object count}) => '${count} min';
+	@override String get days => 'Days';
+	@override String get priority => 'Priority';
 	@override String channelNumber({required Object number}) => '频道 ${number}';
 	@override String get live => '直播';
 	@override String get hd => '高清';
@@ -847,8 +872,21 @@ class _TranslationsLiveTvZh implements TranslationsLiveTvEn {
 	@override String get daytime => '白天';
 	@override String get evening => '晚上';
 	@override String get lateNight => '深夜';
-	@override String get whatsOn => '正在播出';
+	@override String get programs => 'Programs';
+	@override String get onNow => 'On Now';
+	@override String get upcomingShows => 'Shows';
+	@override String get upcomingMovies => 'Movies';
+	@override String get upcomingSports => 'Sports';
+	@override String get forKids => 'For Kids';
+	@override String get upcomingNews => 'News';
 	@override String get watchChannel => '观看频道';
+	@override String get recentlyAdded => 'Recently Added';
+	@override String get recordingScheduled => 'Recording scheduled';
+	@override String get seriesRecordingScheduled => 'Series recording scheduled';
+	@override String get recordingFailed => 'Failed to schedule recording';
+	@override String get cancelSeries => 'Cancel Series';
+	@override String get stopRecording => 'Stop Recording';
+	@override String get doNotRecord => 'Do Not Record';
 }
 
 // Path: downloads
@@ -911,6 +949,7 @@ class _TranslationsPlaylistsZh implements TranslationsPlaylistsEn {
 	@override String get errorReordering => '重新排序播放列表项目失败';
 	@override String get errorRemoving => '从播放列表中移除失败';
 	@override String get playlist => '播放列表';
+	@override String get addToPlaylist => '添加到播放列表';
 }
 
 // Path: collections
@@ -922,6 +961,7 @@ class _TranslationsCollectionsZh implements TranslationsCollectionsEn {
 	// Translations
 	@override String get title => '合集';
 	@override String get collection => '合集';
+	@override String get addToCollection => '添加到合集';
 	@override String get empty => '合集为空';
 	@override String get unknownLibrarySection => '无法删除：未知的媒体库分区';
 	@override String get deleteCollection => '删除合集';
@@ -1068,9 +1108,11 @@ class _TranslationsLibrariesTabsZh implements TranslationsLibrariesTabsEn {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
-	@override String get recommended => '推荐';
+	@override String get movies => '电影';
+	@override String get shows => '剧集';
+	@override String get suggestions => '推荐';
 	@override String get browse => '浏览';
-	@override String get genre => '类型';
+	@override String get genres => '类型';
 	@override String get favorites => '收藏';
 	@override String get collections => '合集';
 	@override String get playlists => '播放列表';
@@ -1256,6 +1298,7 @@ extension on TranslationsZh {
 			'common.settings' => '设置',
 			'common.mute' => '静音',
 			'common.ok' => '确定',
+			'common.none' => 'None',
 			'common.loading' => '加载中...',
 			'common.reconnect' => '重新连接',
 			'common.exitConfirmTitle' => '退出应用？',
@@ -1288,6 +1331,11 @@ extension on TranslationsZh {
 			'settings.seasonPosterDescription' => '为剧集显示特定季的海报',
 			'settings.episodeThumbnail' => '剧集缩略图',
 			'settings.episodeThumbnailDescription' => '显示16:9剧集截图缩略图',
+			'settings.timeFormat' => '时间格式',
+			'settings.twelveHour' => '12小时制',
+			'settings.twentyFourHour' => '24小时制',
+			'settings.twelveHourDescription' => '例如 1:00 PM',
+			'settings.twentyFourHourDescription' => '例如 13:00',
 			'settings.showHeroSectionDescription' => '在主屏幕上显示精选内容轮播区',
 			'settings.secondsLabel' => '秒',
 			'settings.minutesLabel' => '分钟',
@@ -1677,9 +1725,11 @@ extension on TranslationsZh {
 			'libraries.noGenres' => '此媒体库中无类型',
 			'libraries.noFoldersFound' => '未找到文件夹',
 			'libraries.folders' => '文件夹',
-			'libraries.tabs.recommended' => '推荐',
+			'libraries.tabs.movies' => '电影',
+			'libraries.tabs.shows' => '剧集',
+			'libraries.tabs.suggestions' => '推荐',
 			'libraries.tabs.browse' => '浏览',
-			'libraries.tabs.genre' => '类型',
+			'libraries.tabs.genres' => '类型',
 			'libraries.tabs.favorites' => '收藏',
 			'libraries.tabs.collections' => '合集',
 			'libraries.tabs.playlists' => '播放列表',
@@ -1707,6 +1757,8 @@ extension on TranslationsZh {
 			'logs.error' => '错误:',
 			'logs.stackTrace' => '堆栈跟踪 (Stack Trace):',
 			'licenses.relatedPackages' => '相关软件包',
+			_ => null,
+		} ?? switch (path) {
 			'licenses.license' => '许可证',
 			'licenses.licenseNumber' => ({required Object number}) => '许可证 ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} 个许可证',
@@ -1715,13 +1767,13 @@ extension on TranslationsZh {
 			'navigation.liveTv' => '电视直播',
 			'liveTv.title' => '电视直播',
 			'liveTv.channels' => '频道',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guide' => '节目指南',
 			'liveTv.recordings' => '录制',
 			'liveTv.subscriptions' => '录制规则',
 			'liveTv.scheduled' => '已计划',
+			'liveTv.seriesTimers' => 'Series Timers',
 			'liveTv.noChannels' => '没有可用的频道',
+			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => '没有服务器配置了DVR',
 			'liveTv.tuneFailed' => '无法调谐频道',
 			'liveTv.loading' => '正在加载频道...',
@@ -1733,8 +1785,25 @@ extension on TranslationsZh {
 			'liveTv.deleteSubscriptionConfirm' => '确定要删除此录制规则吗？',
 			'liveTv.subscriptionDeleted' => '录制规则已删除',
 			'liveTv.noPrograms' => '没有可用的节目数据',
-			'liveTv.noRecordings' => '没有计划的录制',
-			'liveTv.noSubscriptions' => '没有录制规则',
+			'liveTv.noRecordings' => 'No recordings',
+			'liveTv.noScheduled' => 'No scheduled recordings',
+			'liveTv.noSubscriptions' => 'No series timers',
+			'liveTv.cancelTimer' => 'Cancel Recording',
+			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
+			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
+			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
+			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
+			'liveTv.seriesTimerUpdated' => 'Series timer updated',
+			'liveTv.recordNewOnly' => 'Record new episodes only',
+			'liveTv.keepUpTo' => 'Keep up to',
+			'liveTv.keepAll' => 'Keep all',
+			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
+			'liveTv.prePadding' => 'Start recording early',
+			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.minutes' => ({required Object count}) => '${count} min',
+			'liveTv.days' => 'Days',
+			'liveTv.priority' => 'Priority',
 			'liveTv.channelNumber' => ({required Object number}) => '频道 ${number}',
 			'liveTv.live' => '直播',
 			'liveTv.hd' => '高清',
@@ -1750,8 +1819,21 @@ extension on TranslationsZh {
 			'liveTv.daytime' => '白天',
 			'liveTv.evening' => '晚上',
 			'liveTv.lateNight' => '深夜',
-			'liveTv.whatsOn' => '正在播出',
+			'liveTv.programs' => 'Programs',
+			'liveTv.onNow' => 'On Now',
+			'liveTv.upcomingShows' => 'Shows',
+			'liveTv.upcomingMovies' => 'Movies',
+			'liveTv.upcomingSports' => 'Sports',
+			'liveTv.forKids' => 'For Kids',
+			'liveTv.upcomingNews' => 'News',
 			'liveTv.watchChannel' => '观看频道',
+			'liveTv.recentlyAdded' => 'Recently Added',
+			'liveTv.recordingScheduled' => 'Recording scheduled',
+			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
+			'liveTv.recordingFailed' => 'Failed to schedule recording',
+			'liveTv.cancelSeries' => 'Cancel Series',
+			'liveTv.stopRecording' => 'Stop Recording',
+			'liveTv.doNotRecord' => 'Do Not Record',
 			'downloads.title' => '下载',
 			'downloads.manage' => '管理',
 			'downloads.tvShows' => '电视剧',
@@ -1796,8 +1878,10 @@ extension on TranslationsZh {
 			'playlists.errorReordering' => '重新排序播放列表项目失败',
 			'playlists.errorRemoving' => '从播放列表中移除失败',
 			'playlists.playlist' => '播放列表',
+			'playlists.addToPlaylist' => '添加到播放列表',
 			'collections.title' => '合集',
 			'collections.collection' => '合集',
+			'collections.addToCollection' => '添加到合集',
 			'collections.empty' => '合集为空',
 			'collections.unknownLibrarySection' => '无法删除：未知的媒体库分区',
 			'collections.deleteCollection' => '删除合集',

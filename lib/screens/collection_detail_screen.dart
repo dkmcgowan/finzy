@@ -49,7 +49,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
 
   @override
   Future<List<MediaMetadata>> fetchItems() async {
-    return await client.getCollectionItems(widget.collection.ratingKey);
+    return await client.getCollectionItems(widget.collection.itemId);
   }
 
   @override
@@ -89,18 +89,6 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
   }
 
   Future<void> _deleteCollection() async {
-    int? sectionId = widget.collection.librarySectionID;
-    if (sectionId == null && items.isNotEmpty) {
-      sectionId = items.first.librarySectionID;
-    }
-
-    if (sectionId == null) {
-      if (mounted) {
-        showErrorSnackBar(context, t.collections.unknownLibrarySection);
-      }
-      return;
-    }
-
     final confirmed = await showDeleteConfirmation(
       context,
       title: t.collections.deleteCollection,
@@ -111,7 +99,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
     if (!mounted) return;
 
     try {
-      final success = await client.deleteCollection(sectionId.toString(), widget.collection.ratingKey);
+      final success = await client.deleteCollection(widget.collection.itemId);
 
       if (!mounted) return;
 
@@ -151,7 +139,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
               buildFocusableGrid(
                 items: items,
                 onRefresh: updateItem,
-                collectionId: widget.collection.ratingKey,
+                collectionId: widget.collection.itemId,
                 onListRefresh: loadItems,
               ),
           ],

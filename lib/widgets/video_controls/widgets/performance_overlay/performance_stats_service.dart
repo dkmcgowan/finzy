@@ -130,7 +130,9 @@ class PerformanceStatsService {
     int? appMemory;
     try {
       appMemory = ProcessInfo.currentRss;
-    } catch (_) {}
+    } catch (e) {
+      appLogger.d('Failed to read process memory info', error: e);
+    }
 
     if (playerType == 'mpv') {
       // Parse MPV stats format (returned when in fallback mode)

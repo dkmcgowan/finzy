@@ -14,7 +14,7 @@ class FocusableMediaCard extends StatefulWidget {
   final dynamic item; // MediaMetadata or Playlist
   final double? width;
   final double? height;
-  final void Function(String ratingKey)? onRefresh;
+  final void Function(String itemId)? onRefresh;
   final VoidCallback? onRemoveFromContinueWatching;
   final VoidCallback? onListRefresh;
   final bool forceGridMode;

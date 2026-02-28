@@ -163,15 +163,15 @@ class MediaControlsManager {
       final parts = <String>[];
 
       // Add show name
-      if (metadata.grandparentTitle != null) {
-        parts.add(metadata.grandparentTitle!);
+      if (metadata.seriesTitle != null) {
+        parts.add(metadata.seriesTitle!);
       }
 
       // Add season/episode info
       if (metadata.parentIndex != null && metadata.index != null) {
         parts.add('S${metadata.parentIndex} E${metadata.index}');
-      } else if (metadata.parentTitle != null) {
-        parts.add(metadata.parentTitle!);
+      } else if (metadata.seasonTitle != null) {
+        parts.add(metadata.seasonTitle!);
       }
 
       return parts.join(' • ');

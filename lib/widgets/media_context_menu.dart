@@ -16,7 +16,6 @@ import '../utils/library_refresh_notifier.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/dialogs.dart';
 import '../utils/focus_utils.dart';
-import '../services/external_player_service.dart';
 import '../focus/dpad_navigator.dart';
 import '../screens/media_detail_screen.dart';
 import '../screens/season_detail_screen.dart';
@@ -26,7 +25,6 @@ import '../theme/mono_tokens.dart';
 import '../widgets/file_info_bottom_sheet.dart';
 import '../widgets/focusable_list_tile.dart';
 import '../widgets/overlay_sheet.dart';
-import '../widgets/rating_bottom_sheet.dart';
 import '../i18n/strings.g.dart';
 
 /// Helper class to store menu action data
@@ -43,7 +41,7 @@ class _MenuAction {
 /// to any media item with appropriate actions based on the item type.
 class MediaContextMenu extends StatefulWidget {
   final dynamic item; // Can be MediaMetadata or Playlist
-  final void Function(String ratingKey)? onRefresh;
+  final void Function(String itemId)? onRefresh;
   final VoidCallback? onRemoveFromContinueWatching;
   final VoidCallback? onListRefresh; // For refreshing list after deletion
   final VoidCallback? onTap;
@@ -141,6 +139,8 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     // Check if we should use bottom sheet (on iOS and Android)
     final useBottomSheet = Platform.isIOS || Platform.isAndroid;
 
+    final client = _getClientForItem();
+
     // Build menu actions
     final menuActions = <_MenuAction>[];
 
@@ -152,8 +152,10 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       // Shuffle
       menuActions.add(_MenuAction(value: 'shuffle', icon: Symbols.shuffle_rounded, label: t.mediaMenu.shufflePlay));
 
-      // Delete
-      menuActions.add(_MenuAction(value: 'delete', icon: Symbols.delete_rounded, label: t.common.delete));
+      // Delete (playlists always, collections only with permission)
+      if (isPlaylist || client.canDeleteContent) {
+        menuActions.add(_MenuAction(value: 'delete', icon: Symbols.delete_rounded, label: t.common.delete));
+      }
 
       // Skip other menu items for collections and playlists
     } else {
@@ -188,16 +190,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         );
       }
 
-      // Rate (for movies, shows, seasons, and episodes)
-      if (mediaType == MediaType.movie ||
-          mediaType == MediaType.show ||
-          mediaType == MediaType.season ||
-          mediaType == MediaType.episode) {
-        menuActions.add(
-          _MenuAction(value: 'rate', icon: Symbols.star_rounded, label: t.mediaMenu.rate),
-        );
-      }
-
       // Remove from Collection (only when viewing items within a collection)
       if (widget.collectionId != null) {
         menuActions.add(
@@ -211,21 +203,14 @@ class MediaContextMenuState extends State<MediaContextMenu> {
 
       // Go to Series (for episodes and seasons)
       if ((mediaType == MediaType.episode || mediaType == MediaType.season) &&
-          metadata.grandparentTitle != null) {
+          metadata.seriesTitle != null) {
         menuActions.add(_MenuAction(value: 'series', icon: Symbols.tv_rounded, label: t.mediaMenu.goToSeries));
       }
 
       // Go to Season (for episodes)
-      if (mediaType == MediaType.episode && metadata.parentTitle != null) {
+      if (mediaType == MediaType.episode && metadata.seasonTitle != null) {
         menuActions.add(
           _MenuAction(value: 'season', icon: Symbols.playlist_play_rounded, label: t.mediaMenu.goToSeason),
-        );
-      }
-
-      // Shuffle Play (for shows and seasons)
-      if (mediaType == MediaType.show || mediaType == MediaType.season) {
-        menuActions.add(
-          _MenuAction(value: 'shuffle_play', icon: Symbols.shuffle_rounded, label: t.mediaMenu.shufflePlay),
         );
       }
 
@@ -234,24 +219,13 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         menuActions.add(_MenuAction(value: 'fileinfo', icon: Symbols.info_rounded, label: t.mediaMenu.fileInfo));
       }
 
-      // Play in External Player (for episodes and movies)
-      if (mediaType == MediaType.episode || mediaType == MediaType.movie) {
-        menuActions.add(
-          _MenuAction(
-            value: 'play_external',
-            icon: Symbols.open_in_new_rounded,
-            label: t.externalPlayer.playInExternalPlayer,
-          ),
-        );
-      }
-
       // Download options (for episodes, movies, shows, and seasons)
       if (mediaType == MediaType.episode ||
           mediaType == MediaType.movie ||
           mediaType == MediaType.show ||
           mediaType == MediaType.season) {
         final downloadProvider = Provider.of<DownloadProvider>(context, listen: false);
-        final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
+        final globalKey = '${metadata.serverId}:${metadata.itemId}';
         final isDownloaded = downloadProvider.isDownloaded(globalKey);
 
         if (isDownloaded) {
@@ -267,19 +241,21 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         }
       }
 
-      // Add to... (for episodes, movies, shows, and seasons)
+      // Add to Playlist / Collection (for episodes, movies, shows, and seasons)
       if (mediaType == MediaType.episode ||
           mediaType == MediaType.movie ||
           mediaType == MediaType.show ||
           mediaType == MediaType.season) {
-        menuActions.add(_MenuAction(value: 'add_to', icon: Symbols.add_rounded, label: t.common.addTo));
+        menuActions.add(_MenuAction(value: 'add_to_playlist', icon: Symbols.playlist_add_rounded, label: t.playlists.addToPlaylist));
+        menuActions.add(_MenuAction(value: 'add_to_collection', icon: Symbols.collections_rounded, label: t.collections.addToCollection));
       }
 
-      // Delete media item (for episodes, movies, shows, and seasons)
-      if (mediaType == MediaType.episode ||
+      // Delete media item (only if user has permission)
+      if (client.canDeleteContent &&
+          (mediaType == MediaType.episode ||
           mediaType == MediaType.movie ||
           mediaType == MediaType.show ||
-          mediaType == MediaType.season) {
+          mediaType == MediaType.season)) {
         menuActions.add(
           _MenuAction(
             value: 'delete_media',
@@ -339,8 +315,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     }
 
     try {
-      final client = _getClientForItem();
-
       if (!context.mounted) return;
 
       // Check if we're in offline mode for watch actions
@@ -352,16 +326,16 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           if (isOffline && metadata?.serverId != null) {
             // Offline mode: queue action for later sync (emits WatchStateEvent)
             final offlineWatch = context.read<OfflineWatchProvider>();
-            await offlineWatch.markAsWatched(serverId: metadata!.serverId!, ratingKey: metadata.ratingKey);
+            await offlineWatch.markAsWatched(serverId: metadata!.serverId!, itemId: metadata.itemId);
             if (context.mounted) {
               showAppSnackBar(context, t.messages.markedAsWatchedOffline);
-              widget.onRefresh?.call(metadata.ratingKey);
+              widget.onRefresh?.call(metadata.itemId);
             }
           } else {
             // Pass metadata to emit WatchStateEvent for cross-screen updates
             await _executeAction(
               context,
-              () => client.markAsWatched(metadata!.ratingKey, metadata: metadata),
+              () => client.markAsWatched(metadata!.itemId, metadata: metadata),
               t.messages.markedAsWatched,
             );
           }
@@ -371,16 +345,16 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           if (isOffline && metadata?.serverId != null) {
             // Offline mode: queue action for later sync (emits WatchStateEvent)
             final offlineWatch = context.read<OfflineWatchProvider>();
-            await offlineWatch.markAsUnwatched(serverId: metadata!.serverId!, ratingKey: metadata.ratingKey);
+            await offlineWatch.markAsUnwatched(serverId: metadata!.serverId!, itemId: metadata.itemId);
             if (context.mounted) {
               showAppSnackBar(context, t.messages.markedAsUnwatchedOffline);
-              widget.onRefresh?.call(metadata.ratingKey);
+              widget.onRefresh?.call(metadata.itemId);
             }
           } else {
             // Pass metadata to emit WatchStateEvent for cross-screen updates
             await _executeAction(
               context,
-              () => client.markAsUnwatched(metadata!.ratingKey, metadata: metadata),
+              () => client.markAsUnwatched(metadata!.itemId, metadata: metadata),
               t.messages.markedAsUnwatched,
             );
           }
@@ -391,14 +365,14 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           // This preserves the progression for partially watched items
           // and doesn't mark unwatched next episodes as watched
           try {
-            await client.removeFromOnDeck(metadata!.ratingKey);
+            await client.removeFromOnDeck(metadata!.itemId);
             if (context.mounted) {
               showSuccessSnackBar(context, t.messages.removedFromContinueWatching);
               // Use specific callback if provided, otherwise fallback to onRefresh
               if (widget.onRemoveFromContinueWatching != null) {
                 widget.onRemoveFromContinueWatching!();
               } else {
-                widget.onRefresh?.call(metadata.ratingKey);
+                widget.onRefresh?.call(metadata.itemId);
               }
             }
           } catch (e) {
@@ -408,11 +382,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           }
           break;
 
-        case 'rate':
-          if (context.mounted) {
-            await _showRatingSheet(context, metadata!, client);
-          }
-          break;
 
         case 'remove_from_collection':
           await _handleRemoveFromCollection(context, metadata!);
@@ -422,7 +391,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           didNavigate = true;
           await _navigateToRelated(
             context,
-            metadata!.grandparentRatingKey,
+            metadata!.seriesId,
             (metadata) => MediaDetailScreen(metadata: metadata),
             t.messages.errorLoadingSeries,
           );
@@ -432,7 +401,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           didNavigate = true;
           await _navigateToRelated(
             context,
-            metadata!.parentRatingKey,
+            metadata!.seasonId,
             (metadata) => SeasonDetailScreen(season: metadata),
             t.messages.errorLoadingSeason,
           );
@@ -442,12 +411,12 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           await _showFileInfo(context);
           break;
 
-        case 'add_to':
-          await _showAddToSubmenu(context);
+        case 'add_to_playlist':
+          await _showAddToPlaylistDialog(context);
           break;
 
-        case 'shuffle_play':
-          await _handleShufflePlayWithQueue(context);
+        case 'add_to_collection':
+          await _showAddToCollectionDialog(context);
           break;
 
         case 'play':
@@ -460,10 +429,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
 
         case 'delete':
           await _handleDelete(context, isCollection, isPlaylist);
-          break;
-
-        case 'play_external':
-          await _handlePlayExternal(context);
           break;
 
         case 'download':
@@ -499,7 +464,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       await action();
       if (context.mounted) {
         showSuccessSnackBar(context, successMessage);
-        widget.onRefresh?.call(widget.item.ratingKey);
+        widget.onRefresh?.call(widget.item.itemId);
       }
     } catch (e) {
       if (context.mounted) {
@@ -511,19 +476,19 @@ class MediaContextMenuState extends State<MediaContextMenu> {
   /// Navigate to a related item (series or season)
   Future<void> _navigateToRelated(
     BuildContext context,
-    String? ratingKey,
+    String? itemId,
     Widget Function(MediaMetadata) screenBuilder,
     String errorPrefix,
   ) async {
-    if (ratingKey == null) return;
+    if (itemId == null) return;
 
     final client = _getClientForItem();
 
     try {
-      final metadata = await client.getMetadataWithImages(ratingKey);
+      final metadata = await client.getMetadataWithImages(itemId);
       if (metadata != null && context.mounted) {
         await Navigator.push(context, MaterialPageRoute(builder: (context) => screenBuilder(metadata)));
-        widget.onRefresh?.call(widget.item.ratingKey);
+        widget.onRefresh?.call(widget.item.itemId);
       }
     } catch (e) {
       if (context.mounted) {
@@ -548,7 +513,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
 
       // Fetch file info
       final metadata = widget.item as MediaMetadata;
-      final fileInfo = await client.getFileInfo(metadata.ratingKey);
+      final fileInfo = await client.getFileInfo(metadata.itemId);
 
       // Close loading indicator
       if (context.mounted) {
@@ -585,110 +550,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     }
   }
 
-  /// Handle shuffle play using play queues
-  Future<void> _handleShufflePlayWithQueue(BuildContext context) async {
-    final client = _getClientForItem();
-    final metadata = widget.item as MediaMetadata;
-
-    final launcher = PlayQueueLauncher(
-      context: context,
-      client: client,
-      serverId: metadata.serverId,
-      serverName: metadata.serverName,
-    );
-
-    await launcher.launchShuffledShow(metadata: metadata, showLoadingIndicator: true);
-  }
-
-  /// Show submenu for Add to... (Playlist or Collection)
-  Future<void> _showAddToSubmenu(BuildContext context) async {
-    final useBottomSheet = Platform.isIOS || Platform.isAndroid;
-
-    final submenuActions = [
-      _MenuAction(value: 'playlist', icon: Symbols.playlist_play_rounded, label: t.playlists.playlist),
-      _MenuAction(value: 'collection', icon: Symbols.collections_rounded, label: t.collections.collection),
-    ];
-
-    String? selected;
-    if (useBottomSheet) {
-      final overlayController = OverlaySheetController.maybeOf(context);
-      if (overlayController != null) {
-        selected = await overlayController.push<String>(
-          builder: (context) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(t.common.addTo, style: Theme.of(context).textTheme.titleMedium),
-                ),
-                ...submenuActions.map((action) {
-                  return ListTile(
-                    leading: AppIcon(action.icon, fill: 1),
-                    title: Text(action.label),
-                    onTap: () => overlayController.pop(action.value),
-                  );
-                }),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      } else {
-        selected = await showModalBottomSheet<String>(
-          context: context,
-          builder: (context) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(t.common.addTo, style: Theme.of(context).textTheme.titleMedium),
-                ),
-                ...submenuActions.map((action) {
-                  return ListTile(
-                    leading: AppIcon(action.icon, fill: 1),
-                    title: Text(action.label),
-                    onTap: () => Navigator.pop(context, action.value),
-                  );
-                }),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      }
-    } else {
-      selected = await showMenu<String>(
-        context: context,
-        position: RelativeRect.fromLTRB(
-          _tapPosition?.dx ?? 0,
-          _tapPosition?.dy ?? 0,
-          _tapPosition?.dx ?? 0,
-          _tapPosition?.dy ?? 0,
-        ),
-        items: submenuActions.map((action) {
-          return PopupMenuItem<String>(
-            value: action.value,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [AppIcon(action.icon, fill: 1, size: 20), const SizedBox(width: 12), Text(action.label)],
-            ),
-          );
-        }).toList(),
-      );
-    }
-
-    // Handle the submenu selection
-    if (selected == 'playlist' && context.mounted) {
-      await _showAddToPlaylistDialog(context);
-    } else if (selected == 'collection' && context.mounted) {
-      await _showAddToCollectionDialog(context);
-    }
-  }
-
   /// Show dialog to select playlist and add item
   Future<void> _showAddToPlaylistDialog(BuildContext context) async {
     final client = _getClientForItem();
@@ -712,7 +573,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
 
       // Build URI for the item (works for all types: movies, episodes, seasons, shows)
       // For seasons/shows, the server API should automatically expand to include all episodes
-      final itemUri = await client.buildMetadataUri(metadata.ratingKey);
+      final itemUri = await client.buildMetadataUri(metadata.itemId);
       appLogger.d('Built URI for $itemType: $itemUri');
 
       if (!context.mounted) return;
@@ -780,65 +641,11 @@ class MediaContextMenuState extends State<MediaContextMenu> {
 
     try {
       final metadata = widget.item as MediaMetadata;
-      final itemType = metadata.type.toLowerCase();
 
-      // Get the library section ID from the item
-      // First try from the metadata itself
-      int? sectionId = metadata.librarySectionID;
-      appLogger.d('Attempting to get section ID for ${metadata.title}');
-      appLogger.d('  - librarySectionID: $sectionId');
-      appLogger.d('  - key: ${metadata.key}');
-
-      // If not available, fetch the full metadata which should include the section ID
-      if (sectionId == null) {
-        try {
-          appLogger.d('  - Fetching full metadata for: ${metadata.ratingKey}');
-          final fullMetadata = await client.getMetadataWithImages(metadata.ratingKey);
-          if (fullMetadata != null) {
-            sectionId = fullMetadata.librarySectionID;
-            appLogger.d('  - Section ID from full metadata: $sectionId');
-          }
-        } catch (e) {
-          appLogger.w('Failed to get full metadata for section ID: $e');
-        }
-      }
-
-      // If still not found, try to extract from the key field
-      if (sectionId == null) {
-        final keyMatch = RegExp(r'/library/sections/(\d+)').firstMatch(metadata.key);
-        if (keyMatch != null) {
-          sectionId = int.tryParse(keyMatch.group(1)!);
-          appLogger.d('  - Extracted from key: $sectionId');
-        }
-      }
-
-      // Last resort: try to get it from the item's parent (for episodes/seasons)
-      if (sectionId == null && metadata.grandparentRatingKey != null) {
-        try {
-          appLogger.d('  - Trying to get from parent: ${metadata.grandparentRatingKey}');
-          final parentMeta = await client.getMetadataWithImages(metadata.grandparentRatingKey!);
-          sectionId = parentMeta?.librarySectionID;
-          appLogger.d('  - Parent sectionId: $sectionId');
-        } catch (e) {
-          appLogger.w('Failed to get parent metadata for section ID: $e');
-        }
-      }
-
-      appLogger.d('  - Final sectionId: $sectionId');
-
-      if (sectionId == null) {
-        if (context.mounted) {
-          showErrorSnackBar(context, 'Unable to determine library section for this item');
-        }
-        return;
-      }
-
-      // Load collections for this library section
-      final collections = await client.getLibraryCollections(sectionId.toString());
+      final collections = await client.getGlobalCollections();
 
       if (!context.mounted) return;
 
-      // Show dialog to select collection or create new
       final result = await showDialog<String>(
         context: context,
         builder: (context) => _CollectionSelectionDialog(collections: collections),
@@ -846,14 +653,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
 
       if (result == null || !context.mounted) return;
 
-      // Build URI for the item
-      final itemUri = await client.buildMetadataUri(metadata.ratingKey);
-      appLogger.d('Built URI for $itemType: $itemUri');
-
-      if (!context.mounted) return;
-
       if (result == '_create_new') {
-        // Create new collection flow
         final collectionName = await showTextInputDialog(
           context,
           title: t.collections.createNewCollection,
@@ -865,75 +665,29 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           return;
         }
 
-        // Create collection first (without items)
-        // Determine the collection type based on the item type
-        int? collectionType;
-        switch (itemType) {
-          case 'movie':
-            collectionType = 1;
-            break;
-          case 'show':
-            collectionType = 2;
-            break;
-          case 'season':
-            collectionType = 3;
-            break;
-          case 'episode':
-            collectionType = 4;
-            break;
-        }
-
-        appLogger.d('Creating collection "$collectionName" with type $collectionType');
         final newCollectionId = await client.createCollection(
-          sectionId: sectionId.toString(),
           title: collectionName,
-          uri: '', // Empty for regular collections
-          type: collectionType,
+          itemIds: [metadata.itemId],
         );
 
         if (!context.mounted) return;
 
-        if (context.mounted) {
-          if (newCollectionId != null) {
-            appLogger.d('Successfully created collection with ID: $newCollectionId');
-
-            // Now add the item to the newly created collection
-            appLogger.d('Adding item to new collection $newCollectionId with URI: $itemUri');
-            final addSuccess = await client.addToCollection(collectionId: newCollectionId, uri: itemUri);
-
-            if (!context.mounted) return;
-
-            if (addSuccess) {
-              appLogger.d('Successfully added item to new collection');
-              showSuccessSnackBar(context, t.collections.created);
-              // Trigger refresh of collections tab
-              LibraryRefreshNotifier().notifyCollectionsChanged();
-            } else {
-              appLogger.e('Failed to add item to new collection');
-              showErrorSnackBar(context, t.collections.errorAddingToCollection);
-            }
-          } else {
-            appLogger.e('Failed to create collection - API returned null');
-            showErrorSnackBar(context, t.collections.errorAddingToCollection);
-          }
+        if (newCollectionId != null) {
+          showSuccessSnackBar(context, t.collections.created);
+          LibraryRefreshNotifier().notifyCollectionsChanged();
+        } else {
+          showErrorSnackBar(context, t.collections.errorAddingToCollection);
         }
       } else {
-        // Add to existing collection
-        appLogger.d('Adding to collection $result with URI: $itemUri');
-        final success = await client.addToCollection(collectionId: result, uri: itemUri);
+        final success = await client.addToCollection(collectionId: result, itemIds: [metadata.itemId]);
 
         if (!context.mounted) return;
 
-        if (context.mounted) {
-          if (success) {
-            appLogger.d('Successfully added item(s) to collection $result');
-            showSuccessSnackBar(context, t.collections.addedToCollection);
-            // Trigger refresh of collections tab
-            LibraryRefreshNotifier().notifyCollectionsChanged();
-          } else {
-            appLogger.e('Failed to add item(s) to collection $result - API returned false');
-            showErrorSnackBar(context, t.collections.errorAddingToCollection);
-          }
+        if (success) {
+          showSuccessSnackBar(context, t.collections.addedToCollection);
+          LibraryRefreshNotifier().notifyCollectionsChanged();
+        } else {
+          showErrorSnackBar(context, t.collections.errorAddingToCollection);
         }
       }
     } catch (e, stackTrace) {
@@ -942,26 +696,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         showErrorSnackBar(context, '${t.collections.errorAddingToCollection}: ${e.toString()}');
       }
     }
-  }
-
-  /// Handle remove from collection action
-  Future<void> _showRatingSheet(BuildContext context, MediaMetadata metadata, JellyfinClient client) async {
-    final currentStarValue = (metadata.userRating != null && metadata.userRating! > 0) ? metadata.userRating! / 2.0 : 0.0;
-    await showModalBottomSheet(
-      context: context,
-      builder: (context) => RatingBottomSheet(
-        currentRating: currentStarValue,
-        onRate: (stars) async {
-          final ratingValue = stars * 2.0;
-          final success = await client.rateItem(metadata.ratingKey, ratingValue);
-          if (success) widget.onRefresh?.call(metadata.ratingKey);
-        },
-        onClear: () async {
-          final success = await client.rateItem(metadata.ratingKey, -1);
-          if (success) widget.onRefresh?.call(metadata.ratingKey);
-        },
-      ),
-    );
   }
 
   Future<void> _handleRemoveFromCollection(BuildContext context, MediaMetadata metadata) async {
@@ -982,8 +716,8 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     if (!confirmed || !context.mounted) return;
 
     try {
-      appLogger.d('Removing item ${metadata.ratingKey} from collection ${widget.collectionId}');
-      final success = await client.removeFromCollection(collectionId: widget.collectionId!, itemId: metadata.ratingKey);
+      appLogger.d('Removing item ${metadata.itemId} from collection ${widget.collectionId}');
+      final success = await client.removeFromCollection(collectionId: widget.collectionId!, itemId: metadata.itemId);
 
       if (context.mounted) {
         if (success) {
@@ -1052,11 +786,10 @@ class MediaContextMenuState extends State<MediaContextMenu> {
 
       if (isCollection) {
         final metadata = widget.item as MediaMetadata;
-        final sectionId = metadata.librarySectionID?.toString() ?? '0';
-        success = await client.deleteCollection(sectionId, metadata.ratingKey);
+        success = await client.deleteCollection(metadata.itemId);
       } else if (isPlaylist) {
         final playlist = widget.item as Playlist;
-        success = await client.deletePlaylist(playlist.ratingKey);
+        success = await client.deletePlaylist(playlist.itemId);
       }
 
       if (context.mounted) {
@@ -1077,26 +810,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         );
       }
     }
-  }
-
-  /// Handle play in external player action
-  Future<void> _handlePlayExternal(BuildContext context) async {
-    final metadata = widget.item as MediaMetadata;
-
-    // Check if the item is downloaded and use local file path if available
-    final downloadProvider = Provider.of<DownloadProvider>(context, listen: false);
-    final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
-    if (downloadProvider.isDownloaded(globalKey)) {
-      final videoPath = await downloadProvider.getVideoFilePath(globalKey);
-      if (videoPath != null) {
-        final videoUrl = videoPath.contains('://') ? videoPath : 'file://$videoPath';
-        await ExternalPlayerService.launch(context: context, videoUrl: videoUrl);
-        return;
-      }
-    }
-
-    final client = _getClientForItem();
-    await ExternalPlayerService.launch(context: context, metadata: metadata, client: client);
   }
 
   /// Handle download action
@@ -1128,7 +841,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
   Future<void> _handleDeleteDownload(BuildContext context) async {
     final downloadProvider = Provider.of<DownloadProvider>(context, listen: false);
     final metadata = widget.item as MediaMetadata;
-    final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
+    final globalKey = '${metadata.serverId}:${metadata.itemId}';
 
     // Show confirmation dialog
     final confirmed = await showDeleteConfirmation(
@@ -1148,7 +861,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         // Notify DeletionAware screens (e.g. offline season detail)
         DeletionNotifier().notifyDeleted(metadata: metadata, isDownloadOnly: true);
         // Refresh the view if needed
-        widget.onRefresh?.call(metadata.ratingKey);
+        widget.onRefresh?.call(metadata.itemId);
       }
     } catch (e) {
       appLogger.e('Failed to delete download', error: e);
@@ -1175,7 +888,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
 
     try {
       final client = _getClientForItem();
-      final success = await client.deleteMediaItem(metadata.ratingKey);
+      final success = await client.deleteMediaItem(metadata.itemId);
 
       if (context.mounted) {
         if (success) {
@@ -1246,7 +959,7 @@ class _PlaylistSelectionDialog extends StatelessWidget {
               subtitle: playlist.leafCount != null ? Text(subtitleText) : null,
               onTap: playlist.smart
                   ? null // Disable smart playlists
-                  : () => Navigator.pop(context, playlist.ratingKey),
+                  : () => Navigator.pop(context, playlist.itemId),
               enabled: !playlist.smart,
             );
           },
@@ -1287,7 +1000,7 @@ class _CollectionSelectionDialog extends StatelessWidget {
               leading: const AppIcon(Symbols.collections_rounded, fill: 1),
               title: Text(collection.title),
               subtitle: collection.childCount != null ? Text('${collection.childCount} items') : null,
-              onTap: () => Navigator.pop(context, collection.ratingKey),
+              onTap: () => Navigator.pop(context, collection.itemId),
             );
           },
         ),
@@ -1351,6 +1064,8 @@ class _FocusableContextMenuSheetState extends State<_FocusableContextMenuSheet> 
                       focusNode: index == 0 ? _initialFocusNode : null,
                       leading: AppIcon(action.icon, fill: 1),
                       title: Text(action.label),
+                      dense: true,
+                      visualDensity: const VisualDensity(vertical: -2),
                       onTap: () {
                         final controller = OverlaySheetController.maybeOf(context);
                         if (controller != null) {
@@ -1417,7 +1132,7 @@ class _FocusablePopupMenuState extends State<_FocusablePopupMenu> {
     }
 
     // Estimate menu height and adjust if would go off bottom
-    final estimatedHeight = widget.actions.length * 48.0 + 16;
+    final estimatedHeight = widget.actions.length * 40.0 + 16;
     if (top + estimatedHeight > screenSize.height) {
       top = screenSize.height - estimatedHeight - 8;
     }
@@ -1464,6 +1179,8 @@ class _FocusablePopupMenuState extends State<_FocusablePopupMenu> {
                       focusNode: index == 0 ? _initialFocusNode : null,
                       leading: AppIcon(action.icon, fill: 1, size: 20),
                       title: Text(action.label),
+                      dense: true,
+                      visualDensity: const VisualDensity(vertical: -2),
                       onTap: () => Navigator.pop(context, action.value),
                       hoverColor: action.hoverColor,
                     );

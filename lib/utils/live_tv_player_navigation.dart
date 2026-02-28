@@ -25,7 +25,7 @@ Future<void> navigateToLiveTv(
 
   appLogger.d('Navigating to live channel: ${channel.displayName} (${channel.key})');
 
-  final placeholder = MediaMetadata(ratingKey: channel.key, key: channel.key, type: 'clip', title: channel.displayName);
+  final placeholder = MediaMetadata(itemId: channel.key, key: channel.key, type: 'clip', title: channel.displayName);
 
   final route = PageRouteBuilder<bool>(
     settings: const RouteSettings(name: kVideoPlayerRouteName),

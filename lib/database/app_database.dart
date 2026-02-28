@@ -16,7 +16,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 8; // Added bgTaskId column to DownloadedMedia
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -25,17 +25,12 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (from < 7) {
-          appLogger.i('Adding OfflineWatchProgress table (v7 migration)');
-          await m.createTable(offlineWatchProgress);
-        }
-        if (from < 8) {
-          appLogger.i('Adding bgTaskId column to DownloadedMedia (v8 migration)');
-          try {
-            await m.addColumn(downloadedMedia, downloadedMedia.bgTaskId);
-          } catch (e) {
-            appLogger.w('bgTaskId column may already exist: $e');
-          }
+        if (from < 9) {
+          appLogger.i('Recreating tables for v9 schema (column renames)');
+          await m.deleteTable('downloaded_media');
+          await m.deleteTable('offline_watch_progress');
+          await m.deleteTable('download_queue');
+          await m.createAll();
         }
       },
     );
@@ -94,12 +89,12 @@ class AppDatabase extends _$AppDatabase {
   /// Insert or update a progress action (merges with existing)
   Future<void> upsertProgressAction({
     required String serverId,
-    required String ratingKey,
+    required String itemId,
     required int viewOffset,
     required int duration,
     required bool shouldMarkWatched,
   }) async {
-    final globalKey = '$serverId:$ratingKey';
+    final globalKey = '$serverId:$itemId';
     final now = DateTime.now().millisecondsSinceEpoch;
 
     // Check for existing progress entry
@@ -124,7 +119,7 @@ class AppDatabase extends _$AppDatabase {
       await into(offlineWatchProgress).insert(
         OfflineWatchProgressCompanion.insert(
           serverId: serverId,
-          ratingKey: ratingKey,
+          itemId: itemId,
           globalKey: globalKey,
           actionType: 'progress',
           viewOffset: Value(viewOffset),
@@ -141,10 +136,10 @@ class AppDatabase extends _$AppDatabase {
   /// Removes conflicting actions for the same item
   Future<void> insertWatchAction({
     required String serverId,
-    required String ratingKey,
+    required String itemId,
     required String actionType, // 'watched' or 'unwatched'
   }) async {
-    final globalKey = '$serverId:$ratingKey';
+    final globalKey = '$serverId:$itemId';
     final now = DateTime.now().millisecondsSinceEpoch;
 
     // Remove conflicting actions (opposite action type and progress)
@@ -154,7 +149,7 @@ class AppDatabase extends _$AppDatabase {
     await into(offlineWatchProgress).insert(
       OfflineWatchProgressCompanion.insert(
         serverId: serverId,
-        ratingKey: ratingKey,
+        itemId: itemId,
         globalKey: globalKey,
         actionType: actionType,
         createdAt: now,

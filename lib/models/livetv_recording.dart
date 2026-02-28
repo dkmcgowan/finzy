@@ -1,61 +1,52 @@
-/// Represents a Jellyfin Timer (individual scheduled recording).
-class ScheduledRecording {
-  final String? key;
+/// Represents a completed Jellyfin Live TV recording.
+class LiveTvRecording {
+  final String id;
   final String title;
   final String? overview;
-  final String? channelId;
   final String? channelName;
-  final String? seriesTimerId;
-  final String? programId;
   final String? status;
   final DateTime? startTime;
   final DateTime? endTime;
-  final int prePaddingSeconds;
-  final int postPaddingSeconds;
+  final String? imageTag;
+  final String? serverId;
 
   /// For episodes
   final String? seriesName;
   final int? seasonNumber;
   final int? episodeNumber;
 
-  ScheduledRecording({
-    this.key,
+  LiveTvRecording({
+    required this.id,
     required this.title,
     this.overview,
-    this.channelId,
     this.channelName,
-    this.seriesTimerId,
-    this.programId,
     this.status,
     this.startTime,
     this.endTime,
-    this.prePaddingSeconds = 0,
-    this.postPaddingSeconds = 0,
+    this.imageTag,
+    this.serverId,
     this.seriesName,
     this.seasonNumber,
     this.episodeNumber,
   });
 
-  factory ScheduledRecording.fromJellyfinJson(Map<String, dynamic> json) {
+  factory LiveTvRecording.fromJellyfinJson(Map<String, dynamic> json, {String? serverId}) {
     final startStr = json['StartDate'] as String?;
     final endStr = json['EndDate'] as String?;
 
-    return ScheduledRecording(
-      key: json['Id'] as String?,
+    return LiveTvRecording(
+      id: json['Id'] as String? ?? '',
       title: json['Name'] as String? ?? 'Unknown',
       overview: json['Overview'] as String?,
-      channelId: json['ChannelId'] as String?,
       channelName: json['ChannelName'] as String?,
-      seriesTimerId: json['SeriesTimerId'] as String?,
-      programId: json['ProgramId'] as String?,
       status: json['Status'] as String?,
       startTime: startStr != null ? DateTime.tryParse(startStr) : null,
       endTime: endStr != null ? DateTime.tryParse(endStr) : null,
-      prePaddingSeconds: (json['PrePaddingSeconds'] as num?)?.toInt() ?? 0,
-      postPaddingSeconds: (json['PostPaddingSeconds'] as num?)?.toInt() ?? 0,
+      imageTag: json['ImageTags']?['Primary'] as String?,
+      serverId: serverId,
       seriesName: json['SeriesName'] as String?,
-      seasonNumber: (json['SeasonNumber'] as num?)?.toInt(),
-      episodeNumber: (json['EpisodeNumber'] as num?)?.toInt(),
+      seasonNumber: (json['ParentIndexNumber'] as num?)?.toInt(),
+      episodeNumber: (json['IndexNumber'] as num?)?.toInt(),
     );
   }
 
@@ -71,7 +62,4 @@ class ScheduledRecording {
     }
     return title;
   }
-
-  /// Whether this timer is part of a series timer rule
-  bool get isSeriesTimer => seriesTimerId != null && seriesTimerId!.isNotEmpty;
 }

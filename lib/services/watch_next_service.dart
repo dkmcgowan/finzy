@@ -85,10 +85,10 @@ class WatchNextService {
   }
 
   /// Remove a single item from Watch Next.
-  Future<bool> removeItem(String serverId, String ratingKey) async {
+  Future<bool> removeItem(String serverId, String itemId) async {
     if (!Platform.isAndroid) return false;
     try {
-      final contentId = _buildContentId(serverId, ratingKey);
+      final contentId = _buildContentId(serverId, itemId);
       return await _channel.invokeMethod<bool>('remove', {'contentId': contentId}) ?? false;
     } catch (e) {
       appLogger.e('Failed to remove Watch Next item', error: e);
@@ -96,13 +96,13 @@ class WatchNextService {
     }
   }
 
-  /// Build a content ID. Format: finzy_{serverId}_{ratingKey}
-  static String _buildContentId(String? serverId, String ratingKey) {
-    return 'finzy_${serverId ?? 'unknown'}_$ratingKey';
+  /// Build a content ID. Format: finzy_{serverId}_{itemId}
+  static String _buildContentId(String? serverId, String itemId) {
+    return 'finzy_${serverId ?? 'unknown'}_$itemId';
   }
 
-  /// Parse a content ID back to (serverId, ratingKey), or null if invalid.
-  static (String serverId, String ratingKey)? parseContentId(String contentId) {
+  /// Parse a content ID back to (serverId, itemId), or null if invalid.
+  static (String serverId, String itemId)? parseContentId(String contentId) {
     if (!contentId.startsWith('finzy_')) return null;
     final parts = contentId.substring(6).split('_');
     if (parts.length < 2) return null;
@@ -113,7 +113,7 @@ class WatchNextService {
     MediaMetadata item,
     JellyfinClient Function(String serverId) getClientForServerId,
   ) {
-    final contentId = _buildContentId(item.serverId, item.ratingKey);
+    final contentId = _buildContentId(item.serverId, item.itemId);
 
     String? posterUri;
     try {
@@ -130,8 +130,8 @@ class WatchNextService {
 
     final String title;
     final String? episodeTitle;
-    if (item.mediaType == MediaType.episode && item.grandparentTitle != null) {
-      title = item.grandparentTitle!;
+    if (item.mediaType == MediaType.episode && item.seriesTitle != null) {
+      title = item.seriesTitle!;
       episodeTitle = item.title;
     } else {
       title = item.title;
@@ -152,7 +152,7 @@ class WatchNextService {
       'duration': item.duration ?? 0,
       'lastPlaybackPosition': item.viewOffset ?? 0,
       'lastEngagementTime': lastEngagementTime,
-      'seriesTitle': item.grandparentTitle,
+      'seriesTitle': item.seriesTitle,
       'seasonNumber': item.parentIndex,
       'episodeNumber': item.index,
     };

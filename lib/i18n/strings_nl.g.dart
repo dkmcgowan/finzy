@@ -153,6 +153,7 @@ class _TranslationsCommonNl implements TranslationsCommonEn {
 	@override String get settings => 'Instellingen';
 	@override String get mute => 'Dempen';
 	@override String get ok => 'OK';
+	@override String get none => 'None';
 	@override String get loading => 'Laden...';
 	@override String get reconnect => 'Opnieuw verbinden';
 	@override String get exitConfirmTitle => 'App afsluiten?';
@@ -212,6 +213,11 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get seasonPosterDescription => 'Toon de seizoensspecifieke poster voor afleveringen';
 	@override String get episodeThumbnail => 'Aflevering miniatuur';
 	@override String get episodeThumbnailDescription => 'Toon 16:9 aflevering miniaturen';
+	@override String get timeFormat => 'Tijdnotatie';
+	@override String get twelveHour => '12-uurs';
+	@override String get twentyFourHour => '24-uurs';
+	@override String get twelveHourDescription => 'bijv. 1:00 PM';
+	@override String get twentyFourHourDescription => 'bijv. 13:00';
 	@override String get showHeroSectionDescription => 'Toon uitgelichte inhoud carrousel op startscherm';
 	@override String get secondsLabel => 'Seconden';
 	@override String get minutesLabel => 'Minuten';
@@ -818,7 +824,9 @@ class _TranslationsLiveTvNl implements TranslationsLiveTvEn {
 	@override String get recordings => 'Opnames';
 	@override String get subscriptions => 'Opnameregels';
 	@override String get scheduled => 'Gepland';
+	@override String get seriesTimers => 'Series Timers';
 	@override String get noChannels => 'Geen zenders beschikbaar';
+	@override String get dvr => 'DVR';
 	@override String get noDvr => 'Geen DVR geconfigureerd op een server';
 	@override String get tuneFailed => 'Kan zender niet afstemmen';
 	@override String get loading => 'Zenders laden...';
@@ -830,8 +838,25 @@ class _TranslationsLiveTvNl implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => 'Weet je zeker dat je deze opnameregel wilt verwijderen?';
 	@override String get subscriptionDeleted => 'Opnameregel verwijderd';
 	@override String get noPrograms => 'Geen programmagegevens beschikbaar';
-	@override String get noRecordings => 'Geen opnames gepland';
-	@override String get noSubscriptions => 'Geen opnameregels';
+	@override String get noRecordings => 'No recordings';
+	@override String get noScheduled => 'No scheduled recordings';
+	@override String get noSubscriptions => 'No series timers';
+	@override String get cancelTimer => 'Cancel Recording';
+	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
+	@override String get timerCancelled => 'Recording cancelled';
+	@override String get deleteSeriesTimer => 'Delete Series Timer';
+	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
+	@override String get seriesTimerDeleted => 'Series timer deleted';
+	@override String get seriesTimerUpdated => 'Series timer updated';
+	@override String get recordNewOnly => 'Record new episodes only';
+	@override String get keepUpTo => 'Keep up to';
+	@override String get keepAll => 'Keep all';
+	@override String keepEpisodes({required Object count}) => '${count} episodes';
+	@override String get prePadding => 'Start recording early';
+	@override String get postPadding => 'Continue recording after';
+	@override String minutes({required Object count}) => '${count} min';
+	@override String get days => 'Days';
+	@override String get priority => 'Priority';
 	@override String channelNumber({required Object number}) => 'Kanaal ${number}';
 	@override String get live => 'LIVE';
 	@override String get hd => 'HD';
@@ -847,8 +872,21 @@ class _TranslationsLiveTvNl implements TranslationsLiveTvEn {
 	@override String get daytime => 'Overdag';
 	@override String get evening => 'Avond';
 	@override String get lateNight => 'Late avond';
-	@override String get whatsOn => 'Nu op TV';
+	@override String get programs => 'Programs';
+	@override String get onNow => 'On Now';
+	@override String get upcomingShows => 'Shows';
+	@override String get upcomingMovies => 'Movies';
+	@override String get upcomingSports => 'Sports';
+	@override String get forKids => 'For Kids';
+	@override String get upcomingNews => 'News';
 	@override String get watchChannel => 'Kanaal bekijken';
+	@override String get recentlyAdded => 'Recently Added';
+	@override String get recordingScheduled => 'Recording scheduled';
+	@override String get seriesRecordingScheduled => 'Series recording scheduled';
+	@override String get recordingFailed => 'Failed to schedule recording';
+	@override String get cancelSeries => 'Cancel Series';
+	@override String get stopRecording => 'Stop Recording';
+	@override String get doNotRecord => 'Do Not Record';
 }
 
 // Path: downloads
@@ -911,6 +949,7 @@ class _TranslationsPlaylistsNl implements TranslationsPlaylistsEn {
 	@override String get errorReordering => 'Fout bij herschikken van afspeellijstitem';
 	@override String get errorRemoving => 'Fout bij verwijderen uit afspeellijst';
 	@override String get playlist => 'Afspeellijst';
+	@override String get addToPlaylist => 'Toevoegen aan afspeellijst';
 }
 
 // Path: collections
@@ -922,6 +961,7 @@ class _TranslationsCollectionsNl implements TranslationsCollectionsEn {
 	// Translations
 	@override String get title => 'Collecties';
 	@override String get collection => 'Collectie';
+	@override String get addToCollection => 'Toevoegen aan collectie';
 	@override String get empty => 'Collectie is leeg';
 	@override String get unknownLibrarySection => 'Kan niet verwijderen: onbekende bibliotheeksectie';
 	@override String get deleteCollection => 'Collectie verwijderen';
@@ -1068,9 +1108,11 @@ class _TranslationsLibrariesTabsNl implements TranslationsLibrariesTabsEn {
 	final TranslationsNl _root; // ignore: unused_field
 
 	// Translations
-	@override String get recommended => 'Aanbevolen';
+	@override String get movies => 'Films';
+	@override String get shows => 'Series';
+	@override String get suggestions => 'Suggesties';
 	@override String get browse => 'Bladeren';
-	@override String get genre => 'Genre';
+	@override String get genres => 'Genres';
 	@override String get favorites => 'Favorieten';
 	@override String get collections => 'Collecties';
 	@override String get playlists => 'Afspeellijsten';
@@ -1256,6 +1298,7 @@ extension on TranslationsNl {
 			'common.settings' => 'Instellingen',
 			'common.mute' => 'Dempen',
 			'common.ok' => 'OK',
+			'common.none' => 'None',
 			'common.loading' => 'Laden...',
 			'common.reconnect' => 'Opnieuw verbinden',
 			'common.exitConfirmTitle' => 'App afsluiten?',
@@ -1288,6 +1331,11 @@ extension on TranslationsNl {
 			'settings.seasonPosterDescription' => 'Toon de seizoensspecifieke poster voor afleveringen',
 			'settings.episodeThumbnail' => 'Aflevering miniatuur',
 			'settings.episodeThumbnailDescription' => 'Toon 16:9 aflevering miniaturen',
+			'settings.timeFormat' => 'Tijdnotatie',
+			'settings.twelveHour' => '12-uurs',
+			'settings.twentyFourHour' => '24-uurs',
+			'settings.twelveHourDescription' => 'bijv. 1:00 PM',
+			'settings.twentyFourHourDescription' => 'bijv. 13:00',
 			'settings.showHeroSectionDescription' => 'Toon uitgelichte inhoud carrousel op startscherm',
 			'settings.secondsLabel' => 'Seconden',
 			'settings.minutesLabel' => 'Minuten',
@@ -1677,9 +1725,11 @@ extension on TranslationsNl {
 			'libraries.noGenres' => 'Geen genres in deze bibliotheek',
 			'libraries.noFoldersFound' => 'Geen mappen gevonden',
 			'libraries.folders' => 'mappen',
-			'libraries.tabs.recommended' => 'Aanbevolen',
+			'libraries.tabs.movies' => 'Films',
+			'libraries.tabs.shows' => 'Series',
+			'libraries.tabs.suggestions' => 'Suggesties',
 			'libraries.tabs.browse' => 'Bladeren',
-			'libraries.tabs.genre' => 'Genre',
+			'libraries.tabs.genres' => 'Genres',
 			'libraries.tabs.favorites' => 'Favorieten',
 			'libraries.tabs.collections' => 'Collecties',
 			'libraries.tabs.playlists' => 'Afspeellijsten',
@@ -1707,6 +1757,8 @@ extension on TranslationsNl {
 			'logs.error' => 'Fout:',
 			'logs.stackTrace' => 'Stacktracering:',
 			'licenses.relatedPackages' => 'Gerelateerde pakketten',
+			_ => null,
+		} ?? switch (path) {
 			'licenses.license' => 'Licentie',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licentie ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licenties',
@@ -1715,13 +1767,13 @@ extension on TranslationsNl {
 			'navigation.liveTv' => 'Live TV',
 			'liveTv.title' => 'Live TV',
 			'liveTv.channels' => 'Zenders',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guide' => 'Gids',
 			'liveTv.recordings' => 'Opnames',
 			'liveTv.subscriptions' => 'Opnameregels',
 			'liveTv.scheduled' => 'Gepland',
+			'liveTv.seriesTimers' => 'Series Timers',
 			'liveTv.noChannels' => 'Geen zenders beschikbaar',
+			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => 'Geen DVR geconfigureerd op een server',
 			'liveTv.tuneFailed' => 'Kan zender niet afstemmen',
 			'liveTv.loading' => 'Zenders laden...',
@@ -1733,8 +1785,25 @@ extension on TranslationsNl {
 			'liveTv.deleteSubscriptionConfirm' => 'Weet je zeker dat je deze opnameregel wilt verwijderen?',
 			'liveTv.subscriptionDeleted' => 'Opnameregel verwijderd',
 			'liveTv.noPrograms' => 'Geen programmagegevens beschikbaar',
-			'liveTv.noRecordings' => 'Geen opnames gepland',
-			'liveTv.noSubscriptions' => 'Geen opnameregels',
+			'liveTv.noRecordings' => 'No recordings',
+			'liveTv.noScheduled' => 'No scheduled recordings',
+			'liveTv.noSubscriptions' => 'No series timers',
+			'liveTv.cancelTimer' => 'Cancel Recording',
+			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
+			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
+			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
+			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
+			'liveTv.seriesTimerUpdated' => 'Series timer updated',
+			'liveTv.recordNewOnly' => 'Record new episodes only',
+			'liveTv.keepUpTo' => 'Keep up to',
+			'liveTv.keepAll' => 'Keep all',
+			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
+			'liveTv.prePadding' => 'Start recording early',
+			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.minutes' => ({required Object count}) => '${count} min',
+			'liveTv.days' => 'Days',
+			'liveTv.priority' => 'Priority',
 			'liveTv.channelNumber' => ({required Object number}) => 'Kanaal ${number}',
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
@@ -1750,8 +1819,21 @@ extension on TranslationsNl {
 			'liveTv.daytime' => 'Overdag',
 			'liveTv.evening' => 'Avond',
 			'liveTv.lateNight' => 'Late avond',
-			'liveTv.whatsOn' => 'Nu op TV',
+			'liveTv.programs' => 'Programs',
+			'liveTv.onNow' => 'On Now',
+			'liveTv.upcomingShows' => 'Shows',
+			'liveTv.upcomingMovies' => 'Movies',
+			'liveTv.upcomingSports' => 'Sports',
+			'liveTv.forKids' => 'For Kids',
+			'liveTv.upcomingNews' => 'News',
 			'liveTv.watchChannel' => 'Kanaal bekijken',
+			'liveTv.recentlyAdded' => 'Recently Added',
+			'liveTv.recordingScheduled' => 'Recording scheduled',
+			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
+			'liveTv.recordingFailed' => 'Failed to schedule recording',
+			'liveTv.cancelSeries' => 'Cancel Series',
+			'liveTv.stopRecording' => 'Stop Recording',
+			'liveTv.doNotRecord' => 'Do Not Record',
 			'downloads.title' => 'Downloads',
 			'downloads.manage' => 'Beheren',
 			'downloads.tvShows' => 'Series',
@@ -1796,8 +1878,10 @@ extension on TranslationsNl {
 			'playlists.errorReordering' => 'Fout bij herschikken van afspeellijstitem',
 			'playlists.errorRemoving' => 'Fout bij verwijderen uit afspeellijst',
 			'playlists.playlist' => 'Afspeellijst',
+			'playlists.addToPlaylist' => 'Toevoegen aan afspeellijst',
 			'collections.title' => 'Collecties',
 			'collections.collection' => 'Collectie',
+			'collections.addToCollection' => 'Toevoegen aan collectie',
 			'collections.empty' => 'Collectie is leeg',
 			'collections.unknownLibrarySection' => 'Kan niet verwijderen: onbekende bibliotheeksectie',
 			'collections.deleteCollection' => 'Collectie verwijderen',

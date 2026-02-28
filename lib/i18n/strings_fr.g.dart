@@ -153,6 +153,7 @@ class _TranslationsCommonFr implements TranslationsCommonEn {
 	@override String get settings => 'Paramètres';
 	@override String get mute => 'Muet';
 	@override String get ok => 'OK';
+	@override String get none => 'None';
 	@override String get loading => 'Chargement...';
 	@override String get reconnect => 'Reconnecter';
 	@override String get exitConfirmTitle => 'Quitter l\'application ?';
@@ -212,6 +213,11 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 	@override String get seasonPosterDescription => 'Afficher le poster spécifique à la saison pour les épisodes';
 	@override String get episodeThumbnail => 'Mignature d\'épisode';
 	@override String get episodeThumbnailDescription => 'Afficher les vignettes des captures d\'écran des épisodes au format 16:9';
+	@override String get timeFormat => 'Format de l\'heure';
+	@override String get twelveHour => '12 heures';
+	@override String get twentyFourHour => '24 heures';
+	@override String get twelveHourDescription => 'ex. 1:00 PM';
+	@override String get twentyFourHourDescription => 'ex. 13:00';
 	@override String get showHeroSectionDescription => 'Afficher le carrousel de contenu en vedette sur l\'écran d\'accueil';
 	@override String get secondsLabel => 'Secondes';
 	@override String get minutesLabel => 'Minutes';
@@ -818,7 +824,9 @@ class _TranslationsLiveTvFr implements TranslationsLiveTvEn {
 	@override String get recordings => 'Enregistrements';
 	@override String get subscriptions => 'Règles d\'enregistrement';
 	@override String get scheduled => 'Programmés';
+	@override String get seriesTimers => 'Series Timers';
 	@override String get noChannels => 'Aucune chaîne disponible';
+	@override String get dvr => 'DVR';
 	@override String get noDvr => 'Aucun DVR configuré sur les serveurs';
 	@override String get tuneFailed => 'Impossible de syntoniser la chaîne';
 	@override String get loading => 'Chargement des chaînes...';
@@ -830,8 +838,25 @@ class _TranslationsLiveTvFr implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => 'Voulez-vous vraiment supprimer cette règle d\'enregistrement ?';
 	@override String get subscriptionDeleted => 'Règle d\'enregistrement supprimée';
 	@override String get noPrograms => 'Aucune donnée de programme disponible';
-	@override String get noRecordings => 'Aucun enregistrement programmé';
-	@override String get noSubscriptions => 'Aucune règle d\'enregistrement';
+	@override String get noRecordings => 'No recordings';
+	@override String get noScheduled => 'No scheduled recordings';
+	@override String get noSubscriptions => 'No series timers';
+	@override String get cancelTimer => 'Cancel Recording';
+	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
+	@override String get timerCancelled => 'Recording cancelled';
+	@override String get deleteSeriesTimer => 'Delete Series Timer';
+	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
+	@override String get seriesTimerDeleted => 'Series timer deleted';
+	@override String get seriesTimerUpdated => 'Series timer updated';
+	@override String get recordNewOnly => 'Record new episodes only';
+	@override String get keepUpTo => 'Keep up to';
+	@override String get keepAll => 'Keep all';
+	@override String keepEpisodes({required Object count}) => '${count} episodes';
+	@override String get prePadding => 'Start recording early';
+	@override String get postPadding => 'Continue recording after';
+	@override String minutes({required Object count}) => '${count} min';
+	@override String get days => 'Days';
+	@override String get priority => 'Priority';
 	@override String channelNumber({required Object number}) => 'Ch. ${number}';
 	@override String get live => 'EN DIRECT';
 	@override String get hd => 'HD';
@@ -847,8 +872,21 @@ class _TranslationsLiveTvFr implements TranslationsLiveTvEn {
 	@override String get daytime => 'Journée';
 	@override String get evening => 'Soirée';
 	@override String get lateNight => 'Nuit tardive';
-	@override String get whatsOn => 'En ce moment';
+	@override String get programs => 'Programs';
+	@override String get onNow => 'On Now';
+	@override String get upcomingShows => 'Shows';
+	@override String get upcomingMovies => 'Movies';
+	@override String get upcomingSports => 'Sports';
+	@override String get forKids => 'For Kids';
+	@override String get upcomingNews => 'News';
 	@override String get watchChannel => 'Regarder la chaîne';
+	@override String get recentlyAdded => 'Recently Added';
+	@override String get recordingScheduled => 'Recording scheduled';
+	@override String get seriesRecordingScheduled => 'Series recording scheduled';
+	@override String get recordingFailed => 'Failed to schedule recording';
+	@override String get cancelSeries => 'Cancel Series';
+	@override String get stopRecording => 'Stop Recording';
+	@override String get doNotRecord => 'Do Not Record';
 }
 
 // Path: collections
@@ -860,6 +898,7 @@ class _TranslationsCollectionsFr implements TranslationsCollectionsEn {
 	// Translations
 	@override String get title => 'Collections';
 	@override String get collection => 'Collection';
+	@override String get addToCollection => 'Ajouter à la collection';
 	@override String get empty => 'La collection est vide';
 	@override String get unknownLibrarySection => 'Impossible de supprimer : section de bibliothèque inconnue';
 	@override String get deleteCollection => 'Supprimer la collection';
@@ -891,6 +930,7 @@ class _TranslationsPlaylistsFr implements TranslationsPlaylistsEn {
 	// Translations
 	@override String get title => 'Playlists';
 	@override String get playlist => 'Playlist';
+	@override String get addToPlaylist => 'Ajouter à la playlist';
 	@override String get noPlaylists => 'Aucune playlist trouvée';
 	@override String get create => 'Créer une playlist';
 	@override String get playlistName => 'Nom de playlist';
@@ -1068,9 +1108,11 @@ class _TranslationsLibrariesTabsFr implements TranslationsLibrariesTabsEn {
 	final TranslationsFr _root; // ignore: unused_field
 
 	// Translations
-	@override String get recommended => 'Recommandé';
+	@override String get movies => 'Films';
+	@override String get shows => 'Séries';
+	@override String get suggestions => 'Suggestions';
 	@override String get browse => 'Parcourir';
-	@override String get genre => 'Genre';
+	@override String get genres => 'Genres';
 	@override String get favorites => 'Favoris';
 	@override String get collections => 'Collections';
 	@override String get playlists => 'Playlists';
@@ -1256,6 +1298,7 @@ extension on TranslationsFr {
 			'common.settings' => 'Paramètres',
 			'common.mute' => 'Muet',
 			'common.ok' => 'OK',
+			'common.none' => 'None',
 			'common.loading' => 'Chargement...',
 			'common.reconnect' => 'Reconnecter',
 			'common.exitConfirmTitle' => 'Quitter l\'application ?',
@@ -1288,6 +1331,11 @@ extension on TranslationsFr {
 			'settings.seasonPosterDescription' => 'Afficher le poster spécifique à la saison pour les épisodes',
 			'settings.episodeThumbnail' => 'Mignature d\'épisode',
 			'settings.episodeThumbnailDescription' => 'Afficher les vignettes des captures d\'écran des épisodes au format 16:9',
+			'settings.timeFormat' => 'Format de l\'heure',
+			'settings.twelveHour' => '12 heures',
+			'settings.twentyFourHour' => '24 heures',
+			'settings.twelveHourDescription' => 'ex. 1:00 PM',
+			'settings.twentyFourHourDescription' => 'ex. 13:00',
 			'settings.showHeroSectionDescription' => 'Afficher le carrousel de contenu en vedette sur l\'écran d\'accueil',
 			'settings.secondsLabel' => 'Secondes',
 			'settings.minutesLabel' => 'Minutes',
@@ -1677,9 +1725,11 @@ extension on TranslationsFr {
 			'libraries.noGenres' => 'Aucun genre dans cette bibliothèque',
 			'libraries.noFoldersFound' => 'Aucun dossier trouvé',
 			'libraries.folders' => 'dossiers',
-			'libraries.tabs.recommended' => 'Recommandé',
+			'libraries.tabs.movies' => 'Films',
+			'libraries.tabs.shows' => 'Séries',
+			'libraries.tabs.suggestions' => 'Suggestions',
 			'libraries.tabs.browse' => 'Parcourir',
-			'libraries.tabs.genre' => 'Genre',
+			'libraries.tabs.genres' => 'Genres',
 			'libraries.tabs.favorites' => 'Favoris',
 			'libraries.tabs.collections' => 'Collections',
 			'libraries.tabs.playlists' => 'Playlists',
@@ -1707,6 +1757,8 @@ extension on TranslationsFr {
 			'logs.error' => 'Erreur:',
 			'logs.stackTrace' => 'Liste des appels:',
 			'licenses.relatedPackages' => 'Package associés',
+			_ => null,
+		} ?? switch (path) {
 			'licenses.license' => 'Licence',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licence ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licences',
@@ -1715,13 +1767,13 @@ extension on TranslationsFr {
 			'navigation.liveTv' => 'TV en direct',
 			'liveTv.title' => 'TV en direct',
 			'liveTv.channels' => 'Chaînes',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guide' => 'Guide',
 			'liveTv.recordings' => 'Enregistrements',
 			'liveTv.subscriptions' => 'Règles d\'enregistrement',
 			'liveTv.scheduled' => 'Programmés',
+			'liveTv.seriesTimers' => 'Series Timers',
 			'liveTv.noChannels' => 'Aucune chaîne disponible',
+			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => 'Aucun DVR configuré sur les serveurs',
 			'liveTv.tuneFailed' => 'Impossible de syntoniser la chaîne',
 			'liveTv.loading' => 'Chargement des chaînes...',
@@ -1733,8 +1785,25 @@ extension on TranslationsFr {
 			'liveTv.deleteSubscriptionConfirm' => 'Voulez-vous vraiment supprimer cette règle d\'enregistrement ?',
 			'liveTv.subscriptionDeleted' => 'Règle d\'enregistrement supprimée',
 			'liveTv.noPrograms' => 'Aucune donnée de programme disponible',
-			'liveTv.noRecordings' => 'Aucun enregistrement programmé',
-			'liveTv.noSubscriptions' => 'Aucune règle d\'enregistrement',
+			'liveTv.noRecordings' => 'No recordings',
+			'liveTv.noScheduled' => 'No scheduled recordings',
+			'liveTv.noSubscriptions' => 'No series timers',
+			'liveTv.cancelTimer' => 'Cancel Recording',
+			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
+			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
+			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
+			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
+			'liveTv.seriesTimerUpdated' => 'Series timer updated',
+			'liveTv.recordNewOnly' => 'Record new episodes only',
+			'liveTv.keepUpTo' => 'Keep up to',
+			'liveTv.keepAll' => 'Keep all',
+			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
+			'liveTv.prePadding' => 'Start recording early',
+			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.minutes' => ({required Object count}) => '${count} min',
+			'liveTv.days' => 'Days',
+			'liveTv.priority' => 'Priority',
 			'liveTv.channelNumber' => ({required Object number}) => 'Ch. ${number}',
 			'liveTv.live' => 'EN DIRECT',
 			'liveTv.hd' => 'HD',
@@ -1750,10 +1819,24 @@ extension on TranslationsFr {
 			'liveTv.daytime' => 'Journée',
 			'liveTv.evening' => 'Soirée',
 			'liveTv.lateNight' => 'Nuit tardive',
-			'liveTv.whatsOn' => 'En ce moment',
+			'liveTv.programs' => 'Programs',
+			'liveTv.onNow' => 'On Now',
+			'liveTv.upcomingShows' => 'Shows',
+			'liveTv.upcomingMovies' => 'Movies',
+			'liveTv.upcomingSports' => 'Sports',
+			'liveTv.forKids' => 'For Kids',
+			'liveTv.upcomingNews' => 'News',
 			'liveTv.watchChannel' => 'Regarder la chaîne',
+			'liveTv.recentlyAdded' => 'Recently Added',
+			'liveTv.recordingScheduled' => 'Recording scheduled',
+			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
+			'liveTv.recordingFailed' => 'Failed to schedule recording',
+			'liveTv.cancelSeries' => 'Cancel Series',
+			'liveTv.stopRecording' => 'Stop Recording',
+			'liveTv.doNotRecord' => 'Do Not Record',
 			'collections.title' => 'Collections',
 			'collections.collection' => 'Collection',
+			'collections.addToCollection' => 'Ajouter à la collection',
 			'collections.empty' => 'La collection est vide',
 			'collections.unknownLibrarySection' => 'Impossible de supprimer : section de bibliothèque inconnue',
 			'collections.deleteCollection' => 'Supprimer la collection',
@@ -1776,6 +1859,7 @@ extension on TranslationsFr {
 			'collections.removeFromCollectionError' => ({required Object error}) => 'Erreur lors de la suppression de la collection: ${error}',
 			'playlists.title' => 'Playlists',
 			'playlists.playlist' => 'Playlist',
+			'playlists.addToPlaylist' => 'Ajouter à la playlist',
 			'playlists.noPlaylists' => 'Aucune playlist trouvée',
 			'playlists.create' => 'Créer une playlist',
 			'playlists.playlistName' => 'Nom de playlist',

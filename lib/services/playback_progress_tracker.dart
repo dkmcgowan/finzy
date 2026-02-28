@@ -167,7 +167,7 @@ class PlaybackProgressTracker {
   /// Send progress update to server (online mode)
   Future<void> _sendOnlineProgress(String state, Duration position, Duration duration) async {
     await client!.updateProgress(
-      metadata.ratingKey,
+      metadata.itemId,
       time: position.inMilliseconds,
       state: state,
       duration: duration.inMilliseconds,
@@ -184,7 +184,7 @@ class PlaybackProgressTracker {
 
     await offlineWatchService!.queueProgressUpdate(
       serverId: serverId,
-      ratingKey: metadata.ratingKey,
+      itemId: metadata.itemId,
       viewOffset: position.inMilliseconds,
       duration: duration.inMilliseconds,
     );

@@ -35,7 +35,7 @@ class DownloadProvider extends ChangeNotifier {
   StreamSubscription<DeletionProgress>? _deletionProgressSubscription;
   late final Future<void> _initFuture;
 
-  // Track download progress by globalKey (serverId:ratingKey)
+  // Track download progress by globalKey (serverId:itemId)
   final Map<String, DownloadProgress> _downloads = {};
 
   // Store metadata for display
@@ -51,7 +51,7 @@ class DownloadProvider extends ChangeNotifier {
   final Map<String, DeletionProgress> _deletionProgress = {};
 
   // Track total episode counts for shows/seasons (for partial download detection)
-  // Key: globalKey (serverId:ratingKey), Value: total episode count
+  // Key: globalKey (serverId:itemId), Value: total episode count
   final Map<String, int> _totalEpisodeCounts = {};
 
   DownloadProvider({required DownloadManagerService downloadManager}) : _downloadManager = downloadManager {
@@ -107,7 +107,7 @@ class DownloadProvider extends ChangeNotifier {
 
         // Look up metadata from the bulk-loaded map (O(1) instead of DB query per item)
         // Falls back to individual query for any unpinned entries (e.g., legacy data)
-        final metadata = allMetadata[item.globalKey] ?? await apiCache.getMetadata(item.serverId, item.ratingKey);
+        final metadata = allMetadata[item.globalKey] ?? await apiCache.getMetadata(item.serverId, item.itemId);
         if (metadata != null) {
           _metadata[item.globalKey] = metadata;
 
@@ -170,7 +170,7 @@ class DownloadProvider extends ChangeNotifier {
     if (serverId == null) return;
 
     // Load show metadata
-    final showRatingKey = episode.grandparentRatingKey;
+    final showRatingKey = episode.seriesId;
     if (showRatingKey != null) {
       final showGlobalKey = '$serverId:$showRatingKey';
       if (!_metadata.containsKey(showGlobalKey)) {
@@ -185,7 +185,7 @@ class DownloadProvider extends ChangeNotifier {
     }
 
     // Load season metadata
-    final seasonRatingKey = episode.parentRatingKey;
+    final seasonRatingKey = episode.seasonId;
     if (seasonRatingKey != null) {
       final seasonGlobalKey = '$serverId:$seasonRatingKey';
       if (!_metadata.containsKey(seasonGlobalKey)) {
@@ -267,7 +267,7 @@ class DownloadProvider extends ChangeNotifier {
       final progress = _downloads[globalKey];
 
       if (progress?.status == DownloadStatus.completed && meta.type == 'episode') {
-        final showRatingKey = meta.grandparentRatingKey;
+        final showRatingKey = meta.seriesId;
         if (showRatingKey != null && !shows.containsKey(showRatingKey)) {
           // Try to get stored show metadata first
           final showGlobalKey = '${meta.serverId}:$showRatingKey';
@@ -279,12 +279,12 @@ class DownloadProvider extends ChangeNotifier {
           } else {
             // Fallback: synthesize from episode metadata (missing year, summary)
             shows[showRatingKey] = MediaMetadata(
-              ratingKey: showRatingKey,
+              itemId: showRatingKey,
               key: '${ApiCache.itemPrefix}$showRatingKey',
               type: 'show',
-              title: meta.grandparentTitle ?? 'Unknown Show',
-              thumb: meta.grandparentThumb,
-              art: meta.grandparentArt,
+              title: meta.seriesTitle ?? 'Unknown Show',
+              thumb: meta.seriesImageId,
+              art: meta.seriesArt,
               serverId: meta.serverId,
             );
           }
@@ -319,7 +319,7 @@ class DownloadProvider extends ChangeNotifier {
     return DownloadStorageService.instance.getArtworkPathSync(serverId, artworkPath);
   }
 
-  /// Get downloaded episodes for a specific show (by grandparentRatingKey)
+  /// Get downloaded episodes for a specific show (by seriesId)
   List<MediaMetadata> getDownloadedEpisodesForShow(String showRatingKey) {
     return _metadata.entries
         .where((entry) {
@@ -327,7 +327,7 @@ class DownloadProvider extends ChangeNotifier {
           final meta = entry.value;
           return progress?.status == DownloadStatus.completed &&
               meta.type == 'episode' &&
-              meta.grandparentRatingKey == showRatingKey;
+              meta.seriesId == showRatingKey;
         })
         .map((entry) => entry.value)
         .toList();
@@ -338,7 +338,7 @@ class DownloadProvider extends ChangeNotifier {
     return _downloads.entries
         .where((entry) {
           final meta = _metadata[entry.key];
-          return meta?.type == 'episode' && meta?.grandparentRatingKey == showRatingKey;
+          return meta?.type == 'episode' && meta?.seriesId == showRatingKey;
         })
         .map((entry) => entry.value)
         .toList();
@@ -349,7 +349,7 @@ class DownloadProvider extends ChangeNotifier {
     return _downloads.entries
         .where((entry) {
           final meta = _metadata[entry.key];
-          return meta?.type == 'episode' && meta?.parentRatingKey == seasonRatingKey;
+          return meta?.type == 'episode' && meta?.seasonId == seasonRatingKey;
         })
         .map((entry) => entry.value)
         .toList();
@@ -360,7 +360,7 @@ class DownloadProvider extends ChangeNotifier {
   DownloadProgress? getAggregateProgressForShow(String serverId, String showRatingKey) {
     return _calculateAggregateProgress(
       serverId: serverId,
-      ratingKey: showRatingKey,
+      itemId: showRatingKey,
       episodes: _getEpisodeDownloadsForShow(showRatingKey),
       entityType: 'show',
     );
@@ -371,7 +371,7 @@ class DownloadProvider extends ChangeNotifier {
   DownloadProgress? getAggregateProgressForSeason(String serverId, String seasonRatingKey) {
     return _calculateAggregateProgress(
       serverId: serverId,
-      ratingKey: seasonRatingKey,
+      itemId: seasonRatingKey,
       episodes: _getEpisodeDownloadsForSeason(seasonRatingKey),
       entityType: 'season',
     );
@@ -380,11 +380,11 @@ class DownloadProvider extends ChangeNotifier {
   /// Shared helper to calculate aggregate download progress for shows/seasons
   DownloadProgress? _calculateAggregateProgress({
     required String serverId,
-    required String ratingKey,
+    required String itemId,
     required List<DownloadProgress> episodes,
     required String entityType,
   }) {
-    final globalKey = '$serverId:$ratingKey';
+    final globalKey = '$serverId:$itemId';
 
     // DIAGNOSTIC: Check all sources of episode count
     final meta = _metadata[globalKey];
@@ -393,7 +393,7 @@ class DownloadProvider extends ChangeNotifier {
     final downloadedCount = episodes.length;
 
     appLogger.d(
-      '📊 Episode count sources for $entityType $ratingKey:\n'
+      '📊 Episode count sources for $entityType $itemId:\n'
       '  - Metadata leafCount: $metadataLeafCount\n'
       '  - Stored count: $storedCount\n'
       '  - Downloaded episodes: $downloadedCount\n'
@@ -417,11 +417,11 @@ class DownloadProvider extends ChangeNotifier {
       countSource = 'downloaded episodes (fallback)';
     }
 
-    appLogger.d('✅ Using totalEpisodes=$totalEpisodes from [$countSource] for $entityType $ratingKey');
+    appLogger.d('✅ Using totalEpisodes=$totalEpisodes from [$countSource] for $entityType $itemId');
 
     // If we have stored count but no downloads, check if it's a valid partial state
     if (totalEpisodes == 0 || (episodes.isEmpty && totalEpisodes > 0)) {
-      appLogger.d('⚠️  No valid downloads for $entityType $ratingKey, returning null');
+      appLogger.d('⚠️  No valid downloads for $entityType $itemId, returning null');
       return null;
     }
 
@@ -466,7 +466,7 @@ class DownloadProvider extends ChangeNotifier {
     final int overallProgress = totalEpisodes > 0 ? ((completedCount * 100) / totalEpisodes).round() : 0;
 
     appLogger.d(
-      'Aggregate progress for $entityType $ratingKey: $overallProgress% '
+      'Aggregate progress for $entityType $itemId: $overallProgress% '
       '($completedCount completed, $downloadingCount downloading, '
       '$queuedCount queued of $totalEpisodes total) - Status: $overallStatus',
     );
@@ -504,21 +504,21 @@ class DownloadProvider extends ChangeNotifier {
     if (parsed == null) return null;
 
     final serverId = parsed.serverId;
-    final ratingKey = parsed.ratingKey;
+    final itemId = parsed.itemId;
 
     // Try to get metadata to determine type
     final meta = _metadata[globalKey];
     if (meta == null) {
       // No metadata stored yet, might be a show/season being queued
       // Check if any episodes exist for this as a parent
-      final episodesAsShow = _getEpisodeDownloadsForShow(ratingKey);
+      final episodesAsShow = _getEpisodeDownloadsForShow(itemId);
       if (episodesAsShow.isNotEmpty) {
-        return getAggregateProgressForShow(serverId, ratingKey);
+        return getAggregateProgressForShow(serverId, itemId);
       }
 
-      final episodesAsSeason = _getEpisodeDownloadsForSeason(ratingKey);
+      final episodesAsSeason = _getEpisodeDownloadsForSeason(itemId);
       if (episodesAsSeason.isNotEmpty) {
-        return getAggregateProgressForSeason(serverId, ratingKey);
+        return getAggregateProgressForSeason(serverId, itemId);
       }
 
       return null;
@@ -527,9 +527,9 @@ class DownloadProvider extends ChangeNotifier {
     // We have metadata, check type
     final type = meta.type.toLowerCase();
     if (type == 'show') {
-      return getAggregateProgressForShow(serverId, ratingKey);
+      return getAggregateProgressForShow(serverId, itemId);
     } else if (type == 'season') {
-      return getAggregateProgressForSeason(serverId, ratingKey);
+      return getAggregateProgressForSeason(serverId, itemId);
     }
 
     return null;
@@ -604,7 +604,7 @@ class DownloadProvider extends ChangeNotifier {
   /// For shows and seasons, fetches all child episodes and queues them.
   /// Returns the number of items queued.
   Future<int> queueDownload(MediaMetadata metadata, JellyfinClient client) async {
-    final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
+    final globalKey = '${metadata.serverId}:${metadata.itemId}';
 
     // Check if downloads are blocked on cellular
     if (await DownloadManagerService.shouldBlockDownloadOnCellular()) {
@@ -646,7 +646,7 @@ class DownloadProvider extends ChangeNotifier {
 
   /// Queue a single movie or episode for download
   Future<void> _queueSingleDownload(MediaMetadata metadata, JellyfinClient client) async {
-    final globalKey = '${metadata.serverId}:${metadata.ratingKey}';
+    final globalKey = '${metadata.serverId}:${metadata.itemId}';
 
     // Don't re-queue if already downloading or completed
     if (_downloads.containsKey(globalKey)) {
@@ -660,12 +660,12 @@ class DownloadProvider extends ChangeNotifier {
     // The metadata from getChildren() is summarized and missing these fields
     MediaMetadata metadataToStore = metadata;
     try {
-      final fullMetadata = await client.getMetadataWithImages(metadata.ratingKey);
+      final fullMetadata = await client.getMetadataWithImages(metadata.itemId);
       if (fullMetadata != null) {
         metadataToStore = fullMetadata.copyWith(serverId: metadata.serverId, serverName: metadata.serverName);
       }
     } catch (e) {
-      appLogger.w('Failed to fetch full metadata for ${metadata.ratingKey}, using partial', error: e);
+      appLogger.w('Failed to fetch full metadata for ${metadata.itemId}, using partial', error: e);
     }
 
     // For episodes, also fetch and store show and season metadata for offline display
@@ -692,7 +692,7 @@ class DownloadProvider extends ChangeNotifier {
     final storageService = DownloadStorageService.instance;
 
     // Fetch and store show metadata if not already stored
-    final showRatingKey = episode.grandparentRatingKey;
+    final showRatingKey = episode.seriesId;
     if (showRatingKey != null) {
       final showGlobalKey = '$serverId:$showRatingKey';
 
@@ -729,7 +729,7 @@ class DownloadProvider extends ChangeNotifier {
     }
 
     // Fetch and store season metadata if not already stored
-    final seasonRatingKey = episode.parentRatingKey;
+    final seasonRatingKey = episode.seasonId;
     if (seasonRatingKey != null) {
       final seasonGlobalKey = '$serverId:$seasonRatingKey';
       MediaMetadata? seasonMetadata = _metadata[seasonGlobalKey];
@@ -765,9 +765,9 @@ class DownloadProvider extends ChangeNotifier {
 
   /// Queue all episodes from a TV show for download
   Future<int> _queueShowDownload(MediaMetadata show, JellyfinClient client) async {
-    final globalKey = '${show.serverId}:${show.ratingKey}';
+    final globalKey = '${show.serverId}:${show.itemId}';
     int count = 0;
-    final seasons = await client.getChildren(show.ratingKey);
+    final seasons = await client.getChildren(show.itemId);
 
     // Store total episode count from show metadata (leafCount)
     if (show.leafCount != null && show.leafCount! > 0) {
@@ -801,9 +801,9 @@ class DownloadProvider extends ChangeNotifier {
 
   /// Queue all episodes from a season for download
   Future<int> _queueSeasonDownload(MediaMetadata season, JellyfinClient client) async {
-    final globalKey = '${season.serverId}:${season.ratingKey}';
+    final globalKey = '${season.serverId}:${season.itemId}';
     int count = 0;
-    final episodes = await client.getChildren(season.ratingKey);
+    final episodes = await client.getChildren(season.itemId);
 
     // Store total episode count from season metadata (leafCount)
     if (season.leafCount != null && season.leafCount! > 0) {
@@ -856,7 +856,7 @@ class DownloadProvider extends ChangeNotifier {
     int queuedCount = 0;
 
     // Fetch all seasons
-    final seasons = await client.getChildren(show.ratingKey);
+    final seasons = await client.getChildren(show.itemId);
 
     for (final season in seasons) {
       if (season.type == 'season') {
@@ -874,13 +874,13 @@ class DownloadProvider extends ChangeNotifier {
     int queuedCount = 0;
 
     // Fetch all episodes
-    final episodes = await client.getChildren(season.ratingKey);
+    final episodes = await client.getChildren(season.itemId);
 
     for (final episode in episodes) {
       if (episode.type == 'episode') {
         final episodeWithServer = episode.serverId != null ? episode : episode.copyWith(serverId: season.serverId);
 
-        final episodeGlobalKey = '${episodeWithServer.serverId}:${episodeWithServer.ratingKey}';
+        final episodeGlobalKey = '${episodeWithServer.serverId}:${episodeWithServer.itemId}';
 
         // Only queue if NOT already downloaded or in progress
         final progress = _downloads[episodeGlobalKey];
@@ -1014,10 +1014,10 @@ class DownloadProvider extends ChangeNotifier {
       if (parsed == null) continue;
 
       final serverId = parsed.serverId;
-      final ratingKey = parsed.ratingKey;
+      final itemId = parsed.itemId;
 
       try {
-        final metadata = await apiCache.getMetadata(serverId, ratingKey);
+        final metadata = await apiCache.getMetadata(serverId, itemId);
         if (metadata != null) {
           _metadata[globalKey] = metadata;
           updatedCount++;

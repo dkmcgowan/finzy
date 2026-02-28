@@ -185,6 +185,17 @@ String formatFinishTime(Duration remaining, {double rate = 1.0}) {
   return formatter.format(finishTime);
 }
 
+/// Formats a DateTime's time component as either 12-hour (e.g. "1:00 PM") or 24-hour (e.g. "13:00").
+String formatGuideTime(DateTime time, {bool use24Hour = false}) {
+  if (use24Hour) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+  final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
+  final minute = time.minute.toString().padLeft(2, '0');
+  final period = time.hour < 12 ? 'AM' : 'PM';
+  return '$hour:$minute $period';
+}
+
 /// Takes a list of strings and returns one long string with each item in the list concatenated by a bullet
 String toBulletedString(List<String> parts) {
   return parts.join(' · ');

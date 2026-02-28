@@ -147,7 +147,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
   /// If progress exceeds 90%, shouldMarkWatched is set to true.
   Future<void> queueProgressUpdate({
     required String serverId,
-    required String ratingKey,
+    required String itemId,
     required int viewOffset,
     required int duration,
   }) async {
@@ -155,14 +155,14 @@ class OfflineWatchSyncService extends ChangeNotifier {
 
     await _database.upsertProgressAction(
       serverId: serverId,
-      ratingKey: ratingKey,
+      itemId: itemId,
       viewOffset: viewOffset,
       duration: duration,
       shouldMarkWatched: shouldMarkWatched,
     );
 
     appLogger.d(
-      'Queued offline progress: $serverId:$ratingKey at ${(viewOffset / 1000).toStringAsFixed(0)}s / ${(duration / 1000).toStringAsFixed(0)}s (${((viewOffset / duration) * 100).toStringAsFixed(1)}%)',
+      'Queued offline progress: $serverId:$itemId at ${(viewOffset / 1000).toStringAsFixed(0)}s / ${(duration / 1000).toStringAsFixed(0)}s (${((viewOffset / duration) * 100).toStringAsFixed(1)}%)',
     );
 
     notifyListeners();
@@ -171,24 +171,24 @@ class OfflineWatchSyncService extends ChangeNotifier {
   /// Queue a manual "mark as watched" action.
   ///
   /// Removes any conflicting actions for the same item.
-  Future<void> queueMarkWatched({required String serverId, required String ratingKey}) =>
-      _queueWatchStatusAction(serverId: serverId, ratingKey: ratingKey, actionType: 'watched');
+  Future<void> queueMarkWatched({required String serverId, required String itemId}) =>
+      _queueWatchStatusAction(serverId: serverId, itemId: itemId, actionType: 'watched');
 
   /// Queue a manual "mark as unwatched" action.
   ///
   /// Removes any conflicting actions for the same item.
-  Future<void> queueMarkUnwatched({required String serverId, required String ratingKey}) =>
-      _queueWatchStatusAction(serverId: serverId, ratingKey: ratingKey, actionType: 'unwatched');
+  Future<void> queueMarkUnwatched({required String serverId, required String itemId}) =>
+      _queueWatchStatusAction(serverId: serverId, itemId: itemId, actionType: 'unwatched');
 
   /// Internal helper to queue watch/unwatch actions.
   Future<void> _queueWatchStatusAction({
     required String serverId,
-    required String ratingKey,
+    required String itemId,
     required String actionType,
   }) async {
-    await _database.insertWatchAction(serverId: serverId, ratingKey: ratingKey, actionType: actionType);
+    await _database.insertWatchAction(serverId: serverId, itemId: itemId, actionType: actionType);
 
-    appLogger.d('Queued offline mark $actionType: $serverId:$ratingKey');
+    appLogger.d('Queued offline mark $actionType: $serverId:$itemId');
     notifyListeners();
   }
 
@@ -331,7 +331,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
               await _syncAction(client, action);
               // Success - delete the action from queue
               await _database.deleteWatchAction(action.id);
-              appLogger.d('Successfully synced action ${action.id}: ${action.actionType} for ${action.ratingKey}');
+              appLogger.d('Successfully synced action ${action.id}: ${action.actionType} for ${action.itemId}');
             } catch (e) {
               appLogger.w('Failed to sync action ${action.id}: $e');
               await _database.updateSyncAttempt(action.id, e.toString());
@@ -343,7 +343,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
         if (_serverManager.getClient(serverId) == null || !_serverManager.isServerOnline(serverId)) {
           for (final action in actions) {
             // Only update if we haven't already processed it
-            final stillPending = await _database.getLatestWatchAction('${action.serverId}:${action.ratingKey}');
+            final stillPending = await _database.getLatestWatchAction('${action.serverId}:${action.itemId}');
             if (stillPending != null && stillPending.id == action.id) {
               await _database.updateSyncAttempt(action.id, 'Server not available');
             }
@@ -379,18 +379,18 @@ class OfflineWatchSyncService extends ChangeNotifier {
   Future<void> _syncAction(JellyfinClient client, OfflineWatchProgressItem action) async {
     switch (action.actionType) {
       case 'watched':
-        await client.markAsWatched(action.ratingKey);
+        await client.markAsWatched(action.itemId);
         break;
 
       case 'unwatched':
-        await client.markAsUnwatched(action.ratingKey);
+        await client.markAsUnwatched(action.itemId);
         break;
 
       case 'progress':
         // First, update the timeline with current position
         if (action.viewOffset != null && action.duration != null) {
           await client.updateProgress(
-            action.ratingKey,
+            action.itemId,
             time: action.viewOffset!,
             state: 'stopped', // Use 'stopped' since we're syncing after the fact
             duration: action.duration,
@@ -399,7 +399,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
 
         // If progress exceeded threshold, also mark as watched
         if (action.shouldMarkWatched) {
-          await client.markAsWatched(action.ratingKey);
+          await client.markAsWatched(action.itemId);
         }
         break;
     }
@@ -419,9 +419,9 @@ class OfflineWatchSyncService extends ChangeNotifier {
       int synced = 0;
 
       for (final episode in seasonEpisodes) {
-        if (!downloadedEpisodeKeys.contains(episode.ratingKey)) continue;
+        if (!downloadedEpisodeKeys.contains(episode.itemId)) continue;
 
-        await ApiCache.instance.put(serverId, '${ApiCache.itemPrefix}${episode.ratingKey}', {
+        await ApiCache.instance.put(serverId, '${ApiCache.itemPrefix}${episode.itemId}', {
           'MediaContainer': {
             'Metadata': [episode.toJson()],
           },
@@ -458,19 +458,19 @@ class OfflineWatchSyncService extends ChangeNotifier {
       // Separate episodes (with season parent) from other items (movies, etc.)
       // Structure: serverId -> seasonRatingKey -> Set<episodeRatingKey>
       final episodesByServerAndSeason = <String, Map<String, Set<String>>>{};
-      // Structure: serverId -> List<ratingKey>
+      // Structure: serverId -> List<itemId>
       final nonEpisodeItems = <String, List<String>>{};
 
       for (final item in downloadedItems) {
-        if (item.type == 'episode' && item.parentRatingKey != null) {
+        if (item.type == 'episode' && item.seasonId != null) {
           // Group episodes by server and season for batch fetching
           episodesByServerAndSeason
               .putIfAbsent(item.serverId, () => {})
-              .putIfAbsent(item.parentRatingKey!, () => {})
-              .add(item.ratingKey);
+              .putIfAbsent(item.seasonId!, () => {})
+              .add(item.itemId);
         } else {
           // Movies, or episodes without parent (fallback to individual fetch)
-          nonEpisodeItems.putIfAbsent(item.serverId, () => []).add(item.ratingKey);
+          nonEpisodeItems.putIfAbsent(item.serverId, () => []).add(item.itemId);
         }
       }
 
@@ -496,14 +496,14 @@ class OfflineWatchSyncService extends ChangeNotifier {
       // Fetch non-episode items individually (movies, etc.)
       for (final entry in nonEpisodeItems.entries) {
         final serverId = entry.key;
-        final ratingKeys = entry.value;
+        final itemIds = entry.value;
 
         await _withOnlineClient(serverId, (client) async {
-          for (final ratingKey in ratingKeys) {
+          for (final itemId in itemIds) {
             try {
-              final metadata = await client.getMetadataWithImages(ratingKey);
+              final metadata = await client.getMetadataWithImages(itemId);
               if (metadata != null) {
-                await ApiCache.instance.put(serverId, '${ApiCache.itemPrefix}$ratingKey', {
+                await ApiCache.instance.put(serverId, '${ApiCache.itemPrefix}$itemId', {
                   'MediaContainer': {
                     'Metadata': [metadata.toJson()],
                   },
@@ -511,7 +511,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
                 syncedCount++;
               }
             } catch (e) {
-              appLogger.d('Failed to sync watch state for $ratingKey: $e');
+              appLogger.d('Failed to sync watch state for $itemId: $e');
             }
           }
         });

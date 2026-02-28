@@ -13,6 +13,7 @@ import '../../providers/multi_server_provider.dart';
 import '../../services/jellyfin_auth_service.dart';
 import '../../services/offline_watch_sync_service.dart';
 import '../../services/server_connection_orchestrator.dart';
+import '../../utils/app_logger.dart';
 import '../../services/server_registry.dart';
 import '../../services/storage_service.dart';
 import '../../theme/mono_tokens.dart';
@@ -113,7 +114,9 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
       if (data != null) {
         serverName = data['ServerName'] as String? ?? serverName;
       }
-    } catch (_) {}
+    } catch (e) {
+      appLogger.w('Failed to fetch server info after login', error: e);
+    }
 
     final storedUser = JellyfinStoredUser(
       userId: result.userId,
@@ -241,7 +244,9 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
             primaryImageTag: primaryImageTag,
           );
         }
-      } catch (_) {}
+      } catch (e) {
+        appLogger.d('Quick Connect poll check failed', error: e);
+      }
     }
     checkOnce();
     _quickConnectPollTimer = Timer.periodic(const Duration(seconds: 3), (_) => checkOnce());

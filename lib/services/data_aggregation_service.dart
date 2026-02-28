@@ -43,7 +43,7 @@ class DataAggregationService {
     List<MediaMetadata> filteredOnDeck = allOnDeck;
     if (hiddenLibraryKeys != null && hiddenLibraryKeys.isNotEmpty) {
       filteredOnDeck = allOnDeck.where((item) {
-        final librarySectionId = item.librarySectionID;
+        final librarySectionId = item.libraryId;
         if (librarySectionId == null) return true; // Keep if no section ID
         final globalKey = '${item.serverId}:$librarySectionId';
         return !hiddenLibraryKeys.contains(globalKey);
@@ -128,7 +128,7 @@ class DataAggregationService {
               .map((hub) {
                 final filteredItems = hub.items.where((item) {
                   // Build the global key for the item's library section
-                  final librarySectionId = item.librarySectionID;
+                  final librarySectionId = item.libraryId;
                   if (librarySectionId == null) return true; // Keep if no section ID
                   final globalKey = '$serverId:$librarySectionId';
                   return !hiddenLibraryKeys.contains(globalKey);

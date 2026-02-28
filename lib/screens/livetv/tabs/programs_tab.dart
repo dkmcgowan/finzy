@@ -29,18 +29,18 @@ import '../../../widgets/optimized_image.dart';
 import '../live_tv_show_schedule_screen.dart';
 import '../program_details_sheet.dart';
 
-class WhatsOnTab extends StatefulWidget {
+class ProgramsTab extends StatefulWidget {
   final List<LiveTvChannel> channels;
   final VoidCallback? onNavigateUp;
   final VoidCallback? onBack;
 
-  const WhatsOnTab({super.key, required this.channels, this.onNavigateUp, this.onBack});
+  const ProgramsTab({super.key, required this.channels, this.onNavigateUp, this.onBack});
 
   @override
-  State<WhatsOnTab> createState() => WhatsOnTabState();
+  State<ProgramsTab> createState() => ProgramsTabState();
 }
 
-class WhatsOnTabState extends State<WhatsOnTab> {
+class ProgramsTabState extends State<ProgramsTab> {
   List<LiveTvHubResult> _hubs = [];
   bool _isLoading = true;
   Timer? _refreshTimer;
@@ -191,7 +191,7 @@ class WhatsOnTabState extends State<WhatsOnTab> {
 
     final multiServer = context.read<MultiServerProvider>();
     final client = multiServer.getClientForServer(metadata.serverId ?? '');
-    final posterImage = metadata.grandparentThumb ?? metadata.thumb;
+    final posterImage = metadata.seriesImageId ?? metadata.thumb;
     String? posterUrl;
     if (posterImage != null && client != null) {
       posterUrl = MediaImageHelper.getOptimizedImageUrl(
@@ -465,6 +465,18 @@ class _LiveTvHubSectionState extends State<_LiveTvHubSection> {
     _hubFocusNode.requestFocus();
   }
 
+  String _localizedHubTitle(String hubKey) {
+    return switch (hubKey) {
+      'on_now' => t.liveTv.onNow,
+      'shows' => t.liveTv.upcomingShows,
+      'movies' => t.liveTv.upcomingMovies,
+      'sports' => t.liveTv.upcomingSports,
+      'kids' => t.liveTv.forKids,
+      'news' => t.liveTv.upcomingNews,
+      _ => hubKey,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasFocus = _hubFocusNode.hasFocus;
@@ -489,7 +501,7 @@ class _LiveTvHubSectionState extends State<_LiveTvHubSection> {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  widget.hub.title,
+                  _localizedHubTitle(widget.hub.title),
                   style: Theme.of(context).textTheme.titleLarge,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -592,7 +604,7 @@ class _LiveTvPosterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final metadata = entry.metadata;
     // Always use poster image: show poster for episodes, thumb for others
-    final posterImage = metadata.grandparentThumb ?? metadata.thumb;
+    final posterImage = metadata.seriesImageId ?? metadata.thumb;
 
     return FocusBuilders.buildLockedFocusWrapper(
       context: context,

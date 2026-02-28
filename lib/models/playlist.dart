@@ -7,7 +7,7 @@ part 'playlist.g.dart';
 
 @JsonSerializable()
 class Playlist with MultiServerFields {
-  final String ratingKey;
+  final String itemId;
   final String key;
   final String type; // "playlist"
   final String title;
@@ -34,7 +34,7 @@ class Playlist with MultiServerFields {
   final String? serverName;
 
   Playlist({
-    required this.ratingKey,
+    required this.itemId,
     required this.key,
     required this.type,
     required this.title,
@@ -65,7 +65,7 @@ class Playlist with MultiServerFields {
   bool get isEditable => !smart;
 
   /// Get globally unique key across all servers
-  String get globalKey => serverId != null ? '$serverId:$ratingKey' : ratingKey;
+  String get globalKey => serverId != null ? '$serverId:$itemId' : itemId;
 
   // Properties for MediaCard compatibility with MediaMetadata interface
 
@@ -80,7 +80,7 @@ class Playlist with MultiServerFields {
   int? get index => null;
 
   /// Playlists don't have parent titles or subtitles
-  String? get parentTitle => null;
+  String? get seasonTitle => null;
   String? get displaySubtitle => null;
 
   /// Playlists don't have year, rating, or content metadata
@@ -110,7 +110,7 @@ class Playlist with MultiServerFields {
 
   /// Create a copy with optional field updates
   Playlist copyWith({
-    String? ratingKey,
+    String? itemId,
     String? key,
     String? type,
     String? title,
@@ -131,7 +131,7 @@ class Playlist with MultiServerFields {
     String? serverName,
   }) {
     return Playlist(
-      ratingKey: ratingKey ?? this.ratingKey,
+      itemId: itemId ?? this.itemId,
       key: key ?? this.key,
       type: type ?? this.type,
       title: title ?? this.title,

@@ -249,7 +249,7 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
                                 .where((e) => serverIds.contains(parseGlobalKey(e.key)?.serverId)),
                           );
 
-                          // Helper to get client from globalKey (serverId:ratingKey)
+                          // Helper to get client from globalKey (serverId:itemId)
                           getClient(String globalKey) {
                             final serverId = parseGlobalKey(globalKey)?.serverId ?? globalKey;
                             return serverProvider.serverManager.getClient(serverId);
