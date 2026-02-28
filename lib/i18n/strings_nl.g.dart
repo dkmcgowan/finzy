@@ -201,6 +201,12 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Instellingen';
+	@override String get supportDevelopment => 'Ondersteun ontwikkeling';
+	@override String get supportDevelopmentDescription => 'Als je de app leuk vindt en de doorlopende ontwikkeling wilt ondersteunen, kun je hieronder een fooi achterlaten. Helemaal vrijblijvend — de app blijft gratis.';
+	@override String get supportTierCoffee => 'Trakteer mij op een koffie';
+	@override String get supportTierLunch => 'Trakteer mij op een lunch';
+	@override String get supportTierSupport => 'Ondersteun ontwikkeling';
+	@override String get supportTipThankYou => 'Bedankt voor je steun!';
 	@override String get language => 'Taal';
 	@override String get theme => 'Thema';
 	@override String get appearance => 'Uiterlijk';
@@ -1319,6 +1325,12 @@ extension on TranslationsNl {
 			'update.latestVersion' => 'Je hebt de nieuwste versie',
 			'update.checkFailed' => 'Kon niet controleren op updates',
 			'settings.title' => 'Instellingen',
+			'settings.supportDevelopment' => 'Ondersteun ontwikkeling',
+			'settings.supportDevelopmentDescription' => 'Als je de app leuk vindt en de doorlopende ontwikkeling wilt ondersteunen, kun je hieronder een fooi achterlaten. Helemaal vrijblijvend — de app blijft gratis.',
+			'settings.supportTierCoffee' => 'Trakteer mij op een koffie',
+			'settings.supportTierLunch' => 'Trakteer mij op een lunch',
+			'settings.supportTierSupport' => 'Ondersteun ontwikkeling',
+			'settings.supportTipThankYou' => 'Bedankt voor je steun!',
 			'settings.language' => 'Taal',
 			'settings.theme' => 'Thema',
 			'settings.appearance' => 'Uiterlijk',
@@ -1751,14 +1763,14 @@ extension on TranslationsNl {
 			'hubDetail.releaseYear' => 'Uitgavejaar',
 			'hubDetail.dateAdded' => 'Datum toegevoegd',
 			'hubDetail.rating' => 'Beoordeling',
+			_ => null,
+		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Geen items gevonden',
 			'logs.clearLogs' => 'Wis logs',
 			'logs.copyLogs' => 'Kopieer logs',
 			'logs.error' => 'Fout:',
 			'logs.stackTrace' => 'Stacktracering:',
 			'licenses.relatedPackages' => 'Gerelateerde pakketten',
-			_ => null,
-		} ?? switch (path) {
 			'licenses.license' => 'Licentie',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licentie ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licenties',

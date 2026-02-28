@@ -48,6 +48,7 @@ dependencies:
   saf_stream: ^0.12.2
   material_symbols_icons: ^4.2892.0
 
+  in_app_purchase: ^3.2.3
   in_app_review: ^2.0.11
 
   flutter_svg: ^2.2.3

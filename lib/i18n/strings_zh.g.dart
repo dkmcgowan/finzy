@@ -201,6 +201,12 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => '设置';
+	@override String get supportDevelopment => '支持开发';
+	@override String get supportDevelopmentDescription => '如果你喜欢本应用并想支持持续开发，可以在下方打赏。完全自愿——应用将保持免费。';
+	@override String get supportTierCoffee => '请我喝杯咖啡';
+	@override String get supportTierLunch => '请我吃顿午餐';
+	@override String get supportTierSupport => '支持开发';
+	@override String get supportTipThankYou => '感谢你的支持！';
 	@override String get language => '语言';
 	@override String get theme => '主题';
 	@override String get appearance => '外观';
@@ -1319,6 +1325,12 @@ extension on TranslationsZh {
 			'update.latestVersion' => '已安装的版本是可用的最新版本',
 			'update.checkFailed' => '无法检查更新',
 			'settings.title' => '设置',
+			'settings.supportDevelopment' => '支持开发',
+			'settings.supportDevelopmentDescription' => '如果你喜欢本应用并想支持持续开发，可以在下方打赏。完全自愿——应用将保持免费。',
+			'settings.supportTierCoffee' => '请我喝杯咖啡',
+			'settings.supportTierLunch' => '请我吃顿午餐',
+			'settings.supportTierSupport' => '支持开发',
+			'settings.supportTipThankYou' => '感谢你的支持！',
 			'settings.language' => '语言',
 			'settings.theme' => '主题',
 			'settings.appearance' => '外观',
@@ -1751,14 +1763,14 @@ extension on TranslationsZh {
 			'hubDetail.releaseYear' => '发行年份',
 			'hubDetail.dateAdded' => '添加日期',
 			'hubDetail.rating' => '评分',
+			_ => null,
+		} ?? switch (path) {
 			'hubDetail.noItemsFound' => '未找到项目',
 			'logs.clearLogs' => '清除日志',
 			'logs.copyLogs' => '复制日志',
 			'logs.error' => '错误:',
 			'logs.stackTrace' => '堆栈跟踪 (Stack Trace):',
 			'licenses.relatedPackages' => '相关软件包',
-			_ => null,
-		} ?? switch (path) {
 			'licenses.license' => '许可证',
 			'licenses.licenseNumber' => ({required Object number}) => '许可证 ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} 个许可证',

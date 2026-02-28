@@ -201,6 +201,12 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => '설정';
+	@override String get supportDevelopment => '개발 지원';
+	@override String get supportDevelopmentDescription => '앱을 즐기시고 지속적인 개발을 지원하고 싶다면 아래에서 팁을 남겨 주세요. 완전히 선택 사항이며 앱은 계속 무료입니다.';
+	@override String get supportTierCoffee => '커피 한 잔 사주기';
+	@override String get supportTierLunch => '점심 한 끼 사주기';
+	@override String get supportTierSupport => '개발 지원하기';
+	@override String get supportTipThankYou => '후원해 주셔서 감사합니다!';
 	@override String get language => '언어';
 	@override String get theme => '테마';
 	@override String get appearance => '외관';
@@ -1319,6 +1325,12 @@ extension on TranslationsKo {
 			'update.latestVersion' => '최신 버전을 사용 중입니다',
 			'update.checkFailed' => '업데이트 확인 실패',
 			'settings.title' => '설정',
+			'settings.supportDevelopment' => '개발 지원',
+			'settings.supportDevelopmentDescription' => '앱을 즐기시고 지속적인 개발을 지원하고 싶다면 아래에서 팁을 남겨 주세요. 완전히 선택 사항이며 앱은 계속 무료입니다.',
+			'settings.supportTierCoffee' => '커피 한 잔 사주기',
+			'settings.supportTierLunch' => '점심 한 끼 사주기',
+			'settings.supportTierSupport' => '개발 지원하기',
+			'settings.supportTipThankYou' => '후원해 주셔서 감사합니다!',
 			'settings.language' => '언어',
 			'settings.theme' => '테마',
 			'settings.appearance' => '외관',
@@ -1751,14 +1763,14 @@ extension on TranslationsKo {
 			'hubDetail.releaseYear' => '출시 연도',
 			'hubDetail.dateAdded' => '추가 날짜',
 			'hubDetail.rating' => '평점',
+			_ => null,
+		} ?? switch (path) {
 			'hubDetail.noItemsFound' => '항목이 없습니다',
 			'logs.clearLogs' => '로그 지우기',
 			'logs.copyLogs' => '로그 복사',
 			'logs.error' => '오류:',
 			'logs.stackTrace' => '스택 추적 (Stack Trace):',
 			'licenses.relatedPackages' => '관련 소프트웨어 패키지',
-			_ => null,
-		} ?? switch (path) {
 			'licenses.license' => '라이선스',
 			'licenses.licenseNumber' => ({required Object number}) => '라이선스 ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} 개의 라이선스',

@@ -84,6 +84,12 @@
   },
   "settings": {
     "title": "Inställningar",
+    "supportDevelopment": "Stöd utvecklingen",
+    "supportDevelopmentDescription": "Om du gillar appen och vill stödja den löpande utvecklingen kan du lämna en dricks nedan. Helt frivilligt — appen förblir gratis.",
+    "supportTierCoffee": "Bjud mig på en kaffe",
+    "supportTierLunch": "Bjud mig på lunch",
+    "supportTierSupport": "Stöd utvecklingen",
+    "supportTipThankYou": "Tack för ditt stöd!",
     "language": "Språk",
     "theme": "Tema",
     "appearance": "Utseende",

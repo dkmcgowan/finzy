@@ -84,6 +84,12 @@
   },
   "settings": {
     "title": "Paramètres",
+    "supportDevelopment": "Soutenir le développement",
+    "supportDevelopmentDescription": "Si vous aimez l'application et souhaitez soutenir son développement, vous pouvez laisser un pourboire ci-dessous. Totalement optionnel — l'application restera gratuite.",
+    "supportTierCoffee": "Offrez-moi un café",
+    "supportTierLunch": "Offrez-moi un déjeuner",
+    "supportTierSupport": "Soutenir le développement",
+    "supportTipThankYou": "Merci pour votre soutien !",
     "language": "Langue",
     "theme": "Thème",
     "appearance": "Apparence",

@@ -201,6 +201,12 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Paramètres';
+	@override String get supportDevelopment => 'Soutenir le développement';
+	@override String get supportDevelopmentDescription => 'Si vous aimez l\'application et souhaitez soutenir son développement, vous pouvez laisser un pourboire ci-dessous. Totalement optionnel — l\'application restera gratuite.';
+	@override String get supportTierCoffee => 'Offrez-moi un café';
+	@override String get supportTierLunch => 'Offrez-moi un déjeuner';
+	@override String get supportTierSupport => 'Soutenir le développement';
+	@override String get supportTipThankYou => 'Merci pour votre soutien !';
 	@override String get language => 'Langue';
 	@override String get theme => 'Thème';
 	@override String get appearance => 'Apparence';
@@ -1319,6 +1325,12 @@ extension on TranslationsFr {
 			'update.latestVersion' => 'Vous utilisez la dernière version',
 			'update.checkFailed' => 'Échec de la vérification des mises à jour',
 			'settings.title' => 'Paramètres',
+			'settings.supportDevelopment' => 'Soutenir le développement',
+			'settings.supportDevelopmentDescription' => 'Si vous aimez l\'application et souhaitez soutenir son développement, vous pouvez laisser un pourboire ci-dessous. Totalement optionnel — l\'application restera gratuite.',
+			'settings.supportTierCoffee' => 'Offrez-moi un café',
+			'settings.supportTierLunch' => 'Offrez-moi un déjeuner',
+			'settings.supportTierSupport' => 'Soutenir le développement',
+			'settings.supportTipThankYou' => 'Merci pour votre soutien !',
 			'settings.language' => 'Langue',
 			'settings.theme' => 'Thème',
 			'settings.appearance' => 'Apparence',
@@ -1751,14 +1763,14 @@ extension on TranslationsFr {
 			'hubDetail.releaseYear' => 'Année de sortie',
 			'hubDetail.dateAdded' => 'Date d\'ajout',
 			'hubDetail.rating' => 'Évaluation',
+			_ => null,
+		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Aucun élément trouvé',
 			'logs.clearLogs' => 'Effacer les logs',
 			'logs.copyLogs' => 'Copier les logs',
 			'logs.error' => 'Erreur:',
 			'logs.stackTrace' => 'Liste des appels:',
 			'licenses.relatedPackages' => 'Package associés',
-			_ => null,
-		} ?? switch (path) {
 			'licenses.license' => 'Licence',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licence ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licences',

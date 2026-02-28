@@ -201,6 +201,12 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Einstellungen';
+	@override String get supportDevelopment => 'Entwicklung unterstützen';
+	@override String get supportDevelopmentDescription => 'Wenn dir die App gefällt und du die Weiterentwicklung unterstützen möchtest, kannst du unten einen Betrag hinterlassen. Völlig optional — die App bleibt kostenlos.';
+	@override String get supportTierCoffee => 'Spendiere mir einen Kaffee';
+	@override String get supportTierLunch => 'Spendiere mir ein Mittagessen';
+	@override String get supportTierSupport => 'Entwicklung unterstützen';
+	@override String get supportTipThankYou => 'Vielen Dank für deine Unterstützung!';
 	@override String get language => 'Sprache';
 	@override String get theme => 'Design';
 	@override String get appearance => 'Darstellung';
@@ -1319,6 +1325,12 @@ extension on TranslationsDe {
 			'update.latestVersion' => 'Aktuellste Version installiert',
 			'update.checkFailed' => 'Fehler bei der Updateprüfung',
 			'settings.title' => 'Einstellungen',
+			'settings.supportDevelopment' => 'Entwicklung unterstützen',
+			'settings.supportDevelopmentDescription' => 'Wenn dir die App gefällt und du die Weiterentwicklung unterstützen möchtest, kannst du unten einen Betrag hinterlassen. Völlig optional — die App bleibt kostenlos.',
+			'settings.supportTierCoffee' => 'Spendiere mir einen Kaffee',
+			'settings.supportTierLunch' => 'Spendiere mir ein Mittagessen',
+			'settings.supportTierSupport' => 'Entwicklung unterstützen',
+			'settings.supportTipThankYou' => 'Vielen Dank für deine Unterstützung!',
 			'settings.language' => 'Sprache',
 			'settings.theme' => 'Design',
 			'settings.appearance' => 'Darstellung',
@@ -1751,14 +1763,14 @@ extension on TranslationsDe {
 			'hubDetail.releaseYear' => 'Erscheinungsjahr',
 			'hubDetail.dateAdded' => 'Hinzugefügt am',
 			'hubDetail.rating' => 'Bewertung',
+			_ => null,
+		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Keine Elemente gefunden',
 			'logs.clearLogs' => 'Protokolle löschen',
 			'logs.copyLogs' => 'Protokolle kopieren',
 			'logs.error' => 'Fehler:',
 			'logs.stackTrace' => 'Stacktrace:',
 			'licenses.relatedPackages' => 'Verwandte Pakete',
-			_ => null,
-		} ?? switch (path) {
 			'licenses.license' => 'Lizenz',
 			'licenses.licenseNumber' => ({required Object number}) => 'Lizenz ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} Lizenzen',

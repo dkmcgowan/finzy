@@ -84,6 +84,12 @@
   },
   "settings": {
     "title": "Configuración",
+    "supportDevelopment": "Apoyar el desarrollo",
+    "supportDevelopmentDescription": "Si disfrutas la app y quieres apoyar su desarrollo, puedes dejar una propina abajo. Totalmente opcional — la app seguirá siendo gratuita.",
+    "supportTierCoffee": "Invítame un café",
+    "supportTierLunch": "Invítame a comer",
+    "supportTierSupport": "Apoyar el desarrollo",
+    "supportTipThankYou": "¡Gracias por tu apoyo!",
     "language": "Idioma",
     "theme": "Tema",
     "appearance": "Apariencia",

@@ -84,6 +84,12 @@
   },
   "settings": {
     "title": "Instellingen",
+    "supportDevelopment": "Ondersteun ontwikkeling",
+    "supportDevelopmentDescription": "Als je de app leuk vindt en de doorlopende ontwikkeling wilt ondersteunen, kun je hieronder een fooi achterlaten. Helemaal vrijblijvend — de app blijft gratis.",
+    "supportTierCoffee": "Trakteer mij op een koffie",
+    "supportTierLunch": "Trakteer mij op een lunch",
+    "supportTierSupport": "Ondersteun ontwikkeling",
+    "supportTipThankYou": "Bedankt voor je steun!",
     "language": "Taal",
     "theme": "Thema",
     "appearance": "Uiterlijk",

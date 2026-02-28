@@ -37,6 +37,8 @@ import 'about_screen.dart';
 import 'logs_screen.dart';
 import 'mpv_config_screen.dart';
 import 'subtitle_styling_screen.dart';
+import '../../constants/support_constants.dart';
+import '../../services/support_service.dart';
 
 /// Helper class for option selection dialog items
 class _DialogOption<T> {
@@ -105,6 +107,9 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kResetSettings = 'reset_settings';
   static const _kCheckForUpdates = 'check_for_updates';
   static const _kAbout = 'about';
+  static const _kSupportCoffee = 'support_coffee';
+  static const _kSupportLunch = 'support_lunch';
+  static const _kSupportDev = 'support_dev';
   KeyboardShortcutsService? _keyboardService;
   late final bool _keyboardShortcutsSupported = KeyboardShortcutsService.isPlatformSupported();
   bool _isLoading = true;
@@ -236,6 +241,10 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
+                  if (SupportService.instance.isAvailable) ...[
+                    _buildSupportDevelopmentSection(),
+                    const SizedBox(height: 24),
+                  ],
                   _buildAppearanceSection(),
                   const SizedBox(height: 24),
                   _buildLibrariesSection(),
@@ -257,6 +266,80 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
         ),
       ),
     );
+  }
+
+  Widget _buildSupportDevelopmentSection() {
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              t.settings.supportDevelopment,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+            child: Text(
+              t.settings.supportDevelopmentDescription,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildSupportTierTile(
+            key: _kSupportCoffee,
+            icon: Symbols.coffee_rounded,
+            title: t.settings.supportTierCoffee,
+            amount: '\$${SupportTier.coffee.amount.toStringAsFixed(2)}',
+            tier: SupportTier.coffee,
+          ),
+          _buildSupportTierTile(
+            key: _kSupportLunch,
+            icon: Symbols.restaurant_rounded,
+            title: t.settings.supportTierLunch,
+            amount: '\$${SupportTier.lunch.amount.toStringAsFixed(2)}',
+            tier: SupportTier.lunch,
+          ),
+          _buildSupportTierTile(
+            key: _kSupportDev,
+            icon: Symbols.rocket_launch_rounded,
+            title: t.settings.supportTierSupport,
+            amount: '\$${SupportTier.support.amount.toStringAsFixed(2)}',
+            tier: SupportTier.support,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSupportTierTile({
+    required String key,
+    required IconData icon,
+    required String title,
+    required String amount,
+    required SupportTier tier,
+  }) {
+    return ListTile(
+      focusNode: _focusTracker.get(key),
+      leading: AppIcon(icon, fill: 1),
+      title: Text(title),
+      subtitle: Text(amount),
+      trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+      onTap: () => _handleSupportTierTap(tier),
+    );
+  }
+
+  Future<void> _handleSupportTierTap(SupportTier tier) async {
+    final success = await SupportService.instance.tip(tier);
+    if (mounted) {
+      if (success) {
+        showSuccessSnackBar(context, t.settings.supportTipThankYou);
+      }
+    }
   }
 
   Widget _buildAppearanceSection() {

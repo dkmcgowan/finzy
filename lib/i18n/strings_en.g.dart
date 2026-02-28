@@ -353,6 +353,24 @@ class TranslationsSettingsEn {
 	/// en: 'Settings'
 	String get title => 'Settings';
 
+	/// en: 'Support Development'
+	String get supportDevelopment => 'Support Development';
+
+	/// en: 'If you enjoy the app and would like to support ongoing development, you can leave a tip below. Totally optional — the app will remain free.'
+	String get supportDevelopmentDescription => 'If you enjoy the app and would like to support ongoing development, you can leave a tip below. Totally optional — the app will remain free.';
+
+	/// en: 'Buy me a coffee'
+	String get supportTierCoffee => 'Buy me a coffee';
+
+	/// en: 'Buy me lunch'
+	String get supportTierLunch => 'Buy me lunch';
+
+	/// en: 'Support development'
+	String get supportTierSupport => 'Support development';
+
+	/// en: 'Thank you for your support!'
+	String get supportTipThankYou => 'Thank you for your support!';
+
 	/// en: 'Language'
 	String get language => 'Language';
 
@@ -2862,6 +2880,12 @@ extension on Translations {
 			'update.latestVersion' => 'You are on the latest version',
 			'update.checkFailed' => 'Failed to check for updates',
 			'settings.title' => 'Settings',
+			'settings.supportDevelopment' => 'Support Development',
+			'settings.supportDevelopmentDescription' => 'If you enjoy the app and would like to support ongoing development, you can leave a tip below. Totally optional — the app will remain free.',
+			'settings.supportTierCoffee' => 'Buy me a coffee',
+			'settings.supportTierLunch' => 'Buy me lunch',
+			'settings.supportTierSupport' => 'Support development',
+			'settings.supportTipThankYou' => 'Thank you for your support!',
 			'settings.language' => 'Language',
 			'settings.theme' => 'Theme',
 			'settings.appearance' => 'Appearance',
@@ -3294,14 +3318,14 @@ extension on Translations {
 			'hubDetail.releaseYear' => 'Release Year',
 			'hubDetail.dateAdded' => 'Date Added',
 			'hubDetail.rating' => 'Rating',
+			_ => null,
+		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'No items found',
 			'logs.clearLogs' => 'Clear Logs',
 			'logs.copyLogs' => 'Copy Logs',
 			'logs.error' => 'Error:',
 			'logs.stackTrace' => 'Stack Trace:',
 			'licenses.relatedPackages' => 'Related Packages',
-			_ => null,
-		} ?? switch (path) {
 			'licenses.license' => 'License',
 			'licenses.licenseNumber' => ({required Object number}) => 'License ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licenses',

@@ -201,6 +201,12 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Inställningar';
+	@override String get supportDevelopment => 'Stöd utvecklingen';
+	@override String get supportDevelopmentDescription => 'Om du gillar appen och vill stödja den löpande utvecklingen kan du lämna en dricks nedan. Helt frivilligt — appen förblir gratis.';
+	@override String get supportTierCoffee => 'Bjud mig på en kaffe';
+	@override String get supportTierLunch => 'Bjud mig på lunch';
+	@override String get supportTierSupport => 'Stöd utvecklingen';
+	@override String get supportTipThankYou => 'Tack för ditt stöd!';
 	@override String get language => 'Språk';
 	@override String get theme => 'Tema';
 	@override String get appearance => 'Utseende';
@@ -1319,6 +1325,12 @@ extension on TranslationsSv {
 			'update.latestVersion' => 'Du har den senaste versionen',
 			'update.checkFailed' => 'Misslyckades att kontrollera uppdateringar',
 			'settings.title' => 'Inställningar',
+			'settings.supportDevelopment' => 'Stöd utvecklingen',
+			'settings.supportDevelopmentDescription' => 'Om du gillar appen och vill stödja den löpande utvecklingen kan du lämna en dricks nedan. Helt frivilligt — appen förblir gratis.',
+			'settings.supportTierCoffee' => 'Bjud mig på en kaffe',
+			'settings.supportTierLunch' => 'Bjud mig på lunch',
+			'settings.supportTierSupport' => 'Stöd utvecklingen',
+			'settings.supportTipThankYou' => 'Tack för ditt stöd!',
 			'settings.language' => 'Språk',
 			'settings.theme' => 'Tema',
 			'settings.appearance' => 'Utseende',
@@ -1751,14 +1763,14 @@ extension on TranslationsSv {
 			'hubDetail.releaseYear' => 'Utgivningsår',
 			'hubDetail.dateAdded' => 'Datum tillagd',
 			'hubDetail.rating' => 'Betyg',
+			_ => null,
+		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Inga objekt hittades',
 			'logs.clearLogs' => 'Rensa loggar',
 			'logs.copyLogs' => 'Kopiera loggar',
 			'logs.error' => 'Fel:',
 			'logs.stackTrace' => 'Stack trace:',
 			'licenses.relatedPackages' => 'Relaterade paket',
-			_ => null,
-		} ?? switch (path) {
 			'licenses.license' => 'Licens',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licens ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licenser',

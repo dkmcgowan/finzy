@@ -201,6 +201,12 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Configuración';
+	@override String get supportDevelopment => 'Apoyar el desarrollo';
+	@override String get supportDevelopmentDescription => 'Si disfrutas la app y quieres apoyar su desarrollo, puedes dejar una propina abajo. Totalmente opcional — la app seguirá siendo gratuita.';
+	@override String get supportTierCoffee => 'Invítame un café';
+	@override String get supportTierLunch => 'Invítame a comer';
+	@override String get supportTierSupport => 'Apoyar el desarrollo';
+	@override String get supportTipThankYou => '¡Gracias por tu apoyo!';
 	@override String get language => 'Idioma';
 	@override String get theme => 'Tema';
 	@override String get appearance => 'Apariencia';
@@ -1319,6 +1325,12 @@ extension on TranslationsEs {
 			'update.latestVersion' => 'Ya estás en la última versión',
 			'update.checkFailed' => 'Error al buscar actualizaciones',
 			'settings.title' => 'Configuración',
+			'settings.supportDevelopment' => 'Apoyar el desarrollo',
+			'settings.supportDevelopmentDescription' => 'Si disfrutas la app y quieres apoyar su desarrollo, puedes dejar una propina abajo. Totalmente opcional — la app seguirá siendo gratuita.',
+			'settings.supportTierCoffee' => 'Invítame un café',
+			'settings.supportTierLunch' => 'Invítame a comer',
+			'settings.supportTierSupport' => 'Apoyar el desarrollo',
+			'settings.supportTipThankYou' => '¡Gracias por tu apoyo!',
 			'settings.language' => 'Idioma',
 			'settings.theme' => 'Tema',
 			'settings.appearance' => 'Apariencia',
@@ -1751,14 +1763,14 @@ extension on TranslationsEs {
 			'hubDetail.releaseYear' => 'Año de lanzamiento',
 			'hubDetail.dateAdded' => 'Añadido el',
 			'hubDetail.rating' => 'Calificación',
+			_ => null,
+		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'No se encontraron elementos',
 			'logs.clearLogs' => 'Borrar Logs',
 			'logs.copyLogs' => 'Copiar Logs',
 			'logs.error' => 'Error:',
 			'logs.stackTrace' => 'Traza de la pila (Stack Trace):',
 			'licenses.relatedPackages' => 'Paquetes relacionados',
-			_ => null,
-		} ?? switch (path) {
 			'licenses.license' => 'Licencia',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licencia ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licencias',

@@ -201,6 +201,12 @@ class _TranslationsSettingsIt implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Impostazioni';
+	@override String get supportDevelopment => 'Supporta lo sviluppo';
+	@override String get supportDevelopmentDescription => 'Se ti piace l\'app e vuoi supportare lo sviluppo continuo, puoi lasciare una mancia qui sotto. Completamente facoltativo — l\'app rimarrà gratuita.';
+	@override String get supportTierCoffee => 'Offrimi un caffè';
+	@override String get supportTierLunch => 'Offrimi un pranzo';
+	@override String get supportTierSupport => 'Supporta lo sviluppo';
+	@override String get supportTipThankYou => 'Grazie per il tuo supporto!';
 	@override String get language => 'Lingua';
 	@override String get theme => 'Tema';
 	@override String get appearance => 'Aspetto';
@@ -1319,6 +1325,12 @@ extension on TranslationsIt {
 			'update.latestVersion' => 'La versione installata è l\'ultima disponibile',
 			'update.checkFailed' => 'Impossibile controllare gli aggiornamenti',
 			'settings.title' => 'Impostazioni',
+			'settings.supportDevelopment' => 'Supporta lo sviluppo',
+			'settings.supportDevelopmentDescription' => 'Se ti piace l\'app e vuoi supportare lo sviluppo continuo, puoi lasciare una mancia qui sotto. Completamente facoltativo — l\'app rimarrà gratuita.',
+			'settings.supportTierCoffee' => 'Offrimi un caffè',
+			'settings.supportTierLunch' => 'Offrimi un pranzo',
+			'settings.supportTierSupport' => 'Supporta lo sviluppo',
+			'settings.supportTipThankYou' => 'Grazie per il tuo supporto!',
 			'settings.language' => 'Lingua',
 			'settings.theme' => 'Tema',
 			'settings.appearance' => 'Aspetto',
@@ -1751,14 +1763,14 @@ extension on TranslationsIt {
 			'hubDetail.releaseYear' => 'Anno rilascio',
 			'hubDetail.dateAdded' => 'Data aggiunta',
 			'hubDetail.rating' => 'Valutazione',
+			_ => null,
+		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Nessun elemento trovato',
 			'logs.clearLogs' => 'Cancella log',
 			'logs.copyLogs' => 'Copia log',
 			'logs.error' => 'Errore:',
 			'logs.stackTrace' => 'Traccia dello stack:',
 			'licenses.relatedPackages' => 'Pacchetti correlati',
-			_ => null,
-		} ?? switch (path) {
 			'licenses.license' => 'Licenza',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licenza ${number}',
 			'licenses.licensesCount' => ({required Object count}) => '${count} licenze',
