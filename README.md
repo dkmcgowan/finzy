@@ -6,7 +6,9 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 
 **Support development** — If you enjoy Finzy, you can leave a tip via [PayPal](https://paypal.me/dkmcgowan). Optional and much appreciated. You can also find this in Settings → Support Development.
 
-
+<p align="center">
+  <img src="assets/screenshots/macos-home.png" alt="Finzy macOS Home Screen" width="800" />
+</p>
 
 *More screenshots in the [screenshots folder](assets/screenshots/#readme)*
 
@@ -111,7 +113,7 @@ dart run slang
 
 ## Acknowledgments
 
-- **Based on [Plezy*](https://github.com/edde746/plezy)* — modern cross-platform Plex client built with Flutter; Finzy is a fork for Jellyfin.
+- **Based on [Plezy](https://github.com/edde746/plezy)** — modern cross-platform Plex client built with Flutter; Finzy is a fork for Jellyfin.
 - Built with [Flutter](https://flutter.dev)
 - Designed for [Jellyfin](https://jellyfin.org)
 - Playback powered by [mpv](https://mpv.io) via [MPVKit](https://github.com/mpvkit/MPVKit) and [libmpv-android](https://github.com/jarnedemeulemeester/libmpv-android)
