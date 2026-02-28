@@ -45,8 +45,8 @@ class JellyfinProfileSwitchScreen extends StatelessWidget {
                         width: 72,
                         height: 72,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => Icon(icon ?? Symbols.person_rounded, size: 48),
-                        errorWidget: (_, __, ___) => Icon(icon ?? Symbols.person_rounded, size: 48),
+                        placeholder: (context, loadingProgress) => Icon(icon ?? Symbols.person_rounded, size: 48),
+                        errorWidget: (context, error, stackTrace) => Icon(icon ?? Symbols.person_rounded, size: 48),
                       ),
                     )
                   else

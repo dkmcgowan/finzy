@@ -122,6 +122,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<Hub, LibraryRecomm
     }
 
     // Append "Because you watched/liked X" when setting is on (movies only)
+    if (!mounted) return finalHubs;
     final settingsProvider = context.read<SettingsProvider>();
     if (widget.library.type.toLowerCase() == 'movie' &&
         settingsProvider.showJellyfinRecommendations) {

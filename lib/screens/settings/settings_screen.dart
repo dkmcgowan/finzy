@@ -476,8 +476,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                   physics: const NeverScrollableScrollPhysics(),
                   buildDefaultDragHandles: false,
                   itemCount: allLibraries.length,
-                  onReorder: (oldIndex, newIndex) {
-                    if (newIndex > oldIndex) newIndex--;
+                  onReorderItem: (oldIndex, newIndex) {
                     final reordered = List<MediaLibrary>.from(allLibraries);
                     final item = reordered.removeAt(oldIndex);
                     reordered.insert(newIndex, item);

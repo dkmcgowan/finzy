@@ -19,7 +19,6 @@ class PlaybackStateProvider with ChangeNotifier {
   List<MediaMetadata> _loadedItems = [];
   String? _contextKey;
   PlaybackMode? _playbackMode;
-  JellyfinClient? _client;
 
   PlaybackMode? get playbackMode => _playbackMode;
   bool get isShuffleActive => _playQueueShuffled;
@@ -36,7 +35,7 @@ class PlaybackStateProvider with ChangeNotifier {
   }
 
   void setClient(JellyfinClient client) {
-    _client = client;
+    // Client may be used for future server queue sync.
   }
 
   void setCurrentItem(MediaMetadata metadata) {
@@ -103,7 +102,6 @@ class PlaybackStateProvider with ChangeNotifier {
     _loadedItems = [];
     _contextKey = null;
     _playbackMode = null;
-    _client = null;
     notifyListeners();
   }
 }

@@ -131,6 +131,7 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
     if (!added || !mounted) return;
 
     final allServers = await registry.getServers();
+    if (!mounted) return;
     final connResult = await ServerConnectionOrchestrator.connectAndInitialize(
       servers: allServers,
       multiServerProvider: context.read<MultiServerProvider>(),
@@ -317,8 +318,8 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                     width: 72,
                     height: 72,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => Icon(icon ?? Symbols.person_rounded, size: 48),
-                    errorWidget: (_, __, ___) => Icon(icon ?? Symbols.person_rounded, size: 48),
+                    placeholder: (context, loadingProgress) => Icon(icon ?? Symbols.person_rounded, size: 48),
+                    errorWidget: (context, error, stackTrace) => Icon(icon ?? Symbols.person_rounded, size: 48),
                   ),
                 )
               else

@@ -203,8 +203,8 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                 ? CachedNetworkImage(
                     imageUrl: imageUrl,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => const PlaceholderContainer(),
-                    errorWidget: (_, __, ___) => const PlaceholderContainer(),
+                    placeholder: (context, loadingProgress) => const PlaceholderContainer(),
+                    errorWidget: (context, error, stackTrace) => const PlaceholderContainer(),
                   )
                 : const PlaceholderContainer(),
           ),
@@ -260,8 +260,8 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                   ? CachedNetworkImage(
                       imageUrl: imageUrl,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => const PlaceholderContainer(),
-                      errorWidget: (_, __, ___) => const PlaceholderContainer(),
+                      placeholder: (context, loadingProgress) => const PlaceholderContainer(),
+                      errorWidget: (context, error, stackTrace) => const PlaceholderContainer(),
                     )
                   : const PlaceholderContainer(),
             ),

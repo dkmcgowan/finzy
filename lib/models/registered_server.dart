@@ -60,7 +60,9 @@ class JellyfinServerData {
 
   /// Current user's display name and optional image tag for avatar.
   JellyfinStoredUser? get currentUser {
-    for (final u in users) if (u.userId == currentUserId) return u;
+    for (final u in users) {
+      if (u.userId == currentUserId) return u;
+    }
     return users.isNotEmpty ? users.first : null;
   }
 

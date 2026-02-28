@@ -62,6 +62,7 @@ Future<bool?> navigateToVideoPlayer(
   // Check if external player is enabled
   try {
     final settingsService = await SettingsService.getInstance();
+    if (!context.mounted) return null;
     if (settingsService.getUseExternalPlayer()) {
       bool launched = false;
 
@@ -70,6 +71,7 @@ Future<bool?> navigateToVideoPlayer(
         final downloadProvider = context.read<DownloadProvider>();
         final globalKey = '${metadata.serverId}:${metadata.itemId}';
         final videoPath = await downloadProvider.getVideoFilePath(globalKey);
+        if (!context.mounted) return null;
         if (videoPath != null) {
           final videoUrl = videoPath.contains('://') ? videoPath : 'file://$videoPath';
           launched = await ExternalPlayerService.launch(context: context, videoUrl: videoUrl);

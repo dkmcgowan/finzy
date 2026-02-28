@@ -999,8 +999,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               width: 32,
                               height: 32,
                               fit: BoxFit.cover,
-                              placeholder: (_, __) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
-                              errorWidget: (_, __, ___) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
+                              placeholder: (context, loadingProgress) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
+                              errorWidget: (context, error, stackTrace) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
                             ),
                           )
                         : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white);

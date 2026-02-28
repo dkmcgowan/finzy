@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
@@ -636,6 +635,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       final storage = await StorageService.getInstance();
       await storage.saveLibraryTab(_selectedLibraryGlobalKey!, tabController.index);
     }
+    if (!mounted) return;
 
     // Get the correct client for this library's server
     final client = context.getClientForLibrary(library);
@@ -743,6 +743,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
       final hubs = <Hub>[];
       for (final lib in visibleLibraries) {
+        if (!mounted) return;
         final client = context.getClientForLibrary(lib);
         try {
           final items = await client.getLibraryFavorites(lib.key, limit: 20);
@@ -1462,8 +1463,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                                         width: 32,
                                         height: 32,
                                         fit: BoxFit.cover,
-                                        placeholder: (_, __) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
-                                        errorWidget: (_, __, ___) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
+                                        placeholder: (context, loadingProgress) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
+                                        errorWidget: (context, error, stackTrace) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
                                       ),
                                     )
                                   : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32);

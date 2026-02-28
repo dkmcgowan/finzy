@@ -171,18 +171,24 @@ class FocusableRadioListTile<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RadioListTile<T>(
+    final tile = RadioListTile<T>(
       title: title,
       subtitle: subtitle,
       secondary: secondary,
       value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
       dense: dense,
       focusNode: focusNode,
       autofocus: autofocus,
       enabled: enabled,
     );
+    if (groupValue != null || onChanged != null) {
+      return RadioGroup<T>(
+        groupValue: groupValue,
+        onChanged: onChanged ?? (_) {},
+        child: tile,
+      );
+    }
+    return tile;
   }
 }
 

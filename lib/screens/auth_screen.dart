@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -545,8 +544,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     width: 56,
                     height: 56,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => Icon(icon ?? Symbols.person_rounded, size: 40),
-                    errorWidget: (_, __, ___) => Icon(icon ?? Symbols.person_rounded, size: 40),
+                    placeholder: (context, loadingProgress) => Icon(icon ?? Symbols.person_rounded, size: 40),
+                    errorWidget: (context, error, stackTrace) => Icon(icon ?? Symbols.person_rounded, size: 40),
                   ),
                 )
               else

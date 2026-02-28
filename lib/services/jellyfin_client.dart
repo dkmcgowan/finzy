@@ -8,7 +8,6 @@ import '../models/livetv_program.dart';
 import '../models/livetv_recording.dart';
 import '../models/livetv_scheduled_recording.dart';
 import '../models/livetv_subscription.dart';
-import '../models/play_queue_response.dart';
 import '../models/file_info.dart';
 import '../models/library_filter.dart';
 import '../models/first_character.dart';
@@ -1789,7 +1788,7 @@ class JellyfinClient {
     final perHub = limit > 0 ? limit : 12;
 
     // Run all three hub requests in parallel. Try both common NextUp paths.
-    Future<Map<String, dynamic>?> _nextUp() async {
+    Future<Map<String, dynamic>?> nextUp() async {
       try {
         final r = await _dio.get<Map<String, dynamic>>(
           '/Shows/NextUp',
@@ -1811,7 +1810,7 @@ class JellyfinClient {
       return null;
     }
 
-    Future<Map<String, dynamic>?> _movies() async {
+    Future<Map<String, dynamic>?> movies() async {
       try {
         final r = await _dio.get<Map<String, dynamic>>(
           '/Users/${config.userId}/Items',
@@ -1831,7 +1830,7 @@ class JellyfinClient {
       }
     }
 
-    Future<Map<String, dynamic>?> _shows() async {
+    Future<Map<String, dynamic>?> shows() async {
       try {
         final r = await _dio.get<Map<String, dynamic>>(
           '/Users/${config.userId}/Items',
@@ -1851,12 +1850,12 @@ class JellyfinClient {
       }
     }
 
-    final results = await Future.wait([_nextUp(), _movies(), _shows()]);
+    final results = await Future.wait([nextUp(), movies(), shows()]);
     final hubs = <Hub>[];
 
-    final nextUp = results[0];
-    if (nextUp != null) {
-      final items = (nextUp['Items'] as List?) ?? [];
+    final nextUpData = results[0];
+    if (nextUpData != null) {
+      final items = (nextUpData['Items'] as List?) ?? [];
       if (items.isNotEmpty) {
         hubs.add(Hub(
           hubKey: 'next_up',
@@ -1864,7 +1863,7 @@ class JellyfinClient {
           type: 'show',
           hubIdentifier: 'nextup',
           size: items.length,
-          more: (_toInt(nextUp['TotalRecordCount']) ?? 0) > items.length,
+          more: (_toInt(nextUpData['TotalRecordCount']) ?? 0) > items.length,
           items: items.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList(),
           serverId: serverId,
           serverName: serverName,
@@ -1872,9 +1871,9 @@ class JellyfinClient {
       }
     }
 
-    final movies = results[1];
-    if (movies != null) {
-      final list = (movies['Items'] as List?) ?? [];
+    final moviesData = results[1];
+    if (moviesData != null) {
+      final list = (moviesData['Items'] as List?) ?? [];
       if (list.isNotEmpty) {
         hubs.add(Hub(
           hubKey: 'recently_added_movies',
@@ -1882,7 +1881,7 @@ class JellyfinClient {
           type: 'movie',
           hubIdentifier: 'recently_added_movies',
           size: list.length,
-          more: (_toInt(movies['TotalRecordCount']) ?? 0) > list.length,
+          more: (_toInt(moviesData['TotalRecordCount']) ?? 0) > list.length,
           items: list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList(),
           serverId: serverId,
           serverName: serverName,
@@ -1890,9 +1889,9 @@ class JellyfinClient {
       }
     }
 
-    final shows = results[2];
-    if (shows != null) {
-      final list = (shows['Items'] as List?) ?? [];
+    final showsData = results[2];
+    if (showsData != null) {
+      final list = (showsData['Items'] as List?) ?? [];
       if (list.isNotEmpty) {
         hubs.add(Hub(
           hubKey: 'recently_added_shows',
@@ -1900,7 +1899,7 @@ class JellyfinClient {
           type: 'show',
           hubIdentifier: 'recently_added_shows',
           size: list.length,
-          more: (_toInt(shows['TotalRecordCount']) ?? 0) > list.length,
+          more: (_toInt(showsData['TotalRecordCount']) ?? 0) > list.length,
           items: list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList(),
           serverId: serverId,
           serverName: serverName,
@@ -2924,10 +2923,10 @@ class JellyfinClient {
           queryParameters: {
             'UserId': config.userId,
             'ItemId': channelKey,
-            if (playSessionId != null) 'PlaySessionId': playSessionId,
+            'PlaySessionId': ?playSessionId,
           },
           data: {
-            if (openToken != null) 'OpenToken': openToken,
+            'OpenToken': ?openToken,
           },
         );
         if (openResponse.statusCode == 200 && openResponse.data != null) {

@@ -36,8 +36,8 @@ class ProfileAppBarButton extends StatelessWidget {
                     width: 32,
                     height: 32,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
-                    errorWidget: (_, __, ___) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
+                    placeholder: (context, loadingProgress) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
+                    errorWidget: (context, error, stackTrace) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
                   ),
                 )
               : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32);
