@@ -67,7 +67,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   String? get deletionServerId => widget.library.serverId;
 
   @override
-  Set<String>? get deletionRatingKeys => items.map((e) => e.itemId).toSet();
+  Set<String>? get deletionItemIds => items.map((e) => e.itemId).toSet();
 
   @override
   Set<String>? get deletionGlobalKeys {
@@ -84,7 +84,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
 
   @override
   void onDeletionEvent(DeletionEvent event) {
-    // If we have an item that matches the rating key exactly, then remove it from our list
+    // If we have an item that matches the item ID exactly, then remove it from our list
     final index = items.indexWhere((e) => e.itemId == event.itemId);
     if (index != -1) {
       setState(() {
@@ -314,7 +314,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
         _filters = filters;
         _sortOptions = sorts;
         _selectedFilters = Map.from(savedFilters);
-        _selectedGrouping = 'all';
+        _selectedGrouping = storage.getLibraryGrouping(widget.library.globalKey) ?? _getDefaultGrouping();
 
         // Restore sort
         if (savedSort != null) {
@@ -329,8 +329,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
         }
       });
 
-      // Load items and first characters in parallel
-      await Future.wait([_loadItems(), _loadFirstCharacters()]);
+      await _loadItems();
     } catch (e) {
       _handleLoadError(e, currentRequestId);
     }
@@ -409,6 +408,14 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
       if (!loadMore) {
         hasLoadedData = true;
         tryFocus();
+
+        // Build alpha bar data: compute locally when all items are loaded,
+        // otherwise fall back to an API call for paginated libraries.
+        if (!_hasMoreItems) {
+          _computeFirstCharactersFromItems();
+        } else {
+          _loadFirstCharacters();
+        }
 
         // Notify parent
         if (widget.onDataLoaded != null) {
@@ -533,7 +540,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
             storage.saveLibraryGrouping(widget.library.globalKey, pendingGrouping);
           });
           _loadItems();
-          _loadFirstCharacters();
         });
   }
 
@@ -556,7 +562,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
           await storage.saveLibraryFilters(filters, sectionId: widget.library.globalKey);
 
           _loadItems();
-          _loadFirstCharacters();
         },
       ),
     );
@@ -594,8 +599,10 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
               _selectedSort = null;
               _isSortDescending = false;
             });
+            StorageService.getInstance().then((storage) {
+              storage.clearLibrarySort(widget.library.globalKey);
+            });
             _loadItems();
-            _loadFirstCharacters();
           } else if (pendingSort != null &&
               (pendingSort!.key != _selectedSort?.key || pendingDescending != _isSortDescending)) {
             setState(() {
@@ -606,7 +613,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
               storage.saveLibrarySort(widget.library.globalKey, pendingSort!.key, descending: pendingDescending);
             });
             _loadItems();
-            _loadFirstCharacters();
           }
         });
   }
@@ -678,7 +684,35 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     return sortKey.isEmpty || sortKey.startsWith('titleSort');
   }
 
-  /// Fetch first characters for the current library/filter state
+  /// Compute first characters directly from loaded items (avoids extra API call)
+  void _computeFirstCharactersFromItems() {
+    final charCounts = <String, int>{};
+    for (final item in items) {
+      final sortName = item.titleSort ?? item.title;
+      if (sortName.isEmpty) continue;
+      final firstChar = sortName[0].toUpperCase();
+      final key = RegExp(r'[A-Z]').hasMatch(firstChar) ? firstChar : '#';
+      charCounts[key] = (charCounts[key] ?? 0) + 1;
+    }
+
+    final sortedKeys = charCounts.keys.toList()
+      ..sort((a, b) {
+        if (a == '#') return -1;
+        if (b == '#') return 1;
+        return a.compareTo(b);
+      });
+
+    final chars = sortedKeys
+        .map((key) => FirstCharacter(key: key, title: key, size: charCounts[key]!))
+        .toList();
+
+    setState(() {
+      _firstCharacters = chars;
+      _alphaHelper = AlphaJumpHelper(chars);
+    });
+  }
+
+  /// Fetch first characters via API (fallback for paginated libraries)
   Future<void> _loadFirstCharacters() async {
     final client = getClientForLibrary();
     final filterParams = Map<String, String>.from(_selectedFilters);
@@ -726,6 +760,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
 
   /// Recompute the first-visible-index from the current scroll offset.
   void _updateVisibleIndex() {
+    if (!_scrollController.hasClients || !_scrollController.position.hasContentDimensions) return;
     final offset = _scrollController.offset;
     final firstInRow = _itemIndexFromScrollOffset(offset);
     // Use the last item in the first visible row so the highlighted letter
@@ -774,7 +809,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
 
   /// Scroll the grid so that [index] is visible just below the chips bar
   void _scrollToItemIndex(int index) {
-    if (_currentColumnCount < 1 || _lastCrossAxisExtent <= 0 || !_scrollController.hasClients) {
+    if (_currentColumnCount < 1 || _lastCrossAxisExtent <= 0 ||
+        !_scrollController.hasClients || !_scrollController.position.hasContentDimensions) {
       _isJumpScrolling = false;
       return;
     }
@@ -861,10 +897,17 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
         if (notification.metrics.pixels >= notification.metrics.maxScrollExtent - 300 && _hasMoreItems && !isLoading) {
           _loadItems(loadMore: true);
         }
-        // Track scroll activity for phone scroll handle
+        // Track scroll activity for phone scroll handle.
+        // Deferred via post-frame callback because scroll notifications can
+        // fire during layout (e.g. when the alpha jump bar appears and the
+        // viewport recomputes dimensions).
         if (notification is ScrollStartNotification) {
-          if (!_isScrollActive) setState(() => _isScrollActive = true);
           _scrollActivityTimer?.cancel();
+          if (!_isScrollActive) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && !_isScrollActive) setState(() => _isScrollActive = true);
+            });
+          }
         } else if (notification is ScrollEndNotification) {
           _scrollActivityTimer?.cancel();
           _scrollActivityTimer = Timer(const Duration(milliseconds: 100), () {
