@@ -130,6 +130,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pods-
 
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', 'ios/**/*.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
       - name: Import Code Signing Certificate
         id: import-cert
         env:
@@ -200,12 +210,25 @@ jobs:
 
       - name: Build signed IPA
         if: steps.import-cert.outputs.imported == 'true'
-        run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --dart-define=ENABLE_UPDATE_CHECK=true
+        run: |
+          for i in 1 2 3; do
+            echo "Build attempt $i of 3"
+            flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --dart-define=ENABLE_UPDATE_CHECK=true && break
+            if [ $i -eq 3 ]; then exit 1; fi
+            echo "Build failed, retrying in 60 seconds..."
+            sleep 60
+          done
 
       - name: Build unsigned IPA (fallback)
         if: steps.import-cert.outputs.imported != 'true'
         run: |
-          flutter build ios --release --no-codesign --dart-define=ENABLE_UPDATE_CHECK=true
+          for i in 1 2 3; do
+            echo "Build attempt $i of 3"
+            flutter build ios --release --no-codesign --dart-define=ENABLE_UPDATE_CHECK=true && break
+            if [ $i -eq 3 ]; then exit 1; fi
+            echo "Build failed, retrying in 60 seconds..."
+            sleep 60
+          done
           mkdir -p build/ios/ipa Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r build/ios/ipa/finzy.ipa Payload
@@ -289,11 +312,28 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-macos-pods-
 
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: ${{ runner.os }}-macos-spm-${{ hashFiles('**/Package.resolved', 'macos/**/*.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-macos-spm-
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build macOS
-        run: flutter build macos --release --dart-define=ENABLE_UPDATE_CHECK=true
+        run: |
+          for i in 1 2 3; do
+            echo "Build attempt $i of 3"
+            flutter build macos --release --dart-define=ENABLE_UPDATE_CHECK=true && break
+            if [ $i -eq 3 ]; then exit 1; fi
+            echo "Build failed, retrying in 60 seconds..."
+            sleep 60
+          done
 
       - name: Import Code Signing Certificate
         id: import-cert
