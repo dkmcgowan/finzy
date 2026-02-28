@@ -125,7 +125,7 @@ class MediaSubtitleTrack with TrackLabelBuilder {
   }
 
   /// Returns true if this subtitle track is an external file (sidecar subtitle)
-  /// External subtitles have a key property that points to /library/streams/{id}
+  /// External subtitles have a key property that points to a subtitle stream endpoint
   bool get isExternal => key != null && key!.isNotEmpty;
 
   /// Constructs the full URL for fetching external subtitle files

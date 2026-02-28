@@ -19,8 +19,8 @@ class Playlist with MultiServerFields {
   final String? composite; // Composite thumbnail image
   final int? addedAt;
   final int? updatedAt;
-  final int? lastViewedAt;
-  final int? viewCount;
+  final int? lastPlayedAt;
+  final int? playCount;
   final String? content; // For smart playlists - generator URI
   final String? guid;
   final String? thumb;
@@ -46,8 +46,8 @@ class Playlist with MultiServerFields {
     this.composite,
     this.addedAt,
     this.updatedAt,
-    this.lastViewedAt,
-    this.viewCount,
+    this.lastPlayedAt,
+    this.playCount,
     this.content,
     this.guid,
     this.thumb,
@@ -73,7 +73,7 @@ class Playlist with MultiServerFields {
   bool get isWatched => false;
 
   /// Playlists don't have resume positions
-  int? get viewOffset => null;
+  int? get resumePositionMs => null;
 
   /// Playlists don't have parent/episode indices
   int? get parentIndex => null;
@@ -93,7 +93,7 @@ class Playlist with MultiServerFields {
   int? get childCount => leafCount;
 
   /// Playlists don't track viewed leaf count
-  int? get viewedLeafCount => null;
+  int? get watchedEpisodeCount => null;
 
   factory Playlist.fromJson(Map<String, dynamic> json) {
     if (kBlurArtwork) {
@@ -122,8 +122,8 @@ class Playlist with MultiServerFields {
     String? composite,
     int? addedAt,
     int? updatedAt,
-    int? lastViewedAt,
-    int? viewCount,
+    int? lastPlayedAt,
+    int? playCount,
     String? content,
     String? guid,
     String? thumb,
@@ -143,8 +143,8 @@ class Playlist with MultiServerFields {
       composite: composite ?? this.composite,
       addedAt: addedAt ?? this.addedAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      lastViewedAt: lastViewedAt ?? this.lastViewedAt,
-      viewCount: viewCount ?? this.viewCount,
+      lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
+      playCount: playCount ?? this.playCount,
       content: content ?? this.content,
       guid: guid ?? this.guid,
       thumb: thumb ?? this.thumb,

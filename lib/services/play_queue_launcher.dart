@@ -123,14 +123,6 @@ class PlayQueueLauncher {
           );
         }
 
-        // If the queue is empty, try fetching it again with getPlayQueue
-        if (playQueue.items == null || playQueue.items!.isEmpty) {
-          final fetchedQueue = await client.getPlayQueue(playQueue.playQueueID);
-          if (fetchedQueue != null && fetchedQueue.items != null && fetchedQueue.items!.isNotEmpty) {
-            playQueue = fetchedQueue;
-          }
-        }
-
         // Close loading dialog before navigating to the player
         await dismissLoading();
 
@@ -193,46 +185,6 @@ class PlayQueueLauncher {
           serverId: serverId,
           serverName: serverName,
           selectedItem: selected,
-        );
-      },
-    );
-  }
-
-  /// Launch shuffled playback for a show or season.
-  Future<PlayQueueResult> launchShuffledShow({required MediaMetadata metadata, bool showLoadingIndicator = true}) async {
-    final mediaType = metadata.mediaType;
-
-    if (mediaType != MediaType.show && mediaType != MediaType.season) {
-      return PlayQueueError(Exception('Shuffle play only works for shows and seasons'));
-    }
-
-    return _executeWithLoading(
-      showLoading: showLoadingIndicator,
-      action: t.common.shuffle,
-      execute: (dismissLoading) async {
-        // Determine the rating key for the play queue
-        String showRatingKey;
-        if (mediaType == MediaType.show) {
-          showRatingKey = metadata.itemId;
-        } else {
-          // For seasons, we need the show's rating key
-          if (metadata.seasonId == null) {
-            throw Exception('Season is missing seasonId');
-          }
-          showRatingKey = metadata.seasonId!;
-        }
-
-        final playQueue = await client.createShowPlayQueue(showRatingKey: showRatingKey, shuffle: 1);
-
-        // Close loading dialog before navigating to the player
-        await dismissLoading();
-
-        return _launchFromQueue(
-          playQueue: playQueue,
-          itemId: showRatingKey,
-          serverId: metadata.serverId ?? serverId,
-          serverName: metadata.serverName ?? serverName,
-          copyServerInfo: true,
         );
       },
     );

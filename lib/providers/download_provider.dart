@@ -170,9 +170,9 @@ class DownloadProvider extends ChangeNotifier {
     if (serverId == null) return;
 
     // Load show metadata
-    final showRatingKey = episode.seriesId;
-    if (showRatingKey != null) {
-      final showGlobalKey = '$serverId:$showRatingKey';
+    final showItemId = episode.seriesId;
+    if (showItemId != null) {
+      final showGlobalKey = '$serverId:$showItemId';
       if (!_metadata.containsKey(showGlobalKey)) {
         final showMetadata = allMetadata[showGlobalKey];
         if (showMetadata != null) {
@@ -185,9 +185,9 @@ class DownloadProvider extends ChangeNotifier {
     }
 
     // Load season metadata
-    final seasonRatingKey = episode.seasonId;
-    if (seasonRatingKey != null) {
-      final seasonGlobalKey = '$serverId:$seasonRatingKey';
+    final seasonItemId = episode.seasonId;
+    if (seasonItemId != null) {
+      final seasonGlobalKey = '$serverId:$seasonItemId';
       if (!_metadata.containsKey(seasonGlobalKey)) {
         final seasonMetadata = allMetadata[seasonGlobalKey];
         if (seasonMetadata != null) {
@@ -267,20 +267,20 @@ class DownloadProvider extends ChangeNotifier {
       final progress = _downloads[globalKey];
 
       if (progress?.status == DownloadStatus.completed && meta.type == 'episode') {
-        final showRatingKey = meta.seriesId;
-        if (showRatingKey != null && !shows.containsKey(showRatingKey)) {
+        final showItemId = meta.seriesId;
+        if (showItemId != null && !shows.containsKey(showItemId)) {
           // Try to get stored show metadata first
-          final showGlobalKey = '${meta.serverId}:$showRatingKey';
+          final showGlobalKey = '${meta.serverId}:$showItemId';
           final storedShow = _metadata[showGlobalKey];
 
           if (storedShow != null && storedShow.type == 'show') {
             // Use stored show metadata (has year, summary, clearLogo)
-            shows[showRatingKey] = storedShow;
+            shows[showItemId] = storedShow;
           } else {
             // Fallback: synthesize from episode metadata (missing year, summary)
-            shows[showRatingKey] = MediaMetadata(
-              itemId: showRatingKey,
-              key: '${ApiCache.itemPrefix}$showRatingKey',
+            shows[showItemId] = MediaMetadata(
+              itemId: showItemId,
+              key: '${ApiCache.itemPrefix}$showItemId',
               type: 'show',
               title: meta.seriesTitle ?? 'Unknown Show',
               thumb: meta.seriesImageId,
@@ -320,36 +320,36 @@ class DownloadProvider extends ChangeNotifier {
   }
 
   /// Get downloaded episodes for a specific show (by seriesId)
-  List<MediaMetadata> getDownloadedEpisodesForShow(String showRatingKey) {
+  List<MediaMetadata> getDownloadedEpisodesForShow(String showItemId) {
     return _metadata.entries
         .where((entry) {
           final progress = _downloads[entry.key];
           final meta = entry.value;
           return progress?.status == DownloadStatus.completed &&
               meta.type == 'episode' &&
-              meta.seriesId == showRatingKey;
+              meta.seriesId == showItemId;
         })
         .map((entry) => entry.value)
         .toList();
   }
 
   /// Get all episode downloads (any status) for a specific show
-  List<DownloadProgress> _getEpisodeDownloadsForShow(String showRatingKey) {
+  List<DownloadProgress> _getEpisodeDownloadsForShow(String showItemId) {
     return _downloads.entries
         .where((entry) {
           final meta = _metadata[entry.key];
-          return meta?.type == 'episode' && meta?.seriesId == showRatingKey;
+          return meta?.type == 'episode' && meta?.seriesId == showItemId;
         })
         .map((entry) => entry.value)
         .toList();
   }
 
   /// Get all episode downloads (any status) for a specific season
-  List<DownloadProgress> _getEpisodeDownloadsForSeason(String seasonRatingKey) {
+  List<DownloadProgress> _getEpisodeDownloadsForSeason(String seasonItemId) {
     return _downloads.entries
         .where((entry) {
           final meta = _metadata[entry.key];
-          return meta?.type == 'episode' && meta?.seasonId == seasonRatingKey;
+          return meta?.type == 'episode' && meta?.seasonId == seasonItemId;
         })
         .map((entry) => entry.value)
         .toList();
@@ -357,22 +357,22 @@ class DownloadProvider extends ChangeNotifier {
 
   /// Calculate aggregate progress for a show (based on all its episodes)
   /// Returns synthetic DownloadProgress with aggregated values
-  DownloadProgress? getAggregateProgressForShow(String serverId, String showRatingKey) {
+  DownloadProgress? getAggregateProgressForShow(String serverId, String showItemId) {
     return _calculateAggregateProgress(
       serverId: serverId,
-      itemId: showRatingKey,
-      episodes: _getEpisodeDownloadsForShow(showRatingKey),
+      itemId: showItemId,
+      episodes: _getEpisodeDownloadsForShow(showItemId),
       entityType: 'show',
     );
   }
 
   /// Calculate aggregate progress for a season (based on all its episodes)
   /// Returns synthetic DownloadProgress with aggregated values
-  DownloadProgress? getAggregateProgressForSeason(String serverId, String seasonRatingKey) {
+  DownloadProgress? getAggregateProgressForSeason(String serverId, String seasonItemId) {
     return _calculateAggregateProgress(
       serverId: serverId,
-      itemId: seasonRatingKey,
-      episodes: _getEpisodeDownloadsForSeason(seasonRatingKey),
+      itemId: seasonItemId,
+      episodes: _getEpisodeDownloadsForSeason(seasonItemId),
       entityType: 'season',
     );
   }
@@ -692,9 +692,9 @@ class DownloadProvider extends ChangeNotifier {
     final storageService = DownloadStorageService.instance;
 
     // Fetch and store show metadata if not already stored
-    final showRatingKey = episode.seriesId;
-    if (showRatingKey != null) {
-      final showGlobalKey = '$serverId:$showRatingKey';
+    final showItemId = episode.seriesId;
+    if (showItemId != null) {
+      final showGlobalKey = '$serverId:$showItemId';
 
       // Try to use existing metadata (set when queueing an entire show)
       MediaMetadata? showMetadata = _metadata[showGlobalKey];
@@ -702,9 +702,9 @@ class DownloadProvider extends ChangeNotifier {
       // If not already cached, fetch full metadata with images
       if (showMetadata == null) {
         try {
-          showMetadata = await client.getMetadataWithImages(showRatingKey);
+          showMetadata = await client.getMetadataWithImages(showItemId);
         } catch (e) {
-          appLogger.w('Failed to fetch show metadata for $showRatingKey', error: e);
+          appLogger.w('Failed to fetch show metadata for $showItemId', error: e);
         }
       }
 
@@ -729,16 +729,16 @@ class DownloadProvider extends ChangeNotifier {
     }
 
     // Fetch and store season metadata if not already stored
-    final seasonRatingKey = episode.seasonId;
-    if (seasonRatingKey != null) {
-      final seasonGlobalKey = '$serverId:$seasonRatingKey';
+    final seasonItemId = episode.seasonId;
+    if (seasonItemId != null) {
+      final seasonGlobalKey = '$serverId:$seasonItemId';
       MediaMetadata? seasonMetadata = _metadata[seasonGlobalKey];
 
       if (seasonMetadata == null) {
         try {
-          seasonMetadata = await client.getMetadataWithImages(seasonRatingKey);
+          seasonMetadata = await client.getMetadataWithImages(seasonItemId);
         } catch (e) {
-          appLogger.w('Failed to fetch season metadata for $seasonRatingKey', error: e);
+          appLogger.w('Failed to fetch season metadata for $seasonItemId', error: e);
         }
       }
 

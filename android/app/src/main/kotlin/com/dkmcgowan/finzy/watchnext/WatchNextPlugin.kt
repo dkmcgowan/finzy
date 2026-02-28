@@ -11,7 +11,7 @@ import io.flutter.plugin.common.MethodChannel
 
 /**
  * Flutter plugin for Android TV Watch Next integration.
- * Syncs Plex "On Deck" content to the Android TV launcher's Watch Next row.
+ * Syncs Jellyfin Continue Watching content to the Android TV launcher's Watch Next row.
  */
 class WatchNextPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
 

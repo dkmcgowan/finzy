@@ -56,21 +56,21 @@ class MediaMetadata with MultiServerFields {
   final int? duration;
   final int? addedAt;
   final int? updatedAt;
-  final int? lastViewedAt; // Timestamp when item was last viewed
+  final int? lastPlayedAt; // Timestamp when item was last viewed
   final String? seriesTitle; // Show title for episodes
   final String? seriesImageId; // Show poster for episodes
   final String? seriesArt; // Show art for episodes
-  final String? seriesId; // Show rating key for episodes
+  final String? seriesId; // Show ID for episodes
   final String? seasonTitle; // Season title for episodes
   final String? seasonImageId; // Season poster for episodes
-  final String? seasonId; // Season rating key for episodes
+  final String? seasonId; // Season ID for episodes
   final int? parentIndex; // Season number
   final int? index; // Episode number
   final String? seriesTheme; // Show theme music
-  final int? viewOffset; // Resume position in ms
-  final int? viewCount;
+  final int? resumePositionMs; // Resume position in ms
+  final int? playCount;
   final int? leafCount; // Total number of episodes in a series/season
-  final int? viewedLeafCount; // Number of watched episodes in a series/season
+  final int? watchedEpisodeCount; // Number of watched episodes in a series/season
   /// Unwatched/unplayed count when server provides it directly (e.g. Jellyfin UnplayedItemCount).
   /// Badge can show this without needing total (leafCount).
   final int? unwatchedCount;
@@ -152,7 +152,7 @@ class MediaMetadata with MultiServerFields {
     this.duration,
     this.addedAt,
     this.updatedAt,
-    this.lastViewedAt,
+    this.lastPlayedAt,
     this.seriesTitle,
     this.seriesImageId,
     this.seriesArt,
@@ -163,10 +163,10 @@ class MediaMetadata with MultiServerFields {
     this.parentIndex,
     this.index,
     this.seriesTheme,
-    this.viewOffset,
-    this.viewCount,
+    this.resumePositionMs,
+    this.playCount,
     this.leafCount,
-    this.viewedLeafCount,
+    this.watchedEpisodeCount,
     this.unwatchedCount,
     this.childCount,
     this.role,
@@ -209,7 +209,7 @@ class MediaMetadata with MultiServerFields {
     int? duration,
     int? addedAt,
     int? updatedAt,
-    int? lastViewedAt,
+    int? lastPlayedAt,
     String? seriesTitle,
     String? seriesImageId,
     String? seriesArt,
@@ -220,10 +220,10 @@ class MediaMetadata with MultiServerFields {
     int? parentIndex,
     int? index,
     String? seriesTheme,
-    int? viewOffset,
-    int? viewCount,
+    int? resumePositionMs,
+    int? playCount,
     int? leafCount,
-    int? viewedLeafCount,
+    int? watchedEpisodeCount,
     int? unwatchedCount,
     int? childCount,
     List<CastRole>? role,
@@ -264,7 +264,7 @@ class MediaMetadata with MultiServerFields {
       duration: duration ?? this.duration,
       addedAt: addedAt ?? this.addedAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      lastViewedAt: lastViewedAt ?? this.lastViewedAt,
+      lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       seriesTitle: seriesTitle ?? this.seriesTitle,
       seriesImageId: seriesImageId ?? this.seriesImageId,
       seriesArt: seriesArt ?? this.seriesArt,
@@ -275,10 +275,10 @@ class MediaMetadata with MultiServerFields {
       parentIndex: parentIndex ?? this.parentIndex,
       index: index ?? this.index,
       seriesTheme: seriesTheme ?? this.seriesTheme,
-      viewOffset: viewOffset ?? this.viewOffset,
-      viewCount: viewCount ?? this.viewCount,
+      resumePositionMs: resumePositionMs ?? this.resumePositionMs,
+      playCount: playCount ?? this.playCount,
       leafCount: leafCount ?? this.leafCount,
-      viewedLeafCount: viewedLeafCount ?? this.viewedLeafCount,
+      watchedEpisodeCount: watchedEpisodeCount ?? this.watchedEpisodeCount,
       unwatchedCount: unwatchedCount ?? this.unwatchedCount,
       childCount: childCount ?? this.childCount,
       role: role ?? this.role,
@@ -435,15 +435,15 @@ class MediaMetadata with MultiServerFields {
   /// Returns true if this item has started but not finished playback
   /// Only applicable for individual items (movies, episodes)
   bool get hasActiveProgress {
-    if (duration == null || viewOffset == null) return false;
-    return viewOffset! > 0 && viewOffset! < duration!;
+    if (duration == null || resumePositionMs == null) return false;
+    return resumePositionMs! > 0 && resumePositionMs! < duration!;
   }
 
-  /// Unwatched count for shows/seasons: use server-provided value or leafCount - viewedLeafCount.
+  /// Unwatched count for shows/seasons: use server-provided value or leafCount - watchedEpisodeCount.
   int? get effectiveUnwatchedCount {
     if (unwatchedCount != null && unwatchedCount! > 0) return unwatchedCount;
-    if (leafCount != null && viewedLeafCount != null && leafCount! > viewedLeafCount!) {
-      return leafCount! - viewedLeafCount!;
+    if (leafCount != null && watchedEpisodeCount != null && leafCount! > watchedEpisodeCount!) {
+      return leafCount! - watchedEpisodeCount!;
     }
     return null;
   }
@@ -452,12 +452,12 @@ class MediaMetadata with MultiServerFields {
   bool get isWatched {
     // For series/seasons: unwatchedCount 0 or viewed >= total
     if (unwatchedCount != null) return unwatchedCount! == 0;
-    if (leafCount != null && viewedLeafCount != null) {
-      return viewedLeafCount! >= leafCount!;
+    if (leafCount != null && watchedEpisodeCount != null) {
+      return watchedEpisodeCount! >= leafCount!;
     }
 
-    // For individual items (movies, episodes), check viewCount
-    return viewCount != null && viewCount! > 0;
+    // For individual items (movies, episodes), check playCount
+    return playCount != null && playCount! > 0;
   }
 
   factory MediaMetadata.fromJson(Map<String, dynamic> json) =>

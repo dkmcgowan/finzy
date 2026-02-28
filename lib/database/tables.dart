@@ -72,13 +72,13 @@ class OfflineWatchProgress extends Table {
   TextColumn get actionType => text()();
 
   /// Current playback position in milliseconds (for 'progress' actions)
-  IntColumn get viewOffset => integer().nullable()();
+  IntColumn get resumePositionMs => integer().nullable()();
 
   /// Duration of the media in milliseconds (for calculating percentage)
   IntColumn get duration => integer().nullable()();
 
   /// Whether this item should be marked as watched (for progress sync)
-  /// Auto-set to true when viewOffset >= 90% of duration
+  /// Auto-set to true when resumePositionMs >= 90% of duration
   BoolColumn get shouldMarkWatched => boolean().withDefault(const Constant(false))();
 
   /// Timestamp when this action was recorded (milliseconds since epoch)

@@ -836,7 +836,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
   }
 
   Future<void> _loadPlaybackExtras() async {
-    // Live TV metadata uses EPG rating keys, not library items
+    // Live TV metadata uses EPG IDs, not library items
     if (widget.isLive) return;
 
     try {
@@ -2207,7 +2207,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
           context,
           PageRouteBuilder<bool>(
             pageBuilder: (context, animation, secondaryAnimation) => VideoPlayerScreen(
-              metadata: widget.metadata.copyWith(viewOffset: currentPosition.inMilliseconds),
+              metadata: widget.metadata.copyWith(resumePositionMs: currentPosition.inMilliseconds),
               selectedMediaIndex: newMediaIndex,
             ),
             transitionDuration: Duration.zero,

@@ -69,7 +69,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<Hub, LibraryRecomm
 
     // Load both continue watching items and regular hubs in parallel
     final results = await Future.wait([
-      client.getOnDeckForLibrary(widget.library.key),
+      client.getContinueWatchingForLibrary(widget.library.key),
       client.getLibraryHubs(widget.library.key, limit: 12),
     ]);
 
@@ -81,8 +81,6 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<Hub, LibraryRecomm
       final title = hub.title.toLowerCase();
       final hubId = hub.hubIdentifier?.toLowerCase() ?? '';
       return !title.contains('continue watching') &&
-          !title.contains('on deck') &&
-          !hubId.contains('ondeck') &&
           !hubId.contains('continue');
     }).toList();
 
@@ -225,7 +223,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<Hub, LibraryRecomm
 
   IconData _getHubIcon(Hub hub) {
     final title = hub.title.toLowerCase();
-    if (title.contains('continue watching') || title.contains('on deck')) {
+    if (title.contains('continue watching')) {
       return Symbols.play_circle_rounded;
     } else if (title.contains('recently') || title.contains('new')) {
       return Symbols.fiber_new_rounded;

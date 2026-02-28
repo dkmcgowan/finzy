@@ -93,7 +93,7 @@ Future<bool?> navigateToVideoPlayer(
 
   // Prevent stacking an identical video player when already active
   if (!usePushReplacement &&
-      VideoPlayerScreenState.activeRatingKey == metadata.itemId &&
+      VideoPlayerScreenState.activeItemId == metadata.itemId &&
       VideoPlayerScreenState.activeMediaIndex == mediaIndex) {
     appLogger.d(
       'Video player already active for ${metadata.itemId} (mediaIndex=$mediaIndex), skipping duplicate navigation',

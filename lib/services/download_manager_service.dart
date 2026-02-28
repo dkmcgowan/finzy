@@ -453,7 +453,7 @@ class DownloadManagerService {
 
     // Ensure metadata is in API cache for offline use and for _prepareAndEnqueueDownload.
     // JellyfinClient does not cache when it fetches — so we always cache here
-    // in a format the cache parser expects (MediaContainer.Metadata).
+    // in the format CacheParser expects.
     await _cacheMetadataForOffline(metadata.serverId!, metadata.itemId, metadata);
 
     // Add to queue
@@ -1645,24 +1645,20 @@ class DownloadManagerService {
   Future<void> _cacheMetadataForOffline(String serverId, String itemId, MediaMetadata metadata) async {
     final endpoint = '${ApiCache.itemPrefix}$itemId';
 
-    // Build a response structure that matches the expected API format
     final cachedResponse = {
-      'MediaContainer': {
-        'Metadata': [metadata.toJson()],
-      },
+      'Items': [metadata.toJson()],
     };
 
     await _apiCache.put(serverId, endpoint, cachedResponse);
     await _apiCache.pinForOffline(serverId, itemId);
   }
 
-  /// Cache children (seasons or episodes) in the API response format
+  /// Cache children (seasons or episodes) for offline use
   Future<void> cacheChildrenForOffline(String serverId, String seasonId, List<MediaMetadata> children) async {
     final endpoint = '${ApiCache.itemPrefix}$seasonId/children';
 
-    // Build a response structure that matches the expected API format
     final cachedResponse = {
-      'MediaContainer': {'Metadata': children.map((c) => c.toJson()).toList()},
+      'Items': children.map((c) => c.toJson()).toList(),
     };
 
     await _apiCache.put(serverId, endpoint, cachedResponse);

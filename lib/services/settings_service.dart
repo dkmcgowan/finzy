@@ -794,11 +794,11 @@ class SettingsService extends BaseSharedPreferencesService {
 
   // Media Version Preferences
   /// Save media version preference for a series
-  /// [seriesRatingKey] is the seriesId for TV series, or itemId for movies
+  /// [seriesItemId] is the seriesId for TV series, or itemId for movies
   /// [mediaIndex] is the index of the selected media version
-  Future<void> setMediaVersionPreference(String seriesRatingKey, int mediaIndex) async {
+  Future<void> setMediaVersionPreference(String seriesItemId, int mediaIndex) async {
     final preferences = _getMediaVersionPreferences();
-    preferences[seriesRatingKey] = mediaIndex;
+    preferences[seriesItemId] = mediaIndex;
 
     final jsonString = json.encode(preferences);
     await prefs.setString(_keyMediaVersionPreferences, jsonString);
@@ -806,15 +806,15 @@ class SettingsService extends BaseSharedPreferencesService {
 
   /// Get saved media version preference for a series
   /// Returns null if no preference is saved
-  int? getMediaVersionPreference(String seriesRatingKey) {
+  int? getMediaVersionPreference(String seriesItemId) {
     final preferences = _getMediaVersionPreferences();
-    return preferences[seriesRatingKey];
+    return preferences[seriesItemId];
   }
 
   /// Clear media version preference for a series
-  Future<void> clearMediaVersionPreference(String seriesRatingKey) async {
+  Future<void> clearMediaVersionPreference(String seriesItemId) async {
     final preferences = _getMediaVersionPreferences();
-    preferences.remove(seriesRatingKey);
+    preferences.remove(seriesItemId);
 
     final jsonString = json.encode(preferences);
     await prefs.setString(_keyMediaVersionPreferences, jsonString);

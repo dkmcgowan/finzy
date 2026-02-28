@@ -217,7 +217,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
             index: null,
             unwatchedCount: item.unwatchedCount,
             leafCount: item.leafCount,
-            viewedLeafCount: item.viewedLeafCount,
+            watchedEpisodeCount: item.watchedEpisodeCount,
           ));
         }
       } else if (item.mediaType == MediaType.movie) {
@@ -238,7 +238,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
       final m = item.copyWith(
         unwatchedCount: enriched.unwatchedCount,
         leafCount: enriched.leafCount,
-        viewedLeafCount: enriched.viewedLeafCount,
+        watchedEpisodeCount: enriched.watchedEpisodeCount,
       );
       return m;
     }).toList();

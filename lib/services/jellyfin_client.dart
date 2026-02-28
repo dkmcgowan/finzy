@@ -149,7 +149,7 @@ class JellyfinClient {
     final hasParentBackdrop = (item['ParentBackdropImageTags'] as List?)?.isNotEmpty == true;
 
     final leafCount = _leafCountForItem(item, type);
-    final viewedLeafCount = _viewedLeafCountForItem(item, type, userData);
+    final watchedEpisodeCount = _watchedEpisodeCountForItem(item, type, userData);
     // Unwatched badge: use unplayed count directly when API provides it (no need to fake leafCount).
     final unwatchedCount = (type == 'show' || type == 'season') ? _toInt(userData['UnplayedItemCount']) : null;
 
@@ -177,7 +177,7 @@ class JellyfinClient {
       duration: _ticksToMs(_toInt(item['RunTimeTicks'])),
       addedAt: item['DateCreated'] != null ? _parseDateToEpochSeconds(item['DateCreated']) : null,
       updatedAt: item['DateLastMediaAdded'] != null ? _parseDateToEpochSeconds(item['DateLastMediaAdded']) : null,
-      lastViewedAt: userData['LastPlayedDate'] != null ? _parseDateToEpochSeconds(userData['LastPlayedDate']) : null,
+      lastPlayedAt: userData['LastPlayedDate'] != null ? _parseDateToEpochSeconds(userData['LastPlayedDate']) : null,
       seriesTitle: item['SeriesName'] as String?,
       seriesImageId: item['SeriesId']?.toString(),
       seriesArt: (type == 'episode' && hasParentBackdrop && item['SeriesId'] != null)
@@ -188,10 +188,10 @@ class JellyfinClient {
       seasonId: item['SeasonId']?.toString(),
       parentIndex: _toInt(item['ParentIndexNumber']),
       index: _toInt(item['IndexNumber']),
-      viewOffset: _positionTicksToMs(_toInt(userData['PlaybackPositionTicks'])),
-      viewCount: _toInt(userData['PlayCount']),
+      resumePositionMs: _positionTicksToMs(_toInt(userData['PlaybackPositionTicks'])),
+      playCount: _toInt(userData['PlayCount']),
       leafCount: leafCount,
-      viewedLeafCount: viewedLeafCount,
+      watchedEpisodeCount: watchedEpisodeCount,
       unwatchedCount: unwatchedCount,
       childCount: _toInt(item['ChildCount']),
       role: _peopleToRoles(item['People']),
@@ -297,9 +297,9 @@ class JellyfinClient {
     return _toInt(item['ChildCount']);
   }
 
-  /// Watched episode count for shows/seasons when we have total (leafCount). Unwatched = leafCount - viewedLeafCount.
-  /// When API omits ChildCount/EpisodeCount, we only set unwatchedCount from UnplayedItemCount; viewedLeafCount stays null.
-  int? _viewedLeafCountForItem(Map<String, dynamic> item, String type, Map<String, dynamic> userData) {
+  /// Watched episode count for shows/seasons when we have total (leafCount). Unwatched = leafCount - watchedEpisodeCount.
+  /// When API omits ChildCount/EpisodeCount, we only set unwatchedCount from UnplayedItemCount; watchedEpisodeCount stays null.
+  int? _watchedEpisodeCountForItem(Map<String, dynamic> item, String type, Map<String, dynamic> userData) {
     if (type != 'show' && type != 'season') return null;
     final leafCount = _leafCountForItem(item, type);
     final unplayed = _toInt(userData['UnplayedItemCount']);
@@ -565,9 +565,9 @@ class JellyfinClient {
     }
   }
 
-  Future<Map<String, dynamic>> getMetadataWithImagesAndOnDeck(String itemId) async {
+  Future<Map<String, dynamic>> getMetadataWithNextEpisode(String itemId) async {
     final metadata = await getMetadataWithImages(itemId);
-    MediaMetadata? onDeckEpisode;
+    MediaMetadata? nextEpisode;
     final type = metadata?.type.toLowerCase() ?? '';
     if (metadata != null && type == 'show' && !_offlineMode) {
       // Try NextUp API (omit Limit to work around Jellyfin 10.9 bug; take first result for this series)
@@ -585,26 +585,26 @@ class JellyfinClient {
         var items = data?['Items'] as List?;
         if (items != null && items.isNotEmpty) {
           final first = items[0] as Map<String, dynamic>;
-          onDeckEpisode = _itemToMetadata(first);
+          nextEpisode = _itemToMetadata(first);
         }
       } catch (e) {
         appLogger.d('NextUp lookup failed for $itemId', error: e);
       }
       // Fallback: if NextUp returned nothing, compute first unwatched episode from seasons
-      if (onDeckEpisode == null) {
+      if (nextEpisode == null) {
         try {
-          onDeckEpisode = await _getFirstUnwatchedEpisodeForShow(itemId);
+          nextEpisode = await _getFirstUnwatchedEpisodeForShow(itemId);
         } catch (e) {
           appLogger.d('First-unwatched-episode fallback failed for $itemId', error: e);
         }
       }
     }
-    return {'metadata': metadata, 'onDeckEpisode': onDeckEpisode};
+    return {'metadata': metadata, 'nextEpisode': nextEpisode};
   }
 
   /// Returns the first unwatched episode for a series (by season order, then episode index).
-  Future<MediaMetadata?> _getFirstUnwatchedEpisodeForShow(String showRatingKey) async {
-    final seasons = await getChildren(showRatingKey);
+  Future<MediaMetadata?> _getFirstUnwatchedEpisodeForShow(String showItemId) async {
+    final seasons = await getChildren(showItemId);
     if (seasons.isEmpty) return null;
     seasons.sort((a, b) => (a.parentIndex ?? 0).compareTo(b.parentIndex ?? 0));
     for (final season in seasons) {
@@ -613,7 +613,7 @@ class JellyfinClient {
       episodes.sort((a, b) => (a.index ?? 0).compareTo(b.index ?? 0));
       for (final ep in episodes) {
         if (ep.type.toLowerCase() != 'episode') continue;
-        if (ep.viewCount == null || ep.viewCount! == 0) return ep;
+        if (ep.playCount == null || ep.playCount! == 0) return ep;
       }
     }
     return null;
@@ -683,13 +683,13 @@ class JellyfinClient {
     }
   }
 
-  Future<List<MediaMetadata>> getAllUnwatchedEpisodes(String showRatingKey) async {
-    final seasons = await getChildren(showRatingKey);
+  Future<List<MediaMetadata>> getAllUnwatchedEpisodes(String showItemId) async {
+    final seasons = await getChildren(showItemId);
     final all = <MediaMetadata>[];
     for (final s in seasons) {
       if (s.type.toLowerCase() == 'season') {
         final episodes = await getChildren(s.itemId);
-        all.addAll(episodes.where((e) => e.type.toLowerCase() == 'episode' && (e.viewCount ?? 0) == 0));
+        all.addAll(episodes.where((e) => e.type.toLowerCase() == 'episode' && (e.playCount ?? 0) == 0));
       }
     }
     return all;
@@ -697,7 +697,7 @@ class JellyfinClient {
 
   Future<List<MediaMetadata>> getUnwatchedEpisodesInSeason(String seasonId) async {
     final episodes = await getChildren(seasonId);
-    return episodes.where((e) => e.type.toLowerCase() == 'episode' && (e.viewCount ?? 0) == 0).toList();
+    return episodes.where((e) => e.type.toLowerCase() == 'episode' && (e.playCount ?? 0) == 0).toList();
   }
 
   String getThumbnailUrl(String? thumbPath) {
@@ -736,10 +736,6 @@ class JellyfinClient {
   }
 
   Map<String, String>? get imageHttpHeaders => requestHeaders;
-
-  Future<bool> checkThumbnailsAvailable(int partId) async {
-    return false;
-  }
 
   Future<List<Chapter>> getChapters(String itemId, {bool includeImages = false}) async {
     try {
@@ -1166,7 +1162,7 @@ class JellyfinClient {
     );
   }
 
-  Future<void> removeFromOnDeck(String itemId) async {
+  Future<void> hideFromResume(String itemId) async {
     if (_offlineMode) return;
     await _dio.post('/Users/${config.userId}/Items/$itemId/HideFromResume', queryParameters: {
       'Hide': 'true',
@@ -1244,7 +1240,7 @@ class JellyfinClient {
     return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
   }
 
-  Future<List<MediaMetadata>> getOnDeck() async {
+  Future<List<MediaMetadata>> getContinueWatching() async {
     if (_offlineMode) return [];
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1259,7 +1255,7 @@ class JellyfinClient {
     }
   }
 
-  Future<List<MediaMetadata>> getOnDeckForLibrary(String sectionId) async {
+  Future<List<MediaMetadata>> getContinueWatchingForLibrary(String sectionId) async {
     if (_offlineMode) return [];
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1276,10 +1272,6 @@ class JellyfinClient {
     } catch (_) {
       return [];
     }
-  }
-
-  Future<Map<String, dynamic>> getServerPreferences() async {
-    return {};
   }
 
   Future<List<dynamic>> getSessions() async {
@@ -1393,7 +1385,109 @@ class JellyfinClient {
     int? type,
     Map<String, String>? filters,
   }) async {
-    return [];
+    if (_offlineMode) return [];
+    try {
+      final query = <String, dynamic>{
+        'ParentId': sectionId,
+        'Recursive': true,
+        'Fields': 'SortName',
+        'SortBy': 'SortName',
+        'SortOrder': 'Ascending',
+        'EnableImages': false,
+        'EnableTotalRecordCount': false,
+      };
+
+      if (type != null) {
+        final jellyfinType = _typeIdToJellyfin(type.toString());
+        if (jellyfinType != null) {
+          query['IncludeItemTypes'] = jellyfinType;
+        }
+      }
+
+      if (filters != null) {
+        final itemFilters = <String>[];
+        final genres = <String>[];
+        final years = <int>[];
+        final officialRatings = <String>[];
+        final tagsList = <String>[];
+        for (final e in filters.entries) {
+          switch (e.key) {
+            case 'sort':
+            case 'type':
+              break;
+            case 'genre':
+            case 'Genre':
+              if (e.value.isNotEmpty) genres.add(e.value);
+              break;
+            case 'year':
+            case 'Year':
+              final y = int.tryParse(e.value);
+              if (y != null) years.add(y);
+              break;
+            case 'IsPlayed':
+            case 'IsUnplayed':
+            case 'IsResumable':
+            case 'IsFavorite':
+              if (e.value == '1') itemFilters.add(e.key);
+              break;
+            case 'HasSubtitles':
+            case 'HasTrailer':
+            case 'HasSpecialFeature':
+            case 'HasThemeSong':
+            case 'HasThemeVideo':
+              if (e.value == '1') query[e.key] = true;
+              break;
+            case 'SeriesStatus':
+              if (e.value.isNotEmpty) query['SeriesStatus'] = e.value;
+              break;
+            case 'OfficialRating':
+              if (e.value.isNotEmpty) officialRatings.add(e.value);
+              break;
+            case 'tags':
+              if (e.value.isNotEmpty) tagsList.add(e.value);
+              break;
+            case 'VideoTypes':
+              if (e.value.isNotEmpty) query['VideoTypes'] = e.value;
+              break;
+          }
+        }
+        if (itemFilters.isNotEmpty) query['Filters'] = itemFilters.join(',');
+        if (genres.isNotEmpty) query['Genres'] = genres.join(',');
+        if (years.isNotEmpty) query['Years'] = years.join(',');
+        if (officialRatings.isNotEmpty) query['OfficialRatings'] = officialRatings.join(',');
+        if (tagsList.isNotEmpty) query['Tags'] = tagsList.join(',');
+      }
+
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/Users/${config.userId}/Items',
+        queryParameters: query,
+      );
+      final items = response.data?['Items'] as List? ?? [];
+
+      final charCounts = <String, int>{};
+      for (final item in items) {
+        final map = item as Map<String, dynamic>;
+        final sortName = map['SortName'] as String? ?? map['Name'] as String? ?? '';
+        if (sortName.isEmpty) continue;
+        final firstChar = sortName[0].toUpperCase();
+        final key = RegExp(r'[A-Z]').hasMatch(firstChar) ? firstChar : '#';
+        charCounts[key] = (charCounts[key] ?? 0) + 1;
+      }
+
+      final sortedKeys = charCounts.keys.toList()
+        ..sort((a, b) {
+          if (a == '#') return -1;
+          if (b == '#') return 1;
+          return a.compareTo(b);
+        });
+
+      return sortedKeys
+          .map((key) => FirstCharacter(key: key, title: key, size: charCounts[key]!))
+          .toList();
+    } catch (e) {
+      appLogger.e('Failed to get first characters', error: e);
+      return [];
+    }
   }
 
   Future<List<LibraryFilterValue>> getFilterValues(String filterKey) async {
@@ -1818,8 +1912,120 @@ class JellyfinClient {
     return hubs;
   }
 
-  Future<List<MediaMetadata>> getHubContent(String hubKey) async {
-    return [];
+  Future<List<MediaMetadata>> getHubContent(String hubKey, {String? hubType}) async {
+    if (_offlineMode) return [];
+    const expandedLimit = 100;
+    try {
+      if (hubKey == 'next_up') {
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Shows/NextUp',
+          queryParameters: {'UserId': config.userId, 'Limit': expandedLimit, 'Fields': _listFields},
+        );
+        final list = response.data?['Items'] as List? ?? [];
+        return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+      }
+
+      if (hubKey == 'recently_added_movies') {
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Users/${config.userId}/Items',
+          queryParameters: {
+            'IncludeItemTypes': 'Movie',
+            'SortBy': 'DateCreated',
+            'SortOrder': 'Descending',
+            'Limit': expandedLimit,
+            'Recursive': true,
+            'Fields': _listFields,
+          },
+        );
+        final list = response.data?['Items'] as List? ?? [];
+        return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+      }
+
+      if (hubKey == 'recently_added_shows') {
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Users/${config.userId}/Items',
+          queryParameters: {
+            'IncludeItemTypes': 'Series',
+            'SortBy': 'DateCreated',
+            'SortOrder': 'Descending',
+            'Limit': expandedLimit,
+            'Recursive': true,
+            'Fields': _listFields,
+          },
+        );
+        final list = response.data?['Items'] as List? ?? [];
+        return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+      }
+
+      if (hubKey == 'continue_watching') {
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Users/${config.userId}/Items/Resume',
+          queryParameters: {'Limit': expandedLimit, 'Fields': _listFields},
+        );
+        final list = response.data?['Items'] as List? ?? [];
+        return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+      }
+
+      // recently_added_{sectionId} — library-scoped recently added
+      final recentlyAddedMatch = RegExp(r'^recently_added_(.+)$').firstMatch(hubKey);
+      if (recentlyAddedMatch != null) {
+        final sectionId = recentlyAddedMatch.group(1)!;
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Users/${config.userId}/Items',
+          queryParameters: {
+            'ParentId': sectionId,
+            'Recursive': true,
+            'SortBy': 'DateCreated',
+            'SortOrder': 'Descending',
+            'Limit': expandedLimit,
+            'Fields': _listFields,
+          },
+        );
+        final list = response.data?['Items'] as List? ?? [];
+        var items = list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+        items = items.where((m) => ['movie', 'show', 'episode', 'collection'].contains(m.type)).toList();
+        return items;
+      }
+
+      // library_continue_watching_{libraryId}
+      final libResumeMatch = RegExp(r'^library_continue_watching_(.+)$').firstMatch(hubKey);
+      if (libResumeMatch != null) {
+        final libraryId = libResumeMatch.group(1)!;
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Users/${config.userId}/Items/Resume',
+          queryParameters: {'ParentId': libraryId, 'Limit': expandedLimit, 'Fields': _listFields},
+        );
+        final list = response.data?['Items'] as List? ?? [];
+        return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+      }
+
+      // genre_{sectionId}_{genreKey}
+      final genreMatch = RegExp(r'^genre_([^_]+)_(.+)$').firstMatch(hubKey);
+      if (genreMatch != null) {
+        final sectionId = genreMatch.group(1)!;
+        final genreKey = genreMatch.group(2)!;
+        final response = await _dio.get<Map<String, dynamic>>(
+          '/Users/${config.userId}/Items',
+          queryParameters: {
+            'ParentId': sectionId,
+            'Genres': genreKey,
+            'Recursive': true,
+            'SortBy': 'SortName',
+            'SortOrder': 'Ascending',
+            'Limit': expandedLimit,
+            'Fields': _listFields,
+          },
+        );
+        final list = response.data?['Items'] as List? ?? [];
+        return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+      }
+
+      appLogger.d('getHubContent: unrecognized hub key pattern: $hubKey');
+      return [];
+    } catch (e) {
+      appLogger.e('getHubContent failed for hubKey=$hubKey', error: e);
+      return [];
+    }
   }
 
   Future<List<MediaMetadata>> getPlaylist(String playlistId) async {
@@ -1947,14 +2153,6 @@ class JellyfinClient {
     }
   }
 
-  Future<bool> movePlaylistItem({
-    required String playlistId,
-    required int playlistItemId,
-    required int afterPlaylistItemId,
-  }) async {
-    return false;
-  }
-
   Future<bool> clearPlaylist(String playlistId) async {
     try {
       final items = await getPlaylist(playlistId);
@@ -1965,10 +2163,6 @@ class JellyfinClient {
     } catch (_) {
       return false;
     }
-  }
-
-  Future<bool> updatePlaylist({required String playlistId, String? title, String? summary}) async {
-    return false;
   }
 
   Future<List<MediaMetadata>> getLibraryCollections(String sectionId) async {
@@ -2086,44 +2280,6 @@ class JellyfinClient {
     }
   }
 
-  Future<PlayQueueResponse?> createPlayQueue({
-    String? uri,
-    int? playlistID,
-    required String type,
-    String? key,
-    int shuffle = 0,
-    int repeat = 0,
-    int continuous = 0,
-  }) async {
-    return null;
-  }
-
-  Future<PlayQueueResponse?> getPlayQueue(
-    int playQueueId, {
-    String? center,
-    int window = 50,
-    int includeBefore = 1,
-    int includeAfter = 1,
-  }) async {
-    return null;
-  }
-
-  Future<PlayQueueResponse?> shufflePlayQueue(int playQueueId) async {
-    return null;
-  }
-
-  Future<bool> clearPlayQueue(int playQueueId) async {
-    return false;
-  }
-
-  Future<PlayQueueResponse?> createShowPlayQueue({
-    required String showRatingKey,
-    int shuffle = 0,
-    String? startingEpisodeKey,
-  }) async {
-    return null;
-  }
-
   Future<List<MediaMetadata>> getLibraryFolders(String sectionId) async {
     return getLibraryContent(sectionId);
   }
@@ -2167,10 +2323,6 @@ class JellyfinClient {
 
   Future<int> getLibraryEpisodeCount(String sectionId) async {
     return getLibraryTotalCount(sectionId);
-  }
-
-  Future<int> getWatchHistoryCount({DateTime? since}) async {
-    return 0;
   }
 
   /// Check if Jellyfin server has Live TV enabled by querying tuner info.
@@ -2688,8 +2840,8 @@ class JellyfinClient {
       seriesId: item['SeriesId']?.toString(),
       parentIndex: _toInt(item['ParentIndexNumber']),
       index: _toInt(item['IndexNumber']),
-      viewOffset: _positionTicksToMs(_toInt(userData['PlaybackPositionTicks'])),
-      viewCount: _toInt(userData['PlayCount']),
+      resumePositionMs: _positionTicksToMs(_toInt(userData['PlaybackPositionTicks'])),
+      playCount: _toInt(userData['PlayCount']),
       serverId: serverId,
       serverName: serverName,
     );

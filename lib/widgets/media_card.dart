@@ -104,10 +104,10 @@ class MediaCardState extends State<MediaCard> {
 
     // Add watched status
     final hasActiveProgress =
-        item.viewOffset != null && item.duration != null && item.viewOffset! > 0 && item.viewOffset! < item.duration!;
+        item.resumePositionMs != null && item.duration != null && item.resumePositionMs! > 0 && item.resumePositionMs! < item.duration!;
 
     if (hasActiveProgress) {
-      final percent = ((item.viewOffset! / item.duration!) * 100).round();
+      final percent = ((item.resumePositionMs! / item.duration!) * 100).round();
       baseLabel = '$baseLabel, ${t.accessibility.mediaCardPartiallyWatched(percent: percent)}';
     } else if (item.isWatched) {
       baseLabel = '$baseLabel, ${t.accessibility.mediaCardWatched}';
@@ -795,10 +795,10 @@ class _MediaCardHelpers {
     final showUnwatchedCount = context.watch<SettingsProvider>().showUnwatchedCount;
 
     final hasActiveProgress =
-        metadata.viewOffset != null &&
+        metadata.resumePositionMs != null &&
         metadata.duration != null &&
-        metadata.viewOffset! > 0 &&
-        metadata.viewOffset! < metadata.duration!;
+        metadata.resumePositionMs! > 0 &&
+        metadata.resumePositionMs! < metadata.duration!;
 
     return Stack(
       children: [
@@ -847,7 +847,7 @@ class _MediaCardHelpers {
             right: 0,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8)),
-              child: MediaProgressBar(viewOffset: metadata.viewOffset!, duration: metadata.duration!),
+              child: MediaProgressBar(resumePositionMs: metadata.resumePositionMs!, duration: metadata.duration!),
             ),
           ),
         // Favorite indicator (Jellyfin only; bottom-right, small red heart)
@@ -865,13 +865,13 @@ class _MediaCardHelpers {
               child: AppIcon(Symbols.favorite_rounded, fill: 1, color: Colors.red.shade400, size: 14),
             ),
           ),
-        // Progress bar for seasons (viewedLeafCount / leafCount)
+        // Progress bar for seasons (watchedEpisodeCount / leafCount)
         if (metadata.isSeason &&
-            metadata.viewedLeafCount != null &&
+            metadata.watchedEpisodeCount != null &&
             metadata.leafCount != null &&
             metadata.leafCount! > 0 &&
-            metadata.viewedLeafCount! > 0 &&
-            metadata.viewedLeafCount! < metadata.leafCount!)
+            metadata.watchedEpisodeCount! > 0 &&
+            metadata.watchedEpisodeCount! < metadata.leafCount!)
           Positioned(
             bottom: 0,
             left: 0,
@@ -879,7 +879,7 @@ class _MediaCardHelpers {
             child: ClipRRect(
               borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8)),
               child: LinearProgressIndicator(
-                value: metadata.viewedLeafCount! / metadata.leafCount!,
+                value: metadata.watchedEpisodeCount! / metadata.leafCount!,
                 backgroundColor: tokens(context).outline,
                 valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                 minHeight: 4,

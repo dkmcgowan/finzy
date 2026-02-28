@@ -16,7 +16,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -25,8 +25,8 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (from < 9) {
-          appLogger.i('Recreating tables for v9 schema (column renames)');
+        if (from < 10) {
+          appLogger.i('Recreating tables for v10 schema');
           await m.deleteTable('downloaded_media');
           await m.deleteTable('offline_watch_progress');
           await m.deleteTable('download_queue');
@@ -90,7 +90,7 @@ class AppDatabase extends _$AppDatabase {
   Future<void> upsertProgressAction({
     required String serverId,
     required String itemId,
-    required int viewOffset,
+    required int resumePositionMs,
     required int duration,
     required bool shouldMarkWatched,
   }) async {
@@ -108,7 +108,7 @@ class AppDatabase extends _$AppDatabase {
       // Update existing progress entry
       await (update(offlineWatchProgress)..where((t) => t.id.equals(existing.id))).write(
         OfflineWatchProgressCompanion(
-          viewOffset: Value(viewOffset),
+          resumePositionMs: Value(resumePositionMs),
           duration: Value(duration),
           shouldMarkWatched: Value(shouldMarkWatched),
           updatedAt: Value(now),
@@ -122,7 +122,7 @@ class AppDatabase extends _$AppDatabase {
           itemId: itemId,
           globalKey: globalKey,
           actionType: 'progress',
-          viewOffset: Value(viewOffset),
+          resumePositionMs: Value(resumePositionMs),
           duration: Value(duration),
           shouldMarkWatched: Value(shouldMarkWatched),
           createdAt: now,

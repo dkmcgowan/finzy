@@ -390,7 +390,10 @@ class OptimizedImage extends StatelessWidget {
         final codeMatch = RegExp(r'(\d{3})').firstMatch(msg);
         if (codeMatch != null) statusCode = int.tryParse(codeMatch.group(1)!);
       }
-      appLogger.d('Thumbnail load failed: url=$redactedUrl statusCode=${statusCode ?? "n/a"}');
+      // 404 is expected for items without artwork — only log unexpected failures
+      if (statusCode != null && statusCode != 404) {
+        appLogger.d('Thumbnail load failed: url=$redactedUrl statusCode=$statusCode');
+      }
     }
     return _buildErrorWidget(context, error);
   }

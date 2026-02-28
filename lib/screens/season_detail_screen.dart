@@ -59,7 +59,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
 
   // WatchStateAware: watch all episode itemIds
   @override
-  Set<String>? get watchedRatingKeys => _episodes.map((e) => e.itemId).toSet();
+  Set<String>? get watchedItemIds => _episodes.map((e) => e.itemId).toSet();
 
   @override
   String? get watchStateServerId => widget.season.serverId;
@@ -81,7 +81,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
   }
 
   @override
-  Set<String>? get deletionRatingKeys {
+  Set<String>? get deletionItemIds {
     final keys = _episodes.map((e) => e.itemId).toSet();
     keys.add(widget.season.itemId);
     return keys;
@@ -105,7 +105,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     // Download-only deletions should only remove items when viewing offline content
     if (event.isDownloadOnly && !widget.isOffline) return;
 
-    // If we have an episode that matches the rating key exactly, then remove it from our list
+    // If we have an episode that matches the item ID exactly, then remove it from our list
     final index = _episodes.indexWhere((e) => e.itemId == event.itemId);
     if (index != -1) {
       setState(() {
@@ -380,12 +380,12 @@ class _EpisodeCardState extends State<_EpisodeCard> {
     // Hide progress when offline (not tracked)
     final hasProgress =
         !widget.isOffline &&
-        widget.episode.viewOffset != null &&
+        widget.episode.resumePositionMs != null &&
         widget.episode.duration != null &&
-        widget.episode.viewOffset! > 0;
-    final progress = hasProgress ? widget.episode.viewOffset! / widget.episode.duration! : 0.0;
+        widget.episode.resumePositionMs! > 0;
+    final progress = hasProgress ? widget.episode.resumePositionMs! / widget.episode.duration! : 0.0;
 
-    final hasActiveProgress = hasProgress && widget.episode.viewOffset! < widget.episode.duration!;
+    final hasActiveProgress = hasProgress && widget.episode.resumePositionMs! < widget.episode.duration!;
 
     return FocusableWrapper(
       autofocus: widget.autofocus,

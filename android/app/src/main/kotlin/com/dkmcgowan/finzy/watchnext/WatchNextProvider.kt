@@ -10,7 +10,7 @@ import androidx.tvprovider.media.tv.WatchNextProgram
 
 /**
  * Wraps Android TvProvider API for Watch Next row integration.
- * Manages WatchNextProgram entries for Plex "On Deck" content.
+ * Manages WatchNextProgram entries for Jellyfin Continue Watching content.
  */
 class WatchNextProvider(private val context: Context) {
 

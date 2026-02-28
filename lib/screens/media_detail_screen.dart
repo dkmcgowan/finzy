@@ -64,7 +64,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   List<MediaMetadata> _seasons = [];
   bool _isLoadingSeasons = false;
   MediaMetadata? _fullMetadata;
-  MediaMetadata? _onDeckEpisode;
+  MediaMetadata? _nextEpisode;
   bool _isLoadingMetadata = true;
   List<MediaMetadata>? _extras;
   late final ScrollController _scrollController;
@@ -113,7 +113,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
   // WatchStateAware: watch the show/movie and all season itemIds
   @override
-  Set<String>? get watchedRatingKeys {
+  Set<String>? get watchedItemIds {
     final keys = <String>{widget.metadata.itemId};
     for (final season in _seasons) {
       keys.add(season.itemId);
@@ -145,7 +145,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   }
 
   @override
-  Set<String>? get deletionRatingKeys {
+  Set<String>? get deletionItemIds {
     final keys = <String>{widget.metadata.itemId};
     for (final season in _seasons) {
       keys.add(season.itemId);
@@ -172,7 +172,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   void onDeletionEvent(DeletionEvent event) {
     if (widget.isOffline) return;
 
-    // If we have a season that matches the rating key exactly, then remove it from our list
+    // If we have a season that matches the item ID exactly, then remove it from our list
     final seasonIndex = _seasons.indexWhere((s) => s.itemId == event.itemId);
     if (seasonIndex != -1) {
       setState(() {
@@ -225,15 +225,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (client == null) return;
 
     try {
-      // Fetch updated metadata + on-deck without showing loader
-      final result = await client.getMetadataWithImagesAndOnDeck(widget.metadata.itemId);
+      // Fetch updated metadata + next episode without showing loader
+      final result = await client.getMetadataWithNextEpisode(widget.metadata.itemId);
       final metadata = result['metadata'] as MediaMetadata?;
-      final onDeckEpisode = result['onDeckEpisode'] as MediaMetadata?;
+      final nextEpisode = result['nextEpisode'] as MediaMetadata?;
 
       if (metadata != null && mounted) {
         setState(() {
           _fullMetadata = metadata.copyWith(serverId: widget.metadata.serverId, serverName: widget.metadata.serverName);
-          _onDeckEpisode = onDeckEpisode?.copyWith(
+          _nextEpisode = nextEpisode?.copyWith(
             serverId: widget.metadata.serverId,
             serverName: widget.metadata.serverName,
           );
@@ -345,19 +345,19 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     final playButtonIcon = AppIcon(_getPlayButtonIcon(metadata), fill: 1, size: 20);
 
     Future<void> onPlayPressed() async {
-      // For TV shows, play the OnDeck episode if available
+      // For TV shows, play the next episode if available
       // Otherwise, play the first episode of the first season
       if (metadata.isShow) {
-        if (_onDeckEpisode != null) {
-          appLogger.d('Playing on deck episode: ${_onDeckEpisode!.title}');
+        if (_nextEpisode != null) {
+          appLogger.d('Playing next episode: ${_nextEpisode!.title}');
           await navigateToVideoPlayerWithRefresh(
             context,
-            metadata: _onDeckEpisode!,
+            metadata: _nextEpisode!,
             isOffline: widget.isOffline,
             onRefresh: _loadFullMetadata,
           );
         } else {
-          // No on deck episode, fetch first episode of first season
+          // No next episode, fetch first episode of first season
           await _playFirstEpisode();
         }
       } else {
@@ -405,7 +405,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
               metadata.hasActiveProgress) ...[
             IconButton.filledTonal(
               onPressed: () async {
-                final fromStart = metadata.copyWith(viewOffset: 0);
+                final fromStart = metadata.copyWith(resumePositionMs: 0);
                 await navigateToVideoPlayerWithRefresh(
                   context,
                   metadata: fromStart,
@@ -697,8 +697,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                       context,
                       isWatched ? t.messages.markedAsUnwatchedOffline : t.messages.markedAsWatchedOffline,
                     );
-                    // Refresh offline OnDeck
-                    _loadOfflineOnDeckEpisode();
+                    // Refresh offline next episode
+                    _loadOfflineNextEpisode();
                   }
                 } else {
                   // Online mode: send to server
@@ -919,8 +919,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
       if (widget.metadata.isShow) {
         _loadSeasonsFromDownloads();
-        // Get offline OnDeck episode
-        _loadOfflineOnDeckEpisode();
+        // Get offline next episode
+        _loadOfflineNextEpisode();
       }
       return;
     }
@@ -937,10 +937,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         return;
       }
 
-      // Fetch full metadata with clearLogo and OnDeck episode
-      final result = await client.getMetadataWithImagesAndOnDeck(widget.metadata.itemId);
+      // Fetch full metadata with clearLogo and next episode
+      final result = await client.getMetadataWithNextEpisode(widget.metadata.itemId);
       final metadata = result['metadata'] as MediaMetadata?;
-      final onDeckEpisode = result['onDeckEpisode'] as MediaMetadata?;
+      final nextEpisode = result['nextEpisode'] as MediaMetadata?;
 
       if (!mounted) return;
 
@@ -950,14 +950,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
           serverId: widget.metadata.serverId,
           serverName: widget.metadata.serverName,
         );
-        final onDeckWithServerId = onDeckEpisode?.copyWith(
+        final nextEpisodeWithServerId = nextEpisode?.copyWith(
           serverId: widget.metadata.serverId,
           serverName: widget.metadata.serverName,
         );
 
         setState(() {
           _fullMetadata = metadataWithServerId;
-          _onDeckEpisode = onDeckWithServerId;
+          _nextEpisode = nextEpisodeWithServerId;
           _isLoadingMetadata = false;
         });
 
@@ -1536,16 +1536,16 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     );
   }
 
-  /// Load the next unwatched episode for offline mode (offline OnDeck)
-  Future<void> _loadOfflineOnDeckEpisode() async {
+  /// Load the next unwatched episode for offline mode
+  Future<void> _loadOfflineNextEpisode() async {
     final offlineWatchProvider = context.read<OfflineWatchProvider>();
     final nextEpisode = await offlineWatchProvider.getNextUnwatchedEpisode(widget.metadata.itemId);
 
     if (nextEpisode != null && mounted) {
       setState(() {
-        _onDeckEpisode = nextEpisode;
+        _nextEpisode = nextEpisode;
       });
-      appLogger.d('Offline OnDeck: S${nextEpisode.parentIndex}E${nextEpisode.index} - ${nextEpisode.title}');
+      appLogger.d('Offline next episode: S${nextEpisode.parentIndex}E${nextEpisode.index} - ${nextEpisode.title}');
     }
   }
 
@@ -2114,7 +2114,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     // If there's a primaryExtraKey, try to find that specific trailer
     final metadata = _fullMetadata ?? widget.metadata;
     if (metadata.primaryExtraKey != null) {
-        // Extract rating key from primaryExtraKey (e.g., "/items/52601" -> "52601")
+        // Extract item ID from primaryExtraKey (e.g., "/items/52601" -> "52601")
       final primaryKey = metadata.primaryExtraKey!.split('/').last;
       try {
         return _extras!.firstWhere((extra) => extra.itemId == primaryKey);
@@ -2303,8 +2303,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   String _getPlayButtonLabel(MediaMetadata metadata) {
     // For TV shows - use compact S1E1 format
     if (metadata.isShow) {
-      if (_onDeckEpisode != null) {
-        final episode = _onDeckEpisode!;
+      if (_nextEpisode != null) {
+        final episode = _nextEpisode!;
         final seasonNum = episode.parentIndex ?? 0;
         final episodeNum = episode.index ?? 0;
 
@@ -2312,7 +2312,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         // (icon will indicate the difference)
         return t.discover.playEpisode(season: seasonNum.toString(), episode: episodeNum.toString());
       } else {
-        // No on deck episode, will play first episode
+        // No next episode, will play first episode
         return t.discover.playEpisode(season: '1', episode: '1');
       }
     }
@@ -2324,16 +2324,16 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   IconData _getPlayButtonIcon(MediaMetadata metadata) {
     // For TV shows
     if (metadata.isShow) {
-      if (_onDeckEpisode != null) {
-        final episode = _onDeckEpisode!;
+      if (_nextEpisode != null) {
+        final episode = _nextEpisode!;
         // Check if episode has been partially watched
-        if (episode.viewOffset != null && episode.viewOffset! > 0) {
+        if (episode.resumePositionMs != null && episode.resumePositionMs! > 0) {
           return Symbols.resume_rounded; // Resume icon
         }
       }
     } else {
       // For movies or episodes
-      if (metadata.viewOffset != null && metadata.viewOffset! > 0) {
+      if (metadata.resumePositionMs != null && metadata.resumePositionMs! > 0) {
         return Symbols.resume_rounded; // Resume icon
       }
     }
@@ -2437,7 +2437,7 @@ class _SeasonCardState extends State<_SeasonCard> {
                           // Hide watch progress when offline (not tracked)
                           if (!widget.isOffline) ...[
                             const SizedBox(height: 8),
-                            if (widget.season.viewedLeafCount != null && widget.season.leafCount != null)
+                            if (widget.season.watchedEpisodeCount != null && widget.season.leafCount != null)
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -2446,7 +2446,7 @@ class _SeasonCardState extends State<_SeasonCard> {
                                     child: ClipRRect(
                                       borderRadius: const BorderRadius.all(Radius.circular(4)),
                                       child: LinearProgressIndicator(
-                                        value: widget.season.viewedLeafCount! / widget.season.leafCount!,
+                                        value: widget.season.watchedEpisodeCount! / widget.season.leafCount!,
                                         backgroundColor: tokens(context).outline,
                                         valueColor: AlwaysStoppedAnimation<Color>(
                                           Theme.of(context).colorScheme.primary,
@@ -2458,7 +2458,7 @@ class _SeasonCardState extends State<_SeasonCard> {
                                   const SizedBox(height: 4),
                                   Text(
                                     t.discover.watchedProgress(
-                                      watched: widget.season.viewedLeafCount.toString(),
+                                      watched: widget.season.watchedEpisodeCount.toString(),
                                       total: widget.season.leafCount.toString(),
                                     ),
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),

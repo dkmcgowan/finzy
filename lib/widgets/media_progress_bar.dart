@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 /// Reusable media progress bar widget for displaying watch progress
 ///
-/// Shows a linear progress indicator based on viewOffset and duration.
+/// Shows a linear progress indicator based on resumePositionMs and duration.
 /// Uses theme defaults when colors are not provided.
 class MediaProgressBar extends StatelessWidget {
-  final int viewOffset; // Progress position in milliseconds
+  final int resumePositionMs; // Progress position in milliseconds
   final int duration; // Total duration in milliseconds
   final Color? backgroundColor;
   final Color? valueColor;
@@ -13,7 +13,7 @@ class MediaProgressBar extends StatelessWidget {
 
   const MediaProgressBar({
     super.key,
-    required this.viewOffset,
+    required this.resumePositionMs,
     required this.duration,
     this.backgroundColor,
     this.valueColor,
@@ -23,7 +23,7 @@ class MediaProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Calculate progress value (0.0 to 1.0)
-    final progress = duration > 0 ? viewOffset / duration : 0.0;
+    final progress = duration > 0 ? resumePositionMs / duration : 0.0;
 
     return LinearProgressIndicator(
       value: progress.clamp(0.0, 1.0),

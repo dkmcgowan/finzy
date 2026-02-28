@@ -51,9 +51,9 @@ class WatchNextService {
     }
   }
 
-  /// Sync On Deck items to Watch Next row.
-  Future<bool> syncFromOnDeck(
-    List<MediaMetadata> onDeckItems,
+  /// Sync Continue Watching items to Watch Next row.
+  Future<bool> syncContinueWatching(
+    List<MediaMetadata> continueWatchingItems,
     JellyfinClient Function(String serverId) getClientForServerId,
   ) async {
     if (!Platform.isAndroid) return false;
@@ -62,7 +62,7 @@ class WatchNextService {
       final supported = await isSupported();
       if (!supported) return false;
 
-      final items = onDeckItems.map((item) {
+      final items = continueWatchingItems.map((item) {
         return _convertToWatchNextItem(item, getClientForServerId);
       }).toList();
 
@@ -138,8 +138,8 @@ class WatchNextService {
       episodeTitle = null;
     }
 
-    final lastEngagementTime = item.lastViewedAt != null
-        ? item.lastViewedAt! * 1000
+    final lastEngagementTime = item.lastPlayedAt != null
+        ? item.lastPlayedAt! * 1000
         : DateTime.now().millisecondsSinceEpoch;
 
     return {
@@ -150,7 +150,7 @@ class WatchNextService {
       'posterUri': posterUri,
       'type': item.type.toLowerCase(),
       'duration': item.duration ?? 0,
-      'lastPlaybackPosition': item.viewOffset ?? 0,
+      'lastPlaybackPosition': item.resumePositionMs ?? 0,
       'lastEngagementTime': lastEngagementTime,
       'seriesTitle': item.seriesTitle,
       'seasonNumber': item.parentIndex,

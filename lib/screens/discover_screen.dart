@@ -64,7 +64,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return context.getClientForServer(multiServerProvider.onlineServerIds.first);
   }
 
-  List<MediaMetadata> _onDeck = [];
+  List<MediaMetadata> _continueWatching = [];
   List<Hub> _hubs = [];
   bool _isLoading = true;
   bool _areHubsLoading = true;
@@ -80,11 +80,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   String _toGlobalKey(String itemId, String serverId) => '$serverId:$itemId';
 
-  // WatchStateAware: watch on-deck items and their parent shows/seasons
+  // WatchStateAware: watch continue-watching items and their parent shows/seasons
   @override
-  Set<String>? get watchedRatingKeys {
+  Set<String>? get watchedItemIds {
     final keys = <String>{};
-    for (final item in _onDeck) {
+    for (final item in _continueWatching) {
       keys.add(item.itemId);
       if (item.seasonId != null) {
         keys.add(item.seasonId!);
@@ -99,7 +99,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   Set<String>? get watchedGlobalKeys {
     final keys = <String>{};
-    for (final item in _onDeck) {
+    for (final item in _continueWatching) {
       final serverId = item.serverId;
       if (serverId == null) return null;
 
@@ -155,7 +155,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _hubKeys.add(GlobalKey<HubSectionState>());
     }
     // Create continue watching hub key if needed
-    if (_onDeck.isNotEmpty) {
+    if (_continueWatching.isNotEmpty) {
       _continueWatchingHubKey ??= GlobalKey<HubSectionState>();
     }
   }
@@ -163,14 +163,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   /// Get all hub states (continue watching + other hubs)
   List<GlobalKey<HubSectionState>> get _allHubKeys {
     final keys = <GlobalKey<HubSectionState>>[];
-    if (_continueWatchingHubKey != null && _onDeck.isNotEmpty) {
+    if (_continueWatchingHubKey != null && _continueWatching.isNotEmpty) {
       keys.add(_continueWatchingHubKey!);
     }
     keys.addAll(_hubKeys);
     return keys;
   }
 
-  bool get _isHeroSectionVisible => _onDeck.isNotEmpty && context.read<SettingsProvider>().showHeroSection;
+  bool get _isHeroSectionVisible => _continueWatching.isNotEmpty && context.read<SettingsProvider>().showHeroSection;
 
   void _scrollToTop() {
     if (!_scrollController.hasClients) return;
@@ -250,10 +250,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   /// Syncs which hero item is "active" with PageView scroll position. The pill shows that item's watch progress.
   void _onHeroScroll() {
-    if (!mounted || !_heroController.hasClients || _onDeck.isEmpty) return;
+    if (!mounted || !_heroController.hasClients || _continueWatching.isEmpty) return;
     final double? page = _heroController.page;
     if (page == null) return;
-    final int maxIndex = _onDeck.length - 1;
+    final int maxIndex = _continueWatching.length - 1;
     final int index = page.round().clamp(0, maxIndex);
 
     if (_currentHeroIndex != index) {
@@ -341,7 +341,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     // RIGHT: Navigate hero carousel to next
     if (key.isRightKey) {
-      if (_currentHeroIndex < _onDeck.length - 1) {
+      if (_currentHeroIndex < _continueWatching.length - 1) {
         _heroController.nextPage(duration: tokens(context).slow, curve: Curves.easeInOut);
       }
       return KeyEventResult.handled;
@@ -349,8 +349,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     // SELECT: Play current hero item
     if (key.isSelectKey) {
-      if (_onDeck.isNotEmpty && _currentHeroIndex < _onDeck.length) {
-        navigateToVideoPlayer(context, metadata: _onDeck[_currentHeroIndex]);
+      if (_continueWatching.isNotEmpty && _currentHeroIndex < _continueWatching.length) {
+        navigateToVideoPlayer(context, metadata: _continueWatching[_currentHeroIndex]);
       }
       return KeyEventResult.handled;
     }
@@ -465,16 +465,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     if (_isAutoScrollPaused) return;
 
     _autoScrollTimer = Timer.periodic(_heroAutoScrollDuration, (timer) {
-      if (_onDeck.isEmpty || !_heroController.hasClients || _isAutoScrollPaused) {
+      if (_continueWatching.isEmpty || !_heroController.hasClients || _isAutoScrollPaused) {
         return;
       }
 
       // Validate current index is within bounds before calculating next page
-      if (_currentHeroIndex >= _onDeck.length) {
+      if (_currentHeroIndex >= _continueWatching.length) {
         _currentHeroIndex = 0;
       }
 
-      final nextPage = (_currentHeroIndex + 1) % _onDeck.length;
+      final nextPage = (_currentHeroIndex + 1) % _continueWatching.length;
       _heroController.animateToPage(nextPage, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
       // Progress is reset when onPageChanged fires (same moment the 8s timer restarts)
     });
@@ -520,7 +520,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   // Helper method to calculate visible dot range (max 5 dots)
   ({int start, int end}) _getVisibleDotRange() {
-    final totalDots = _onDeck.length;
+    final totalDots = _continueWatching.length;
     if (totalDots <= 5) {
       return (start: 0, end: totalDots - 1);
     }
@@ -535,7 +535,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   // Helper method to determine dot size based on position
   double _getDotSize(int dotIndex, int start, int end) {
-    final totalDots = _onDeck.length;
+    final totalDots = _continueWatching.length;
 
     // If we have 5 or fewer dots, all are full size (8px)
     if (totalDots <= 5) {
@@ -562,13 +562,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     });
 
     try {
-      appLogger.d('Fetching onDeck and global hubs from all servers');
+      appLogger.d('Fetching continue watching and global hubs from all servers');
       final multiServerProvider = Provider.of<MultiServerProvider>(context, listen: false);
 
       if (!multiServerProvider.hasConnectedServers) {
         if (!mounted) return;
         setState(() {
-          _onDeck = [];
+          _continueWatching = [];
           _hubs = [];
           _isLoading = false;
           _areHubsLoading = false;
@@ -584,8 +584,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
       await settingsProvider.ensureInitialized();
 
-      // Start OnDeck and hubs fetch in parallel
-      final onDeckFuture = multiServerProvider.aggregationService.getOnDeckFromAllServers(
+      final continueWatchingFuture = multiServerProvider.aggregationService.getContinueWatchingFromAllServers(
         limit: 20,
         hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
       );
@@ -596,40 +595,38 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         useGlobalHubs: useGlobalHubs,
       );
 
-      // Wait for OnDeck to complete and show it immediately
-      final onDeck = await onDeckFuture;
+      final continueWatchingItems = await continueWatchingFuture;
 
       if (!mounted) return;
       setState(() {
-        _onDeck = onDeck;
-        _isLoading = false; // Show content, but hubs still loading
+        _continueWatching = continueWatchingItems;
+        _isLoading = false;
 
         // Reset hero index to avoid sync issues
         _currentHeroIndex = 0;
 
         // Create continue watching hub key if needed
-        if (_onDeck.isNotEmpty) {
+        if (_continueWatching.isNotEmpty) {
           _continueWatchingHubKey ??= GlobalKey<HubSectionState>();
         }
       });
 
       // Focus hero section now that it's visible, but only if no modal route is on top
-      if (onDeck.isNotEmpty && (ModalRoute.of(context)?.isCurrent ?? false)) {
+      if (continueWatchingItems.isNotEmpty && (ModalRoute.of(context)?.isCurrent ?? false)) {
         _heroFocusNode.requestFocus();
       }
 
       // Sync to Android TV Watch Next row
       if (Platform.isAndroid) {
-        _syncWatchNext(onDeck);
+        _syncWatchNext(continueWatchingItems);
       }
 
-      // Sync PageController to first page after OnDeck loads
-      if (_heroController.hasClients && onDeck.isNotEmpty) {
+      if (_heroController.hasClients && continueWatchingItems.isNotEmpty) {
         _heroController.jumpToPage(0);
       }
 
       // On initial load, focus the hero so the user starts on content (not the toolbar)
-      if (!_initialLoadComplete && onDeck.isNotEmpty) {
+      if (!_initialLoadComplete && continueWatchingItems.isNotEmpty) {
         _initialLoadComplete = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _heroFocusNode.canRequestFocus && (ModalRoute.of(context)?.isCurrent ?? false)) {
@@ -643,17 +640,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
       if (!mounted) return;
 
-      // Filter out Continue Watching / On Deck hubs (handled separately in hero section)
+      // Filter out Continue Watching hubs (handled separately in hero section)
       final filteredHubs = allHubs.where((hub) {
         final hubId = hub.hubIdentifier?.toLowerCase() ?? '';
         final title = hub.title.toLowerCase();
-        return !hubId.contains('ondeck') &&
-            !hubId.contains('continue') &&
-            !title.contains('continue watching') &&
-            !title.contains('on deck');
+        return !hubId.contains('continue') &&
+            !title.contains('continue watching');
       }).toList();
 
-      appLogger.d('Received ${onDeck.length} on deck items and ${filteredHubs.length} global hubs from all servers');
+      appLogger.d('Received ${continueWatchingItems.length} continue watching items and ${filteredHubs.length} global hubs from all servers');
       if (!mounted) return;
       setState(() {
         _hubs = filteredHubs;
@@ -685,18 +680,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       }
 
       final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
-      final onDeck = await multiServerProvider.aggregationService.getOnDeckFromAllServers(
+      final refreshedItems = await multiServerProvider.aggregationService.getContinueWatchingFromAllServers(
         limit: 20,
         hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
       );
 
       if (mounted) {
         setState(() {
-          _onDeck = onDeck;
-          // Reset hero index if needed
-          if (_currentHeroIndex >= onDeck.length) {
+          _continueWatching = refreshedItems;
+          if (_currentHeroIndex >= refreshedItems.length) {
             _currentHeroIndex = 0;
-            if (_heroController.hasClients && onDeck.isNotEmpty) {
+            if (_heroController.hasClients && refreshedItems.isNotEmpty) {
               _heroController.jumpToPage(0);
             }
           }
@@ -704,7 +698,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
         // Sync to Android TV Watch Next row
         if (Platform.isAndroid) {
-          _syncWatchNext(onDeck);
+          _syncWatchNext(refreshedItems);
         }
 
         appLogger.d('Continue Watching refreshed successfully');
@@ -715,10 +709,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
   }
 
-  /// Sync On Deck items to Android TV Watch Next row
-  Future<void> _syncWatchNext(List<MediaMetadata> onDeck) async {
+  /// Sync Continue Watching items to Android TV Watch Next row
+  Future<void> _syncWatchNext(List<MediaMetadata> items) async {
     try {
-      await WatchNextService().syncFromOnDeck(onDeck, (serverId) => context.getClientForServer(serverId));
+      await WatchNextService().syncContinueWatching(items, (serverId) => context.getClientForServer(serverId));
     } catch (e) {
       appLogger.w('Failed to sync Watch Next', error: e);
     }
@@ -736,7 +730,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void fullRefresh() {
     appLogger.d('DiscoverScreen.fullRefresh() called - reloading all content');
-    // Reload all content including On Deck and content hubs
+    // Reload all content including continue watching and content hubs
     _loadContent();
   }
 
@@ -846,10 +840,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void updateItemInLists(String itemId, MediaMetadata updatedMetadata) {
-    // Check and update in _onDeck list
-    final onDeckIndex = _onDeck.indexWhere((item) => item.itemId == itemId);
-    if (onDeckIndex != -1) {
-      _onDeck[onDeckIndex] = updatedMetadata;
+    // Check and update in _continueWatching list
+    final cwIndex = _continueWatching.indexWhere((item) => item.itemId == itemId);
+    if (cwIndex != -1) {
+      _continueWatching[cwIndex] = updatedMetadata;
     }
 
     // Check and update in hub items
@@ -1095,7 +1089,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 // Hero Section (Continue Watching) - at top of screen
                 Consumer<SettingsProvider>(
                   builder: (context, settingsProvider, child) {
-                    if (_onDeck.isNotEmpty && settingsProvider.showHeroSection) {
+                    if (_continueWatching.isNotEmpty && settingsProvider.showHeroSection) {
                       return _buildHeroSection();
                     }
                     // Add top padding when hero is not shown
@@ -1114,8 +1108,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     ),
                   ),
                 if (!_isLoading && _errorMessage == null) ...[
-                  // On Deck / Continue Watching
-                  if (_onDeck.isNotEmpty)
+                  // Continue Watching
+                  if (_continueWatching.isNotEmpty)
                     SliverToBoxAdapter(
                       child: HubSection(
                         key: _continueWatchingHubKey,
@@ -1124,9 +1118,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           title: t.discover.continueWatching,
                           type: 'mixed',
                           hubIdentifier: '_continue_watching_',
-                          size: _onDeck.length,
+                          size: _continueWatching.length,
                           more: false,
-                          items: _onDeck,
+                          items: _continueWatching,
                         ),
                         icon: Symbols.play_circle_rounded,
                         onRefresh: updateItem,
@@ -1148,8 +1142,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         showServerName: showServerNameOnHubs || duplicateHubTitles.contains(_hubs[i].title),
                         onRefresh: updateItem,
                         // Hub index is i + 1 if continue watching exists, otherwise i
-                        onVerticalNavigation: (isUp) => _handleVerticalNavigation(_onDeck.isNotEmpty ? i + 1 : i, isUp),
-                        onNavigateUp: (i == 0 && _onDeck.isEmpty) ? _focusTopBoundary : null,
+                        onVerticalNavigation: (isUp) => _handleVerticalNavigation(_continueWatching.isNotEmpty ? i + 1 : i, isUp),
+                        onNavigateUp: (i == 0 && _continueWatching.isEmpty) ? _focusTopBoundary : null,
                         onNavigateToSidebar: _navigateToSidebar,
                       ),
                     ),
@@ -1196,7 +1190,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         ),
                       ),
 
-                  if (_onDeck.isEmpty && _hubs.isEmpty && !_areHubsLoading)
+                  if (_continueWatching.isEmpty && _hubs.isEmpty && !_areHubsLoading)
                     SliverFillRemaining(
                       child: Center(
                         child: Column(
@@ -1241,10 +1235,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             children: [
               PageView.builder(
                 controller: _heroController,
-                itemCount: _onDeck.length,
+                itemCount: _continueWatching.length,
                 onPageChanged: (index) {
                   // Validate index is within bounds before updating
-                  if (index >= 0 && index < _onDeck.length) {
+                  if (index >= 0 && index < _continueWatching.length) {
                     setState(() {
                       _currentHeroIndex = index;
                     });
@@ -1252,7 +1246,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   }
                 },
                 itemBuilder: (context, index) {
-                  return _buildHeroItem(_onDeck[index]);
+                  return _buildHeroItem(_continueWatching[index]);
                 },
               ),
               // Bottom gradient that extends past hero bounds to ensure seamless blend
@@ -1599,11 +1593,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Widget _buildSmartPlayButton(MediaMetadata heroItem) {
     final hasProgress =
-        heroItem.viewOffset != null && heroItem.duration != null && heroItem.viewOffset! > 0 && heroItem.duration! > 0;
+        heroItem.resumePositionMs != null && heroItem.duration != null && heroItem.resumePositionMs! > 0 && heroItem.duration! > 0;
 
-    final minutesLeft = hasProgress ? ((heroItem.duration! - heroItem.viewOffset!) / 60000).round() : 0;
+    final minutesLeft = hasProgress ? ((heroItem.duration! - heroItem.resumePositionMs!) / 60000).round() : 0;
 
-    final progress = hasProgress ? heroItem.viewOffset! / heroItem.duration! : 0.0;
+    final progress = hasProgress ? heroItem.resumePositionMs! / heroItem.duration! : 0.0;
 
     return InkWell(
       onTap: () {

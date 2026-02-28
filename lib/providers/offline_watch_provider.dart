@@ -10,7 +10,7 @@ import 'download_provider.dart';
 ///
 /// Provides:
 /// - Effective watch status (local changes + cached server data)
-/// - Offline "OnDeck" calculation for shows
+/// - Offline "Next Episode" calculation for shows
 /// - Manual mark watched/unwatched while offline
 class OfflineWatchProvider extends ChangeNotifier {
   final OfflineWatchSyncService _syncService;
@@ -81,21 +81,21 @@ class OfflineWatchProvider extends ChangeNotifier {
   /// 2. Metadata from download provider
   ///
   /// Returns null if no position is available.
-  Future<int?> getViewOffset(String globalKey) async {
+  Future<int?> getResumePosition(String globalKey) async {
     // First check local offline progress
-    final localOffset = await _syncService.getLocalViewOffset(globalKey);
+    final localOffset = await _syncService.getLocalResumePosition(globalKey);
     if (localOffset != null) {
       return localOffset;
     }
 
     // Fall back to cached metadata
     final metadata = _downloadProvider.getMetadata(globalKey);
-    return metadata?.viewOffset;
+    return metadata?.resumePositionMs;
   }
 
   /// Get sorted episodes for a show (by season, then episode number).
-  List<MediaMetadata> _getSortedEpisodes(String showRatingKey) {
-    final episodes = _downloadProvider.getDownloadedEpisodesForShow(showRatingKey);
+  List<MediaMetadata> _getSortedEpisodes(String showItemId) {
+    final episodes = _downloadProvider.getDownloadedEpisodesForShow(showItemId);
     if (episodes.isEmpty) return episodes;
 
     episodes.sort((a, b) {
@@ -125,14 +125,14 @@ class OfflineWatchProvider extends ChangeNotifier {
 
   /// Find the next unwatched downloaded episode for a show.
   ///
-  /// This is the "offline OnDeck" calculation - finds the first
+  /// This is the "offline Next Episode" calculation - finds the first
   /// episode that hasn't been watched (or is in progress).
   ///
   /// Episodes are sorted by season number, then episode number.
   ///
   /// Returns the next unwatched episode, or the first episode if all watched.
-  Future<MediaMetadata?> getNextUnwatchedEpisode(String showRatingKey) async {
-    final episodes = _getSortedEpisodes(showRatingKey);
+  Future<MediaMetadata?> getNextUnwatchedEpisode(String showItemId) async {
+    final episodes = _getSortedEpisodes(showItemId);
     if (episodes.isEmpty) return null;
 
     final watchStatuses = await _resolveEpisodeWatchStatuses(episodes);
@@ -152,8 +152,8 @@ class OfflineWatchProvider extends ChangeNotifier {
   ///
   /// This uses cached metadata without checking local offline actions.
   /// For real-time accuracy, use getNextUnwatchedEpisode() instead.
-  MediaMetadata? getNextUnwatchedEpisodeSync(String showRatingKey) {
-    final episodes = _getSortedEpisodes(showRatingKey);
+  MediaMetadata? getNextUnwatchedEpisodeSync(String showItemId) {
+    final episodes = _getSortedEpisodes(showItemId);
     if (episodes.isEmpty) return null;
 
     // Find first unwatched episode (using metadata's isWatched)
@@ -225,8 +225,8 @@ class OfflineWatchProvider extends ChangeNotifier {
   ///
   /// Returns a list of (episode, isWatched) pairs.
   /// Uses batched database query for efficiency.
-  Future<List<(MediaMetadata episode, bool isWatched)>> getEpisodesWithWatchStatus(String showRatingKey) async {
-    final episodes = _downloadProvider.getDownloadedEpisodesForShow(showRatingKey);
+  Future<List<(MediaMetadata episode, bool isWatched)>> getEpisodesWithWatchStatus(String showItemId) async {
+    final episodes = _downloadProvider.getDownloadedEpisodesForShow(showItemId);
     if (episodes.isEmpty) return [];
 
     final watchStatuses = await _resolveEpisodeWatchStatuses(episodes);

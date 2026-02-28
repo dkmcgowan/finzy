@@ -138,7 +138,7 @@ class PlaybackProgressTracker {
       if (state == 'stopped' && position.inMilliseconds > 0) {
         WatchStateNotifier().notifyProgress(
           metadata: metadata,
-          viewOffset: position.inMilliseconds,
+          resumePositionMs: position.inMilliseconds,
           duration: duration.inMilliseconds,
         );
       }
@@ -185,7 +185,7 @@ class PlaybackProgressTracker {
     await offlineWatchService!.queueProgressUpdate(
       serverId: serverId,
       itemId: metadata.itemId,
-      viewOffset: position.inMilliseconds,
+      resumePositionMs: position.inMilliseconds,
       duration: duration.inMilliseconds,
     );
 

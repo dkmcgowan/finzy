@@ -97,7 +97,7 @@ class ApiCache {
     return result?.pinned ?? false;
   }
 
-  /// Get all pinned rating keys for a server
+  /// Get all pinned item IDs for a server
   Future<Set<String>> getPinnedKeys(String serverId) async {
     final results = await (_db.select(
       _db.apiCache,

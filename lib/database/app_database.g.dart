@@ -1762,12 +1762,12 @@ class $OfflineWatchProgressTable extends OfflineWatchProgress
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _viewOffsetMeta = const VerificationMeta(
-    'viewOffset',
+  static const VerificationMeta _resumePositionMsMeta = const VerificationMeta(
+    'resumePositionMs',
   );
   @override
-  late final GeneratedColumn<int> viewOffset = GeneratedColumn<int>(
-    'view_offset',
+  late final GeneratedColumn<int> resumePositionMs = GeneratedColumn<int>(
+    'resume_position_ms',
     aliasedName,
     true,
     type: DriftSqlType.int,
@@ -1851,7 +1851,7 @@ class $OfflineWatchProgressTable extends OfflineWatchProgress
     itemId,
     globalKey,
     actionType,
-    viewOffset,
+    resumePositionMs,
     duration,
     shouldMarkWatched,
     createdAt,
@@ -1906,10 +1906,13 @@ class $OfflineWatchProgressTable extends OfflineWatchProgress
     } else if (isInserting) {
       context.missing(_actionTypeMeta);
     }
-    if (data.containsKey('view_offset')) {
+    if (data.containsKey('resume_position_ms')) {
       context.handle(
-        _viewOffsetMeta,
-        viewOffset.isAcceptableOrUnknown(data['view_offset']!, _viewOffsetMeta),
+        _resumePositionMsMeta,
+        resumePositionMs.isAcceptableOrUnknown(
+          data['resume_position_ms']!,
+          _resumePositionMsMeta,
+        ),
       );
     }
     if (data.containsKey('duration')) {
@@ -1990,9 +1993,9 @@ class $OfflineWatchProgressTable extends OfflineWatchProgress
         DriftSqlType.string,
         data['${effectivePrefix}action_type'],
       )!,
-      viewOffset: attachedDatabase.typeMapping.read(
+      resumePositionMs: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}view_offset'],
+        data['${effectivePrefix}resume_position_ms'],
       ),
       duration: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -2045,13 +2048,13 @@ class OfflineWatchProgressItem extends DataClass
   final String actionType;
 
   /// Current playback position in milliseconds (for 'progress' actions)
-  final int? viewOffset;
+  final int? resumePositionMs;
 
   /// Duration of the media in milliseconds (for calculating percentage)
   final int? duration;
 
   /// Whether this item should be marked as watched (for progress sync)
-  /// Auto-set to true when viewOffset >= 90% of duration
+  /// Auto-set to true when resumePositionMs >= 90% of duration
   final bool shouldMarkWatched;
 
   /// Timestamp when this action was recorded (milliseconds since epoch)
@@ -2071,7 +2074,7 @@ class OfflineWatchProgressItem extends DataClass
     required this.itemId,
     required this.globalKey,
     required this.actionType,
-    this.viewOffset,
+    this.resumePositionMs,
     this.duration,
     required this.shouldMarkWatched,
     required this.createdAt,
@@ -2087,8 +2090,8 @@ class OfflineWatchProgressItem extends DataClass
     map['item_id'] = Variable<String>(itemId);
     map['global_key'] = Variable<String>(globalKey);
     map['action_type'] = Variable<String>(actionType);
-    if (!nullToAbsent || viewOffset != null) {
-      map['view_offset'] = Variable<int>(viewOffset);
+    if (!nullToAbsent || resumePositionMs != null) {
+      map['resume_position_ms'] = Variable<int>(resumePositionMs);
     }
     if (!nullToAbsent || duration != null) {
       map['duration'] = Variable<int>(duration);
@@ -2110,9 +2113,9 @@ class OfflineWatchProgressItem extends DataClass
       itemId: Value(itemId),
       globalKey: Value(globalKey),
       actionType: Value(actionType),
-      viewOffset: viewOffset == null && nullToAbsent
+      resumePositionMs: resumePositionMs == null && nullToAbsent
           ? const Value.absent()
-          : Value(viewOffset),
+          : Value(resumePositionMs),
       duration: duration == null && nullToAbsent
           ? const Value.absent()
           : Value(duration),
@@ -2137,7 +2140,7 @@ class OfflineWatchProgressItem extends DataClass
       itemId: serializer.fromJson<String>(json['itemId']),
       globalKey: serializer.fromJson<String>(json['globalKey']),
       actionType: serializer.fromJson<String>(json['actionType']),
-      viewOffset: serializer.fromJson<int?>(json['viewOffset']),
+      resumePositionMs: serializer.fromJson<int?>(json['resumePositionMs']),
       duration: serializer.fromJson<int?>(json['duration']),
       shouldMarkWatched: serializer.fromJson<bool>(json['shouldMarkWatched']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
@@ -2155,7 +2158,7 @@ class OfflineWatchProgressItem extends DataClass
       'itemId': serializer.toJson<String>(itemId),
       'globalKey': serializer.toJson<String>(globalKey),
       'actionType': serializer.toJson<String>(actionType),
-      'viewOffset': serializer.toJson<int?>(viewOffset),
+      'resumePositionMs': serializer.toJson<int?>(resumePositionMs),
       'duration': serializer.toJson<int?>(duration),
       'shouldMarkWatched': serializer.toJson<bool>(shouldMarkWatched),
       'createdAt': serializer.toJson<int>(createdAt),
@@ -2171,7 +2174,7 @@ class OfflineWatchProgressItem extends DataClass
     String? itemId,
     String? globalKey,
     String? actionType,
-    Value<int?> viewOffset = const Value.absent(),
+    Value<int?> resumePositionMs = const Value.absent(),
     Value<int?> duration = const Value.absent(),
     bool? shouldMarkWatched,
     int? createdAt,
@@ -2184,7 +2187,9 @@ class OfflineWatchProgressItem extends DataClass
     itemId: itemId ?? this.itemId,
     globalKey: globalKey ?? this.globalKey,
     actionType: actionType ?? this.actionType,
-    viewOffset: viewOffset.present ? viewOffset.value : this.viewOffset,
+    resumePositionMs: resumePositionMs.present
+        ? resumePositionMs.value
+        : this.resumePositionMs,
     duration: duration.present ? duration.value : this.duration,
     shouldMarkWatched: shouldMarkWatched ?? this.shouldMarkWatched,
     createdAt: createdAt ?? this.createdAt,
@@ -2203,9 +2208,9 @@ class OfflineWatchProgressItem extends DataClass
       actionType: data.actionType.present
           ? data.actionType.value
           : this.actionType,
-      viewOffset: data.viewOffset.present
-          ? data.viewOffset.value
-          : this.viewOffset,
+      resumePositionMs: data.resumePositionMs.present
+          ? data.resumePositionMs.value
+          : this.resumePositionMs,
       duration: data.duration.present ? data.duration.value : this.duration,
       shouldMarkWatched: data.shouldMarkWatched.present
           ? data.shouldMarkWatched.value
@@ -2227,7 +2232,7 @@ class OfflineWatchProgressItem extends DataClass
           ..write('itemId: $itemId, ')
           ..write('globalKey: $globalKey, ')
           ..write('actionType: $actionType, ')
-          ..write('viewOffset: $viewOffset, ')
+          ..write('resumePositionMs: $resumePositionMs, ')
           ..write('duration: $duration, ')
           ..write('shouldMarkWatched: $shouldMarkWatched, ')
           ..write('createdAt: $createdAt, ')
@@ -2245,7 +2250,7 @@ class OfflineWatchProgressItem extends DataClass
     itemId,
     globalKey,
     actionType,
-    viewOffset,
+    resumePositionMs,
     duration,
     shouldMarkWatched,
     createdAt,
@@ -2262,7 +2267,7 @@ class OfflineWatchProgressItem extends DataClass
           other.itemId == this.itemId &&
           other.globalKey == this.globalKey &&
           other.actionType == this.actionType &&
-          other.viewOffset == this.viewOffset &&
+          other.resumePositionMs == this.resumePositionMs &&
           other.duration == this.duration &&
           other.shouldMarkWatched == this.shouldMarkWatched &&
           other.createdAt == this.createdAt &&
@@ -2278,7 +2283,7 @@ class OfflineWatchProgressCompanion
   final Value<String> itemId;
   final Value<String> globalKey;
   final Value<String> actionType;
-  final Value<int?> viewOffset;
+  final Value<int?> resumePositionMs;
   final Value<int?> duration;
   final Value<bool> shouldMarkWatched;
   final Value<int> createdAt;
@@ -2291,7 +2296,7 @@ class OfflineWatchProgressCompanion
     this.itemId = const Value.absent(),
     this.globalKey = const Value.absent(),
     this.actionType = const Value.absent(),
-    this.viewOffset = const Value.absent(),
+    this.resumePositionMs = const Value.absent(),
     this.duration = const Value.absent(),
     this.shouldMarkWatched = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -2305,7 +2310,7 @@ class OfflineWatchProgressCompanion
     required String itemId,
     required String globalKey,
     required String actionType,
-    this.viewOffset = const Value.absent(),
+    this.resumePositionMs = const Value.absent(),
     this.duration = const Value.absent(),
     this.shouldMarkWatched = const Value.absent(),
     required int createdAt,
@@ -2324,7 +2329,7 @@ class OfflineWatchProgressCompanion
     Expression<String>? itemId,
     Expression<String>? globalKey,
     Expression<String>? actionType,
-    Expression<int>? viewOffset,
+    Expression<int>? resumePositionMs,
     Expression<int>? duration,
     Expression<bool>? shouldMarkWatched,
     Expression<int>? createdAt,
@@ -2338,7 +2343,7 @@ class OfflineWatchProgressCompanion
       if (itemId != null) 'item_id': itemId,
       if (globalKey != null) 'global_key': globalKey,
       if (actionType != null) 'action_type': actionType,
-      if (viewOffset != null) 'view_offset': viewOffset,
+      if (resumePositionMs != null) 'resume_position_ms': resumePositionMs,
       if (duration != null) 'duration': duration,
       if (shouldMarkWatched != null) 'should_mark_watched': shouldMarkWatched,
       if (createdAt != null) 'created_at': createdAt,
@@ -2354,7 +2359,7 @@ class OfflineWatchProgressCompanion
     Value<String>? itemId,
     Value<String>? globalKey,
     Value<String>? actionType,
-    Value<int?>? viewOffset,
+    Value<int?>? resumePositionMs,
     Value<int?>? duration,
     Value<bool>? shouldMarkWatched,
     Value<int>? createdAt,
@@ -2368,7 +2373,7 @@ class OfflineWatchProgressCompanion
       itemId: itemId ?? this.itemId,
       globalKey: globalKey ?? this.globalKey,
       actionType: actionType ?? this.actionType,
-      viewOffset: viewOffset ?? this.viewOffset,
+      resumePositionMs: resumePositionMs ?? this.resumePositionMs,
       duration: duration ?? this.duration,
       shouldMarkWatched: shouldMarkWatched ?? this.shouldMarkWatched,
       createdAt: createdAt ?? this.createdAt,
@@ -2396,8 +2401,8 @@ class OfflineWatchProgressCompanion
     if (actionType.present) {
       map['action_type'] = Variable<String>(actionType.value);
     }
-    if (viewOffset.present) {
-      map['view_offset'] = Variable<int>(viewOffset.value);
+    if (resumePositionMs.present) {
+      map['resume_position_ms'] = Variable<int>(resumePositionMs.value);
     }
     if (duration.present) {
       map['duration'] = Variable<int>(duration.value);
@@ -2428,7 +2433,7 @@ class OfflineWatchProgressCompanion
           ..write('itemId: $itemId, ')
           ..write('globalKey: $globalKey, ')
           ..write('actionType: $actionType, ')
-          ..write('viewOffset: $viewOffset, ')
+          ..write('resumePositionMs: $resumePositionMs, ')
           ..write('duration: $duration, ')
           ..write('shouldMarkWatched: $shouldMarkWatched, ')
           ..write('createdAt: $createdAt, ')
@@ -3317,7 +3322,7 @@ typedef $$OfflineWatchProgressTableCreateCompanionBuilder =
       required String itemId,
       required String globalKey,
       required String actionType,
-      Value<int?> viewOffset,
+      Value<int?> resumePositionMs,
       Value<int?> duration,
       Value<bool> shouldMarkWatched,
       required int createdAt,
@@ -3332,7 +3337,7 @@ typedef $$OfflineWatchProgressTableUpdateCompanionBuilder =
       Value<String> itemId,
       Value<String> globalKey,
       Value<String> actionType,
-      Value<int?> viewOffset,
+      Value<int?> resumePositionMs,
       Value<int?> duration,
       Value<bool> shouldMarkWatched,
       Value<int> createdAt,
@@ -3375,8 +3380,8 @@ class $$OfflineWatchProgressTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get viewOffset => $composableBuilder(
-    column: $table.viewOffset,
+  ColumnFilters<int> get resumePositionMs => $composableBuilder(
+    column: $table.resumePositionMs,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3445,8 +3450,8 @@ class $$OfflineWatchProgressTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get viewOffset => $composableBuilder(
-    column: $table.viewOffset,
+  ColumnOrderings<int> get resumePositionMs => $composableBuilder(
+    column: $table.resumePositionMs,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3507,8 +3512,8 @@ class $$OfflineWatchProgressTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get viewOffset => $composableBuilder(
-    column: $table.viewOffset,
+  GeneratedColumn<int> get resumePositionMs => $composableBuilder(
+    column: $table.resumePositionMs,
     builder: (column) => column,
   );
 
@@ -3583,7 +3588,7 @@ class $$OfflineWatchProgressTableTableManager
                 Value<String> itemId = const Value.absent(),
                 Value<String> globalKey = const Value.absent(),
                 Value<String> actionType = const Value.absent(),
-                Value<int?> viewOffset = const Value.absent(),
+                Value<int?> resumePositionMs = const Value.absent(),
                 Value<int?> duration = const Value.absent(),
                 Value<bool> shouldMarkWatched = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
@@ -3596,7 +3601,7 @@ class $$OfflineWatchProgressTableTableManager
                 itemId: itemId,
                 globalKey: globalKey,
                 actionType: actionType,
-                viewOffset: viewOffset,
+                resumePositionMs: resumePositionMs,
                 duration: duration,
                 shouldMarkWatched: shouldMarkWatched,
                 createdAt: createdAt,
@@ -3611,7 +3616,7 @@ class $$OfflineWatchProgressTableTableManager
                 required String itemId,
                 required String globalKey,
                 required String actionType,
-                Value<int?> viewOffset = const Value.absent(),
+                Value<int?> resumePositionMs = const Value.absent(),
                 Value<int?> duration = const Value.absent(),
                 Value<bool> shouldMarkWatched = const Value.absent(),
                 required int createdAt,
@@ -3624,7 +3629,7 @@ class $$OfflineWatchProgressTableTableManager
                 itemId: itemId,
                 globalKey: globalKey,
                 actionType: actionType,
-                viewOffset: viewOffset,
+                resumePositionMs: resumePositionMs,
                 duration: duration,
                 shouldMarkWatched: shouldMarkWatched,
                 createdAt: createdAt,

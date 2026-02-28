@@ -84,7 +84,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
               art: item.art,
               unwatchedCount: item.unwatchedCount,
               leafCount: item.leafCount,
-              viewedLeafCount: item.viewedLeafCount,
+              watchedEpisodeCount: item.watchedEpisodeCount,
             ));
           }
           break;
@@ -171,7 +171,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
       return item.copyWith(
         unwatchedCount: enriched.unwatchedCount,
         leafCount: enriched.leafCount,
-        viewedLeafCount: enriched.viewedLeafCount,
+        watchedEpisodeCount: enriched.watchedEpisodeCount,
       );
     }).toList();
   }

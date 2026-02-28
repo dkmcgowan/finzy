@@ -99,10 +99,10 @@ class VideoPlayerScreen extends StatefulWidget {
 
 class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindingObserver {
   // Track the currently active video to guard against duplicate navigation
-  static String? _activeRatingKey;
+  static String? _activeItemId;
   static int? _activeMediaIndex;
 
-  static String? get activeRatingKey => _activeRatingKey;
+  static String? get activeItemId => _activeItemId;
   static int? get activeMediaIndex => _activeMediaIndex;
 
   Player? player;
@@ -138,7 +138,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   String? _liveSessionPath;
   Timer? _liveTimelineTimer;
   DateTime? _livePlaybackStartTime;
-  String? _liveRatingKey;
+  String? _liveItemId;
   int? _liveDurationMs;
 
   // Auto-play next episode
@@ -192,7 +192,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   void initState() {
     super.initState();
 
-    _activeRatingKey = widget.metadata.itemId;
+    _activeItemId = widget.metadata.itemId;
     _activeMediaIndex = widget.selectedMediaIndex;
 
     // Initialize live TV channel tracking
@@ -705,51 +705,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       return;
     }
 
-    try {
-      final client = _getClientForMetadata(context);
+    final playbackState = context.read<PlaybackStateProvider>();
 
-      final playbackState = context.read<PlaybackStateProvider>();
-
-      // Determine the show's rating key
-      // For episodes, seriesId points to the show
-      final showRatingKey = widget.metadata.seriesId;
-      if (showRatingKey == null) {
-        appLogger.d('Episode missing seriesId, skipping play queue creation');
-        return;
-      }
-
-      // Check if there's already an active queue
-      final existingContextKey = playbackState.shuffleContextKey;
-      final isQueueActive = playbackState.isQueueActive;
-
-      if (isQueueActive) {
-        // A queue already exists (could be shuffle, playlist, or sequential)
-        // Just update the current item, don't create a new queue
-        playbackState.setCurrentItem(widget.metadata);
-        appLogger.d('Using existing play queue (context: $existingContextKey)');
-        return;
-      }
-
-      // Create a new sequential play queue for the show
-      appLogger.d('Creating sequential play queue for show $showRatingKey');
-      final playQueue = await client.createShowPlayQueue(
-        showRatingKey: showRatingKey,
-        shuffle: 0, // Sequential order
-        startingEpisodeKey: widget.metadata.itemId,
-      );
-
-      if (playQueue != null && playQueue.items != null && playQueue.items!.isNotEmpty) {
-        // Initialize playback state with the play queue
-        await playbackState.setPlaybackFromPlayQueue(playQueue, showRatingKey);
-
-        // Set the client for loading more items
-        playbackState.setClient(client);
-
-        appLogger.d('Sequential play queue created with ${playQueue.items!.length} items');
-      }
-    } catch (e) {
-      // Non-critical: Sequential playback will fall back to non-queue navigation
-      appLogger.d('Could not create play queue for sequential playback', error: e);
+    if (playbackState.isQueueActive) {
+      playbackState.setCurrentItem(widget.metadata);
+      appLogger.d('Using existing play queue (context: ${playbackState.shuffleContextKey})');
     }
   }
 
@@ -848,7 +808,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
 
           _liveSessionIdentifier = result.sessionIdentifier;
           _liveSessionPath = result.sessionPath;
-          _liveRatingKey = result.metadata.itemId;
+          _liveItemId = result.metadata.itemId;
           _liveDurationMs = result.metadata.duration;
         }
 
@@ -915,14 +875,14 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         Duration? resumePosition;
         if (widget.isOffline) {
           final globalKey = '${widget.metadata.serverId}:${widget.metadata.itemId}';
-          final localOffset = await offlineWatchService!.getLocalViewOffset(globalKey);
+          final localOffset = await offlineWatchService!.getLocalResumePosition(globalKey);
           if (localOffset != null && localOffset > 0) {
             resumePosition = Duration(milliseconds: localOffset);
             appLogger.d('Resuming offline playback from local progress: ${localOffset}ms');
           }
         }
-        resumePosition ??= widget.metadata.viewOffset != null
-            ? Duration(milliseconds: widget.metadata.viewOffset!)
+        resumePosition ??= widget.metadata.resumePositionMs != null
+            ? Duration(milliseconds: widget.metadata.resumePositionMs!)
             : null;
 
         // Always start playing immediately; external subtitles load on demand when user selects one
@@ -1253,8 +1213,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     }
 
     player?.dispose();
-    if (_activeRatingKey == widget.metadata.itemId) {
-      _activeRatingKey = null;
+    if (_activeItemId == widget.metadata.itemId) {
+      _activeItemId = null;
       _activeMediaIndex = null;
     }
     super.dispose();
@@ -1400,7 +1360,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
 
     try {
       // Use the program itemId from tune metadata, not the channel key
-      final itemId = _liveRatingKey ?? widget.metadata.itemId;
+      final itemId = _liveItemId ?? widget.metadata.itemId;
 
       // playbackTime: wall-clock ms since playback started
       final playbackTime = _livePlaybackStartTime != null
@@ -1479,7 +1439,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       await player!.open(Media(streamUrl, headers: const {'Accept-Language': 'en'}), play: true, isLive: true);
 
       _livePlaybackStartTime = DateTime.now();
-      _liveRatingKey = result.metadata.itemId;
+      _liveItemId = result.metadata.itemId;
       _liveDurationMs = result.metadata.duration;
 
       if (!mounted) return;

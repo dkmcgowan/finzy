@@ -29,20 +29,20 @@ class DataAggregationService {
     );
   }
 
-  /// Fetch "On Deck" (Continue Watching) from all servers and merge by recency
-  /// Items are automatically tagged with server info by client
-  Future<List<MediaMetadata>> getOnDeckFromAllServers({int? limit, Set<String>? hiddenLibraryKeys}) async {
-    final allOnDeck = await _perServer<MediaMetadata>(
-      operationName: 'fetching on deck',
+  /// Fetch Continue Watching items from all servers and merge by recency.
+  /// Items are automatically tagged with server info by client.
+  Future<List<MediaMetadata>> getContinueWatchingFromAllServers({int? limit, Set<String>? hiddenLibraryKeys}) async {
+    final allContinueWatching = await _perServer<MediaMetadata>(
+      operationName: 'fetching continue watching',
       operation: (serverId, client, server) async {
-        return await client.getOnDeck();
+        return await client.getContinueWatching();
       },
     );
 
     // Filter out items from hidden libraries
-    List<MediaMetadata> filteredOnDeck = allOnDeck;
+    List<MediaMetadata> filteredItems = allContinueWatching;
     if (hiddenLibraryKeys != null && hiddenLibraryKeys.isNotEmpty) {
-      filteredOnDeck = allOnDeck.where((item) {
+      filteredItems = allContinueWatching.where((item) {
         final librarySectionId = item.libraryId;
         if (librarySectionId == null) return true; // Keep if no section ID
         final globalKey = '${item.serverId}:$librarySectionId';
@@ -51,17 +51,17 @@ class DataAggregationService {
     }
 
     // Sort by most recently viewed
-    // Use lastViewedAt (when item was last viewed), falling back to updatedAt/addedAt if not available
-    filteredOnDeck.sort((a, b) {
-      final aTime = a.lastViewedAt ?? a.updatedAt ?? a.addedAt ?? 0;
-      final bTime = b.lastViewedAt ?? b.updatedAt ?? b.addedAt ?? 0;
+    // Use lastPlayedAt (when item was last viewed), falling back to updatedAt/addedAt if not available
+    filteredItems.sort((a, b) {
+      final aTime = a.lastPlayedAt ?? a.updatedAt ?? a.addedAt ?? 0;
+      final bTime = b.lastPlayedAt ?? b.updatedAt ?? b.addedAt ?? 0;
       return bTime.compareTo(aTime); // Descending (most recent first)
     });
 
     // Apply limit if specified
-    final result = limit != null && limit < filteredOnDeck.length ? filteredOnDeck.sublist(0, limit) : filteredOnDeck;
+    final result = limit != null && limit < filteredItems.length ? filteredItems.sublist(0, limit) : filteredItems;
 
-    appLogger.i('Fetched ${result.length} on deck items from all servers');
+    appLogger.i('Fetched ${result.length} continue watching items from all servers');
 
     return result;
   }
@@ -105,7 +105,7 @@ class DataAggregationService {
     return [...nextUp, ...libraryHubs];
   }
 
-  /// Fetch global hubs using /hubs endpoint (matches official client)
+  /// Fetch global home hubs (Next Up, Recently Added Movies/Shows)
   Future<List<Hub>> _fetchGlobalHubs(
     Map<String, JellyfinClient> clients, {
     int? limit,
@@ -168,7 +168,7 @@ class DataAggregationService {
     return result;
   }
 
-  /// Fetch per-library hubs using /hubs/sections/{sectionId} endpoint
+  /// Fetch per-library hubs (Recently Added per library)
   Future<List<Hub>> _fetchLibraryHubs(
     Map<String, JellyfinClient> clients, {
     int? limit,

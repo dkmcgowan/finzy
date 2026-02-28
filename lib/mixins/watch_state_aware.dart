@@ -13,7 +13,7 @@ import '../utils/watch_state_notifier.dart';
 ///   List<MediaMetadata> _items = [];
 ///
 ///   @override
-///   Set<String>? get watchedRatingKeys =>
+///   Set<String>? get watchedItemIds =>
 ///       _items.map((e) => e.itemId).toSet();
 ///
 ///   @override
@@ -34,7 +34,7 @@ mixin WatchStateAware<T extends StatefulWidget> on State<T> {
   /// Override to specify which global keys this screen cares about.
   ///
   /// Use format `serverId:itemId`.
-  /// Return null to fall back to [watchedRatingKeys] matching.
+  /// Return null to fall back to [watchedItemIds] matching.
   Set<String>? get watchedGlobalKeys => null;
 
   /// Override to specify which itemIds this screen cares about.
@@ -44,12 +44,12 @@ mixin WatchStateAware<T extends StatefulWidget> on State<T> {
   ///
   /// The set should include:
   /// - Direct items displayed (e.g., episode itemIds in a season view)
-  /// - Parent items that affect display (e.g., show itemId for on-deck)
-  Set<String>? get watchedRatingKeys;
+  /// - Parent items that affect display (e.g., show itemId for continue watching)
+  Set<String>? get watchedItemIds;
 
   /// Called when a relevant watch state change occurs.
   ///
-  /// Only called if [watchedRatingKeys] is null or contains an affected key.
+  /// Only called if [watchedItemIds] is null or contains an affected key.
   void onWatchStateChanged(WatchStateEvent event);
 
   @override
@@ -73,7 +73,7 @@ mixin WatchStateAware<T extends StatefulWidget> on State<T> {
         return;
       }
 
-      final keys = watchedRatingKeys;
+      final keys = watchedItemIds;
       // If keys is null, receive all events
       // Otherwise, filter to events that affect our keys
       if (keys == null || event.affectsAnyOf(keys)) {

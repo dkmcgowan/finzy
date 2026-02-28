@@ -148,21 +148,21 @@ class OfflineWatchSyncService extends ChangeNotifier {
   Future<void> queueProgressUpdate({
     required String serverId,
     required String itemId,
-    required int viewOffset,
+    required int resumePositionMs,
     required int duration,
   }) async {
-    final shouldMarkWatched = isWatchedByProgress(viewOffset, duration);
+    final shouldMarkWatched = isWatchedByProgress(resumePositionMs, duration);
 
     await _database.upsertProgressAction(
       serverId: serverId,
       itemId: itemId,
-      viewOffset: viewOffset,
+      resumePositionMs: resumePositionMs,
       duration: duration,
       shouldMarkWatched: shouldMarkWatched,
     );
 
     appLogger.d(
-      'Queued offline progress: $serverId:$itemId at ${(viewOffset / 1000).toStringAsFixed(0)}s / ${(duration / 1000).toStringAsFixed(0)}s (${((viewOffset / duration) * 100).toStringAsFixed(1)}%)',
+      'Queued offline progress: $serverId:$itemId at ${(resumePositionMs / 1000).toStringAsFixed(0)}s / ${(duration / 1000).toStringAsFixed(0)}s (${((resumePositionMs / duration) * 100).toStringAsFixed(1)}%)',
     );
 
     notifyListeners();
@@ -193,9 +193,9 @@ class OfflineWatchSyncService extends ChangeNotifier {
   }
 
   /// Check if an item should be considered watched based on progress percentage.
-  bool isWatchedByProgress(int viewOffset, int duration) {
+  bool isWatchedByProgress(int resumePositionMs, int duration) {
     if (duration == 0) return false;
-    return (viewOffset / duration) >= watchedThreshold;
+    return (resumePositionMs / duration) >= watchedThreshold;
   }
 
   /// Get the local watch status for a media item.
@@ -256,13 +256,13 @@ class OfflineWatchSyncService extends ChangeNotifier {
   /// Get the local view offset (resume position) for a media item.
   ///
   /// Returns the locally tracked position, or null if none exists.
-  Future<int?> getLocalViewOffset(String globalKey) async {
+  Future<int?> getLocalResumePosition(String globalKey) async {
     final action = await _database.getLatestWatchAction(globalKey);
     if (action == null) return null;
 
     // Only return offset for progress actions
     if (action.actionType == 'progress') {
-      return action.viewOffset;
+      return action.resumePositionMs;
     }
 
     return null;
@@ -388,10 +388,10 @@ class OfflineWatchSyncService extends ChangeNotifier {
 
       case 'progress':
         // First, update the timeline with current position
-        if (action.viewOffset != null && action.duration != null) {
+        if (action.resumePositionMs != null && action.duration != null) {
           await client.updateProgress(
             action.itemId,
-            time: action.viewOffset!,
+            time: action.resumePositionMs!,
             state: 'stopped', // Use 'stopped' since we're syncing after the fact
             duration: action.duration,
           );
@@ -411,27 +411,25 @@ class OfflineWatchSyncService extends ChangeNotifier {
   Future<int> _syncSeasonEpisodes(
     JellyfinClient client,
     String serverId,
-    String seasonRatingKey,
+    String seasonItemId,
     Set<String> downloadedEpisodeKeys,
   ) async {
     try {
-      final seasonEpisodes = await client.getChildren(seasonRatingKey);
+      final seasonEpisodes = await client.getChildren(seasonItemId);
       int synced = 0;
 
       for (final episode in seasonEpisodes) {
         if (!downloadedEpisodeKeys.contains(episode.itemId)) continue;
 
         await ApiCache.instance.put(serverId, '${ApiCache.itemPrefix}${episode.itemId}', {
-          'MediaContainer': {
-            'Metadata': [episode.toJson()],
-          },
+          'Items': [episode.toJson()],
         });
         synced++;
       }
 
       return synced;
     } catch (e) {
-      appLogger.d('Failed to sync watch states for season $seasonRatingKey: $e');
+      appLogger.d('Failed to sync watch states for season $seasonItemId: $e');
       return -1;
     }
   }
@@ -456,7 +454,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
       appLogger.i('Syncing watch states from server for ${downloadedItems.length} items');
 
       // Separate episodes (with season parent) from other items (movies, etc.)
-      // Structure: serverId -> seasonRatingKey -> Set<episodeRatingKey>
+      // Structure: serverId -> seasonItemId -> Set<episodeItemId>
       final episodesByServerAndSeason = <String, Map<String, Set<String>>>{};
       // Structure: serverId -> List<itemId>
       final nonEpisodeItems = <String, List<String>>{};
@@ -504,9 +502,7 @@ class OfflineWatchSyncService extends ChangeNotifier {
               final metadata = await client.getMetadataWithImages(itemId);
               if (metadata != null) {
                 await ApiCache.instance.put(serverId, '${ApiCache.itemPrefix}$itemId', {
-                  'MediaContainer': {
-                    'Metadata': [metadata.toJson()],
-                  },
+                  'Items': [metadata.toJson()],
                 });
                 syncedCount++;
               }

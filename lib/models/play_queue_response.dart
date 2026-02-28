@@ -33,7 +33,7 @@ class PlayQueueResponse {
   final int? playQueueTotalCount;
   final int playQueueVersion;
   final int? size; // Number of items in this response window
-  @JsonKey(name: 'Metadata')
+  @JsonKey(name: 'Items')
   final List<MediaMetadata>? items;
 
   PlayQueueResponse({
@@ -50,9 +50,7 @@ class PlayQueueResponse {
   });
 
   factory PlayQueueResponse.fromJson(Map<String, dynamic> json, {String? serverId, String? serverName}) {
-    // The API returns data wrapped in MediaContainer
-    final container = json['MediaContainer'] as Map<String, dynamic>? ?? json;
-    final response = _$PlayQueueResponseFromJson(container);
+    final response = _$PlayQueueResponseFromJson(json);
 
     // Tag all items with server info
     if (response.items != null && (serverId != null || serverName != null)) {

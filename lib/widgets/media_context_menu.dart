@@ -126,10 +126,10 @@ class MediaContextMenuState extends State<MediaContextMenu> {
 
     final isPartiallyWatched =
         !isPlaylist &&
-        metadata!.viewedLeafCount != null &&
+        metadata!.watchedEpisodeCount != null &&
         metadata.leafCount != null &&
-        metadata.viewedLeafCount! > 0 &&
-        metadata.viewedLeafCount! < metadata.leafCount!;
+        metadata.watchedEpisodeCount! > 0 &&
+        metadata.watchedEpisodeCount! < metadata.leafCount!;
 
     final hasActiveProgress =
         mediaType != null &&
@@ -365,7 +365,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           // This preserves the progression for partially watched items
           // and doesn't mark unwatched next episodes as watched
           try {
-            await client.removeFromOnDeck(metadata!.itemId);
+            await client.hideFromResume(metadata!.itemId);
             if (context.mounted) {
               showSuccessSnackBar(context, t.messages.removedFromContinueWatching);
               // Use specific callback if provided, otherwise fallback to onRefresh

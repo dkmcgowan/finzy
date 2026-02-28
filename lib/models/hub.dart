@@ -28,39 +28,24 @@ class Hub {
   });
 
   factory Hub.fromJson(Map<String, dynamic> json) {
-    final metadataList = <MediaMetadata>[];
-
-    // Helper function to parse entries from a JSON list
-    void parseEntries(List? entries, {bool isDirectory = false}) {
-      if (entries == null) return;
-      for (final item in entries) {
+    final items = <MediaMetadata>[];
+    final jsonItems = json['Items'] as List?;
+    if (jsonItems != null) {
+      for (final item in jsonItems) {
         try {
-          if (isDirectory && item is Map && !item.containsKey('type')) {
-            // Directory items often represent shows but might miss the type field
-            // Default to 'show' if it looks like a show (has leafCount or childCount)
-            // or 'folder' as a safe default
-            final String type = (item.containsKey('leafCount') || item.containsKey('childCount')) ? 'show' : 'folder';
-            item['type'] = type;
-          }
-          metadataList.add(MediaMetadata.fromJson(item as Map<String, dynamic>));
-        } catch (e) {
-          // Skip items that fail to parse
-        }
+          items.add(MediaMetadata.fromJson(item as Map<String, dynamic>));
+        } catch (_) {}
       }
     }
-
-    // Hubs can contain either Metadata or Directory entries
-    parseEntries(json['Metadata'] as List?);
-    parseEntries(json['Directory'] as List?, isDirectory: true);
 
     return Hub(
       hubKey: json['key'] as String? ?? '',
       title: kBlurArtwork ? obfuscateText(json['title'] as String? ?? 'Unknown') : json['title'] as String? ?? 'Unknown',
       type: json['type'] as String? ?? 'hub',
       hubIdentifier: json['hubIdentifier'] as String?,
-      size: (json['size'] as num?)?.toInt() ?? metadataList.length,
+      size: (json['size'] as num?)?.toInt() ?? items.length,
       more: json['more'] == true || json['more'] == 1,
-      items: metadataList,
+      items: items,
     );
   }
 }

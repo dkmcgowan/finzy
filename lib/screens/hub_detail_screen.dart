@@ -144,45 +144,19 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   Future<void> _loadSorts() async {
     try {
       final client = _getClientForHub();
+      final hubType = widget.hub.type;
 
-      // Get the library key from the hub key
-      // Hub keys can have various formats:
-      final hubKey = widget.hub.hubKey;
-      appLogger.d('Hub key: $hubKey');
+      final sorts = await client.getLibrarySorts('', libraryType: hubType);
 
-      RegExpMatch? match = RegExp(r'/hubs/sections/(\d+)').firstMatch(hubKey);
-      match ??= RegExp(r'sections/(\d+)').firstMatch(hubKey);
-
-      if (match != null) {
-        final sectionId = match.group(1)!;
-        appLogger.d('Loading sorts for section: $sectionId');
-
-        // Load sorts for this library
-        final sorts = await client.getLibrarySorts(sectionId);
-
-        appLogger.d('Loaded ${sorts.length} sorts');
-
-        if (!mounted) return;
-        setState(() {
-          _sortOptions = sorts.isNotEmpty ? sorts : _getDefaultSortOptions();
-          // Don't set a default sort - let items stay in original order
-        });
-      } else {
-        appLogger.w('Could not extract section ID from hub key: $hubKey');
-        // Provide default sort options even if we can't get library-specific ones
-        if (!mounted) return;
-        setState(() {
-          _sortOptions = _getDefaultSortOptions();
-          // Don't set a default sort - let items stay in original order
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _sortOptions = sorts.isNotEmpty ? sorts : _getDefaultSortOptions();
+      });
     } catch (e) {
       appLogger.e('Failed to load sorts', error: e);
-      // Provide default sort options on error
       if (!mounted) return;
       setState(() {
         _sortOptions = _getDefaultSortOptions();
-        // Don't set a default sort - let items stay in original order
       });
     }
   }
@@ -268,17 +242,20 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     try {
       final client = _getClientForHub();
 
-      // Fetch items from the hub, tagged with server info at the source
-      final items = await client.getHubContent(widget.hub.hubKey);
+      final items = await client.getHubContent(widget.hub.hubKey, hubType: widget.hub.type);
 
       if (!mounted) return;
+      if (items.isEmpty) {
+        // Hub content endpoint returned nothing; keep initial items
+        setState(() => _isLoading = false);
+        return;
+      }
       setState(() {
         _items = items;
         _filteredItems = items;
         _isLoading = false;
       });
 
-      // Apply any existing sort
       _applySort();
 
       appLogger.d('Loaded ${items.length} items for hub: ${widget.hub.title}');

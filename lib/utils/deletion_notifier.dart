@@ -18,8 +18,8 @@ class DeletionEvent with HierarchicalEventMixin {
   final String serverId;
 
   /// Parent chain for hierarchical invalidation
-  /// For an episode: [seasonRatingKey, showRatingKey]
-  /// For a season: [showRatingKey]
+  /// For an episode: [seasonItemId, showItemId]
+  /// For a season: [showItemId]
   /// For a movie: []
   @override
   final List<String> parentChain;

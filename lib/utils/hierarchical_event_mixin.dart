@@ -14,8 +14,8 @@ mixin HierarchicalEventMixin {
   String get serverId;
 
   /// Parent chain for hierarchical matching.
-  /// For an episode: [seasonRatingKey, showRatingKey]
-  /// For a season: [showRatingKey]
+  /// For an episode: [seasonItemId, showItemId]
+  /// For a season: [showItemId]
   /// For a movie: []
   List<String> get parentChain;
 

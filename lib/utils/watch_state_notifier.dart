@@ -24,8 +24,8 @@ class WatchStateEvent with HierarchicalEventMixin {
   final WatchStateChangeType changeType;
 
   /// Parent chain for hierarchical invalidation
-  /// For an episode: [seasonRatingKey, showRatingKey]
-  /// For a season: [showRatingKey]
+  /// For an episode: [seasonItemId, showItemId]
+  /// For a season: [showItemId]
   /// For a movie: []
   @override
   final List<String> parentChain;
@@ -34,7 +34,7 @@ class WatchStateEvent with HierarchicalEventMixin {
   final String mediaType;
 
   /// New progress value (for progressUpdate)
-  final int? viewOffset;
+  final int? resumePositionMs;
 
   /// Whether item is now considered watched (>90% progress or marked)
   final bool? isNowWatched;
@@ -45,7 +45,7 @@ class WatchStateEvent with HierarchicalEventMixin {
     required this.changeType,
     required this.parentChain,
     required this.mediaType,
-    this.viewOffset,
+    this.resumePositionMs,
     this.isNowWatched,
   }) : globalKey = '$serverId:$itemId';
 
@@ -92,9 +92,9 @@ class WatchStateNotifier extends BaseNotifier<WatchStateEvent> {
   }
 
   /// Helper to emit a progress update event
-  void notifyProgress({required MediaMetadata metadata, required int viewOffset, required int duration}) {
+  void notifyProgress({required MediaMetadata metadata, required int resumePositionMs, required int duration}) {
     const threshold = 0.9;
-    final isNowWatched = duration > 0 && (viewOffset / duration) >= threshold;
+    final isNowWatched = duration > 0 && (resumePositionMs / duration) >= threshold;
 
     notify(
       WatchStateEvent(
@@ -103,7 +103,7 @@ class WatchStateNotifier extends BaseNotifier<WatchStateEvent> {
         changeType: WatchStateChangeType.progressUpdate,
         parentChain: _buildParentChain(metadata),
         mediaType: metadata.type,
-        viewOffset: viewOffset,
+        resumePositionMs: resumePositionMs,
         isNowWatched: isNowWatched,
       ),
     );

@@ -588,10 +588,11 @@ class _LiveTvHubSectionState extends State<_LiveTvHubSection> {
 }
 
 // ---------------------------------------------------------------------------
-// Poster card — always 2:3, shows poster image + title + subtitle
+// Poster card — always 2:3, shows poster image + title + subtitle.
+// Matches channel cards with a clear surface and hover play affordance.
 // ---------------------------------------------------------------------------
 
-class _LiveTvPosterCard extends StatelessWidget {
+class _LiveTvPosterCard extends StatefulWidget {
   final LiveTvHubEntry entry;
   final LiveTvChannel? channel;
   final double width;
@@ -611,61 +612,102 @@ class _LiveTvPosterCard extends StatelessWidget {
   });
 
   @override
+  State<_LiveTvPosterCard> createState() => _LiveTvPosterCardState();
+}
+
+class _LiveTvPosterCardState extends State<_LiveTvPosterCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final metadata = entry.metadata;
-    final channelFirst = entry.program.isCurrentlyAiring && channel?.thumb != null;
+    final metadata = widget.entry.metadata;
+    final theme = Theme.of(context);
+    final channelFirst = widget.entry.program.isCurrentlyAiring && widget.channel?.thumb != null;
     // For currently airing rows, prefer channel logo first; otherwise use program/series art.
     final posterImage = channelFirst
-        ? (channel?.thumb ?? metadata.seriesImageId ?? metadata.thumb)
-        : (metadata.seriesImageId ?? metadata.thumb ?? channel?.thumb);
-    final isChannelImage = channel?.thumb != null && posterImage == channel!.thumb;
+        ? (widget.channel?.thumb ?? metadata.seriesImageId ?? metadata.thumb)
+        : (metadata.seriesImageId ?? metadata.thumb ?? widget.channel?.thumb);
+    final isChannelImage = widget.channel?.thumb != null && posterImage == widget.channel!.thumb;
+    final showHoverPlay = _isHovered && !widget.isFocused;
 
     return FocusBuilders.buildLockedFocusWrapper(
       context: context,
-      isFocused: isFocused,
-      onTap: onTap,
-      onLongPress: onLongPress,
+      isFocused: widget.isFocused,
+      onTap: null,
+      onLongPress: null,
       child: SizedBox(
-        width: width,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Poster
-              SizedBox(
-                width: double.infinity,
-                height: posterHeight,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(tokens(context).radiusSm),
-                  child: OptimizedImage.poster(
-                    client: context.getClientWithFallback(metadata.serverId),
-                    imagePath: posterImage,
+        width: widget.width,
+        child: Card(
+          margin: const EdgeInsets.all(6),
+          clipBehavior: Clip.antiAlias,
+          color: theme.colorScheme.surfaceContainer,
+          child: InkWell(
+            onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
+            onHover: (hovering) => setState(() => _isHovered = hovering),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Poster
+                  SizedBox(
                     width: double.infinity,
-                    height: double.infinity,
-                    fit: isChannelImage ? BoxFit.contain : BoxFit.cover,
+                    height: widget.posterHeight,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(tokens(context).radiusSm),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          OptimizedImage.poster(
+                            client: context.getClientWithFallback(metadata.serverId),
+                            imagePath: posterImage,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: isChannelImage ? BoxFit.contain : BoxFit.cover,
+                          ),
+                          if (showHoverPlay)
+                            Center(
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Symbols.play_arrow_rounded,
+                                  color: Colors.white,
+                                  size: 32,
+                                  fill: 1,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  // Title
+                  Text(
+                    metadata.displayTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, height: 1.1),
+                  ),
+                  // Subtitle
+                  if (metadata.displaySubtitle != null)
+                    Text(
+                      metadata.displaySubtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: tokens(context).textMuted, fontSize: 11, height: 1.1),
+                    ),
+                ],
               ),
-              const SizedBox(height: 4),
-              // Title
-              Text(
-                metadata.displayTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, height: 1.1),
-              ),
-              // Subtitle
-              if (metadata.displaySubtitle != null)
-                Text(
-                  metadata.displaySubtitle!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: tokens(context).textMuted, fontSize: 11, height: 1.1),
-                ),
-            ],
+            ),
           ),
         ),
       ),

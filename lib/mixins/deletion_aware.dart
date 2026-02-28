@@ -13,7 +13,7 @@ import '../utils/deletion_notifier.dart';
 ///   List<MediaMetadata> _items = [];
 ///
 ///   @override
-///   Set<String>? get deletionRatingKeys =>
+///   Set<String>? get deletionItemIds =>
 ///       _items.map((e) => e.itemId).toSet();
 ///
 ///   @override
@@ -35,7 +35,7 @@ mixin DeletionAware<T extends StatefulWidget> on State<T> {
   /// Override to specify which global keys this screen cares about.
   ///
   /// Use format `serverId:itemId`.
-  /// Return null to fall back to [deletionRatingKeys] matching.
+  /// Return null to fall back to [deletionItemIds] matching.
   Set<String>? get deletionGlobalKeys => null;
 
   /// Override to specify which itemIds this screen cares about.
@@ -46,11 +46,11 @@ mixin DeletionAware<T extends StatefulWidget> on State<T> {
   /// The set should include:
   /// - Direct items displayed (e.g., episode itemIds in a season view)
   /// - Parent items that affect display (e.g., show itemId for seasons)
-  Set<String>? get deletionRatingKeys;
+  Set<String>? get deletionItemIds;
 
   /// Called when a relevant deletion event occurs.
   ///
-  /// Only called if [deletionRatingKeys] is null or contains an affected key.
+  /// Only called if [deletionItemIds] is null or contains an affected key.
   void onDeletionEvent(DeletionEvent event);
 
   @override
@@ -74,7 +74,7 @@ mixin DeletionAware<T extends StatefulWidget> on State<T> {
         return;
       }
 
-      final itemIds = deletionRatingKeys;
+      final itemIds = deletionItemIds;
       // If keys is null, receive all events
       // Otherwise, filter to events that affect our keys
       if (itemIds == null || event.affectsAnyOf(itemIds)) {

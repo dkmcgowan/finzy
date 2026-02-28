@@ -145,6 +145,10 @@ class StorageService extends BaseSharedPreferencesService {
     return _readJsonMap('$_prefixLibrarySort$sectionId', legacyStringOk: true);
   }
 
+  Future<void> clearLibrarySort(String sectionId) async {
+    await prefs.remove('$_prefixLibrarySort$sectionId');
+  }
+
   // Library Grouping (per-library, e.g., 'movies', 'shows', 'seasons', 'episodes')
   Future<void> saveLibraryGrouping(String sectionId, String grouping) async {
     await prefs.setString('$_prefixLibraryGrouping$sectionId', grouping);

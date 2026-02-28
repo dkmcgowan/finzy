@@ -22,7 +22,7 @@ PlayQueueResponse _$PlayQueueResponseFromJson(Map<String, dynamic> json) =>
       playQueueTotalCount: (json['playQueueTotalCount'] as num?)?.toInt(),
       playQueueVersion: (json['playQueueVersion'] as num).toInt(),
       size: (json['size'] as num?)?.toInt(),
-      items: (json['Metadata'] as List<dynamic>?)
+      items: (json['Items'] as List<dynamic>?)
           ?.map((e) => MediaMetadata.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
