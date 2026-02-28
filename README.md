@@ -7,7 +7,7 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 **Support development** — If you enjoy Finzy, you can leave a tip via [PayPal](https://paypal.me/dkmcgowan). Optional and much appreciated. You can also find this in Settings → Support Development.
 
 <p align="center">
-  <img src="assets/screenshots/macos-home.png" alt="Finzy macOS Home Screen" width="800" />
+  <img src="assets/screenshots/windows-home.png" alt="Finzy Windows Home Screen" width="800" />
 </p>
 
 *More screenshots in the [screenshots folder](assets/screenshots/#readme)*
@@ -21,9 +21,9 @@ Finzy runs on:
 | ----------- | ----------------------------------------------------------- |
 | **iOS**     | iPhone, iPad                                                |
 | **Android** | Phone, Tablet, TV (arm64-v8a, armeabi-v7a, x86_64)          |
-| **Windows** | x64, arm64 — installer and portable (.7z)                   |
+| **Windows** | x64, arm64 — installer and portable (.zip)                 |
 | **macOS**   | x64, arm64 (universal .dmg)                                 |
-| **Linux**   | x64, arm64 — .deb, .rpm, .pkg.tar.zst, and portable .tar.gz |
+| **Linux**   | x64, arm64 — .deb, .rpm, and portable .tar.gz               |
 
 
 ## Download

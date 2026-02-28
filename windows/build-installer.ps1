@@ -41,33 +41,14 @@ Write-Host "Architectures found:" -ForegroundColor Green
 if ($HasX64)   { Write-Host "  x64:   $X64BuildDir" }
 if ($HasArm64) { Write-Host "  arm64: $Arm64BuildDir" }
 
-# Check for 7-Zip
-Write-Host "`nChecking for 7-Zip..." -ForegroundColor Cyan
-if (-not (Get-Command 7z -ErrorAction SilentlyContinue)) {
-    Write-Host "7-Zip not found in PATH. Installing via Chocolatey..." -ForegroundColor Yellow
-
-    if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-        Write-Error "Chocolatey is not installed. Please install it from https://chocolatey.org/install"
-        exit 1
-    }
-
-    choco install 7zip -y
-    refreshenv
-
-    if (-not (Get-Command 7z -ErrorAction SilentlyContinue)) {
-        Write-Error "Failed to install 7-Zip"
-        exit 1
-    }
-}
-
-# Create Portable Archives
+# Create Portable Archives (ZIP for Windows compatibility - no extra software needed to extract)
 if ($HasX64) {
     Write-Host "`nCreating x64 portable archive..." -ForegroundColor Cyan
-    $X64Portable = Join-Path $ResolvedOutput "finzy-windows-x64-portable.7z"
+    $X64Portable = Join-Path $ResolvedOutput "finzy-windows-x64-portable.zip"
     Push-Location $X64BuildDir
     try {
         if (Test-Path $X64Portable) { Remove-Item $X64Portable -Force }
-        7z a -mx=9 $X64Portable *
+        Compress-Archive -Path .\* -DestinationPath $X64Portable -Force
         Write-Host "Created: $X64Portable" -ForegroundColor Green
     } finally {
         Pop-Location
@@ -76,11 +57,11 @@ if ($HasX64) {
 
 if ($HasArm64) {
     Write-Host "`nCreating arm64 portable archive..." -ForegroundColor Cyan
-    $Arm64Portable = Join-Path $ResolvedOutput "finzy-windows-arm64-portable.7z"
+    $Arm64Portable = Join-Path $ResolvedOutput "finzy-windows-arm64-portable.zip"
     Push-Location $Arm64BuildDir
     try {
         if (Test-Path $Arm64Portable) { Remove-Item $Arm64Portable -Force }
-        7z a -mx=9 $Arm64Portable *
+        Compress-Archive -Path .\* -DestinationPath $Arm64Portable -Force
         Write-Host "Created: $Arm64Portable" -ForegroundColor Green
     } finally {
         Pop-Location

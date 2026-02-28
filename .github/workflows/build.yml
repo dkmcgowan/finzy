@@ -71,28 +71,29 @@ jobs:
         if: always()
         run: rm -f android/app/upload-keystore.jks android/key.properties
 
-      - name: Package APKs
+      - name: Copy APKs for upload
         run: |
-          tar -czf finzy-android-arm64-v8a.tar.gz -C build/app/outputs/flutter-apk app-arm64-v8a-release.apk --transform 's/app-arm64-v8a-release.apk/finzy.apk/'
-          tar -czf finzy-android-armeabi-v7a.tar.gz -C build/app/outputs/flutter-apk app-armeabi-v7a-release.apk --transform 's/app-armeabi-v7a-release.apk/finzy.apk/'
-          tar -czf finzy-android-x86_64.tar.gz -C build/app/outputs/flutter-apk app-x86_64-release.apk --transform 's/app-x86_64-release.apk/finzy.apk/'
+          APK_DIR=build/app/outputs/flutter-apk
+          cp $APK_DIR/app-arm64-v8a-release.apk finzy-android-arm64-v8a.apk
+          cp $APK_DIR/app-armeabi-v7a-release.apk finzy-android-armeabi-v7a.apk
+          cp $APK_DIR/app-x86_64-release.apk finzy-android-x86_64.apk
 
       - name: Attest APKs
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
-            finzy-android-arm64-v8a.tar.gz
-            finzy-android-armeabi-v7a.tar.gz
-            finzy-android-x86_64.tar.gz
+            finzy-android-arm64-v8a.apk
+            finzy-android-armeabi-v7a.apk
+            finzy-android-x86_64.apk
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: |
-            finzy-android-arm64-v8a.tar.gz
-            finzy-android-armeabi-v7a.tar.gz
-            finzy-android-x86_64.tar.gz
+            finzy-android-arm64-v8a.apk
+            finzy-android-armeabi-v7a.apk
+            finzy-android-x86_64.apk
 
   build-ios:
     runs-on: macos-26
@@ -441,9 +442,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install 7-Zip
-        run: choco install 7zip -y
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -500,21 +498,21 @@ jobs:
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
-            finzy-windows-x64-portable.7z
-            finzy-windows-arm64-portable.7z
+            finzy-windows-x64-portable.zip
+            finzy-windows-arm64-portable.zip
             finzy-windows-installer.exe
 
       - name: Upload x64 portable
         uses: actions/upload-artifact@v4
         with:
           name: windows-x64-portable
-          path: finzy-windows-x64-portable.7z
+          path: finzy-windows-x64-portable.zip
 
       - name: Upload arm64 portable
         uses: actions/upload-artifact@v4
         with:
           name: windows-arm64-portable
-          path: finzy-windows-arm64-portable.7z
+          path: finzy-windows-arm64-portable.zip
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
@@ -618,7 +616,6 @@ jobs:
             finzy-linux-x64.tar.gz
             finzy-linux-x64.deb
             finzy-linux-x64.rpm
-            finzy-linux-x64.pkg.tar.zst
 
       - name: Upload Linux x64 artifacts
         uses: actions/upload-artifact@v4
@@ -628,7 +625,6 @@ jobs:
             finzy-linux-x64.tar.gz
             finzy-linux-x64.deb
             finzy-linux-x64.rpm
-            finzy-linux-x64.pkg.tar.zst
 
   build-linux-arm64:
     runs-on: ubuntu-24.04-arm
@@ -736,7 +732,6 @@ jobs:
             finzy-linux-arm64.tar.gz
             finzy-linux-arm64.deb
             finzy-linux-arm64.rpm
-            finzy-linux-arm64.pkg.tar.zst
 
       - name: Upload Linux arm64 artifacts
         uses: actions/upload-artifact@v4
@@ -746,7 +741,6 @@ jobs:
             finzy-linux-arm64.tar.gz
             finzy-linux-arm64.deb
             finzy-linux-arm64.rpm
-            finzy-linux-arm64.pkg.tar.zst
 
   create-release:
     needs: [build-android, build-ios, build-macos, package-windows, build-linux-x64, build-linux-arm64]
@@ -766,13 +760,13 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/android-apk/finzy-android-arm64-v8a.tar.gz
-            artifacts/android-apk/finzy-android-armeabi-v7a.tar.gz
-            artifacts/android-apk/finzy-android-x86_64.tar.gz
+            artifacts/android-apk/finzy-android-arm64-v8a.apk
+            artifacts/android-apk/finzy-android-armeabi-v7a.apk
+            artifacts/android-apk/finzy-android-x86_64.apk
             artifacts/ios-ipa/finzy-ios.ipa
             artifacts/macos-dmg/finzy-macos.dmg
-            artifacts/windows-x64-portable/finzy-windows-x64-portable.7z
-            artifacts/windows-arm64-portable/finzy-windows-arm64-portable.7z
+            artifacts/windows-x64-portable/finzy-windows-x64-portable.zip
+            artifacts/windows-arm64-portable/finzy-windows-arm64-portable.zip
             artifacts/windows-installer/finzy-windows-installer.exe
             artifacts/linux-x64/*
             artifacts/linux-arm64/*

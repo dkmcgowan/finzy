@@ -4,12 +4,12 @@
 |------|---------|------------|--------|
 | ![iOS Home - Content discovery and recommendations](ios-home.png) | ![iOS Library - Media collection view](ios-library.png) | ![iOS Media Card](ios-media-card.png) | ![iOS Season View](ios-season.png) |
 
-## macOS
+## Windows
 
-![macOS Home - Content discovery and recommendations](macos-home.png)
+![Windows Home - Content discovery and recommendations](windows-home.png)
 
-![macOS Library - Media collection view](macos-library.png)
+![Windows Library - Media collection view](windows-library.png)
 
-![macOS Media Card](macos-media-card.png)
+![Windows Media Card](windows-media-card.png)
 
-![macOS Season View](macos-season.png)
+![Windows Season View](windows-season.png)

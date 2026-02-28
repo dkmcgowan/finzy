@@ -27,8 +27,8 @@ ICON_SIZES = [16, 32, 48, 64, 128, 256, 512]
 
 # Architecture mappings per package format
 ARCH_MAP = {
-    "x64": {"deb": "amd64", "rpm": "x86_64", "pacman": "x86_64"},
-    "arm64": {"deb": "arm64", "rpm": "aarch64", "pacman": "aarch64"},
+    "x64": {"deb": "amd64", "rpm": "x86_64"},
+    "arm64": {"deb": "arm64", "rpm": "aarch64"},
 }
 
 # Distro-specific configuration
@@ -55,20 +55,6 @@ DISTROS = {
         "depends": [
             "gtk3",
             "mpv-libs",
-            "libepoxy",
-            "alsa-lib",
-            "libevdev",
-            "glib2",
-        ],
-    },
-    "pacman": {
-        "type": "pacman",
-        "category": None,
-        "ext": "pkg.tar.zst",
-        "compression": ["--pacman-compression", "zstd"],
-        "depends": [
-            "gtk3",
-            "mpv",
             "libepoxy",
             "alsa-lib",
             "libevdev",
