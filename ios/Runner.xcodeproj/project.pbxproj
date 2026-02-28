@@ -783,7 +783,7 @@
 			repositoryURL = "https://github.com/dkmcgowan/MPVKit";
 			requirement = {
 				kind = revision;
-				revision = 0d0931fbbb25a3483a7edb46babd3f2f55abeefc;
+				revision = e6afd7fa47b6a0f55c29028bbebb4a05b43e779f;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
