@@ -34,7 +34,6 @@ class HubSection extends StatefulWidget {
   final Hub hub;
   final IconData icon;
   final void Function(String)? onRefresh;
-  final VoidCallback? onRemoveFromContinueWatching;
   final bool isInContinueWatching;
   final bool showServerName;
 
@@ -62,7 +61,6 @@ class HubSection extends StatefulWidget {
     required this.hub,
     required this.icon,
     this.onRefresh,
-    this.onRemoveFromContinueWatching,
     this.isInContinueWatching = false,
     this.showServerName = false,
     this.onVerticalNavigation,
@@ -516,7 +514,6 @@ class HubSectionState extends State<HubSection> {
                               width: cardWidth,
                               height: posterHeight,
                               onRefresh: widget.onRefresh,
-                              onRemoveFromContinueWatching: widget.onRemoveFromContinueWatching,
                               forceGridMode: true,
                               isInContinueWatching: widget.isInContinueWatching,
                               mixedHubContext: isTrulyMixedHub,

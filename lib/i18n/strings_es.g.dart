@@ -428,7 +428,6 @@ class _TranslationsMediaMenuEs implements TranslationsMediaMenuEn {
 	// Translations
 	@override String get markAsWatched => 'Marcar como Visto';
 	@override String get markAsUnwatched => 'Marcar como No Visto';
-	@override String get removeFromContinueWatching => 'Eliminar de Seguir Viendo';
 	@override String get goToSeries => 'Ir a la serie';
 	@override String get goToSeason => 'Ir a la temporada';
 	@override String get shufflePlay => 'Reproducción Aleatoria';
@@ -553,7 +552,6 @@ class _TranslationsMessagesEs implements TranslationsMessagesEn {
 	@override String get markedAsUnwatched => 'Marcado como no visto';
 	@override String get markedAsWatchedOffline => 'Marcado como visto (se sincronizará al estar en línea)';
 	@override String get markedAsUnwatchedOffline => 'Marcado como no visto (se sincronizará al estar en línea)';
-	@override String get removedFromContinueWatching => 'Eliminado de Seguir Viendo';
 	@override String errorLoading({required Object error}) => 'Error: ${error}';
 	@override String get fileInfoNotAvailable => 'Información de archivo no disponible';
 	@override String errorLoadingFileInfo({required Object error}) => 'Error al cargar info de archivo: ${error}';
@@ -1525,7 +1523,6 @@ extension on TranslationsEs {
 			'fileInfo.has64bitOffsets' => 'Offsets de 64 bits',
 			'mediaMenu.markAsWatched' => 'Marcar como Visto',
 			'mediaMenu.markAsUnwatched' => 'Marcar como No Visto',
-			'mediaMenu.removeFromContinueWatching' => 'Eliminar de Seguir Viendo',
 			'mediaMenu.goToSeries' => 'Ir a la serie',
 			'mediaMenu.goToSeason' => 'Ir a la temporada',
 			'mediaMenu.shufflePlay' => 'Reproducción Aleatoria',
@@ -1609,7 +1606,6 @@ extension on TranslationsEs {
 			'messages.markedAsUnwatched' => 'Marcado como no visto',
 			'messages.markedAsWatchedOffline' => 'Marcado como visto (se sincronizará al estar en línea)',
 			'messages.markedAsUnwatchedOffline' => 'Marcado como no visto (se sincronizará al estar en línea)',
-			'messages.removedFromContinueWatching' => 'Eliminado de Seguir Viendo',
 			'messages.errorLoading' => ({required Object error}) => 'Error: ${error}',
 			'messages.fileInfoNotAvailable' => 'Información de archivo no disponible',
 			'messages.errorLoadingFileInfo' => ({required Object error}) => 'Error al cargar info de archivo: ${error}',
@@ -1763,10 +1759,10 @@ extension on TranslationsEs {
 			'hubDetail.releaseYear' => 'Año de lanzamiento',
 			'hubDetail.dateAdded' => 'Añadido el',
 			'hubDetail.rating' => 'Calificación',
-			_ => null,
-		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'No se encontraron elementos',
 			'logs.clearLogs' => 'Borrar Logs',
+			_ => null,
+		} ?? switch (path) {
 			'logs.copyLogs' => 'Copiar Logs',
 			'logs.error' => 'Error:',
 			'logs.stackTrace' => 'Traza de la pila (Stack Trace):',

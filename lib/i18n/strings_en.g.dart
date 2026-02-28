@@ -943,9 +943,6 @@ class TranslationsMediaMenuEn {
 	/// en: 'Mark as Unwatched'
 	String get markAsUnwatched => 'Mark as Unwatched';
 
-	/// en: 'Remove from Continue'
-	String get removeFromContinueWatching => 'Remove from Continue';
-
 	/// en: 'Go to series'
 	String get goToSeries => 'Go to series';
 
@@ -1226,9 +1223,6 @@ class TranslationsMessagesEn {
 
 	/// en: 'Marked as unwatched (will sync when online)'
 	String get markedAsUnwatchedOffline => 'Marked as unwatched (will sync when online)';
-
-	/// en: 'Removed from Continue Watching'
-	String get removedFromContinueWatching => 'Removed from Continue Watching';
 
 	/// en: 'Error: ${error}'
 	String errorLoading({required Object error}) => 'Error: ${error}';
@@ -3080,7 +3074,6 @@ extension on Translations {
 			'fileInfo.has64bitOffsets' => '64-bit Offsets',
 			'mediaMenu.markAsWatched' => 'Mark as Watched',
 			'mediaMenu.markAsUnwatched' => 'Mark as Unwatched',
-			'mediaMenu.removeFromContinueWatching' => 'Remove from Continue',
 			'mediaMenu.goToSeries' => 'Go to series',
 			'mediaMenu.goToSeason' => 'Go to season',
 			'mediaMenu.shufflePlay' => 'Shuffle Play',
@@ -3164,7 +3157,6 @@ extension on Translations {
 			'messages.markedAsUnwatched' => 'Marked as unwatched',
 			'messages.markedAsWatchedOffline' => 'Marked as watched (will sync when online)',
 			'messages.markedAsUnwatchedOffline' => 'Marked as unwatched (will sync when online)',
-			'messages.removedFromContinueWatching' => 'Removed from Continue Watching',
 			'messages.errorLoading' => ({required Object error}) => 'Error: ${error}',
 			'messages.fileInfoNotAvailable' => 'File information not available',
 			'messages.errorLoadingFileInfo' => ({required Object error}) => 'Error loading file info: ${error}',
@@ -3318,10 +3310,10 @@ extension on Translations {
 			'hubDetail.releaseYear' => 'Release Year',
 			'hubDetail.dateAdded' => 'Date Added',
 			'hubDetail.rating' => 'Rating',
-			_ => null,
-		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'No items found',
 			'logs.clearLogs' => 'Clear Logs',
+			_ => null,
+		} ?? switch (path) {
 			'logs.copyLogs' => 'Copy Logs',
 			'logs.error' => 'Error:',
 			'logs.stackTrace' => 'Stack Trace:',

@@ -428,7 +428,6 @@ class _TranslationsMediaMenuZh implements TranslationsMediaMenuEn {
 	// Translations
 	@override String get markAsWatched => '标记为已观看';
 	@override String get markAsUnwatched => '标记为未观看';
-	@override String get removeFromContinueWatching => '从继续观看中移除';
 	@override String get goToSeries => '转到系列';
 	@override String get goToSeason => '转到季';
 	@override String get shufflePlay => '随机播放';
@@ -553,7 +552,6 @@ class _TranslationsMessagesZh implements TranslationsMessagesEn {
 	@override String get markedAsUnwatched => '已标记为未观看';
 	@override String get markedAsWatchedOffline => '已标记为已观看 (将在联网时同步)';
 	@override String get markedAsUnwatchedOffline => '已标记为未观看 (将在联网时同步)';
-	@override String get removedFromContinueWatching => '已从继续观看中移除';
 	@override String errorLoading({required Object error}) => '错误: ${error}';
 	@override String get fileInfoNotAvailable => '文件信息不可用';
 	@override String errorLoadingFileInfo({required Object error}) => '加载文件信息时出错: ${error}';
@@ -1525,7 +1523,6 @@ extension on TranslationsZh {
 			'fileInfo.has64bitOffsets' => '64位偏移量',
 			'mediaMenu.markAsWatched' => '标记为已观看',
 			'mediaMenu.markAsUnwatched' => '标记为未观看',
-			'mediaMenu.removeFromContinueWatching' => '从继续观看中移除',
 			'mediaMenu.goToSeries' => '转到系列',
 			'mediaMenu.goToSeason' => '转到季',
 			'mediaMenu.shufflePlay' => '随机播放',
@@ -1609,7 +1606,6 @@ extension on TranslationsZh {
 			'messages.markedAsUnwatched' => '已标记为未观看',
 			'messages.markedAsWatchedOffline' => '已标记为已观看 (将在联网时同步)',
 			'messages.markedAsUnwatchedOffline' => '已标记为未观看 (将在联网时同步)',
-			'messages.removedFromContinueWatching' => '已从继续观看中移除',
 			'messages.errorLoading' => ({required Object error}) => '错误: ${error}',
 			'messages.fileInfoNotAvailable' => '文件信息不可用',
 			'messages.errorLoadingFileInfo' => ({required Object error}) => '加载文件信息时出错: ${error}',
@@ -1763,10 +1759,10 @@ extension on TranslationsZh {
 			'hubDetail.releaseYear' => '发行年份',
 			'hubDetail.dateAdded' => '添加日期',
 			'hubDetail.rating' => '评分',
-			_ => null,
-		} ?? switch (path) {
 			'hubDetail.noItemsFound' => '未找到项目',
 			'logs.clearLogs' => '清除日志',
+			_ => null,
+		} ?? switch (path) {
 			'logs.copyLogs' => '复制日志',
 			'logs.error' => '错误:',
 			'logs.stackTrace' => '堆栈跟踪 (Stack Trace):',

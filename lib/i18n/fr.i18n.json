@@ -296,7 +296,6 @@
   "mediaMenu": {
     "markAsWatched": "Marquer comme vu",
     "markAsUnwatched": "Marquer comme non visionné",
-    "removeFromContinueWatching": "Supprimer de la liste \"Continuer à regarder\"",
     "goToSeries": "Aller à la série",
     "goToSeason": "Aller à la saison",
     "shufflePlay": "Lecture aléatoire",
@@ -392,7 +391,6 @@
     "markedAsUnwatched": "Marqué comme non vu",
     "markedAsWatchedOffline": "Marqué comme vu (se synchronisera lorsque vous serez en ligne)",
     "markedAsUnwatchedOffline": "Marqué comme non vu (sera synchronisé lorsque vous serez en ligne)",
-    "removedFromContinueWatching": "Supprimer de \"Continuer à regarder\"",
     "errorLoading": "Erreur: ${error}",
     "fileInfoNotAvailable": "Informations sur le fichier non disponibles",
     "errorLoadingFileInfo": "Erreur lors du chargement des informations sur le fichier: ${error}",

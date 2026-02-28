@@ -206,7 +206,6 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<Hub, LibraryRecomm
           icon: _getHubIcon(hub),
           isInContinueWatching: isContinueWatching,
           onRefresh: updateItem,
-          onRemoveFromContinueWatching: isContinueWatching ? _refreshContinueWatching : null,
           onVerticalNavigation: (isUp) => _handleVerticalNavigation(index, isUp),
           onBack: widget.onBack,
           onNavigateUp: index == 0 ? widget.onBack : null,
@@ -214,12 +213,6 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<Hub, LibraryRecomm
         );
       },
     );
-  }
-
-  /// Refresh the Continue Watching section
-  void _refreshContinueWatching() {
-    // Reload all data to refresh the continue watching section
-    loadItems();
   }
 
   IconData _getHubIcon(Hub hub) {

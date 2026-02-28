@@ -1124,7 +1124,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         ),
                         icon: Symbols.play_circle_rounded,
                         onRefresh: updateItem,
-                        onRemoveFromContinueWatching: _refreshContinueWatching,
                         isInContinueWatching: true,
                         onVerticalNavigation: (isUp) => _handleVerticalNavigation(0, isUp),
                         onNavigateUp: _focusTopBoundary,

@@ -428,7 +428,6 @@ class _TranslationsMediaMenuFr implements TranslationsMediaMenuEn {
 	// Translations
 	@override String get markAsWatched => 'Marquer comme vu';
 	@override String get markAsUnwatched => 'Marquer comme non visionné';
-	@override String get removeFromContinueWatching => 'Supprimer de la liste "Continuer à regarder"';
 	@override String get goToSeries => 'Aller à la série';
 	@override String get goToSeason => 'Aller à la saison';
 	@override String get shufflePlay => 'Lecture aléatoire';
@@ -553,7 +552,6 @@ class _TranslationsMessagesFr implements TranslationsMessagesEn {
 	@override String get markedAsUnwatched => 'Marqué comme non vu';
 	@override String get markedAsWatchedOffline => 'Marqué comme vu (se synchronisera lorsque vous serez en ligne)';
 	@override String get markedAsUnwatchedOffline => 'Marqué comme non vu (sera synchronisé lorsque vous serez en ligne)';
-	@override String get removedFromContinueWatching => 'Supprimer de "Continuer à regarder"';
 	@override String errorLoading({required Object error}) => 'Erreur: ${error}';
 	@override String get fileInfoNotAvailable => 'Informations sur le fichier non disponibles';
 	@override String errorLoadingFileInfo({required Object error}) => 'Erreur lors du chargement des informations sur le fichier: ${error}';
@@ -1525,7 +1523,6 @@ extension on TranslationsFr {
 			'fileInfo.has64bitOffsets' => 'Décalages 64 bits',
 			'mediaMenu.markAsWatched' => 'Marquer comme vu',
 			'mediaMenu.markAsUnwatched' => 'Marquer comme non visionné',
-			'mediaMenu.removeFromContinueWatching' => 'Supprimer de la liste "Continuer à regarder"',
 			'mediaMenu.goToSeries' => 'Aller à la série',
 			'mediaMenu.goToSeason' => 'Aller à la saison',
 			'mediaMenu.shufflePlay' => 'Lecture aléatoire',
@@ -1609,7 +1606,6 @@ extension on TranslationsFr {
 			'messages.markedAsUnwatched' => 'Marqué comme non vu',
 			'messages.markedAsWatchedOffline' => 'Marqué comme vu (se synchronisera lorsque vous serez en ligne)',
 			'messages.markedAsUnwatchedOffline' => 'Marqué comme non vu (sera synchronisé lorsque vous serez en ligne)',
-			'messages.removedFromContinueWatching' => 'Supprimer de "Continuer à regarder"',
 			'messages.errorLoading' => ({required Object error}) => 'Erreur: ${error}',
 			'messages.fileInfoNotAvailable' => 'Informations sur le fichier non disponibles',
 			'messages.errorLoadingFileInfo' => ({required Object error}) => 'Erreur lors du chargement des informations sur le fichier: ${error}',
@@ -1763,10 +1759,10 @@ extension on TranslationsFr {
 			'hubDetail.releaseYear' => 'Année de sortie',
 			'hubDetail.dateAdded' => 'Date d\'ajout',
 			'hubDetail.rating' => 'Évaluation',
-			_ => null,
-		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Aucun élément trouvé',
 			'logs.clearLogs' => 'Effacer les logs',
+			_ => null,
+		} ?? switch (path) {
 			'logs.copyLogs' => 'Copier les logs',
 			'logs.error' => 'Erreur:',
 			'logs.stackTrace' => 'Liste des appels:',

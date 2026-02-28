@@ -36,7 +36,6 @@ This document lists feature gaps between Finzy and Jellyfin (web + API). It serv
 - **Live stream open:** `POST /LiveStreams/Open` when required
 - **Progress reporting:** `POST /Sessions/Playing/Progress`, `/Sessions/Playing/Stopped`
 - **Mark watched/unwatched:** `POST /Users/{userId}/PlayedItems/{id}`, `DELETE`
-- **Hide from resume:** `POST /Users/{userId}/Items/{id}/HideFromResume`
 - **User rating:** `POST /Users/{userId}/Items/{id}/Rating`
 - **Delete item:** `DELETE /Items/{itemId}` (when user has permission)
 - **Resume / continue watching:** `GET /Users/{userId}/Items/Resume`

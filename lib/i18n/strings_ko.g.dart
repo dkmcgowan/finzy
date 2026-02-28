@@ -428,7 +428,6 @@ class _TranslationsMediaMenuKo implements TranslationsMediaMenuEn {
 	// Translations
 	@override String get markAsWatched => '시청 완료로 표시';
 	@override String get markAsUnwatched => '시청 안 함으로 표시';
-	@override String get removeFromContinueWatching => '계속 보기에서 제거';
 	@override String get goToSeries => '시리즈로 이동';
 	@override String get goToSeason => '시즌으로 이동';
 	@override String get shufflePlay => '무작위 재생';
@@ -553,7 +552,6 @@ class _TranslationsMessagesKo implements TranslationsMessagesEn {
 	@override String get markedAsUnwatched => '시청 안 함으로 표시됨';
 	@override String get markedAsWatchedOffline => '시청 완료로 표시됨 (연결 시 동기화됨)';
 	@override String get markedAsUnwatchedOffline => '미시청으로 표시됨 (연결 시 동기화됨)';
-	@override String get removedFromContinueWatching => '계속 시청 목록에서 제거됨';
 	@override String errorLoading({required Object error}) => '오류: ${error}';
 	@override String get fileInfoNotAvailable => '파일 정보가 없습니다';
 	@override String errorLoadingFileInfo({required Object error}) => '파일 정보 로딩 중 오류: ${error}';
@@ -1525,7 +1523,6 @@ extension on TranslationsKo {
 			'fileInfo.has64bitOffsets' => '64비트 오프셋',
 			'mediaMenu.markAsWatched' => '시청 완료로 표시',
 			'mediaMenu.markAsUnwatched' => '시청 안 함으로 표시',
-			'mediaMenu.removeFromContinueWatching' => '계속 보기에서 제거',
 			'mediaMenu.goToSeries' => '시리즈로 이동',
 			'mediaMenu.goToSeason' => '시즌으로 이동',
 			'mediaMenu.shufflePlay' => '무작위 재생',
@@ -1609,7 +1606,6 @@ extension on TranslationsKo {
 			'messages.markedAsUnwatched' => '시청 안 함으로 표시됨',
 			'messages.markedAsWatchedOffline' => '시청 완료로 표시됨 (연결 시 동기화됨)',
 			'messages.markedAsUnwatchedOffline' => '미시청으로 표시됨 (연결 시 동기화됨)',
-			'messages.removedFromContinueWatching' => '계속 시청 목록에서 제거됨',
 			'messages.errorLoading' => ({required Object error}) => '오류: ${error}',
 			'messages.fileInfoNotAvailable' => '파일 정보가 없습니다',
 			'messages.errorLoadingFileInfo' => ({required Object error}) => '파일 정보 로딩 중 오류: ${error}',
@@ -1763,10 +1759,10 @@ extension on TranslationsKo {
 			'hubDetail.releaseYear' => '출시 연도',
 			'hubDetail.dateAdded' => '추가 날짜',
 			'hubDetail.rating' => '평점',
-			_ => null,
-		} ?? switch (path) {
 			'hubDetail.noItemsFound' => '항목이 없습니다',
 			'logs.clearLogs' => '로그 지우기',
+			_ => null,
+		} ?? switch (path) {
 			'logs.copyLogs' => '로그 복사',
 			'logs.error' => '오류:',
 			'logs.stackTrace' => '스택 추적 (Stack Trace):',

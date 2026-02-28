@@ -296,7 +296,6 @@
   "mediaMenu": {
     "markAsWatched": "Markera som sedd",
     "markAsUnwatched": "Markera som osedd",
-    "removeFromContinueWatching": "Ta bort från Fortsätt titta",
     "goToSeries": "Gå till serie",
     "goToSeason": "Gå till säsong",
     "shufflePlay": "Blanda uppspelning",
@@ -392,7 +391,6 @@
     "markedAsUnwatched": "Markerad som osedd",
     "markedAsWatchedOffline": "Markerad som sedd (synkroniseras när online)",
     "markedAsUnwatchedOffline": "Markerad som osedd (synkroniseras när online)",
-    "removedFromContinueWatching": "Borttagen från Fortsätt titta",
     "errorLoading": "Fel: ${error}",
     "fileInfoNotAvailable": "Filinformation inte tillgänglig",
     "errorLoadingFileInfo": "Fel vid laddning av filinformation: ${error}",

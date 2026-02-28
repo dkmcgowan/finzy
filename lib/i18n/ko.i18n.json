@@ -296,7 +296,6 @@
   "mediaMenu": {
     "markAsWatched": "시청 완료로 표시",
     "markAsUnwatched": "시청 안 함으로 표시",
-    "removeFromContinueWatching": "계속 보기에서 제거",
     "goToSeries": "시리즈로 이동",
     "goToSeason": "시즌으로 이동",
     "shufflePlay": "무작위 재생",
@@ -392,7 +391,6 @@
     "markedAsUnwatched": "시청 안 함으로 표시됨",
     "markedAsWatchedOffline": "시청 완료로 표시됨 (연결 시 동기화됨)",
     "markedAsUnwatchedOffline": "미시청으로 표시됨 (연결 시 동기화됨)",
-    "removedFromContinueWatching": "계속 시청 목록에서 제거됨",
     "errorLoading": "오류: ${error}",
     "fileInfoNotAvailable": "파일 정보가 없습니다",
     "errorLoadingFileInfo": "파일 정보 로딩 중 오류: ${error}",

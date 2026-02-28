@@ -42,22 +42,18 @@ class _MenuAction {
 class MediaContextMenu extends StatefulWidget {
   final dynamic item; // Can be MediaMetadata or Playlist
   final void Function(String itemId)? onRefresh;
-  final VoidCallback? onRemoveFromContinueWatching;
   final VoidCallback? onListRefresh; // For refreshing list after deletion
   final VoidCallback? onTap;
   final Widget child;
-  final bool isInContinueWatching;
   final String? collectionId; // The collection ID if displaying within a collection
 
   const MediaContextMenu({
     super.key,
     required this.item,
     this.onRefresh,
-    this.onRemoveFromContinueWatching,
     this.onListRefresh,
     this.onTap,
     required this.child,
-    this.isInContinueWatching = false,
     this.collectionId,
   });
 
@@ -175,17 +171,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
             value: 'unwatch',
             icon: Symbols.remove_circle_outline_rounded,
             label: t.mediaMenu.markAsUnwatched,
-          ),
-        );
-      }
-
-      // Remove from Continue Watching (only in continue watching section)
-      if (widget.isInContinueWatching) {
-        menuActions.add(
-          _MenuAction(
-            value: 'remove_from_continue_watching',
-            icon: Symbols.close_rounded,
-            label: t.mediaMenu.removeFromContinueWatching,
           ),
         );
       }
@@ -359,29 +344,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
             );
           }
           break;
-
-        case 'remove_from_continue_watching':
-          // Remove from Continue Watching without affecting watch status or progress
-          // This preserves the progression for partially watched items
-          // and doesn't mark unwatched next episodes as watched
-          try {
-            await client.hideFromResume(metadata!.itemId);
-            if (context.mounted) {
-              showSuccessSnackBar(context, t.messages.removedFromContinueWatching);
-              // Use specific callback if provided, otherwise fallback to onRefresh
-              if (widget.onRemoveFromContinueWatching != null) {
-                widget.onRemoveFromContinueWatching!();
-              } else {
-                widget.onRefresh?.call(metadata.itemId);
-              }
-            }
-          } catch (e) {
-            if (context.mounted) {
-              showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
-            }
-          }
-          break;
-
 
         case 'remove_from_collection':
           await _handleRemoveFromCollection(context, metadata!);

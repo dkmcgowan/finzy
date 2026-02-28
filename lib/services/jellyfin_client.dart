@@ -1161,13 +1161,6 @@ class JellyfinClient {
     );
   }
 
-  Future<void> hideFromResume(String itemId) async {
-    if (_offlineMode) return;
-    await _dio.post('/Users/${config.userId}/Items/$itemId/HideFromResume', queryParameters: {
-      'Hide': 'true',
-    });
-  }
-
   /// Authorize a Quick Connect code from another device.
   /// The current authenticated user approves the code so the other device can sign in.
   Future<bool> authorizeQuickConnect(String code) async {

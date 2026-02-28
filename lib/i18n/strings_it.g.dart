@@ -428,7 +428,6 @@ class _TranslationsMediaMenuIt implements TranslationsMediaMenuEn {
 	// Translations
 	@override String get markAsWatched => 'Segna come visto';
 	@override String get markAsUnwatched => 'Segna come non visto';
-	@override String get removeFromContinueWatching => 'Rimuovi da Continua a guardare';
 	@override String get goToSeries => 'Vai alle serie';
 	@override String get goToSeason => 'Vai alla stagione';
 	@override String get shufflePlay => 'Riproduzione casuale';
@@ -553,7 +552,6 @@ class _TranslationsMessagesIt implements TranslationsMessagesEn {
 	@override String get markedAsUnwatched => 'Segna come non visto';
 	@override String get markedAsWatchedOffline => 'Segnato come visto (sincronizzato online)';
 	@override String get markedAsUnwatchedOffline => 'Segnato come non visto (sincronizzato online)';
-	@override String get removedFromContinueWatching => 'Rimosso da Continua a guardare';
 	@override String errorLoading({required Object error}) => 'Errore: ${error}';
 	@override String get fileInfoNotAvailable => 'Informazioni sul file non disponibili';
 	@override String errorLoadingFileInfo({required Object error}) => 'Errore caricamento informazioni sul file: ${error}';
@@ -1525,7 +1523,6 @@ extension on TranslationsIt {
 			'fileInfo.has64bitOffsets' => 'Offset a 64-bit',
 			'mediaMenu.markAsWatched' => 'Segna come visto',
 			'mediaMenu.markAsUnwatched' => 'Segna come non visto',
-			'mediaMenu.removeFromContinueWatching' => 'Rimuovi da Continua a guardare',
 			'mediaMenu.goToSeries' => 'Vai alle serie',
 			'mediaMenu.goToSeason' => 'Vai alla stagione',
 			'mediaMenu.shufflePlay' => 'Riproduzione casuale',
@@ -1609,7 +1606,6 @@ extension on TranslationsIt {
 			'messages.markedAsUnwatched' => 'Segna come non visto',
 			'messages.markedAsWatchedOffline' => 'Segnato come visto (sincronizzato online)',
 			'messages.markedAsUnwatchedOffline' => 'Segnato come non visto (sincronizzato online)',
-			'messages.removedFromContinueWatching' => 'Rimosso da Continua a guardare',
 			'messages.errorLoading' => ({required Object error}) => 'Errore: ${error}',
 			'messages.fileInfoNotAvailable' => 'Informazioni sul file non disponibili',
 			'messages.errorLoadingFileInfo' => ({required Object error}) => 'Errore caricamento informazioni sul file: ${error}',
@@ -1763,10 +1759,10 @@ extension on TranslationsIt {
 			'hubDetail.releaseYear' => 'Anno rilascio',
 			'hubDetail.dateAdded' => 'Data aggiunta',
 			'hubDetail.rating' => 'Valutazione',
-			_ => null,
-		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Nessun elemento trovato',
 			'logs.clearLogs' => 'Cancella log',
+			_ => null,
+		} ?? switch (path) {
 			'logs.copyLogs' => 'Copia log',
 			'logs.error' => 'Errore:',
 			'logs.stackTrace' => 'Traccia dello stack:',

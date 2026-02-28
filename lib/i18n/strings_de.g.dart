@@ -428,7 +428,6 @@ class _TranslationsMediaMenuDe implements TranslationsMediaMenuEn {
 	// Translations
 	@override String get markAsWatched => 'Als gesehen markieren';
 	@override String get markAsUnwatched => 'Als ungesehen markieren';
-	@override String get removeFromContinueWatching => 'Aus ‚Weiterschauen‘ entfernen';
 	@override String get goToSeries => 'Zur Serie';
 	@override String get goToSeason => 'Zur Staffel';
 	@override String get shufflePlay => 'Zufallswiedergabe';
@@ -553,7 +552,6 @@ class _TranslationsMessagesDe implements TranslationsMessagesEn {
 	@override String get markedAsUnwatched => 'Als ungesehen markiert';
 	@override String get markedAsWatchedOffline => 'Als gesehen markiert (wird synchronisiert, wenn online)';
 	@override String get markedAsUnwatchedOffline => 'Als ungesehen markiert (wird synchronisiert, wenn online)';
-	@override String get removedFromContinueWatching => 'Aus ‚Weiterschauen\' entfernt';
 	@override String errorLoading({required Object error}) => 'Fehler: ${error}';
 	@override String get fileInfoNotAvailable => 'Dateiinfo nicht verfügbar';
 	@override String errorLoadingFileInfo({required Object error}) => 'Fehler beim Laden der Dateiinfo: ${error}';
@@ -1525,7 +1523,6 @@ extension on TranslationsDe {
 			'fileInfo.has64bitOffsets' => '64-Bit-Offsets',
 			'mediaMenu.markAsWatched' => 'Als gesehen markieren',
 			'mediaMenu.markAsUnwatched' => 'Als ungesehen markieren',
-			'mediaMenu.removeFromContinueWatching' => 'Aus ‚Weiterschauen‘ entfernen',
 			'mediaMenu.goToSeries' => 'Zur Serie',
 			'mediaMenu.goToSeason' => 'Zur Staffel',
 			'mediaMenu.shufflePlay' => 'Zufallswiedergabe',
@@ -1609,7 +1606,6 @@ extension on TranslationsDe {
 			'messages.markedAsUnwatched' => 'Als ungesehen markiert',
 			'messages.markedAsWatchedOffline' => 'Als gesehen markiert (wird synchronisiert, wenn online)',
 			'messages.markedAsUnwatchedOffline' => 'Als ungesehen markiert (wird synchronisiert, wenn online)',
-			'messages.removedFromContinueWatching' => 'Aus ‚Weiterschauen\' entfernt',
 			'messages.errorLoading' => ({required Object error}) => 'Fehler: ${error}',
 			'messages.fileInfoNotAvailable' => 'Dateiinfo nicht verfügbar',
 			'messages.errorLoadingFileInfo' => ({required Object error}) => 'Fehler beim Laden der Dateiinfo: ${error}',
@@ -1763,10 +1759,10 @@ extension on TranslationsDe {
 			'hubDetail.releaseYear' => 'Erscheinungsjahr',
 			'hubDetail.dateAdded' => 'Hinzugefügt am',
 			'hubDetail.rating' => 'Bewertung',
-			_ => null,
-		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Keine Elemente gefunden',
 			'logs.clearLogs' => 'Protokolle löschen',
+			_ => null,
+		} ?? switch (path) {
 			'logs.copyLogs' => 'Protokolle kopieren',
 			'logs.error' => 'Fehler:',
 			'logs.stackTrace' => 'Stacktrace:',

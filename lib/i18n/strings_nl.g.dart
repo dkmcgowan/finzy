@@ -428,7 +428,6 @@ class _TranslationsMediaMenuNl implements TranslationsMediaMenuEn {
 	// Translations
 	@override String get markAsWatched => 'Markeer als gekeken';
 	@override String get markAsUnwatched => 'Markeer als ongekeken';
-	@override String get removeFromContinueWatching => 'Verwijder uit Doorgaan met kijken';
 	@override String get goToSeries => 'Ga naar serie';
 	@override String get goToSeason => 'Ga naar seizoen';
 	@override String get shufflePlay => 'Willekeurig afspelen';
@@ -553,7 +552,6 @@ class _TranslationsMessagesNl implements TranslationsMessagesEn {
 	@override String get markedAsUnwatched => 'Gemarkeerd als ongekeken';
 	@override String get markedAsWatchedOffline => 'Gemarkeerd als gekeken (sync wanneer online)';
 	@override String get markedAsUnwatchedOffline => 'Gemarkeerd als ongekeken (sync wanneer online)';
-	@override String get removedFromContinueWatching => 'Verwijderd uit Doorgaan met kijken';
 	@override String errorLoading({required Object error}) => 'Fout: ${error}';
 	@override String get fileInfoNotAvailable => 'Bestand informatie niet beschikbaar';
 	@override String errorLoadingFileInfo({required Object error}) => 'Fout bij laden bestand info: ${error}';
@@ -1525,7 +1523,6 @@ extension on TranslationsNl {
 			'fileInfo.has64bitOffsets' => '64-bit Offsets',
 			'mediaMenu.markAsWatched' => 'Markeer als gekeken',
 			'mediaMenu.markAsUnwatched' => 'Markeer als ongekeken',
-			'mediaMenu.removeFromContinueWatching' => 'Verwijder uit Doorgaan met kijken',
 			'mediaMenu.goToSeries' => 'Ga naar serie',
 			'mediaMenu.goToSeason' => 'Ga naar seizoen',
 			'mediaMenu.shufflePlay' => 'Willekeurig afspelen',
@@ -1609,7 +1606,6 @@ extension on TranslationsNl {
 			'messages.markedAsUnwatched' => 'Gemarkeerd als ongekeken',
 			'messages.markedAsWatchedOffline' => 'Gemarkeerd als gekeken (sync wanneer online)',
 			'messages.markedAsUnwatchedOffline' => 'Gemarkeerd als ongekeken (sync wanneer online)',
-			'messages.removedFromContinueWatching' => 'Verwijderd uit Doorgaan met kijken',
 			'messages.errorLoading' => ({required Object error}) => 'Fout: ${error}',
 			'messages.fileInfoNotAvailable' => 'Bestand informatie niet beschikbaar',
 			'messages.errorLoadingFileInfo' => ({required Object error}) => 'Fout bij laden bestand info: ${error}',
@@ -1763,10 +1759,10 @@ extension on TranslationsNl {
 			'hubDetail.releaseYear' => 'Uitgavejaar',
 			'hubDetail.dateAdded' => 'Datum toegevoegd',
 			'hubDetail.rating' => 'Beoordeling',
-			_ => null,
-		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Geen items gevonden',
 			'logs.clearLogs' => 'Wis logs',
+			_ => null,
+		} ?? switch (path) {
 			'logs.copyLogs' => 'Kopieer logs',
 			'logs.error' => 'Fout:',
 			'logs.stackTrace' => 'Stacktracering:',

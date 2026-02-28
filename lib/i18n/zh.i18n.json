@@ -296,7 +296,6 @@
   "mediaMenu": {
     "markAsWatched": "标记为已观看",
     "markAsUnwatched": "标记为未观看",
-    "removeFromContinueWatching": "从继续观看中移除",
     "goToSeries": "转到系列",
     "goToSeason": "转到季",
     "shufflePlay": "随机播放",
@@ -392,7 +391,6 @@
     "markedAsUnwatched": "已标记为未观看",
     "markedAsWatchedOffline": "已标记为已观看 (将在联网时同步)",
     "markedAsUnwatchedOffline": "已标记为未观看 (将在联网时同步)",
-    "removedFromContinueWatching": "已从继续观看中移除",
     "errorLoading": "错误: ${error}",
     "fileInfoNotAvailable": "文件信息不可用",
     "errorLoadingFileInfo": "加载文件信息时出错: ${error}",

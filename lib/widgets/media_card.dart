@@ -25,7 +25,6 @@ class MediaCard extends StatefulWidget {
   final double? width;
   final double? height;
   final void Function(String itemId)? onRefresh;
-  final VoidCallback? onRemoveFromContinueWatching;
   final VoidCallback? onListRefresh; // Callback to refresh the entire parent list
   final bool forceGridMode;
   final bool isInContinueWatching;
@@ -42,7 +41,6 @@ class MediaCard extends StatefulWidget {
     this.width,
     this.height,
     this.onRefresh,
-    this.onRemoveFromContinueWatching,
     this.onListRefresh,
     this.forceGridMode = false,
     this.isInContinueWatching = false,
@@ -201,10 +199,8 @@ class MediaCardState extends State<MediaCard> {
       key: _contextMenuKey,
       item: widget.item,
       onRefresh: widget.onRefresh,
-      onRemoveFromContinueWatching: widget.onRemoveFromContinueWatching,
       onListRefresh: widget.onListRefresh,
       onTap: () => _handleTap(context),
-      isInContinueWatching: widget.isInContinueWatching,
       collectionId: widget.collectionId,
       child: cardWidget,
     );

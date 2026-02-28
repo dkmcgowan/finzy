@@ -428,7 +428,6 @@ class _TranslationsMediaMenuSv implements TranslationsMediaMenuEn {
 	// Translations
 	@override String get markAsWatched => 'Markera som sedd';
 	@override String get markAsUnwatched => 'Markera som osedd';
-	@override String get removeFromContinueWatching => 'Ta bort från Fortsätt titta';
 	@override String get goToSeries => 'Gå till serie';
 	@override String get goToSeason => 'Gå till säsong';
 	@override String get shufflePlay => 'Blanda uppspelning';
@@ -553,7 +552,6 @@ class _TranslationsMessagesSv implements TranslationsMessagesEn {
 	@override String get markedAsUnwatched => 'Markerad som osedd';
 	@override String get markedAsWatchedOffline => 'Markerad som sedd (synkroniseras när online)';
 	@override String get markedAsUnwatchedOffline => 'Markerad som osedd (synkroniseras när online)';
-	@override String get removedFromContinueWatching => 'Borttagen från Fortsätt titta';
 	@override String errorLoading({required Object error}) => 'Fel: ${error}';
 	@override String get fileInfoNotAvailable => 'Filinformation inte tillgänglig';
 	@override String errorLoadingFileInfo({required Object error}) => 'Fel vid laddning av filinformation: ${error}';
@@ -1525,7 +1523,6 @@ extension on TranslationsSv {
 			'fileInfo.has64bitOffsets' => '64-bit offset',
 			'mediaMenu.markAsWatched' => 'Markera som sedd',
 			'mediaMenu.markAsUnwatched' => 'Markera som osedd',
-			'mediaMenu.removeFromContinueWatching' => 'Ta bort från Fortsätt titta',
 			'mediaMenu.goToSeries' => 'Gå till serie',
 			'mediaMenu.goToSeason' => 'Gå till säsong',
 			'mediaMenu.shufflePlay' => 'Blanda uppspelning',
@@ -1609,7 +1606,6 @@ extension on TranslationsSv {
 			'messages.markedAsUnwatched' => 'Markerad som osedd',
 			'messages.markedAsWatchedOffline' => 'Markerad som sedd (synkroniseras när online)',
 			'messages.markedAsUnwatchedOffline' => 'Markerad som osedd (synkroniseras när online)',
-			'messages.removedFromContinueWatching' => 'Borttagen från Fortsätt titta',
 			'messages.errorLoading' => ({required Object error}) => 'Fel: ${error}',
 			'messages.fileInfoNotAvailable' => 'Filinformation inte tillgänglig',
 			'messages.errorLoadingFileInfo' => ({required Object error}) => 'Fel vid laddning av filinformation: ${error}',
@@ -1763,10 +1759,10 @@ extension on TranslationsSv {
 			'hubDetail.releaseYear' => 'Utgivningsår',
 			'hubDetail.dateAdded' => 'Datum tillagd',
 			'hubDetail.rating' => 'Betyg',
-			_ => null,
-		} ?? switch (path) {
 			'hubDetail.noItemsFound' => 'Inga objekt hittades',
 			'logs.clearLogs' => 'Rensa loggar',
+			_ => null,
+		} ?? switch (path) {
 			'logs.copyLogs' => 'Kopiera loggar',
 			'logs.error' => 'Fel:',
 			'logs.stackTrace' => 'Stack trace:',
