@@ -476,7 +476,9 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                   physics: const NeverScrollableScrollPhysics(),
                   buildDefaultDragHandles: false,
                   itemCount: allLibraries.length,
-                  onReorderItem: (oldIndex, newIndex) {
+                  // ignore: deprecated_member_use - onReorderItem not in CI's Flutter SDK yet
+                  onReorder: (oldIndex, newIndex) {
+                    if (newIndex > oldIndex) newIndex--;
                     final reordered = List<MediaLibrary>.from(allLibraries);
                     final item = reordered.removeAt(oldIndex);
                     reordered.insert(newIndex, item);
