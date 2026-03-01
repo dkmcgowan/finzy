@@ -11,7 +11,6 @@ import '../../../models/livetv_subscription.dart';
 import '../../../providers/multi_server_provider.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/snackbar_helper.dart';
-import '../../../widgets/app_icon.dart';
 
 class SeriesTimersTab extends StatefulWidget {
   final VoidCallback? onNavigateUp;

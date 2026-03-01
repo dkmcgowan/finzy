@@ -2333,9 +2333,15 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
 
   @override
   void dispose() {
-    for (final node in _centerFocusNodes) node.dispose();
-    for (final node in _reorderFocusNodes) node.dispose();
-    for (final node in _actionsFocusNodes) node.dispose();
+    for (final node in _centerFocusNodes) {
+      node.dispose();
+    }
+    for (final node in _reorderFocusNodes) {
+      node.dispose();
+    }
+    for (final node in _actionsFocusNodes) {
+      node.dispose();
+    }
     super.dispose();
   }
 

@@ -15,7 +15,6 @@ import '../../../providers/settings_provider.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/error_message_utils.dart';
 import '../../../utils/grid_size_calculator.dart';
-import '../../../utils/layout_constants.dart';
 import '../../../widgets/alpha_jump_bar.dart';
 import '../../../widgets/alpha_jump_helper.dart';
 import '../../../widgets/alpha_scroll_handle.dart';
@@ -145,8 +144,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   AlphaJumpHelper _alphaHelper = AlphaJumpHelper(const []);
   int _currentFirstVisibleIndex = 0;
   int _currentColumnCount = 1;
-  double _lastCrossAxisExtent = 0;
-  bool _useWideAspectRatio = false;
   double _effectiveTopPadding = _gridTopPadding;
   /// Measured chips bar height (platform-dependent); falls back to constant if not yet measured.
   double _measuredChipsBarHeight = 48.0;
@@ -694,9 +691,13 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     if (s.isEmpty) return '';
     // Strip "The ", "A ", "An " at start (case-insensitive) — matches how titles sort
     final lower = s.toLowerCase();
-    if (lower.startsWith('the ')) s = s.substring(4).trim();
-    else if (lower.startsWith('a ')) s = s.substring(2).trim();
-    else if (lower.startsWith('an ')) s = s.substring(3).trim();
+    if (lower.startsWith('the ')) {
+      s = s.substring(4).trim();
+    } else if (lower.startsWith('a ')) {
+      s = s.substring(2).trim();
+    } else if (lower.startsWith('an ')) {
+      s = s.substring(3).trim();
+    }
     return s;
   }
 
@@ -815,7 +816,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   /// Uses actual item scan — API firstCharacter indices don't match content order.
   /// Prefers row-start index so the leftmost visible item is the target letter.
   void _jumpToIndex(int targetIndex) {
-    final letter = _alphaHelper.currentLetter(targetIndex.clamp(0, items.length > 0 ? items.length - 1 : 0));
+    final letter = _alphaHelper.currentLetter(targetIndex.clamp(0, items.isNotEmpty ? items.length - 1 : 0));
     var indexToUse = _indexOfFirstItemWithLetterAtRowStart(letter) ?? _indexOfFirstItemWithLetter(letter);
 
     if (indexToUse == null && _hasMoreItems) {
@@ -823,18 +824,18 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
       _loadUntilLetterThenJump(letter);
       return;
     }
-    indexToUse ??= targetIndex.clamp(0, items.length > 0 ? items.length - 1 : 0);
+    final idx = indexToUse ?? targetIndex.clamp(0, items.isNotEmpty ? items.length - 1 : 0);
 
     _jumpScrollGeneration++;
     _isJumpScrolling = true;
     _hasJumpPin = true;
-    setState(() => _currentFirstVisibleIndex = indexToUse!);
+    setState(() => _currentFirstVisibleIndex = idx);
 
     void doJump() {
-      if (indexToUse! < items.length) {
-        _scrollToItemIndex(indexToUse!);
+      if (idx < items.length) {
+        _scrollToItemIndex(idx);
       } else {
-        _loadUntilIndex(indexToUse!);
+        _loadUntilIndex(idx);
       }
     }
 
@@ -1156,7 +1157,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
 
     if (settingsProvider.viewMode == ViewMode.list) {
       _gridLayout = null;
-      _lastCrossAxisExtent = 0;
       _currentColumnCount = 1;
       // In list view, all items are in a single column (first column)
       return SliverPadding(
@@ -1182,9 +1182,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
         sliver: SliverLayoutBuilder(
           builder: (context, constraints) {
             final columnCount = GridSizeCalculator.getColumnCount(constraints.crossAxisExtent, effectiveMaxExtent);
-            _lastCrossAxisExtent = constraints.crossAxisExtent;
             _currentColumnCount = columnCount;
-            _useWideAspectRatio = useWideRatio;
             final delegate = MediaGridDelegate.createDelegate(
               context: context,
               density: settingsProvider.libraryDensity,

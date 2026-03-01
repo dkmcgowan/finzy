@@ -1464,7 +1464,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                         ),
                         Consumer2<UserProfileProvider, JellyfinProfileProvider>(
                           builder: (context, userProvider, jellyfinProvider, child) {
-                            final showSwitch = jellyfinProvider.currentUser != null;
                             Widget avatar;
                             final jUser = jellyfinProvider.currentUser;
                             if (jUser != null) {
