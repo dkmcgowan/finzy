@@ -104,6 +104,7 @@ class _TranslationsAuthEs implements TranslationsAuthEn {
 	@override String get authTokenLabel => 'Token de autenticación';
 	@override String get authTokenHint => 'Ingresa tu token';
 	@override String get authenticationTimeout => 'Tiempo de autenticación agotado. Por favor, intenta de nuevo.';
+	@override String get sessionExpired => 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.';
 	@override String get scanQRToSignIn => 'Escanea este código QR para iniciar sesión';
 	@override String get waitingForAuth => 'Esperando autenticación...\nPor favor completa el inicio de sesión en tu navegador.';
 	@override String get useBrowser => 'Usar navegador';
@@ -848,6 +849,7 @@ class _TranslationsLiveTvEs implements TranslationsLiveTvEn {
 	@override String get cancelTimer => 'Cancel Recording';
 	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
 	@override String get timerCancelled => 'Recording cancelled';
+	@override String get editSeriesTimer => 'Editar';
 	@override String get deleteSeriesTimer => 'Delete Series Timer';
 	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
 	@override String get seriesTimerDeleted => 'Series timer deleted';
@@ -1262,6 +1264,7 @@ extension on TranslationsEs {
 			'auth.authTokenLabel' => 'Token de autenticación',
 			'auth.authTokenHint' => 'Ingresa tu token',
 			'auth.authenticationTimeout' => 'Tiempo de autenticación agotado. Por favor, intenta de nuevo.',
+			'auth.sessionExpired' => 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.',
 			'auth.scanQRToSignIn' => 'Escanea este código QR para iniciar sesión',
 			'auth.waitingForAuth' => 'Esperando autenticación...\nPor favor completa el inicio de sesión en tu navegador.',
 			'auth.useBrowser' => 'Usar navegador',
@@ -1760,9 +1763,9 @@ extension on TranslationsEs {
 			'hubDetail.dateAdded' => 'Añadido el',
 			'hubDetail.rating' => 'Calificación',
 			'hubDetail.noItemsFound' => 'No se encontraron elementos',
-			'logs.clearLogs' => 'Borrar Logs',
 			_ => null,
 		} ?? switch (path) {
+			'logs.clearLogs' => 'Borrar Logs',
 			'logs.copyLogs' => 'Copiar Logs',
 			'logs.error' => 'Error:',
 			'logs.stackTrace' => 'Traza de la pila (Stack Trace):',
@@ -1799,6 +1802,7 @@ extension on TranslationsEs {
 			'liveTv.cancelTimer' => 'Cancel Recording',
 			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
 			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.editSeriesTimer' => 'Editar',
 			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
 			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
 			'liveTv.seriesTimerDeleted' => 'Series timer deleted',

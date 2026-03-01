@@ -13,6 +13,8 @@ All icon **sources** live in **`assets/`**. Nothing else needs to be copied by h
 
 `pubspec.yaml` points at these three PNGs. **flutter_launcher_icons** reads them and generates the actual OS-specific icon files (Android `mipmap-*`, Windows, Linux, etc.) when you run it or build. You do **not** put icons into `android/.../res` or Windows/Linux icon folders by hand for the launcher.
 
+**Android TV** uses a separate banner (`@drawable/tv_banner`). This is *not* the same as the phone launcher icon. The script also generates `android/.../res/drawable-*/tv_banner.png` (16:9 banners) for the TV launcher.
+
 ---
 
 ## Regenerating the 3 PNGs from the SVG
@@ -54,6 +56,7 @@ So:
 
 - **App launcher icon** (and Windows/Linux icons) → from **assets/** via **flutter_launcher_icons** (using the 3 PNGs).
 - **Android notification icon** and **Android monochrome launcher** (optional, from SVG) → **generate_android_icons.sh** (needs Bash, rsvg-convert, ImageMagick; typically used on macOS/Linux).
+- **Android TV launcher banner** (`drawable-*/tv_banner.png`) → **generate_finzy_pngs.py** (same run as the 3 PNGs above).
 
 ---
 

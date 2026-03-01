@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
@@ -145,7 +146,12 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   int _currentFirstVisibleIndex = 0;
   int _currentColumnCount = 1;
   double _lastCrossAxisExtent = 0;
+  bool _useWideAspectRatio = false;
   double _effectiveTopPadding = _gridTopPadding;
+  /// Measured chips bar height (platform-dependent); falls back to constant if not yet measured.
+  double _measuredChipsBarHeight = 48.0;
+  /// Layout from the grid delegate — used for accurate scroll↔index mapping.
+  SliverGridLayout? _gridLayout;
   final FocusNode _alphaJumpBarFocusNode = FocusNode(debugLabel: 'alpha_jump_bar');
   // When the user taps a letter, pin the highlight so scroll-based recalculation
   // doesn't immediately override it (e.g. when the letter has fewer items than a full row).
@@ -175,6 +181,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   // Scroll controller for the CustomScrollView
   final ScrollController _scrollController = ScrollController();
 
+  final GlobalKey _chipsBarKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -185,6 +193,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   void dispose() {
     _cancelToken?.cancel();
     _scrollActivityTimer?.cancel();
+    _scrollLetterDebounce?.cancel();
     _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
     _groupingChipFocusNode.dispose();
@@ -669,11 +678,26 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   /// Whether the device is a phone (not tablet/desktop/TV).
   bool _isPhone(BuildContext context) => PlatformDetector.isPhone(context);
 
-  /// The letter currently visible at the top of the grid, determined by
-  /// how many items we've scrolled past relative to the API's cumulative
-  /// firstCharacter counts.
+  /// The letter currently visible at the top of the grid.
+  /// Uses the actual item's first char (stripping "The ", "A ", "An ") — matches sort order.
   String get _currentAlphaLetter {
-    return _alphaHelper.currentLetter(_currentFirstVisibleIndex);
+    if (_currentFirstVisibleIndex >= items.length || items.isEmpty) return '#';
+    final s = _sortKeyForAlpha(items[_currentFirstVisibleIndex]);
+    if (s.isEmpty) return '#';
+    final c = s[0].toUpperCase();
+    return RegExp(r'[A-Z]').hasMatch(c) ? c : '#';
+  }
+
+  /// First character key for alpha grouping — strips leading articles to match sort order.
+  static String _sortKeyForAlpha(MediaMetadata item) {
+    var s = (item.titleSort ?? item.title).trim();
+    if (s.isEmpty) return '';
+    // Strip "The ", "A ", "An " at start (case-insensitive) — matches how titles sort
+    final lower = s.toLowerCase();
+    if (lower.startsWith('the ')) s = s.substring(4).trim();
+    else if (lower.startsWith('a ')) s = s.substring(2).trim();
+    else if (lower.startsWith('an ')) s = s.substring(3).trim();
+    return s;
   }
 
   /// Whether the alpha jump bar should be shown.
@@ -690,9 +714,9 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   void _computeFirstCharactersFromItems() {
     final charCounts = <String, int>{};
     for (final item in items) {
-      final sortName = item.titleSort ?? item.title;
-      if (sortName.isEmpty) continue;
-      final firstChar = sortName[0].toUpperCase();
+      final sortKey = _sortKeyForAlpha(item);
+      if (sortKey.isEmpty) continue;
+      final firstChar = sortKey[0].toUpperCase();
       final key = RegExp(r'[A-Z]').hasMatch(firstChar) ? firstChar : '#';
       charCounts[key] = (charCounts[key] ?? 0) + 1;
     }
@@ -743,6 +767,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     }
   }
 
+  Timer? _scrollLetterDebounce;
+
   /// Track scroll position to highlight the current letter in the jump bar
   void _onScrollChanged() {
     if (!_shouldShowAlphaJumpBar || _currentColumnCount < 1) return;
@@ -757,91 +783,138 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
       _hasJumpPin = false;
     }
 
-    _updateVisibleIndex();
+    // Debounce to avoid random jumps during scroll (e.g. to letter T)
+    _scrollLetterDebounce?.cancel();
+    _scrollLetterDebounce = Timer(const Duration(milliseconds: 80), () {
+      if (mounted) _updateVisibleIndex();
+    });
   }
 
   /// Recompute the first-visible-index from the current scroll offset.
   void _updateVisibleIndex() {
     if (!_scrollController.hasClients || !_scrollController.position.hasContentDimensions) return;
     final offset = _scrollController.offset;
-    final firstInRow = _itemIndexFromScrollOffset(offset);
-    // Use the last item in the first visible row so the highlighted letter
-    // updates as soon as items with a new letter appear in that row.
-    final lastInRow = (firstInRow + _currentColumnCount - 1).clamp(0, items.length - 1);
-    if (lastInRow != _currentFirstVisibleIndex) {
-      setState(() => _currentFirstVisibleIndex = lastInRow);
+    final firstVisibleIndex = _itemIndexFromScrollOffset(offset);
+    if (firstVisibleIndex != _currentFirstVisibleIndex) {
+      setState(() => _currentFirstVisibleIndex = firstVisibleIndex);
     }
   }
 
   /// Compute the first visible item index from a scroll offset.
-  /// The visible area starts below the chips bar, so we offset accordingly.
+  /// Grid scroll offset = viewport offset - top padding.
   int _itemIndexFromScrollOffset(double offset) {
-    if (_lastCrossAxisExtent <= 0 || _currentColumnCount < 1) return 0;
+    final layout = _gridLayout;
+    if (layout == null || items.isEmpty) return 0;
 
-    final itemWidth = _lastCrossAxisExtent / _currentColumnCount;
-    final itemHeight = itemWidth / GridLayoutConstants.posterAspectRatio;
-    final rowHeight = itemHeight + GridLayoutConstants.mainAxisSpacing;
-    if (rowHeight <= 0) return 0;
-
-    // The visible area starts at _chipsBarHeight from the viewport top.
-    // Grid content starts at _effectiveTopPadding in scroll coordinates.
-    // First visible row = (offset + chipsBarHeight - effectiveTopPadding) / rowHeight
-    final contentOffset = (offset + _chipsBarHeight - _effectiveTopPadding).clamp(0.0, double.infinity);
-    final row = (contentOffset / rowHeight).floor();
-    return (row * _currentColumnCount).clamp(0, items.length - 1);
+    final gridScrollOffset = (offset - _effectiveTopPadding).clamp(0.0, double.infinity);
+    final index = layout.getMinChildIndexForScrollOffset(gridScrollOffset);
+    return index.clamp(0, items.length - 1);
   }
 
   /// Scroll to the item at [targetIndex], loading more pages if necessary.
-  /// The target index is a cumulative offset from the API's firstCharacter
-  /// counts — the same model used by [_currentAlphaLetter] so highlight
-  /// and jump always agree.
+  /// Uses actual item scan — API firstCharacter indices don't match content order.
+  /// Prefers row-start index so the leftmost visible item is the target letter.
   void _jumpToIndex(int targetIndex) {
+    final letter = _alphaHelper.currentLetter(targetIndex.clamp(0, items.length > 0 ? items.length - 1 : 0));
+    var indexToUse = _indexOfFirstItemWithLetterAtRowStart(letter) ?? _indexOfFirstItemWithLetter(letter);
+
+    if (indexToUse == null && _hasMoreItems) {
+      // Letter not in loaded range — load until we find it
+      _loadUntilLetterThenJump(letter);
+      return;
+    }
+    indexToUse ??= targetIndex.clamp(0, items.length > 0 ? items.length - 1 : 0);
+
     _jumpScrollGeneration++;
     _isJumpScrolling = true;
-
     _hasJumpPin = true;
-    setState(() => _currentFirstVisibleIndex = targetIndex);
+    setState(() => _currentFirstVisibleIndex = indexToUse!);
 
-    if (targetIndex < items.length) {
-      _scrollToItemIndex(targetIndex);
-    } else {
-      _loadUntilIndex(targetIndex);
+    void doJump() {
+      if (indexToUse! < items.length) {
+        _scrollToItemIndex(indexToUse!);
+      } else {
+        _loadUntilIndex(indexToUse!);
+      }
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) doJump();
+    });
   }
 
-  /// Scroll the grid so that [index] is visible just below the chips bar
+  /// Find the first item index whose sort key starts with [letter].
+  int? _indexOfFirstItemWithLetter(String letter) {
+    if (items.isEmpty) return null;
+    for (var i = 0; i < items.length; i++) {
+      final s = _sortKeyForAlpha(items[i]);
+      if (s.isEmpty) continue;
+      final c = s[0].toUpperCase();
+      final key = RegExp(r'[A-Z]').hasMatch(c) ? c : '#';
+      if (key == letter) return i;
+    }
+    return null;
+  }
+
+  /// Find the first item with [letter] that starts a row (leftmost visible).
+  /// Prefer this so the user sees the target letter, not a previous letter in the same row.
+  int? _indexOfFirstItemWithLetterAtRowStart(String letter) {
+    if (items.isEmpty || _currentColumnCount < 1) return null;
+    for (var i = 0; i < items.length; i++) {
+      if (i % _currentColumnCount != 0) continue;
+      final s = _sortKeyForAlpha(items[i]);
+      if (s.isEmpty) continue;
+      final c = s[0].toUpperCase();
+      final key = RegExp(r'[A-Z]').hasMatch(c) ? c : '#';
+      if (key == letter) return i;
+    }
+    return null;
+  }
+
+  /// Load pages until we find an item with [letter], then scroll to it.
+  Future<void> _loadUntilLetterThenJump(String letter) async {
+    _jumpScrollGeneration++;
+    _isJumpScrolling = true;
+    _hasJumpPin = true;
+
+    while (_hasMoreItems && mounted) {
+      await _loadItems(loadMore: true);
+      final idx = _indexOfFirstItemWithLetterAtRowStart(letter) ?? _indexOfFirstItemWithLetter(letter);
+      if (idx != null) {
+        setState(() => _currentFirstVisibleIndex = idx);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _scrollToItemIndex(idx);
+        });
+        return;
+      }
+    }
+    if (mounted) _isJumpScrolling = false;
+  }
+
+  /// Scroll the grid so that [index] is visible just below the chips bar.
+  /// Uses the grid delegate's layout for accuracy.
   void _scrollToItemIndex(int index) {
-    if (_currentColumnCount < 1 || _lastCrossAxisExtent <= 0 ||
-        !_scrollController.hasClients || !_scrollController.position.hasContentDimensions) {
+    final layout = _gridLayout;
+    if (layout == null ||
+        !_scrollController.hasClients ||
+        !_scrollController.position.hasContentDimensions) {
       _isJumpScrolling = false;
       return;
     }
 
-    final itemWidth = _lastCrossAxisExtent / _currentColumnCount;
-    final itemHeight = itemWidth / GridLayoutConstants.posterAspectRatio;
-    final rowHeight = itemHeight + GridLayoutConstants.mainAxisSpacing;
-    final targetRow = index ~/ _currentColumnCount;
-    // Position the target row right below the chips bar
-    final offset = _effectiveTopPadding + targetRow * rowHeight - _chipsBarHeight;
+    final geometry = layout.getGeometryForChildIndex(index);
+    // Put item at top of viewport: offset = topPadding + gridScrollOffset
+    // To place below chips bar: subtract chipsBarHeight so item appears at viewport Y = chipsBarHeight
+    final offset = _effectiveTopPadding + geometry.scrollOffset - _measuredChipsBarHeight;
 
     final gen = _jumpScrollGeneration;
     final clampedOffset = offset.clamp(0.0, _scrollController.position.maxScrollExtent);
 
-    // If a newer jump already superseded this one, skip the animation
-    // entirely — the next call will handle the final position.
-    if (gen != _jumpScrollGeneration) {
-      _scrollController.jumpTo(clampedOffset);
-      return;
-    }
-
-    _scrollController
-        .animateTo(clampedOffset, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut)
-        .then((_) {
-          // Only clear the flag if no newer jump has started.
-          if (mounted && gen == _jumpScrollGeneration) {
-            _isJumpScrolling = false;
-          }
-        });
+    _scrollController.animateTo(clampedOffset, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut).then((_) {
+      if (mounted && gen == _jumpScrollGeneration) {
+        _isJumpScrolling = false;
+      }
+    });
   }
 
   /// Load pages until [targetIndex] is loaded, then scroll to it
@@ -863,12 +936,32 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
         children: [
           // Grid fills the entire area, with top padding for chips bar
           Positioned.fill(child: _buildScrollableContent()),
-          // Chips bar on top with solid background
-          Positioned(top: 0, left: 0, right: 0, child: _buildChipsBar()),
+          // Chips bar on top with solid background (measure height for alpha jump scroll math)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Builder(
+              key: _chipsBarKey,
+              builder: (context) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  final box = context.findRenderObject() as RenderBox?;
+                  if (box != null && box.hasSize) {
+                    final h = box.size.height;
+                    if ((h - _measuredChipsBarHeight).abs() > 0.5) {
+                      setState(() => _measuredChipsBarHeight = h);
+                    }
+                  }
+                });
+                return _buildChipsBar();
+              },
+            ),
+          ),
           // Alpha jump bar / scroll handle on the right edge
           if (_shouldShowAlphaJumpBar)
             Positioned(
-              top: _chipsBarHeight,
+              top: _measuredChipsBarHeight,
               right: 0,
               bottom: 0,
               child: _isPhone(context)
@@ -1045,8 +1138,11 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   static const double _gridTopPadding = _chipsBarHeight + 12.0;
   static const double _gridTopPaddingPhone = _chipsBarHeight;
 
-  /// Width of the alpha jump bar widget
+  /// Width of the alpha jump bar widget (desktop/tablet/TV)
   static const double _alphaJumpBarWidth = 28.0;
+
+  /// Width reserved for alpha scroll handle on phone (touch target)
+  static const double _alphaScrollHandleWidth = 48.0;
 
   /// Builds either a sliver list or sliver grid based on the view mode
   Widget _buildItemsSliver(BuildContext context, SettingsProvider settingsProvider) {
@@ -1054,9 +1150,14 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     final isPhone = _isPhone(context);
     final topPadding = isPhone ? _gridTopPaddingPhone : _gridTopPadding;
     _effectiveTopPadding = topPadding;
-    final rightPadding = _shouldShowAlphaJumpBar && !isPhone ? _alphaJumpBarWidth : 8.0;
+    final rightPadding = _shouldShowAlphaJumpBar
+        ? (isPhone ? _alphaScrollHandleWidth : _alphaJumpBarWidth)
+        : 8.0;
 
     if (settingsProvider.viewMode == ViewMode.list) {
+      _gridLayout = null;
+      _lastCrossAxisExtent = 0;
+      _currentColumnCount = 1;
       // In list view, all items are in a single column (first column)
       return SliverPadding(
         padding: EdgeInsets.fromLTRB(8, topPadding, rightPadding, 8),
@@ -1075,14 +1176,21 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
       final useWideRatio =
           _selectedGrouping == 'episodes' && settingsProvider.episodePosterMode == EpisodePosterMode.episodeThumbnail;
       final maxExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, settingsProvider.libraryDensity);
+      final effectiveMaxExtent = useWideRatio ? maxExtent * 1.8 : maxExtent;
       return SliverPadding(
         padding: EdgeInsets.fromLTRB(8, topPadding, rightPadding, 8),
         sliver: SliverLayoutBuilder(
           builder: (context, constraints) {
-            final columnCount = GridSizeCalculator.getColumnCount(constraints.crossAxisExtent, maxExtent);
-            // Cache grid metrics for alpha jump bar scroll calculations
+            final columnCount = GridSizeCalculator.getColumnCount(constraints.crossAxisExtent, effectiveMaxExtent);
             _lastCrossAxisExtent = constraints.crossAxisExtent;
             _currentColumnCount = columnCount;
+            _useWideAspectRatio = useWideRatio;
+            final delegate = MediaGridDelegate.createDelegate(
+              context: context,
+              density: settingsProvider.libraryDensity,
+              useWideAspectRatio: useWideRatio,
+            );
+            _gridLayout = delegate.getLayout(constraints);
             return SliverGrid.builder(
               gridDelegate: MediaGridDelegate.createDelegate(
                 context: context,

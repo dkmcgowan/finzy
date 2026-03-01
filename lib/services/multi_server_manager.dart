@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 
 import '../models/jellyfin_config.dart';
 import '../models/registered_server.dart';
@@ -27,6 +28,10 @@ class MultiServerManager {
 
   /// Connectivity subscription for network monitoring
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+
+  /// Periodic timer to retry reconnection when offline. connectivity_plus can miss
+  /// the "back online" event on Android, so we poll when we have offline servers.
+  Timer? _offlineReconnectTimer;
 
   /// Map of serverId to active reconnection futures
   final Map<String, Future<void>> _activeOptimizations = {};
@@ -145,6 +150,7 @@ class MultiServerManager {
 
     if (successCount > 0) {
       startNetworkMonitoring();
+      _startOfflineReconnectTimer();
     }
 
     return successCount;
@@ -198,7 +204,16 @@ class MultiServerManager {
     }
   }
 
-  /// Test connection health for all servers
+  /// Number of retries before marking a server offline. Transient failures (timeout,
+  /// connection reset) are common when app resumes on Android.
+  static const int _healthCheckRetries = 3;
+
+  /// Delay between health check retries.
+  static const Duration _healthCheckRetryDelay = Duration(milliseconds: 800);
+
+  /// Test connection health for all servers.
+  /// Retries transient failures before marking offline — a single timeout or
+  /// connection reset on app resume must not permanently break the app.
   Future<void> checkServerHealth() async {
     appLogger.d('Checking health for ${_clients.length} servers');
 
@@ -206,16 +221,36 @@ class MultiServerManager {
       final serverId = entry.key;
       final client = entry.value;
 
-      try {
-        await client.getServerIdentity();
-        updateServerStatus(serverId, true);
-      } catch (e) {
-        appLogger.w('Server $serverId health check failed: $e');
-        updateServerStatus(serverId, false);
+      Object? lastError;
+      for (var attempt = 0; attempt < _healthCheckRetries; attempt++) {
+        try {
+          await client.getServerIdentity();
+          updateServerStatus(serverId, true);
+          return;
+        } catch (e) {
+          lastError = e;
+          final is401 = _isAuthError(e);
+          if (is401) {
+            // 401 = auth failure, not reachability. Don't mark offline.
+            appLogger.w('Server $serverId returned 401 (auth), not marking offline');
+            return;
+          }
+          if (attempt < _healthCheckRetries - 1) {
+            appLogger.d('Server $serverId health check attempt ${attempt + 1} failed, retrying: $e');
+            await Future<void>.delayed(_healthCheckRetryDelay);
+          }
+        }
       }
+      appLogger.w('Server $serverId health check failed after $_healthCheckRetries attempts: $lastError');
+      updateServerStatus(serverId, false);
     });
 
     await Future.wait(healthChecks);
+  }
+
+  static bool _isAuthError(Object e) {
+    if (e is DioException && e.response?.statusCode == 401) return true;
+    return false;
   }
 
   /// Start monitoring network connectivity for all servers
@@ -244,8 +279,12 @@ class MultiServerManager {
           },
         );
 
-        _reoptimizeAllServers(reason: 'connectivity:${status.name}');
-        checkServerHealth();
+        // Brief delay so the new network is ready (Android can report connectivity
+        // before TCP is actually usable).
+        Future<void>.delayed(const Duration(seconds: 1), () {
+          _reoptimizeAllServers(reason: 'connectivity:${status.name}');
+          checkServerHealth();
+        });
       },
       onError: (error, stackTrace) {
         appLogger.w('Connectivity listener error', error: error, stackTrace: stackTrace);
@@ -257,7 +296,24 @@ class MultiServerManager {
   void stopNetworkMonitoring() {
     _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
+    _offlineReconnectTimer?.cancel();
+    _offlineReconnectTimer = null;
     appLogger.i('Stopped network monitoring');
+  }
+
+  /// Interval for periodic reconnect attempts when we have offline servers.
+  /// connectivity_plus can miss "back online" on Android, so we poll.
+  static const Duration _offlineReconnectInterval = Duration(seconds: 45);
+
+  void _startOfflineReconnectTimer() {
+    _offlineReconnectTimer?.cancel();
+    _offlineReconnectTimer = Timer.periodic(_offlineReconnectInterval, (_) {
+      final offline = offlineServerIds;
+      if (offline.isEmpty) return;
+      appLogger.d('Periodic reconnect: ${offline.length} offline server(s)');
+      checkServerHealth();
+      reconnectOfflineServers();
+    });
   }
 
   /// Reconnect offline servers; no-op for already online Jellyfin servers
@@ -327,6 +383,8 @@ class MultiServerManager {
   /// Disconnect all servers
   void disconnectAll() {
     appLogger.i('Disconnecting all servers');
+    _offlineReconnectTimer?.cancel();
+    _offlineReconnectTimer = null;
     stopNetworkMonitoring();
     _clients.clear();
     _servers.clear();

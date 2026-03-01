@@ -15,6 +15,7 @@
     "authTokenLabel": "Token d'authentification Jellyfin",
     "authTokenHint": "Entrez votre token",
     "authenticationTimeout": "Délai d'authentification expiré. Veuillez réessayer.",
+    "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
     "scanQRToSignIn": "Scannez ce QR code pour vous connecter",
     "waitingForAuth": "En attente d'authentification...\nVeuillez vous connecter dans votre navigateur.",
     "useBrowser": "Utiliser le navigateur"
@@ -612,6 +613,7 @@
     "cancelTimer": "Cancel Recording",
     "cancelTimerConfirm": "Are you sure you want to cancel this scheduled recording?",
     "timerCancelled": "Recording cancelled",
+    "editSeriesTimer": "Modifier",
     "deleteSeriesTimer": "Delete Series Timer",
     "deleteSeriesTimerConfirm": "Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.",
     "seriesTimerDeleted": "Series timer deleted",

@@ -21,6 +21,14 @@ import '../../../services/shader_service.dart';
 import '../helpers/track_filter_helper.dart';
 import '../video_control_button.dart';
 
+void _restoreFocusToTrackButton(List<FocusNode>? focusNodes, int index) {
+  if (focusNodes != null && focusNodes.length > index) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusNodes[index].requestFocus();
+    });
+  }
+}
+
 /// Row of track and chapter control buttons for the video player
 class TrackChapterControls extends StatelessWidget {
   final Player player;
@@ -224,6 +232,7 @@ class TrackChapterControls extends StatelessWidget {
                   ).whenComplete(() {
                     onStartAutoHide?.call();
                     onLoadSeekTimes?.call();
+                    _restoreFocusToTrackButton(focusNodes, 0);
                   });
                 },
               );
@@ -251,7 +260,10 @@ class TrackChapterControls extends StatelessWidget {
                     player: player,
                     onTrackChanged: onAudioTrackChanged,
                   ),
-                ).whenComplete(() => onStartAutoHide?.call());
+                ).whenComplete(() {
+                  onStartAutoHide?.call();
+                  _restoreFocusToTrackButton(focusNodes, currentIndex);
+                });
               },
             ),
           );
@@ -279,7 +291,10 @@ class TrackChapterControls extends StatelessWidget {
                     availableExternalSubtitles: availableExternalSubtitles,
                     onExternalSubtitleSelected: onExternalSubtitleSelected,
                   ),
-                ).whenComplete(() => onStartAutoHide?.call());
+                ).whenComplete(() {
+                  onStartAutoHide?.call();
+                  _restoreFocusToTrackButton(focusNodes, currentIndex);
+                });
               },
             ),
           );
@@ -307,7 +322,10 @@ class TrackChapterControls extends StatelessWidget {
                     chaptersLoaded: chaptersLoaded,
                     serverId: serverId,
                   ),
-                ).whenComplete(() => onStartAutoHide?.call());
+                ).whenComplete(() {
+                  onStartAutoHide?.call();
+                  _restoreFocusToTrackButton(focusNodes, currentIndex);
+                });
               },
             ),
           );
@@ -334,7 +352,10 @@ class TrackChapterControls extends StatelessWidget {
                     selectedMediaIndex: selectedMediaIndex,
                     onVersionSelected: onSwitchVersion!,
                   ),
-                ).whenComplete(() => onStartAutoHide?.call());
+                ).whenComplete(() {
+                  onStartAutoHide?.call();
+                  _restoreFocusToTrackButton(focusNodes, currentIndex);
+                });
               },
             ),
           );

@@ -3,6 +3,9 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../../../focus/focusable_wrapper.dart';
+import '../../../utils/platform_detector.dart';
+import '../../../widgets/app_icon.dart';
+import '../../../widgets/focusable_list_tile.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../models/livetv_subscription.dart';
 import '../../../providers/multi_server_provider.dart';
@@ -116,6 +119,45 @@ class SeriesTimersTabState extends State<SeriesTimersTab> {
     }
   }
 
+  void _showSeriesTimerContextMenu(LiveTvSubscription seriesTimer) {
+    showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                seriesTimer.title,
+                style: Theme.of(context).textTheme.titleMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            FocusableListTile(
+              leading: const AppIcon(Symbols.edit_rounded, fill: 1),
+              title: Text(t.liveTv.editSeriesTimer),
+              onTap: () => Navigator.pop(ctx, 'edit'),
+            ),
+            FocusableListTile(
+              leading: AppIcon(Symbols.delete_rounded, fill: 1, color: Theme.of(context).colorScheme.error),
+              title: Text(t.common.delete),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    ).then((value) {
+      if (!mounted) return;
+      if (value == 'edit') {
+        _editSeriesTimer(seriesTimer);
+      } else if (value == 'delete') {
+        _deleteSeriesTimer(seriesTimer);
+      }
+    });
+  }
+
   Future<void> _editSeriesTimer(LiveTvSubscription seriesTimer) async {
     final result = await showDialog<LiveTvSubscription?>(
       context: context,
@@ -168,12 +210,15 @@ class SeriesTimersTabState extends State<SeriesTimersTab> {
       itemCount: _seriesTimers.length,
       itemBuilder: (context, index) {
         final sub = _seriesTimers[index];
+        final isTV = PlatformDetector.isTV();
         return FocusableWrapper(
           focusNode: index == 0 ? _firstItemFocusNode : null,
           autofocus: index == 0,
           autoScroll: true,
           useComfortableZone: true,
           onSelect: () => _editSeriesTimer(sub),
+          enableLongPress: isTV,
+          onLongPress: isTV ? () => _showSeriesTimerContextMenu(sub) : null,
           onNavigateUp: index == 0 ? widget.onNavigateUp : null,
           onBack: widget.onBack,
           child: _buildSeriesTimerCard(sub, theme),
@@ -200,19 +245,21 @@ class SeriesTimersTabState extends State<SeriesTimersTab> {
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 )
               : null,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const AppIcon(Symbols.edit_rounded),
-                onPressed: () => _editSeriesTimer(seriesTimer),
-              ),
-              IconButton(
-                icon: AppIcon(Symbols.delete_rounded, color: theme.colorScheme.error),
-                onPressed: () => _deleteSeriesTimer(seriesTimer),
-              ),
-            ],
-          ),
+          trailing: PlatformDetector.isTV()
+              ? null
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const AppIcon(Symbols.edit_rounded),
+                      onPressed: () => _editSeriesTimer(seriesTimer),
+                    ),
+                    IconButton(
+                      icon: AppIcon(Symbols.delete_rounded, color: theme.colorScheme.error),
+                      onPressed: () => _deleteSeriesTimer(seriesTimer),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

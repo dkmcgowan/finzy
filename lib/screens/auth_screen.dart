@@ -13,11 +13,13 @@ import '../services/server_registry.dart';
 import '../services/storage_service.dart';
 import '../providers/multi_server_provider.dart';
 import '../providers/libraries_provider.dart';
+import '../services/auth_failure_service.dart';
 import '../services/offline_watch_sync_service.dart';
 import '../i18n/strings.g.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/app_logger.dart';
 import '../utils/platform_detector.dart';
+import '../focus/focusable_wrapper.dart';
 import 'main_screen.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -45,7 +47,14 @@ class _AuthScreenState extends State<AuthScreen> {
   final _jellyfinPasswordController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    AuthFailureService.isOnAuthOrSetupFlow = true;
+  }
+
+  @override
   void dispose() {
+    AuthFailureService.isOnAuthOrSetupFlow = false;
     _quickConnectPollTimer?.cancel();
     _jellyfinUrlController.dispose();
     _jellyfinUsernameController.dispose();
@@ -425,17 +434,28 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildJellyfinServerStep() {
+    final isTV = PlatformDetector.isTV();
+    final theme = Theme.of(context);
+    // On Android TV, use a more prominent focus/cursor so D-pad users can see where focus is
+    final decoration = InputDecoration(
+      labelText: t.auth.jellyfinServerUrl,
+      hintText: t.auth.jellyfinServerUrlHint,
+      border: const OutlineInputBorder(),
+      focusedBorder: isTV
+          ? OutlineInputBorder(
+              borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.5),
+            )
+          : null,
+    );
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextFormField(
           controller: _jellyfinUrlController,
-          decoration: InputDecoration(
-            labelText: t.auth.jellyfinServerUrl,
-            hintText: t.auth.jellyfinServerUrlHint,
-            border: const OutlineInputBorder(),
-          ),
+          decoration: decoration,
+          cursorColor: isTV ? theme.colorScheme.primary : null,
+          cursorWidth: isTV ? 2.5 : 2.0,
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.done,
           onFieldSubmitted: (_) => _jellyfinConnectToServer(),
@@ -487,11 +507,17 @@ class _AuthScreenState extends State<AuthScreen> {
           itemBuilder: (context, index) {
             final user = users[index];
             final imageUrl = user.primaryImageTag != null ? user.imageUrl(_jellyfinBaseUrl!) : null;
-            return _buildJellyfinUserCard(
+            final card = _buildJellyfinUserCard(
               label: user.name,
               imageUrl: imageUrl,
               onTap: () => _showJellyfinUserOptions(user),
             );
+            return isTV
+                ? FocusableWrapper(
+                    onSelect: () => _showJellyfinUserOptions(user),
+                    child: card,
+                  )
+                : card;
           },
         ),
         const SizedBox(height: 24),

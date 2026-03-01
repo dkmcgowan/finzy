@@ -6,7 +6,10 @@ import '../../../focus/focusable_wrapper.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../models/livetv_channel.dart';
 import '../../../providers/multi_server_provider.dart';
+import '../../../providers/settings_provider.dart';
+import '../../../services/settings_service.dart' show LibraryDensity;
 import '../../../theme/mono_tokens.dart';
+import '../../../utils/layout_constants.dart';
 import '../../../utils/live_tv_player_navigation.dart';
 import '../../../utils/provider_extensions.dart';
 import '../../../widgets/app_icon.dart';
@@ -63,30 +66,51 @@ class ChannelsTabState extends State<ChannelsTab> {
       return Center(child: Text(t.liveTv.noChannels));
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = _crossAxisCount(constraints.maxWidth);
+    return Consumer<SettingsProvider>(
+      builder: (context, settingsProvider, _) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Match Programs tab sizing and spacing
+            final screenWidth = constraints.maxWidth;
+            final densityScale = switch (settingsProvider.libraryDensity) {
+              LibraryDensity.compact => 0.8,
+              LibraryDensity.normal => 1.0,
+              LibraryDensity.comfortable => 1.15,
+            };
+            final baseWidth = ScreenBreakpoints.isLargeDesktop(screenWidth)
+                ? 220.0
+                : ScreenBreakpoints.isDesktop(screenWidth)
+                    ? 200.0
+                    : ScreenBreakpoints.isWideTablet(screenWidth)
+                        ? 190.0
+                        : 160.0;
+            final maxExtent = baseWidth * densityScale;
+            const spacing = 4.0; // Match Programs horizontal padding between cards
+            final availableWidth = constraints.maxWidth - 24;
+            final columnCount = ((availableWidth + spacing) / (maxExtent + spacing)).ceil().clamp(1, 100);
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(12),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.0,
-          ),
-          itemCount: widget.channels.length,
-          itemBuilder: (context, index) {
-            final channel = widget.channels[index];
-            return FocusableWrapper(
-              focusNode: index == 0 ? _firstItemFocusNode : null,
-              autofocus: index == 0,
-              autoScroll: true,
-              useComfortableZone: true,
-              onSelect: () => _tuneChannel(channel),
-              onNavigateUp: index < crossAxisCount ? widget.onNavigateUp : null,
-              onBack: widget.onBack,
-              child: _ChannelCard(channel: channel, onTap: () => _tuneChannel(channel)),
+            return GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: maxExtent,
+                childAspectRatio: GridLayoutConstants.posterAspectRatio,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+              ),
+              itemCount: widget.channels.length,
+              itemBuilder: (context, index) {
+                final channel = widget.channels[index];
+                return FocusableWrapper(
+                  focusNode: index == 0 ? _firstItemFocusNode : null,
+                  autofocus: index == 0,
+                  autoScroll: true,
+                  useComfortableZone: true,
+                  onSelect: () => _tuneChannel(channel),
+                  onNavigateUp: index < columnCount ? widget.onNavigateUp : null,
+                  onBack: widget.onBack,
+                  child: _ChannelCard(channel: channel, onTap: () => _tuneChannel(channel)),
+                );
+              },
             );
           },
         );
@@ -94,14 +118,6 @@ class ChannelsTabState extends State<ChannelsTab> {
     );
   }
 
-  int _crossAxisCount(double width) {
-    if (width >= 1400) return 8;
-    if (width >= 1100) return 7;
-    if (width >= 900) return 6;
-    if (width >= 700) return 5;
-    if (width >= 500) return 4;
-    return 3;
-  }
 }
 
 class _ChannelCard extends StatefulWidget {

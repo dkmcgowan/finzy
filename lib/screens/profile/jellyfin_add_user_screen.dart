@@ -18,6 +18,7 @@ import '../../services/server_registry.dart';
 import '../../services/storage_service.dart';
 import '../../theme/mono_tokens.dart';
 import '../../utils/platform_detector.dart';
+import '../../focus/focusable_wrapper.dart';
 import '../../i18n/strings.g.dart';
 
 /// Screen to add another Jellyfin user on the same server (from Switch profile).
@@ -491,11 +492,17 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                         itemBuilder: (context, index) {
                           final user = users[index];
                           final imageUrl = user.primaryImageTag != null ? user.imageUrl(_baseUrl) : null;
-                          return _buildUserCard(
+                          final card = _buildUserCard(
                             label: user.name,
                             imageUrl: imageUrl,
                             onTap: () => _showUserOptions(user),
                           );
+                          return isTV
+                              ? FocusableWrapper(
+                                  onSelect: () => _showUserOptions(user),
+                                  child: card,
+                                )
+                              : card;
                         },
                       ),
                       const SizedBox(height: 24),

@@ -266,6 +266,11 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       return;
     }
 
+    // Scroll to top so tab content (grid) is visible when focusing from app bar
+    if (_outerScrollController.hasClients && _outerScrollController.offset > 0) {
+      _outerScrollController.jumpTo(0);
+    }
+
     // Re-enable auto-focus since user is navigating into tab content
     // Only call setState if the value actually changes to avoid unnecessary rebuilds
     if (suppressAutoFocus) {
@@ -279,7 +284,12 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
       final tabState = _getTabState(tabController.index);
       if (tabState != null) {
-        (tabState as dynamic).focusFirstItem();
+        // Browse tab (index 0 when multiple tabs) has chips bar - focus that first
+        if (tabController.index == 0 && _effectiveTabCount > 1) {
+          (tabState as dynamic).focusChipsBar();
+        } else {
+          (tabState as dynamic).focusFirstItem();
+        }
       } else {
         // State not available yet, retry after another frame
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -676,9 +686,12 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     await storage.saveSelectedLibraryKey(libraryGlobalKey);
 
     final savedTabIndex = storage.getLibraryTab(libraryGlobalKey);
-    if (savedTabIndex != null && savedTabIndex >= 0 && savedTabIndex < newTabCount) {
+    final tabToSelect = (savedTabIndex != null && savedTabIndex >= 0 && savedTabIndex < newTabCount)
+        ? savedTabIndex
+        : 0; // No saved tab for this library (e.g. first visit) — start on first tab
+    if (tabController.index != tabToSelect) {
       _isRestoringTab = true;
-      tabController.animateTo(savedTabIndex, duration: Duration.zero);
+      tabController.animateTo(tabToSelect, duration: Duration.zero);
       _isRestoringTab = false;
     }
 
@@ -1479,39 +1492,9 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                                   color: _isProfileFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
                                   borderRadius: const BorderRadius.all(Radius.circular(20)),
                                 ),
-                                child: PopupMenuButton<String>(
+                                child: IconButton(
                                   icon: avatar,
-                                  offset: const Offset(0, 8),
-                                  onSelected: (value) {
-                                    if (value == 'switch_profile') {
-                                      _handleJellyfinSwitchProfile(context);
-                                    } else if (value == 'logout') {
-                                      _handleLogout();
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    if (showSwitch)
-                                      PopupMenuItem(
-                                        value: 'switch_profile',
-                                        child: Row(
-                                          children: [
-                                            AppIcon(Symbols.people_rounded, fill: 1),
-                                            const SizedBox(width: 8),
-                                            Text(t.discover.switchProfile),
-                                          ],
-                                        ),
-                                      ),
-                                    PopupMenuItem(
-                                      value: 'logout',
-                                      child: Row(
-                                        children: [
-                                          AppIcon(Symbols.logout_rounded, fill: 1),
-                                          const SizedBox(width: 8),
-                                          Text(t.common.logout),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                  onPressed: () => _showProfileMenu(context),
                                 ),
                               ),
                             );

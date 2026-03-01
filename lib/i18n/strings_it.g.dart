@@ -104,6 +104,7 @@ class _TranslationsAuthIt implements TranslationsAuthEn {
 	@override String get authTokenLabel => 'Token Auth Jellyfin';
 	@override String get authTokenHint => 'Inserisci il tuo token';
 	@override String get authenticationTimeout => 'Autenticazione scaduta. Riprova.';
+	@override String get sessionExpired => 'La tua sessione è scaduta. Accedi di nuovo.';
 	@override String get scanQRToSignIn => 'Scansiona il QR code per accedere';
 	@override String get waitingForAuth => 'In attesa di autenticazione...\nCompleta l\'accesso dal tuo browser.';
 	@override String get useBrowser => 'Usa browser';
@@ -848,6 +849,7 @@ class _TranslationsLiveTvIt implements TranslationsLiveTvEn {
 	@override String get cancelTimer => 'Cancel Recording';
 	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
 	@override String get timerCancelled => 'Recording cancelled';
+	@override String get editSeriesTimer => 'Modifica';
 	@override String get deleteSeriesTimer => 'Delete Series Timer';
 	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
 	@override String get seriesTimerDeleted => 'Series timer deleted';
@@ -1262,6 +1264,7 @@ extension on TranslationsIt {
 			'auth.authTokenLabel' => 'Token Auth Jellyfin',
 			'auth.authTokenHint' => 'Inserisci il tuo token',
 			'auth.authenticationTimeout' => 'Autenticazione scaduta. Riprova.',
+			'auth.sessionExpired' => 'La tua sessione è scaduta. Accedi di nuovo.',
 			'auth.scanQRToSignIn' => 'Scansiona il QR code per accedere',
 			'auth.waitingForAuth' => 'In attesa di autenticazione...\nCompleta l\'accesso dal tuo browser.',
 			'auth.useBrowser' => 'Usa browser',
@@ -1760,9 +1763,9 @@ extension on TranslationsIt {
 			'hubDetail.dateAdded' => 'Data aggiunta',
 			'hubDetail.rating' => 'Valutazione',
 			'hubDetail.noItemsFound' => 'Nessun elemento trovato',
-			'logs.clearLogs' => 'Cancella log',
 			_ => null,
 		} ?? switch (path) {
+			'logs.clearLogs' => 'Cancella log',
 			'logs.copyLogs' => 'Copia log',
 			'logs.error' => 'Errore:',
 			'logs.stackTrace' => 'Traccia dello stack:',
@@ -1799,6 +1802,7 @@ extension on TranslationsIt {
 			'liveTv.cancelTimer' => 'Cancel Recording',
 			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
 			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.editSeriesTimer' => 'Modifica',
 			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
 			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
 			'liveTv.seriesTimerDeleted' => 'Series timer deleted',

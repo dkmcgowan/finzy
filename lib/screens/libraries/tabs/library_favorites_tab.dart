@@ -46,12 +46,14 @@ class _LibraryFavoritesTabState extends LibraryGridTabState<MediaMetadata, Libra
 
   @override
   Widget buildGridItem(BuildContext context, MediaMetadata item, int index, [GridItemContext? gridContext]) {
+    final focusNode = index == 0 ? firstItemFocusNode : getGridItemFocusNode(index, prefix: 'favorites_grid_item');
     return FocusableMediaCard(
       key: Key(item.itemId),
       item: item,
-      focusNode: index == 0 ? firstItemFocusNode : null,
+      focusNode: focusNode,
       onListRefresh: loadItems,
       onBack: widget.onBack,
+      onNavigateUp: gridContext?.isFirstRow == true ? widget.onBack : null,
       onNavigateLeft: gridContext?.isFirstColumn == true ? gridContext?.navigateToSidebar : null,
     );
   }

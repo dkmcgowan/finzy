@@ -15,6 +15,7 @@
     "authTokenLabel": "Auth Token",
     "authTokenHint": "Enter your token",
     "authenticationTimeout": "Authentication timed out. Please try again.",
+    "sessionExpired": "Your session has expired. Please sign in again.",
     "scanQRToSignIn": "Scan this QR code to sign in",
     "waitingForAuth": "Waiting for authentication...\nPlease complete sign-in in your browser.",
     "useBrowser": "Use browser"
@@ -612,6 +613,7 @@
     "cancelTimer": "Cancel Recording",
     "cancelTimerConfirm": "Are you sure you want to cancel this scheduled recording?",
     "timerCancelled": "Recording cancelled",
+    "editSeriesTimer": "Edit",
     "deleteSeriesTimer": "Delete Series Timer",
     "deleteSeriesTimerConfirm": "Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.",
     "seriesTimerDeleted": "Series timer deleted",

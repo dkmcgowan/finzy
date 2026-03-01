@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -33,6 +35,7 @@ import 'services/server_connection_orchestrator.dart';
 import 'services/data_aggregation_service.dart';
 import 'services/in_app_review_service.dart';
 import 'services/support_service.dart';
+import 'services/auth_failure_service.dart';
 import 'services/server_registry.dart';
 import 'services/download_manager_service.dart';
 import 'services/pip_service.dart';
@@ -187,6 +190,9 @@ void _registerShaderLicenses() {
 // Global RouteObserver for tracking navigation
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
+/// Global navigator key for auth failure handling (navigate to login from anywhere).
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
@@ -201,6 +207,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   late final AppDatabase _appDatabase;
   late final DownloadManagerService _downloadManager;
   late final OfflineWatchSyncService _offlineWatchSyncService;
+
+  StreamSubscription<String>? _authFailureSubscription;
 
   @override
   void initState() {
@@ -224,10 +232,52 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
 
     // Support/tips: listen for IAP purchase updates on iOS/Android
     SupportService.instance.init();
+
+    // Listen for 401 auth failures (expired token) and prompt re-login
+    _authFailureSubscription = AuthFailureService.instance.authFailureStream.listen(_onAuthFailure);
   }
+
+  void _onAuthFailure(String serverId) {
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return;
+    // Don't show "session expired" when user is on auth/setup screen — they're not logged in
+    if (AuthFailureService.isOnAuthOrSetupFlow) return;
+    // Debounce: avoid multiple dialogs if many requests fail at once
+    if (_authFailureDialogShown) return;
+    _authFailureDialogShown = true;
+
+    showDialog<void>(
+      context: ctx,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(t.common.error),
+        content: Text(t.auth.sessionExpired),
+        actions: [
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              _authFailureDialogShown = false;
+              final userProfileProvider = ctx.read<UserProfileProvider>();
+              await userProfileProvider.logout();
+              if (ctx.mounted) {
+                Navigator.of(ctx).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            child: Text(t.common.ok),
+          ),
+        ],
+      ),
+    ).then((_) => _authFailureDialogShown = false);
+  }
+
+  bool _authFailureDialogShown = false;
 
   @override
   void dispose() {
+    _authFailureSubscription?.cancel();
     SupportService.instance.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -240,9 +290,13 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
         // App came back to foreground - trigger sync check and start new session
         _offlineWatchSyncService.onAppResumed();
         InAppReviewService.instance.startSession();
-        // Re-probe servers — mobile OS may have dropped TCP connections during doze/sleep
-        _serverManager.checkServerHealth();
-        _serverManager.reconnectOfflineServers();
+        // Re-probe servers after a short delay — on Android, network/TCP may not be
+        // ready immediately; running health checks too soon causes false "offline" state
+        // and breaks the app (empty libraries, unresponsive UI).
+        Future<void>.delayed(const Duration(seconds: 2), () {
+          _serverManager.checkServerHealth();
+          _serverManager.reconnectOfflineServers();
+        });
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
         // App went to background or is closing - end session
@@ -327,6 +381,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
                 theme: themeProvider.lightTheme,
                 darkTheme: themeProvider.darkTheme,
                 themeMode: themeProvider.materialThemeMode,
+                navigatorKey: navigatorKey,
                 navigatorObservers: [routeObserver, BackKeySuppressorObserver()],
                 home: const OrientationAwareSetup(),
               ),
@@ -373,7 +428,15 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   void initState() {
     super.initState();
+    AuthFailureService.isOnAuthOrSetupFlow = true;
     _loadSavedCredentials();
+  }
+
+  @override
+  void dispose() {
+    // Don't clear here: when navigating to AuthScreen, we stay in auth flow.
+    // MainScreen sets false when it mounts.
+    super.dispose();
   }
 
   Future<void> _loadSavedCredentials() async {
@@ -393,13 +456,28 @@ class _SetupScreenState extends State<SetupScreen> {
     if (!mounted) return;
 
     try {
-      final result = await ServerConnectionOrchestrator.connectAndInitialize(
+      // Retry connection on cold start — TV/phone network may not be ready immediately
+      var result = await ServerConnectionOrchestrator.connectAndInitialize(
         servers: servers,
         multiServerProvider: context.read<MultiServerProvider>(),
         librariesProvider: context.read<LibrariesProvider>(),
         syncService: context.read<OfflineWatchSyncService>(),
         clientIdentifier: storage.getClientIdentifier(),
       );
+
+      if (!result.hasConnections) {
+        appLogger.w('Initial connection failed, retrying after delay...');
+        await Future<void>.delayed(const Duration(seconds: 2));
+        if (!mounted) return;
+        context.read<MultiServerProvider>().clearAllConnections();
+        result = await ServerConnectionOrchestrator.connectAndInitialize(
+          servers: servers,
+          multiServerProvider: context.read<MultiServerProvider>(),
+          librariesProvider: context.read<LibrariesProvider>(),
+          syncService: context.read<OfflineWatchSyncService>(),
+          clientIdentifier: storage.getClientIdentifier(),
+        );
+      }
 
       if (!mounted) return;
 

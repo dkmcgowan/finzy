@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import 'auth_failure_service.dart';
 import '../models/jellyfin_config.dart';
 import '../models/livetv_channel.dart';
 import '../models/livetv_dvr.dart';
@@ -54,6 +55,23 @@ class JellyfinClient {
         headers: {'Authorization': config.authorizationHeader},
         contentType: 'application/json',
         validateStatus: (status) => status != null && status < 500,
+      ),
+    );
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onResponse: (response, handler) {
+          if (response.statusCode == 401) {
+            AuthFailureService.instance.notifyAuthFailure(serverId);
+          }
+          handler.next(response);
+        },
+        onError: (error, handler) {
+          final statusCode = error.response?.statusCode;
+          if (statusCode == 401) {
+            AuthFailureService.instance.notifyAuthFailure(serverId);
+          }
+          handler.next(error);
+        },
       ),
     );
   }

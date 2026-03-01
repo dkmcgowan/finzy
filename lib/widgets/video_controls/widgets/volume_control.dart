@@ -17,8 +17,8 @@ import '../../../focus/input_mode_tracker.dart';
 /// This widget integrates with [Player] to control volume and persists
 /// the volume setting using [SettingsService].
 ///
-/// When using keyboard/D-pad navigation, pressing Select enters "adjust mode"
-/// where left/right arrows adjust volume instead of navigating.
+/// When using keyboard/D-pad navigation: Select toggles mute; long-press Select
+/// enters "adjust mode" where left/right arrows adjust volume instead of navigating.
 class VolumeControl extends StatefulWidget {
   final Player player;
 
@@ -87,6 +87,13 @@ class _VolumeControlState extends State<VolumeControl> {
   Future<void> _adjustVolume(double delta) async {
     final currentVolume = widget.player.state.volume;
     final newVolume = (currentVolume + delta).clamp(0.0, _maxVolume.toDouble());
+    widget.player.setVolume(newVolume);
+    final settings = await SettingsService.getInstance();
+    await settings.setVolume(newVolume);
+  }
+
+  Future<void> _toggleMute(bool isMuted) async {
+    final newVolume = isMuted ? 100.0 : 0.0;
     widget.player.setVolume(newVolume);
     final settings = await SettingsService.getInstance();
     await settings.setVolume(newVolume);
@@ -181,7 +188,9 @@ class _VolumeControlState extends State<VolumeControl> {
             if (widget.focusNode != null)
               FocusableWrapper(
                 focusNode: widget.focusNode,
-                onSelect: _enterAdjustMode,
+                onSelect: () => _toggleMute(isMuted),
+                enableLongPress: true,
+                onLongPress: _enterAdjustMode,
                 onKeyEvent: _handleKeyEvent,
                 onFocusChange: _handleFocusChange,
                 borderRadius: 20,

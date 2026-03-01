@@ -104,6 +104,7 @@ class _TranslationsAuthZh implements TranslationsAuthEn {
 	@override String get authTokenLabel => 'Jellyfin 授权令牌 (Auth Token)';
 	@override String get authTokenHint => '输入你的令牌';
 	@override String get authenticationTimeout => '验证超时。请重试。';
+	@override String get sessionExpired => '您的会话已过期。请重新登录。';
 	@override String get scanQRToSignIn => '扫描二维码登录';
 	@override String get waitingForAuth => '等待验证中...\n请在你的浏览器中完成登录。';
 	@override String get useBrowser => '使用浏览器';
@@ -848,6 +849,7 @@ class _TranslationsLiveTvZh implements TranslationsLiveTvEn {
 	@override String get cancelTimer => 'Cancel Recording';
 	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
 	@override String get timerCancelled => 'Recording cancelled';
+	@override String get editSeriesTimer => '编辑';
 	@override String get deleteSeriesTimer => 'Delete Series Timer';
 	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
 	@override String get seriesTimerDeleted => 'Series timer deleted';
@@ -1262,6 +1264,7 @@ extension on TranslationsZh {
 			'auth.authTokenLabel' => 'Jellyfin 授权令牌 (Auth Token)',
 			'auth.authTokenHint' => '输入你的令牌',
 			'auth.authenticationTimeout' => '验证超时。请重试。',
+			'auth.sessionExpired' => '您的会话已过期。请重新登录。',
 			'auth.scanQRToSignIn' => '扫描二维码登录',
 			'auth.waitingForAuth' => '等待验证中...\n请在你的浏览器中完成登录。',
 			'auth.useBrowser' => '使用浏览器',
@@ -1760,9 +1763,9 @@ extension on TranslationsZh {
 			'hubDetail.dateAdded' => '添加日期',
 			'hubDetail.rating' => '评分',
 			'hubDetail.noItemsFound' => '未找到项目',
-			'logs.clearLogs' => '清除日志',
 			_ => null,
 		} ?? switch (path) {
+			'logs.clearLogs' => '清除日志',
 			'logs.copyLogs' => '复制日志',
 			'logs.error' => '错误:',
 			'logs.stackTrace' => '堆栈跟踪 (Stack Trace):',
@@ -1799,6 +1802,7 @@ extension on TranslationsZh {
 			'liveTv.cancelTimer' => 'Cancel Recording',
 			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
 			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.editSeriesTimer' => '编辑',
 			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
 			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
 			'liveTv.seriesTimerDeleted' => 'Series timer deleted',

@@ -97,8 +97,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   final Map<int, GlobalKey<MediaCardState>> _similarCardKeys = {};
   final _similarSectionKey = GlobalKey();
 
-  // Locked focus pattern for overview
-  late final FocusNode _overviewFocusNode;
   final _overviewSectionKey = GlobalKey();
 
   // Locked focus pattern for cast
@@ -265,7 +263,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     _extrasFocusNode = FocusNode(debugLabel: 'extras_row');
     _playButtonFocusNode = FocusNode(debugLabel: 'play_button');
     _ratingChipFocusNode = FocusNode(debugLabel: 'rating_chip');
-    _overviewFocusNode = FocusNode(debugLabel: 'overview');
     _castFocusNode = FocusNode(debugLabel: 'cast_row');
     _similarItemsFocusNode = FocusNode(debugLabel: 'similar_items_row');
     _loadFullMetadata();
@@ -286,7 +283,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     _extrasFocusNode.dispose();
     _playButtonFocusNode.dispose();
     _ratingChipFocusNode.dispose();
-    _overviewFocusNode.dispose();
     _castFocusNode.dispose();
     _castScrollController.dispose();
     _similarItemsFocusNode.dispose();
@@ -1165,13 +1161,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
     final metadata = _fullMetadata ?? widget.metadata;
 
-    // DOWN order: overview → seasons → cast → extras
-    if (metadata.summary != null) {
-      _overviewFocusNode.requestFocus();
-      _scrollSectionIntoView(_overviewSectionKey);
-      return KeyEventResult.handled;
-    }
-
+    // DOWN order: seasons → cast (overview is non-focusable; only actionable items get focus)
     if (metadata.isShow && _seasons.isNotEmpty) {
       _seasonsFocusNode.requestFocus();
       _scrollSectionIntoView(_seasonsSectionKey);
@@ -1265,16 +1255,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // UP: overview → play button
+    // UP: play button (overview is non-focusable)
     if (key.isUpKey) {
-      final metadata = _fullMetadata ?? widget.metadata;
-      if (metadata.summary != null) {
-        _overviewFocusNode.requestFocus();
-        _scrollSectionIntoView(_overviewSectionKey);
-      } else {
-        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-        _playButtonFocusNode.requestFocus();
-      }
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      _playButtonFocusNode.requestFocus();
       return KeyEventResult.handled;
     }
 
@@ -1285,41 +1269,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         _castFocusNode.requestFocus();
         _scrollSectionIntoView(_castSectionKey);
       }
-      return KeyEventResult.handled;
-    }
-
-    return KeyEventResult.ignored;
-  }
-
-  /// Handle key events for the overview section
-  KeyEventResult _handleOverviewKeyEvent(FocusNode _, KeyEvent event) {
-    final key = event.logicalKey;
-    if (key.isBackKey) return KeyEventResult.ignored;
-    if (!event.isActionable) return KeyEventResult.ignored;
-
-    final metadata = _fullMetadata ?? widget.metadata;
-
-    // UP: always play button (overview is directly below play)
-    if (key.isUpKey) {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-      _playButtonFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-
-    // DOWN: seasons (if show) → cast
-    if (key.isDownKey) {
-      if (metadata.isShow && _seasons.isNotEmpty) {
-        _seasonsFocusNode.requestFocus();
-        _scrollSectionIntoView(_seasonsSectionKey);
-      } else if (metadata.role != null && metadata.role!.isNotEmpty) {
-        _castFocusNode.requestFocus();
-        _scrollSectionIntoView(_castSectionKey);
-      }
-      return KeyEventResult.handled;
-    }
-
-    // LEFT/RIGHT/SELECT: consume to prevent unwanted traversal
-    if (key.isLeftKey || key.isRightKey || key.isSelectKey) {
       return KeyEventResult.handled;
     }
 
@@ -1415,14 +1364,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // UP: seasons (if show) → overview → play button
+    // UP: seasons (if show) → play button (overview is non-focusable)
     if (key.isUpKey) {
       if (metadata.isShow && _seasons.isNotEmpty) {
         _seasonsFocusNode.requestFocus();
         _scrollSectionIntoView(_seasonsSectionKey);
-      } else if (metadata.summary != null) {
-        _overviewFocusNode.requestFocus();
-        _scrollSectionIntoView(_overviewSectionKey);
       } else {
         _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
         _playButtonFocusNode.requestFocus();
@@ -1439,8 +1385,24 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // SELECT: consume (cast is informational)
+    // SELECT: navigate to person detail (TV/remote)
     if (key.isSelectKey) {
+      if (event is KeyDownEvent && _focusedCastIndex < roleCount) {
+        final actor = metadata.role![_focusedCastIndex];
+        final client = _getClientForMetadata(context);
+        if (client != null && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PersonDetailScreen(
+                actor: actor,
+                client: client,
+                serverId: widget.metadata.serverId ?? '',
+              ),
+            ),
+          );
+        }
+      }
       return KeyEventResult.handled;
     }
 
@@ -1472,7 +1434,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // UP: cast → seasons → overview → play button
+    // UP: cast → seasons → play button (overview is non-focusable)
     if (key.isUpKey) {
       final metadata = _fullMetadata ?? widget.metadata;
       if (metadata.role != null && metadata.role!.isNotEmpty) {
@@ -1481,9 +1443,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       } else if (metadata.isShow && _seasons.isNotEmpty) {
         _seasonsFocusNode.requestFocus();
         _scrollSectionIntoView(_seasonsSectionKey);
-      } else if (metadata.summary != null) {
-        _overviewFocusNode.requestFocus();
-        _scrollSectionIntoView(_overviewSectionKey);
       } else {
         _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
         _playButtonFocusNode.requestFocus();
@@ -1918,7 +1877,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Summary
+                        // Summary (non-focusable; only actionable items get D-pad focus on TV)
                         if (metadata.summary != null) ...[
                           Text(
                             key: _overviewSectionKey,
@@ -1926,40 +1885,29 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 12),
-                          Focus(
-                            focusNode: _overviewFocusNode,
-                            onKeyEvent: _handleOverviewKeyEvent,
-                            onFocusChange: (_) => setState(() {}),
-                            child: Builder(
-                              builder: (context) {
-                                final showFocus =
-                                    _overviewFocusNode.hasFocus && InputModeTracker.isKeyboardMode(context);
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: showFocus
-                                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                                          : Colors.transparent,
-                                      width: 2,
-                                    ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: isTv
+                                ? Text(
+                                    metadata.summary!,
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
+                                  )
+                                : CollapsibleText(
+                                    text: metadata.summary!,
+                                    maxLines: isMobile ? 6 : 4,
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
                                   ),
-                                  child: isTv
-                                      ? Text(
-                                          metadata.summary!,
-                                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
-                                        )
-                                      : CollapsibleText(
-                                          text: metadata.summary!,
-                                          maxLines: isMobile ? 6 : 4,
-                                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
-                                        ),
-                                );
-                              },
-                            ),
                           ),
+                          const SizedBox(height: 24),
+                        ],
+
+                        // Studio and rating (under description)
+                        if (metadata.studio != null) ...[
+                          _buildInfoRow(t.discover.studio, metadata.studio!),
+                          if (metadata.contentRating != null) const SizedBox(height: 12) else const SizedBox(height: 24),
+                        ],
+                        if (metadata.contentRating != null) ...[
+                          _buildInfoRow(t.discover.rating, formatContentRating(metadata.contentRating!)),
                           const SizedBox(height: 24),
                         ],
 
@@ -2031,16 +1979,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                           const SizedBox(height: 12),
                           _buildSimilarItemsSection(),
                           const SizedBox(height: 24),
-                        ],
-
-                        // Additional info
-                        if (metadata.studio != null) ...[
-                          _buildInfoRow(t.discover.studio, metadata.studio!),
-                          const SizedBox(height: 12),
-                        ],
-                        if (metadata.contentRating != null) ...[
-                          _buildInfoRow(t.discover.rating, formatContentRating(metadata.contentRating!)),
-                          const SizedBox(height: 12),
                         ],
                       ],
                     ),

@@ -28,7 +28,12 @@ mixin LibraryTabFocusMixin<T extends StatefulWidget> on State<T> {
   /// Focus the first item in the grid/list (for tab activation)
   void focusFirstItem() {
     if (itemCount > 0) {
-      firstItemFocusNode.requestFocus();
+      void request() {
+        if (!mounted || firstItemFocusNode.hasFocus) return;
+        firstItemFocusNode.requestFocus();
+      }
+      request();
+      WidgetsBinding.instance.addPostFrameCallback((_) => request());
     }
   }
 }

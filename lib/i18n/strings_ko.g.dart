@@ -104,6 +104,7 @@ class _TranslationsAuthKo implements TranslationsAuthEn {
 	@override String get authTokenLabel => 'Jellyfin 인증 토큰';
 	@override String get authTokenHint => '토큰을 입력하세요';
 	@override String get authenticationTimeout => '인증 시간이 초과되었습니다. 다시 시도해 주세요.';
+	@override String get sessionExpired => '세션이 만료되었습니다. 다시 로그인해 주세요.';
 	@override String get scanQRToSignIn => 'QR 코드를 스캔하여 로그인';
 	@override String get waitingForAuth => '인증 대기 중... 브라우저에서 로그인을 완료해 주세요.';
 	@override String get useBrowser => '브라우저 사용';
@@ -848,6 +849,7 @@ class _TranslationsLiveTvKo implements TranslationsLiveTvEn {
 	@override String get cancelTimer => 'Cancel Recording';
 	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
 	@override String get timerCancelled => 'Recording cancelled';
+	@override String get editSeriesTimer => '편집';
 	@override String get deleteSeriesTimer => 'Delete Series Timer';
 	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
 	@override String get seriesTimerDeleted => 'Series timer deleted';
@@ -1262,6 +1264,7 @@ extension on TranslationsKo {
 			'auth.authTokenLabel' => 'Jellyfin 인증 토큰',
 			'auth.authTokenHint' => '토큰을 입력하세요',
 			'auth.authenticationTimeout' => '인증 시간이 초과되었습니다. 다시 시도해 주세요.',
+			'auth.sessionExpired' => '세션이 만료되었습니다. 다시 로그인해 주세요.',
 			'auth.scanQRToSignIn' => 'QR 코드를 스캔하여 로그인',
 			'auth.waitingForAuth' => '인증 대기 중... 브라우저에서 로그인을 완료해 주세요.',
 			'auth.useBrowser' => '브라우저 사용',
@@ -1760,9 +1763,9 @@ extension on TranslationsKo {
 			'hubDetail.dateAdded' => '추가 날짜',
 			'hubDetail.rating' => '평점',
 			'hubDetail.noItemsFound' => '항목이 없습니다',
-			'logs.clearLogs' => '로그 지우기',
 			_ => null,
 		} ?? switch (path) {
+			'logs.clearLogs' => '로그 지우기',
 			'logs.copyLogs' => '로그 복사',
 			'logs.error' => '오류:',
 			'logs.stackTrace' => '스택 추적 (Stack Trace):',
@@ -1799,6 +1802,7 @@ extension on TranslationsKo {
 			'liveTv.cancelTimer' => 'Cancel Recording',
 			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
 			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.editSeriesTimer' => '편집',
 			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
 			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
 			'liveTv.seriesTimerDeleted' => 'Series timer deleted',

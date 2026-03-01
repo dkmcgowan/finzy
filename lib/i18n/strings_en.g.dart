@@ -134,6 +134,9 @@ class TranslationsAuthEn {
 	/// en: 'Authentication timed out. Please try again.'
 	String get authenticationTimeout => 'Authentication timed out. Please try again.';
 
+	/// en: 'Your session has expired. Please sign in again.'
+	String get sessionExpired => 'Your session has expired. Please sign in again.';
+
 	/// en: 'Scan this QR code to sign in'
 	String get scanQRToSignIn => 'Scan this QR code to sign in';
 
@@ -1875,6 +1878,9 @@ class TranslationsLiveTvEn {
 	/// en: 'Recording cancelled'
 	String get timerCancelled => 'Recording cancelled';
 
+	/// en: 'Edit'
+	String get editSeriesTimer => 'Edit';
+
 	/// en: 'Delete Series Timer'
 	String get deleteSeriesTimer => 'Delete Series Timer';
 
@@ -2813,6 +2819,7 @@ extension on Translations {
 			'auth.authTokenLabel' => 'Auth Token',
 			'auth.authTokenHint' => 'Enter your token',
 			'auth.authenticationTimeout' => 'Authentication timed out. Please try again.',
+			'auth.sessionExpired' => 'Your session has expired. Please sign in again.',
 			'auth.scanQRToSignIn' => 'Scan this QR code to sign in',
 			'auth.waitingForAuth' => 'Waiting for authentication...\nPlease complete sign-in in your browser.',
 			'auth.useBrowser' => 'Use browser',
@@ -3311,9 +3318,9 @@ extension on Translations {
 			'hubDetail.dateAdded' => 'Date Added',
 			'hubDetail.rating' => 'Rating',
 			'hubDetail.noItemsFound' => 'No items found',
-			'logs.clearLogs' => 'Clear Logs',
 			_ => null,
 		} ?? switch (path) {
+			'logs.clearLogs' => 'Clear Logs',
 			'logs.copyLogs' => 'Copy Logs',
 			'logs.error' => 'Error:',
 			'logs.stackTrace' => 'Stack Trace:',
@@ -3350,6 +3357,7 @@ extension on Translations {
 			'liveTv.cancelTimer' => 'Cancel Recording',
 			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
 			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.editSeriesTimer' => 'Edit',
 			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
 			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
 			'liveTv.seriesTimerDeleted' => 'Series timer deleted',

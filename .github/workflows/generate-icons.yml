@@ -35,3 +35,8 @@ jobs:
             assets/finzy.png
             assets/finzy_android_foreground.png
             assets/finzy_monochrome.png
+            android/app/src/main/res/drawable-mdpi/tv_banner.png
+            android/app/src/main/res/drawable-hdpi/tv_banner.png
+            android/app/src/main/res/drawable-xhdpi/tv_banner.png
+            android/app/src/main/res/drawable-xxhdpi/tv_banner.png
+            android/app/src/main/res/drawable-xxxhdpi/tv_banner.png

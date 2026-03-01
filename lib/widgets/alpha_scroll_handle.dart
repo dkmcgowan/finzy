@@ -67,6 +67,8 @@ class _AlphaScrollHandleState extends State<AlphaScrollHandle> with SingleTicker
     super.initState();
     _helper = AlphaJumpHelper(widget.firstCharacters);
     _opacityController = AnimationController(vsync: this, duration: _showDuration, reverseDuration: _hideDuration);
+    // Show by default on mobile so users can find it; hide after scroll inactivity
+    _opacityController.value = 1.0;
   }
 
   @override

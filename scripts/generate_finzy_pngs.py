@@ -219,6 +219,35 @@ def main():
     mono_rgba.save(mono_path, "PNG")
     print(f"Wrote {mono_path} ({w}x{h}, monochrome)")
 
+    # 4) Android TV launcher banners (16:9, required for TV launcher)
+    # android:banner uses @drawable/tv_banner - different from phone ic_launcher
+    ANDROID_RES = os.path.join(REPO_ROOT, "android", "app", "src", "main", "res")
+    TV_BANNER_SIZES = {
+        "mdpi": (160, 90),
+        "hdpi": (240, 135),
+        "xhdpi": (320, 180),
+        "xxhdpi": (480, 270),
+        "xxxhdpi": (640, 360),
+    }
+    # White background per Android TV guidelines (avoid transparency)
+    BANNER_BG = (255, 255, 255)
+    print("")
+    print("Generating Android TV launcher banners (tv_banner.png)...")
+    for density, (banner_w, banner_h) in TV_BANNER_SIZES.items():
+        out_dir = os.path.join(ANDROID_RES, f"drawable-{density}")
+        os.makedirs(out_dir, exist_ok=True)
+        scale = min(banner_w / icon_1024.width, banner_h / icon_1024.height)
+        icon_w = int(round(icon_1024.width * scale))
+        icon_h = int(round(icon_1024.height * scale))
+        icon_scaled = icon_1024.resize((icon_w, icon_h), Image.LANCZOS)
+        canvas = Image.new("RGBA", (banner_w, banner_h), (*BANNER_BG, 255))
+        x = (banner_w - icon_scaled.width) // 2
+        y = (banner_h - icon_scaled.height) // 2
+        canvas.paste(icon_scaled, (x, y), icon_scaled)
+        out_path = os.path.join(out_dir, "tv_banner.png")
+        canvas.save(out_path, "PNG")
+        print(f"  Wrote {out_path} ({banner_w}x{banner_h})")
+
 
 if __name__ == "__main__":
     main()

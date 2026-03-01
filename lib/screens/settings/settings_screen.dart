@@ -10,7 +10,9 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../constants/library_constants.dart';
+import '../../focus/dpad_navigator.dart';
 import '../../focus/focus_memory_tracker.dart';
+import '../../focus/focus_theme.dart';
 import '../../focus/input_mode_tracker.dart';
 import '../../i18n/strings.g.dart';
 import '../../models/media_library.dart';
@@ -110,7 +112,9 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kSupportCoffee = 'support_coffee';
   static const _kSupportLunch = 'support_lunch';
   static const _kSupportDev = 'support_dev';
+  static const _kLibrariesSection = 'libraries_section';
   KeyboardShortcutsService? _keyboardService;
+  bool _librariesSectionExpanded = false; // TV only: collapsed by default
   late final bool _keyboardShortcutsSupported = KeyboardShortcutsService.isPlatformSupported();
   bool _isLoading = true;
 
@@ -147,6 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   @override
   void initState() {
     super.initState();
+    _librariesSectionExpanded = !PlatformDetector.isTV(); // Expanded by default on non-TV
     _focusTracker = FocusMemoryTracker(
       onFocusChanged: () {
         // ignore: no-empty-block - setState triggers rebuild to update focus styling
@@ -531,7 +536,13 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       builder: (context, librariesProvider, hiddenProvider, child) {
         final allLibraries = _buildOrderedLibraries(librariesProvider);
         final hiddenKeys = hiddenProvider.hiddenLibraryKeys;
+        final isTV = PlatformDetector.isTV();
 
+        if (isTV) {
+          return _buildLibrariesSectionTV(allLibraries, hiddenKeys, librariesProvider, hiddenProvider);
+        }
+
+        // Phone/desktop: drag to reorder, no collapse
         return Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,6 +636,56 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLibrariesSectionTV(
+    List<MediaLibrary> allLibraries,
+    Set<String> hiddenKeys,
+    LibrariesProvider librariesProvider,
+    HiddenLibrariesProvider hiddenProvider,
+  ) {
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            focusNode: _focusTracker.get(_kLibrariesSection),
+            leading: const AppIcon(Symbols.video_library_rounded, fill: 1),
+            title: Text(
+              t.navigation.libraries,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            trailing: Icon(
+              _librariesSectionExpanded ? Icons.expand_less : Icons.expand_more,
+            ),
+            onTap: () => setState(() => _librariesSectionExpanded = !_librariesSectionExpanded),
+          ),
+          if (_librariesSectionExpanded) ...[
+            if (allLibraries.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  t.discover.noItemsFound,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              _LibraryRowsTV(
+                libraries: allLibraries,
+                hiddenKeys: hiddenKeys,
+                librariesProvider: librariesProvider,
+                hiddenProvider: hiddenProvider,
+                onScanLibrary: _scanLibrary,
+                onRefreshMetadata: _refreshLibraryMetadata,
+                onToggleVisibility: _toggleLibraryVisibility,
+                getLibraryIcon: _getLibraryIcon,
+              ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -2181,6 +2242,297 @@ class _KeyboardShortcutsScreenState extends State<_KeyboardShortcutsScreen> {
           onCancel: () => Navigator.pop(context),
         );
       },
+    );
+  }
+}
+
+/// TV-only library list: up/down moves between rows only; left = reorder, right = scan/refresh/visibility.
+class _LibraryRowsTV extends StatefulWidget {
+  final List<MediaLibrary> libraries;
+  final Set<String> hiddenKeys;
+  final LibrariesProvider librariesProvider;
+  final HiddenLibrariesProvider hiddenProvider;
+  final Future<void> Function(MediaLibrary) onScanLibrary;
+  final Future<void> Function(MediaLibrary) onRefreshMetadata;
+  final Future<void> Function(MediaLibrary, HiddenLibrariesProvider, LibrariesProvider) onToggleVisibility;
+  final IconData Function(String) getLibraryIcon;
+
+  const _LibraryRowsTV({
+    required this.libraries,
+    required this.hiddenKeys,
+    required this.librariesProvider,
+    required this.hiddenProvider,
+    required this.onScanLibrary,
+    required this.onRefreshMetadata,
+    required this.onToggleVisibility,
+    required this.getLibraryIcon,
+  });
+
+  @override
+  State<_LibraryRowsTV> createState() => _LibraryRowsTVState();
+}
+
+class _LibraryRowsTVState extends State<_LibraryRowsTV> {
+  final List<FocusNode> _centerFocusNodes = [];
+  final List<FocusNode> _reorderFocusNodes = [];
+  final List<FocusNode> _actionsFocusNodes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _ensureFocusNodes(widget.libraries.length);
+    for (final node in _centerFocusNodes) {
+      node.addListener(_onFocusChange);
+    }
+    for (final node in _reorderFocusNodes) {
+      node.addListener(_onFocusChange);
+    }
+    for (final node in _actionsFocusNodes) {
+      node.addListener(_onFocusChange);
+    }
+  }
+
+  void _onFocusChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant _LibraryRowsTV oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _ensureFocusNodes(widget.libraries.length);
+  }
+
+  void _ensureFocusNodes(int count) {
+    while (_centerFocusNodes.length < count) {
+      final centerNode = FocusNode(debugLabel: 'LibraryRowCenter${_centerFocusNodes.length}');
+      centerNode.addListener(_onFocusChange);
+      _centerFocusNodes.add(centerNode);
+      final reorderNode = FocusNode(debugLabel: 'LibraryRowReorder${_reorderFocusNodes.length}');
+      reorderNode.skipTraversal = true;
+      reorderNode.addListener(_onFocusChange);
+      _reorderFocusNodes.add(reorderNode);
+      final actionsNode = FocusNode(debugLabel: 'LibraryRowActions${_actionsFocusNodes.length}');
+      actionsNode.skipTraversal = true;
+      actionsNode.addListener(_onFocusChange);
+      _actionsFocusNodes.add(actionsNode);
+    }
+    if (_centerFocusNodes.length > count) {
+      for (var i = count; i < _centerFocusNodes.length; i++) {
+        _centerFocusNodes[i].removeListener(_onFocusChange);
+        _reorderFocusNodes[i].removeListener(_onFocusChange);
+        _actionsFocusNodes[i].removeListener(_onFocusChange);
+        _centerFocusNodes[i].dispose();
+        _reorderFocusNodes[i].dispose();
+        _actionsFocusNodes[i].dispose();
+      }
+      _centerFocusNodes.length = count;
+      _reorderFocusNodes.length = count;
+      _actionsFocusNodes.length = count;
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final node in _centerFocusNodes) node.dispose();
+    for (final node in _reorderFocusNodes) node.dispose();
+    for (final node in _actionsFocusNodes) node.dispose();
+    super.dispose();
+  }
+
+  void _moveLibrary(int fromIndex, int toIndex) {
+    if (toIndex < 0 || toIndex >= widget.libraries.length || fromIndex == toIndex) return;
+    final reordered = List<MediaLibrary>.from(widget.libraries);
+    final item = reordered.removeAt(fromIndex);
+    reordered.insert(toIndex, item);
+    widget.librariesProvider.updateLibraryOrder(reordered);
+  }
+
+  KeyEventResult _handleCenterKey(FocusNode node, KeyEvent event, int index) {
+    if (!event.isActionable) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+
+    if (key.isUpKey) {
+      if (index > 0) {
+        _centerFocusNodes[index - 1].requestFocus();
+      }
+      return KeyEventResult.handled;
+    }
+    if (key.isDownKey) {
+      if (index < widget.libraries.length - 1) {
+        _centerFocusNodes[index + 1].requestFocus();
+      }
+      return KeyEventResult.handled;
+    }
+    if (key.isLeftKey) {
+      _reorderFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isRightKey) {
+      _actionsFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  KeyEventResult _handleReorderKey(FocusNode node, KeyEvent event, int index) {
+    if (!event.isActionable) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+
+    if (key.isRightKey) {
+      _centerFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isUpKey) {
+      if (index > 0) _centerFocusNodes[index - 1].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isDownKey) {
+      if (index < widget.libraries.length - 1) _centerFocusNodes[index + 1].requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  KeyEventResult _handleActionsKey(FocusNode node, KeyEvent event, int index) {
+    if (!event.isActionable) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+
+    if (key.isLeftKey) {
+      _centerFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isUpKey) {
+      if (index > 0) _centerFocusNodes[index - 1].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isDownKey) {
+      if (index < widget.libraries.length - 1) _centerFocusNodes[index + 1].requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: List.generate(widget.libraries.length, (index) {
+        final library = widget.libraries[index];
+        final isFavorites = library.globalKey == kJellyfinFavoritesKey;
+        final isHidden = widget.hiddenKeys.contains(library.globalKey);
+        final showFocus = InputModeTracker.isKeyboardMode(context);
+
+        return Padding(
+          key: ValueKey(library.globalKey),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              // Left: Up/Down reorder (all libraries including Favorites)
+              Focus(
+                  focusNode: _reorderFocusNodes[index],
+                  onKeyEvent: (n, e) => _handleReorderKey(n, e, index),
+                  child: Builder(
+                    builder: (_) {
+                      final hasFocus = _reorderFocusNodes[index].hasFocus;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_upward, size: 18),
+                              tooltip: 'Move up',
+                              onPressed: index > 0 ? () => _moveLibrary(index, index - 1) : null,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.arrow_downward, size: 18),
+                              tooltip: 'Move down',
+                              onPressed: index < widget.libraries.length - 1 ? () => _moveLibrary(index, index + 1) : null,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(width: 8),
+              // Center: Library name
+              Expanded(
+                child: Focus(
+                  focusNode: _centerFocusNodes[index],
+                  onKeyEvent: (n, e) => _handleCenterKey(n, e, index),
+                  child: Builder(
+                    builder: (_) {
+                      final hasFocus = _centerFocusNodes[index].hasFocus;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
+                        child: Row(
+                          children: [
+                            AppIcon(widget.getLibraryIcon(library.type), fill: 1, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                library.title,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: isHidden ? theme.colorScheme.onSurfaceVariant : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Right: Scan, Refresh, Visibility
+              Focus(
+                focusNode: _actionsFocusNodes[index],
+                onKeyEvent: (n, e) => _handleActionsKey(n, e, index),
+                child: Builder(
+                  builder: (_) {
+                    final hasFocus = _actionsFocusNodes[index].hasFocus;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!isFavorites) ...[
+                            IconButton(
+                              icon: const AppIcon(Symbols.refresh_rounded, fill: 1, size: 20),
+                              tooltip: t.libraries.scanLibraryFiles,
+                              onPressed: () => widget.onScanLibrary(library),
+                            ),
+                            IconButton(
+                              icon: const AppIcon(Symbols.sync_rounded, fill: 1, size: 20),
+                              tooltip: t.libraries.refreshMetadata,
+                              onPressed: () => widget.onRefreshMetadata(library),
+                            ),
+                          ],
+                          IconButton(
+                            icon: AppIcon(
+                              isHidden ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
+                              fill: 1,
+                              size: 20,
+                            ),
+                            tooltip: isHidden ? t.libraries.showLibrary : t.libraries.hideLibrary,
+                            onPressed: () => widget.onToggleVisibility(library, widget.hiddenProvider, widget.librariesProvider),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 }

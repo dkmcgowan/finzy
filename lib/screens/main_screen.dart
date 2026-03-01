@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
+import '../../services/auth_failure_service.dart';
 import '../../services/jellyfin_client.dart';
 import '../i18n/strings.g.dart';
 import '../services/update_service.dart';
@@ -121,6 +122,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
   @override
   void initState() {
     super.initState();
+    AuthFailureService.isOnAuthOrSetupFlow = false;
     _isOffline = widget.isOfflineMode;
 
     WidgetsBinding.instance.addObserver(this);

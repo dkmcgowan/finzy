@@ -15,6 +15,7 @@
     "authTokenLabel": "Jellyfin 授权令牌 (Auth Token)",
     "authTokenHint": "输入你的令牌",
     "authenticationTimeout": "验证超时。请重试。",
+    "sessionExpired": "您的会话已过期。请重新登录。",
     "scanQRToSignIn": "扫描二维码登录",
     "waitingForAuth": "等待验证中...\n请在你的浏览器中完成登录。",
     "useBrowser": "使用浏览器"
@@ -612,6 +613,7 @@
     "cancelTimer": "Cancel Recording",
     "cancelTimerConfirm": "Are you sure you want to cancel this scheduled recording?",
     "timerCancelled": "Recording cancelled",
+    "editSeriesTimer": "编辑",
     "deleteSeriesTimer": "Delete Series Timer",
     "deleteSeriesTimerConfirm": "Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.",
     "seriesTimerDeleted": "Series timer deleted",

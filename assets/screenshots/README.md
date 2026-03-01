@@ -1,8 +1,8 @@
-## iOS
+## Android
 
 | Home | Library | Media Card | Season |
 |------|---------|------------|--------|
-| ![iOS Home - Content discovery and recommendations](ios-home.png) | ![iOS Library - Media collection view](ios-library.png) | ![iOS Media Card](ios-media-card.png) | ![iOS Season View](ios-season.png) |
+| ![Android Home - Content discovery and recommendations](android-home.png) | ![Android Library - Media collection view](android-library.png) | ![Android Media Card](android-media-card.png) | ![Android Season View](android-media-season.png) |
 
 ## Windows
 

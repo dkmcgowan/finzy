@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../../../focus/focusable_wrapper.dart';
+import '../../../utils/platform_detector.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../models/livetv_scheduled_recording.dart';
 import '../../../providers/multi_server_provider.dart';
@@ -151,12 +152,15 @@ class ScheduledTabState extends State<ScheduledTab> {
       itemCount: _scheduled.length,
       itemBuilder: (context, index) {
         final timer = _scheduled[index];
+        final isTV = PlatformDetector.isTV();
         return FocusableWrapper(
           focusNode: index == 0 ? _firstItemFocusNode : null,
           autofocus: index == 0,
           autoScroll: true,
           useComfortableZone: true,
           onSelect: timer.key != null ? () => _cancelTimer(timer) : null,
+          enableLongPress: isTV && timer.key != null,
+          onLongPress: isTV && timer.key != null ? () => _cancelTimer(timer) : null,
           onNavigateUp: index == 0 ? widget.onNavigateUp : null,
           onBack: widget.onBack,
           child: _buildScheduledCard(timer, theme),
@@ -187,7 +191,7 @@ class ScheduledTabState extends State<ScheduledTab> {
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 )
               : null,
-          trailing: recording.key != null
+          trailing: recording.key != null && !PlatformDetector.isTV()
               ? IconButton(
                   icon: AppIcon(Symbols.cancel_rounded, color: theme.colorScheme.error),
                   tooltip: t.liveTv.cancelTimer,
