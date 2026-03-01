@@ -9,6 +9,7 @@ library;
 
 /// PayPal.Me username for desktop tips.
 /// Example: 'johndoe' → https://paypal.me/johndoe/2.99
+/// Set to null to hide the section; nullable type required for that configuration.
 // ignore: unnecessary_nullable_for_final_variable_declarations
 const String? kPayPalMeUsername = 'dkmcgowan';
 
