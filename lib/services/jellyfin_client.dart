@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 
-import 'auth_failure_service.dart';
 import '../models/jellyfin_config.dart';
 import '../models/livetv_channel.dart';
 import '../models/livetv_dvr.dart';
@@ -57,23 +56,8 @@ class JellyfinClient {
         validateStatus: (status) => status != null && status < 500,
       ),
     );
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onResponse: (response, handler) {
-          if (response.statusCode == 401) {
-            AuthFailureService.instance.notifyAuthFailure(serverId);
-          }
-          handler.next(response);
-        },
-        onError: (error, handler) {
-          final statusCode = error.response?.statusCode;
-          if (statusCode == 401) {
-            AuthFailureService.instance.notifyAuthFailure(serverId);
-          }
-          handler.next(error);
-        },
-      ),
-    );
+    // No 401 interceptor — match Plezy: auth is checked at startup only.
+    // Runtime 401s (health check, API calls) mark server offline, not redirect to login.
   }
 
   String get baseUrl => config.baseUrl;

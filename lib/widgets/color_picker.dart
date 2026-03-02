@@ -10,11 +10,11 @@ import '../theme/mono_tokens.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'app_icon.dart';
 
-/// A TV-friendly color picker using HSV sliders for D-pad navigation.
+/// A keyboard/D-pad friendly color picker using HSV sliders.
 ///
 /// Each channel row responds to LEFT/RIGHT for value adjustment while
 /// letting UP/DOWN pass through for normal focus traversal between rows.
-class TvColorPicker extends StatefulWidget {
+class HsvColorPicker extends StatefulWidget {
   final Color initialColor;
   final ValueChanged<Color> onColorChanged;
 
@@ -22,13 +22,13 @@ class TvColorPicker extends StatefulWidget {
   /// Use this to move focus to a confirm/save button.
   final VoidCallback? onConfirm;
 
-  const TvColorPicker({super.key, required this.initialColor, required this.onColorChanged, this.onConfirm});
+  const HsvColorPicker({super.key, required this.initialColor, required this.onColorChanged, this.onConfirm});
 
   @override
-  State<TvColorPicker> createState() => _TvColorPickerState();
+  State<HsvColorPicker> createState() => _HsvColorPickerState();
 }
 
-class _TvColorPickerState extends State<TvColorPicker> {
+class _HsvColorPickerState extends State<HsvColorPicker> {
   late int _hue;
   late int _saturation;
   late int _value;
@@ -43,7 +43,7 @@ class _TvColorPickerState extends State<TvColorPicker> {
     _saturation = (hsv.saturation * 100).round();
     _value = (hsv.value * 100).round();
     _hexController = TextEditingController(text: _currentHex());
-    _hexFocusNode = FocusNode(debugLabel: 'TvColorPicker_hex', onKeyEvent: _handleHexKeyEvent);
+    _hexFocusNode = FocusNode(debugLabel: 'HsvColorPicker_hex', onKeyEvent: _handleHexKeyEvent);
   }
 
   @override

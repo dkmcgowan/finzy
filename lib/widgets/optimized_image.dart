@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../providers/settings_provider.dart';
 import '../../services/jellyfin_client.dart';
 import '../../utils/app_logger.dart';
 import '../utils/media_image_helper.dart';
@@ -307,7 +309,11 @@ class OptimizedImage extends StatelessWidget {
   }
 
   Widget _buildCachedImage(BuildContext context, double effectiveWidth, double effectiveHeight) {
-    final devicePixelRatio = MediaImageHelper.effectiveDevicePixelRatio(context);
+    final performanceProfile = context.watch<SettingsProvider>().imageQuality;
+    final devicePixelRatio = MediaImageHelper.effectiveDevicePixelRatio(
+      context,
+      performanceProfile: performanceProfile,
+    );
 
     // Get optimized image URL
     final imageUrl = MediaImageHelper.getOptimizedImageUrl(
@@ -318,6 +324,7 @@ class OptimizedImage extends StatelessWidget {
       devicePixelRatio: devicePixelRatio,
       enableTranscoding: enableTranscoding && MediaImageHelper.shouldTranscode(imagePath),
       imageType: imageType,
+      performanceProfile: performanceProfile,
     );
 
     if (imageUrl.isEmpty) {
@@ -330,6 +337,7 @@ class OptimizedImage extends StatelessWidget {
     final (memWidth, memHeight) = MediaImageHelper.getMemCacheDimensions(
       displayWidth: scaledWidth.isFinite && scaledWidth > 0 ? scaledWidth.round() : 0,
       displayHeight: scaledHeight.isFinite && scaledHeight > 0 ? scaledHeight.round() : 0,
+      performanceProfile: performanceProfile,
     );
 
     // Generate cache key if not provided

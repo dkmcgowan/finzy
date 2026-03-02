@@ -19,6 +19,7 @@ final _selectKeys = {
   LogicalKeyboardKey.select,
   LogicalKeyboardKey.enter,
   LogicalKeyboardKey.numpadEnter,
+  LogicalKeyboardKey.space,
   LogicalKeyboardKey.gameButtonA,
 };
 

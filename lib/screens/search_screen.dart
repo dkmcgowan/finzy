@@ -8,25 +8,17 @@ import '../focus/dpad_navigator.dart';
 import '../i18n/strings.g.dart';
 import '../mixins/refreshable.dart';
 import '../models/media_metadata.dart';
-import '../providers/hidden_libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
-import '../providers/playback_state_provider.dart';
-import '../providers/server_state_provider.dart';
 import '../providers/settings_provider.dart';
-import '../providers/user_profile_provider.dart';
 import '../services/settings_service.dart' show ViewMode;
 import '../utils/app_logger.dart';
-import '../utils/dialogs.dart';
 import '../utils/grid_size_calculator.dart';
 import '../utils/sliver_adaptive_media_builder.dart';
 import '../utils/snackbar_helper.dart';
 import '../widgets/focusable_media_card.dart';
 import '../utils/focus_utils.dart';
-import 'auth_screen.dart';
 import 'libraries/state_messages.dart';
 import 'main_screen.dart';
-import 'profile/jellyfin_profile_switch_screen.dart';
-import '../widgets/profile_app_bar_button.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -172,38 +164,6 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
     MainScreenFocusScope.of(context)?.focusSidebar();
   }
 
-  void _handleJellyfinSwitchProfile(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const JellyfinProfileSwitchScreen()));
-  }
-
-  Future<void> _handleLogout() async {
-    final confirm = await showConfirmDialog(
-      context,
-      title: t.common.logout,
-      message: t.messages.logoutConfirm,
-      confirmText: t.common.logout,
-      isDestructive: true,
-    );
-    if (confirm && mounted) {
-      final userProfileProvider = context.read<UserProfileProvider>();
-      final multiServerProvider = context.read<MultiServerProvider>();
-      final serverStateProvider = context.read<ServerStateProvider>();
-      final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
-      final playbackStateProvider = context.read<PlaybackStateProvider>();
-      await userProfileProvider.logout();
-      multiServerProvider.clearAllConnections();
-      serverStateProvider.reset();
-      await hiddenLibrariesProvider.refresh();
-      playbackStateProvider.clearShuffle();
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const AuthScreen()),
-          (route) => false,
-        );
-      }
-    }
-  }
-
   /// Handle key events on the search input for D-pad navigation
   KeyEventResult _handleSearchInputKeyEvent(FocusNode _, KeyEvent event) {
     if (!event.isActionable) return KeyEventResult.ignored;
@@ -270,24 +230,11 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
                     right: 16,
                     bottom: 8,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              t.common.search,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ),
-                        ),
-                        ProfileAppBarButton(
-                          onSwitchProfile: () => _handleJellyfinSwitchProfile(context),
-                          onLogout: _handleLogout,
-                        ),
-                      ],
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Text(
+                      t.common.search,
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
                 ),
@@ -382,7 +329,8 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
                             focusNode: index == 0 ? _firstResultFocusNode : null,
                             onListRefresh: () => updateItem(item.itemId),
                             onNavigateLeft: isFirstColumn ? _navigateToSidebar : null,
-                            onNavigateUp: isFirstRow ? focusSearchInput : null,
+                            onNavigateUp: isFirstRow ? () => _searchFocusNode.requestFocus() : null,
+                            onBack: () => _searchFocusNode.requestFocus(),
                           );
                         },
                         viewMode: settingsProvider.viewMode,

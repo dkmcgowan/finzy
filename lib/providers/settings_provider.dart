@@ -15,6 +15,11 @@ class SettingsProvider extends ChangeNotifier {
   bool _showJellyfinRecommendations = true;
   bool _alwaysKeepSidebarOpen = false;
   bool _showUnwatchedCount = true;
+  PerformanceProfile _imageQuality = PerformanceProfile.medium;
+  PerformanceProfile _posterSize = PerformanceProfile.medium;
+  bool _reduceAnimations = false;
+  GridPreloadLevel _gridPreload = GridPreloadLevel.medium;
+  bool _hideSupportDevelopment = false;
   bool _isInitialized = false;
   Future<void>? _initFuture;
 
@@ -40,13 +45,23 @@ class SettingsProvider extends ChangeNotifier {
     _showServerNameOnHubs = _settingsService!.getShowServerNameOnHubs();
     _showJellyfinRecommendations = _settingsService!.getShowJellyfinRecommendations();
     _alwaysKeepSidebarOpen = _settingsService!.getAlwaysKeepSidebarOpen();
-    _showUnwatchedCount = _settingsService!.getShowUnwatchedCount();
+    _imageQuality = _settingsService!.getImageQuality();
+    _posterSize = _settingsService!.getPosterSize();
+    _reduceAnimations = _settingsService!.getReduceAnimations();
+    _gridPreload = _settingsService!.getGridPreload();
+    _hideSupportDevelopment = _settingsService!.getHideSupportDevelopment();
     _isInitialized = true;
     notifyListeners();
   }
 
   /// Whether the provider has completed initialization
   bool get isInitialized => _isInitialized;
+
+  /// Re-read all settings from storage (e.g. after reset).
+  Future<void> refresh() async {
+    _isInitialized = false;
+    await _initializeSettings();
+  }
 
   LibraryDensity get libraryDensity => _libraryDensity;
 
@@ -69,6 +84,16 @@ class SettingsProvider extends ChangeNotifier {
   bool get alwaysKeepSidebarOpen => _alwaysKeepSidebarOpen;
 
   bool get showUnwatchedCount => _showUnwatchedCount;
+
+  PerformanceProfile get imageQuality => _imageQuality;
+
+  PerformanceProfile get posterSize => _posterSize;
+
+  bool get reduceAnimations => _reduceAnimations;
+
+  GridPreloadLevel get gridPreload => _gridPreload;
+
+  bool get hideSupportDevelopment => _hideSupportDevelopment;
 
   Future<void> setLibraryDensity(LibraryDensity density) async {
     if (!_isInitialized) await _initializeSettings();
@@ -161,6 +186,51 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> setImageQuality(PerformanceProfile value) async {
+    if (!_isInitialized) await _initializeSettings();
+    if (_imageQuality != value) {
+      _imageQuality = value;
+      await _settingsService!.setImageQuality(value);
+      notifyListeners();
+    }
+  }
+
+  Future<void> setPosterSize(PerformanceProfile value) async {
+    if (!_isInitialized) await _initializeSettings();
+    if (_posterSize != value) {
+      _posterSize = value;
+      await _settingsService!.setPosterSize(value);
+      notifyListeners();
+    }
+  }
+
+  Future<void> setReduceAnimations(bool value) async {
+    if (!_isInitialized) await _initializeSettings();
+    if (_reduceAnimations != value) {
+      _reduceAnimations = value;
+      await _settingsService!.setReduceAnimations(value);
+      notifyListeners();
+    }
+  }
+
+  Future<void> setGridPreload(GridPreloadLevel value) async {
+    if (!_isInitialized) await _initializeSettings();
+    if (_gridPreload != value) {
+      _gridPreload = value;
+      await _settingsService!.setGridPreload(value);
+      notifyListeners();
+    }
+  }
+
+  Future<void> setHideSupportDevelopment(bool value) async {
+    if (!_isInitialized) await _initializeSettings();
+    if (_hideSupportDevelopment != value) {
+      _hideSupportDevelopment = value;
+      await _settingsService!.setHideSupportDevelopment(value);
+      notifyListeners();
+    }
+  }
+
   String get libraryDensityDisplayName {
     switch (_libraryDensity) {
       case LibraryDensity.compact:
@@ -191,4 +261,40 @@ class SettingsProvider extends ChangeNotifier {
         return t.settings.twentyFourHour;
     }
   }
+
+  String get imageQualityDisplayName {
+    switch (_imageQuality) {
+      case PerformanceProfile.small:
+        return t.settings.performanceSmall;
+      case PerformanceProfile.medium:
+        return t.settings.performanceMedium;
+      case PerformanceProfile.large:
+        return t.settings.performanceLarge;
+    }
+  }
+
+  String get posterSizeDisplayName {
+    switch (_posterSize) {
+      case PerformanceProfile.small:
+        return t.settings.performanceSmall;
+      case PerformanceProfile.medium:
+        return t.settings.performanceMedium;
+      case PerformanceProfile.large:
+        return t.settings.performanceLarge;
+    }
+  }
+
+  String get gridPreloadDisplayName {
+    switch (_gridPreload) {
+      case GridPreloadLevel.low:
+        return t.settings.performanceLow;
+      case GridPreloadLevel.medium:
+        return t.settings.performanceMedium;
+      case GridPreloadLevel.high:
+        return t.settings.performanceHigh;
+    }
+  }
+
+  /// Cache extent in logical pixels for scroll views (from grid preload setting).
+  double get gridPreloadCacheExtent => _gridPreload.cacheExtent;
 }

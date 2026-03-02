@@ -8,19 +8,11 @@ import '../../models/livetv_channel.dart';
 import '../../models/livetv_dvr.dart';
 import '../../mixins/refreshable.dart';
 import '../../mixins/tab_navigation_mixin.dart';
-import '../../providers/hidden_libraries_provider.dart';
 import '../../providers/multi_server_provider.dart';
-import '../../providers/playback_state_provider.dart';
-import '../../providers/server_state_provider.dart';
-import '../../providers/user_profile_provider.dart';
 import '../../utils/app_logger.dart';
-import '../../utils/dialogs.dart';
 import '../../utils/platform_detector.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/focusable_tab_chip.dart';
-import '../../widgets/profile_app_bar_button.dart';
-import '../auth_screen.dart';
-import '../profile/jellyfin_profile_switch_screen.dart';
 import 'tabs/channels_tab.dart';
 import 'tabs/guide_tab.dart';
 import 'tabs/programs_tab.dart';
@@ -51,7 +43,6 @@ class _LiveTvScreenState extends State<LiveTvScreen>
   final _scheduledTabKey = GlobalKey<ScheduledTabState>();
   final _seriesTimersTabKey = GlobalKey<SeriesTimersTabState>();
 
-  // App bar action button focus
   final _refreshButtonFocusNode = FocusNode(debugLabel: 'RefreshButton');
   bool _isRefreshFocused = false;
 
@@ -251,38 +242,6 @@ class _LiveTvScreenState extends State<LiveTvScreen>
   @override
   void focusActiveTabIfReady() => _focusCurrentTab();
 
-  void _handleSwitchProfile(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const JellyfinProfileSwitchScreen()));
-  }
-
-  Future<void> _handleLogout() async {
-    final confirm = await showConfirmDialog(
-      context,
-      title: t.common.logout,
-      message: t.messages.logoutConfirm,
-      confirmText: t.common.logout,
-      isDestructive: true,
-    );
-    if (confirm && mounted) {
-      final userProfileProvider = context.read<UserProfileProvider>();
-      final multiServerProvider = context.read<MultiServerProvider>();
-      final serverStateProvider = context.read<ServerStateProvider>();
-      final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
-      final playbackStateProvider = context.read<PlaybackStateProvider>();
-      await userProfileProvider.logout();
-      multiServerProvider.clearAllConnections();
-      serverStateProvider.reset();
-      await hiddenLibrariesProvider.refresh();
-      playbackStateProvider.clearShuffle();
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const AuthScreen()),
-          (route) => false,
-        );
-      }
-    }
-  }
-
   // ---------------------------------------------------------------------------
   // Action button key handlers
   // ---------------------------------------------------------------------------
@@ -295,7 +254,10 @@ class _LiveTvScreenState extends State<LiveTvScreen>
       getTabChipFocusNode(tabCount - 1).requestFocus();
       return KeyEventResult.handled;
     }
-    if (key.isRightKey || key.isUpKey) {
+    if (key.isRightKey) {
+      return KeyEventResult.handled;
+    }
+    if (key.isUpKey) {
       return KeyEventResult.handled;
     }
     if (key.isDownKey) {
@@ -423,10 +385,6 @@ class _LiveTvScreenState extends State<LiveTvScreen>
                     ),
                   ),
                 ),
-                ProfileAppBarButton(
-                  onSwitchProfile: () => _handleSwitchProfile(context),
-                  onLogout: _handleLogout,
-                ),
               ],
             ),
           ),
@@ -492,10 +450,10 @@ class _LiveTvScreenState extends State<LiveTvScreen>
             children: [
               GuideTab(key: _guideTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: onTabBarBack),
               ProgramsTab(key: _programsTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: onTabBarBack),
-              ChannelsTab(key: _channelsTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: onTabBarBack),
-              RecordingsTab(key: _recordingsTabKey, onNavigateUp: focusTabBar, onBack: onTabBarBack),
-              ScheduledTab(key: _scheduledTabKey, onNavigateUp: focusTabBar, onBack: onTabBarBack),
-              SeriesTimersTab(key: _seriesTimersTabKey, onNavigateUp: focusTabBar, onBack: onTabBarBack),
+              ChannelsTab(key: _channelsTabKey, channels: _channels, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: onTabBarBack),
+              RecordingsTab(key: _recordingsTabKey, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: onTabBarBack),
+              ScheduledTab(key: _scheduledTabKey, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: onTabBarBack),
+              SeriesTimersTab(key: _seriesTimersTabKey, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: onTabBarBack),
             ],
           ),
         ),

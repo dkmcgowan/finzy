@@ -35,7 +35,6 @@ import 'services/server_connection_orchestrator.dart';
 import 'services/data_aggregation_service.dart';
 import 'services/in_app_review_service.dart';
 import 'services/support_service.dart';
-import 'services/auth_failure_service.dart';
 import 'services/server_registry.dart';
 import 'services/download_manager_service.dart';
 import 'services/pip_service.dart';
@@ -208,8 +207,6 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   late final DownloadManagerService _downloadManager;
   late final OfflineWatchSyncService _offlineWatchSyncService;
 
-  StreamSubscription<String>? _authFailureSubscription;
-
   @override
   void initState() {
     super.initState();
@@ -232,52 +229,10 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
 
     // Support/tips: listen for IAP purchase updates on iOS/Android
     SupportService.instance.init();
-
-    // Listen for 401 auth failures (expired token) and prompt re-login
-    _authFailureSubscription = AuthFailureService.instance.authFailureStream.listen(_onAuthFailure);
   }
-
-  void _onAuthFailure(String serverId) {
-    final ctx = navigatorKey.currentContext;
-    if (ctx == null) return;
-    // Don't show "session expired" when user is on auth/setup screen — they're not logged in
-    if (AuthFailureService.isOnAuthOrSetupFlow) return;
-    // Debounce: avoid multiple dialogs if many requests fail at once
-    if (_authFailureDialogShown) return;
-    _authFailureDialogShown = true;
-
-    showDialog<void>(
-      context: ctx,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(t.common.error),
-        content: Text(t.auth.sessionExpired),
-        actions: [
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              _authFailureDialogShown = false;
-              final userProfileProvider = ctx.read<UserProfileProvider>();
-              await userProfileProvider.logout();
-              if (ctx.mounted) {
-                Navigator.of(ctx).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const AuthScreen()),
-                  (route) => false,
-                );
-              }
-            },
-            child: Text(t.common.ok),
-          ),
-        ],
-      ),
-    ).then((_) => _authFailureDialogShown = false);
-  }
-
-  bool _authFailureDialogShown = false;
 
   @override
   void dispose() {
-    _authFailureSubscription?.cancel();
     SupportService.instance.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -428,15 +383,7 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   void initState() {
     super.initState();
-    AuthFailureService.isOnAuthOrSetupFlow = true;
     _loadSavedCredentials();
-  }
-
-  @override
-  void dispose() {
-    // Don't clear here: when navigating to AuthScreen, we stay in auth flow.
-    // MainScreen sets false when it mounts.
-    super.dispose();
   }
 
   Future<void> _loadSavedCredentials() async {

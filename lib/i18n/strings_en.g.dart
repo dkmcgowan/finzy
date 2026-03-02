@@ -545,6 +545,18 @@ class TranslationsSettingsEn {
 	/// en: 'Advanced player with more features and ASS subtitle support'
 	String get mpvDescription => 'Advanced player with more features and ASS subtitle support';
 
+	/// en: 'Live TV Player Backend'
+	String get liveTvPlayer => 'Live TV Player Backend';
+
+	/// en: 'MPV recommended for Live TV. ExoPlayer may have issues on some devices.'
+	String get liveTvPlayerDescription => 'MPV recommended for Live TV. ExoPlayer may have issues on some devices.';
+
+	/// en: 'MPV (Recommended)'
+	String get liveTvMpv => 'MPV (Recommended)';
+
+	/// en: 'ExoPlayer'
+	String get liveTvExoPlayer => 'ExoPlayer';
+
 	/// en: 'Hardware Decoding'
 	String get hardwareDecoding => 'Hardware Decoding';
 
@@ -590,8 +602,8 @@ class TranslationsSettingsEn {
 	/// en: 'If enabled, clicking on the video player will play/pause the video. Otherwise, clicking will show/hide the playback controls.'
 	String get clickVideoTogglesPlaybackDescription => 'If enabled, clicking on the video player will play/pause the video. Otherwise, clicking will show/hide the playback controls.';
 
-	/// en: 'Video Player Controls'
-	String get videoPlayerControls => 'Video Player Controls';
+	/// en: 'Video Player Keyboard Controls'
+	String get videoPlayerControls => 'Video Player Keyboard Controls';
 
 	/// en: 'Keyboard Shortcuts'
 	String get keyboardShortcuts => 'Keyboard Shortcuts';
@@ -599,8 +611,8 @@ class TranslationsSettingsEn {
 	/// en: 'Customize keyboard shortcuts'
 	String get keyboardShortcutsDescription => 'Customize keyboard shortcuts';
 
-	/// en: 'Video Player Navigation'
-	String get videoPlayerNavigation => 'Video Player Navigation';
+	/// en: 'Keyboard Video Player Navigation'
+	String get videoPlayerNavigation => 'Keyboard Video Player Navigation';
 
 	/// en: 'Use arrow keys to navigate video player controls'
 	String get videoPlayerNavigationDescription => 'Use arrow keys to navigate video player controls';
@@ -737,6 +749,12 @@ class TranslationsSettingsEn {
 	/// en: 'Default (App Storage)'
 	String get downloadLocationDefault => 'Default (App Storage)';
 
+	/// en: 'Downloads Default (App Storage)'
+	String get downloadsDefault => 'Downloads Default (App Storage)';
+
+	/// en: 'Library Management'
+	String get libraryOrder => 'Library Management';
+
 	/// en: 'Custom Location'
 	String get downloadLocationCustom => 'Custom Location';
 
@@ -796,6 +814,54 @@ class TranslationsSettingsEn {
 
 	/// en: 'Show a confirmation dialog when pressing back to exit the app'
 	String get confirmExitOnBackDescription => 'Show a confirmation dialog when pressing back to exit the app';
+
+	/// en: 'Performance'
+	String get performance => 'Performance';
+
+	/// en: 'Image Quality'
+	String get performanceImageQuality => 'Image Quality';
+
+	/// en: 'Lower quality loads faster. Small = fastest, Large = best quality.'
+	String get performanceImageQualityDescription => 'Lower quality loads faster. Small = fastest, Large = best quality.';
+
+	/// en: 'Poster Size'
+	String get performancePosterSize => 'Poster Size';
+
+	/// en: 'Size of poster cards in grids. Small = more items, Large = bigger cards.'
+	String get performancePosterSizeDescription => 'Size of poster cards in grids. Small = more items, Large = bigger cards.';
+
+	/// en: 'Reduce Animations'
+	String get performanceReduceAnimations => 'Reduce Animations';
+
+	/// en: 'Shorter transitions for snappier feel'
+	String get performanceReduceAnimationsDescription => 'Shorter transitions for snappier feel';
+
+	/// en: 'Grid Preload'
+	String get performanceGridPreload => 'Grid Preload';
+
+	/// en: 'How many off-screen items to load. Low = faster, High = smoother scrolling.'
+	String get performanceGridPreloadDescription => 'How many off-screen items to load. Low = faster, High = smoother scrolling.';
+
+	/// en: 'Small'
+	String get performanceSmall => 'Small';
+
+	/// en: 'Medium'
+	String get performanceMedium => 'Medium';
+
+	/// en: 'Large'
+	String get performanceLarge => 'Large';
+
+	/// en: 'Low'
+	String get performanceLow => 'Low';
+
+	/// en: 'High'
+	String get performanceHigh => 'High';
+
+	/// en: 'Hide Support Development'
+	String get hideSupportDevelopment => 'Hide Support Development';
+
+	/// en: 'Hide the Support Development section in Settings'
+	String get hideSupportDevelopmentDescription => 'Hide the Support Development section in Settings';
 }
 
 // Path: search
@@ -1123,8 +1189,8 @@ class TranslationsVideoControlsEn {
 	/// en: 'Unmute'
 	String get unmuteButton => 'Unmute';
 
-	/// en: 'Video settings'
-	String get settingsButton => 'Video settings';
+	/// en: 'Playback settings'
+	String get settingsButton => 'Playback settings';
 
 	/// en: 'Audio tracks'
 	String get audioTrackButton => 'Audio tracks';
@@ -2944,6 +3010,10 @@ extension on Translations {
 			'settings.exoPlayerDescription' => 'Android native player with better hardware support',
 			'settings.mpv' => 'MPV',
 			'settings.mpvDescription' => 'Advanced player with more features and ASS subtitle support',
+			'settings.liveTvPlayer' => 'Live TV Player Backend',
+			'settings.liveTvPlayerDescription' => 'MPV recommended for Live TV. ExoPlayer may have issues on some devices.',
+			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.hardwareDecoding' => 'Hardware Decoding',
 			'settings.hardwareDecodingDescription' => 'Use hardware acceleration when available',
 			'settings.bufferSize' => 'Buffer Size',
@@ -2959,10 +3029,10 @@ extension on Translations {
 			'settings.rememberTrackSelectionsDescription' => 'Automatically save audio and subtitle language preferences when you change tracks during playback',
 			'settings.clickVideoTogglesPlayback' => 'Click on Video to Toggle Play/Pause',
 			'settings.clickVideoTogglesPlaybackDescription' => 'If enabled, clicking on the video player will play/pause the video. Otherwise, clicking will show/hide the playback controls.',
-			'settings.videoPlayerControls' => 'Video Player Controls',
+			'settings.videoPlayerControls' => 'Video Player Keyboard Controls',
 			'settings.keyboardShortcuts' => 'Keyboard Shortcuts',
 			'settings.keyboardShortcutsDescription' => 'Customize keyboard shortcuts',
-			'settings.videoPlayerNavigation' => 'Video Player Navigation',
+			'settings.videoPlayerNavigation' => 'Keyboard Video Player Navigation',
 			'settings.videoPlayerNavigationDescription' => 'Use arrow keys to navigate video player controls',
 			'settings.debugLogging' => 'Debug Logging',
 			'settings.debugLoggingDescription' => 'Enable detailed logging for troubleshooting',
@@ -3008,6 +3078,8 @@ extension on Translations {
 			'settings.downloads' => 'Downloads',
 			'settings.downloadLocationDescription' => 'Choose where to store downloaded content',
 			'settings.downloadLocationDefault' => 'Default (App Storage)',
+			'settings.downloadsDefault' => 'Downloads Default (App Storage)',
+			'settings.libraryOrder' => 'Library Management',
 			'settings.downloadLocationCustom' => 'Custom Location',
 			'settings.selectFolder' => 'Select Folder',
 			'settings.resetToDefault' => 'Reset to Default',
@@ -3028,6 +3100,22 @@ extension on Translations {
 			'settings.requireProfileSelectionOnOpenDescription' => 'Show profile selection every time the app is opened',
 			'settings.confirmExitOnBack' => 'Confirm before exiting',
 			'settings.confirmExitOnBackDescription' => 'Show a confirmation dialog when pressing back to exit the app',
+			'settings.performance' => 'Performance',
+			'settings.performanceImageQuality' => 'Image Quality',
+			'settings.performanceImageQualityDescription' => 'Lower quality loads faster. Small = fastest, Large = best quality.',
+			'settings.performancePosterSize' => 'Poster Size',
+			'settings.performancePosterSizeDescription' => 'Size of poster cards in grids. Small = more items, Large = bigger cards.',
+			'settings.performanceReduceAnimations' => 'Reduce Animations',
+			'settings.performanceReduceAnimationsDescription' => 'Shorter transitions for snappier feel',
+			'settings.performanceGridPreload' => 'Grid Preload',
+			'settings.performanceGridPreloadDescription' => 'How many off-screen items to load. Low = faster, High = smoother scrolling.',
+			'settings.performanceSmall' => 'Small',
+			'settings.performanceMedium' => 'Medium',
+			'settings.performanceLarge' => 'Large',
+			'settings.performanceLow' => 'Low',
+			'settings.performanceHigh' => 'High',
+			'settings.hideSupportDevelopment' => 'Hide Support Development',
+			'settings.hideSupportDevelopmentDescription' => 'Hide the Support Development section in Settings',
 			'search.hint' => 'Search movies, shows, music...',
 			'search.tryDifferentTerm' => 'Try a different search term',
 			'search.searchYourMedia' => 'Search your media',
@@ -3131,7 +3219,7 @@ extension on Translations {
 			'videoControls.nextChapterButton' => 'Next chapter',
 			'videoControls.muteButton' => 'Mute',
 			'videoControls.unmuteButton' => 'Unmute',
-			'videoControls.settingsButton' => 'Video settings',
+			'videoControls.settingsButton' => 'Playback settings',
 			'videoControls.audioTrackButton' => 'Audio tracks',
 			'videoControls.subtitlesButton' => 'Subtitles',
 			'videoControls.chaptersButton' => 'Chapters',
@@ -3296,6 +3384,8 @@ extension on Translations {
 			'libraries.tabs.suggestions' => 'Suggestions',
 			'libraries.tabs.browse' => 'Browse',
 			'libraries.tabs.genres' => 'Genres',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.tabs.favorites' => 'Favorites',
 			'libraries.tabs.collections' => 'Collections',
 			'libraries.tabs.playlists' => 'Playlists',
@@ -3318,8 +3408,6 @@ extension on Translations {
 			'hubDetail.dateAdded' => 'Date Added',
 			'hubDetail.rating' => 'Rating',
 			'hubDetail.noItemsFound' => 'No items found',
-			_ => null,
-		} ?? switch (path) {
 			'logs.clearLogs' => 'Clear Logs',
 			'logs.copyLogs' => 'Copy Logs',
 			'logs.error' => 'Error:',

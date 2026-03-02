@@ -367,7 +367,10 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       final bufferSizeBytes = bufferSizeMB * 1024 * 1024;
       final enableHardwareDecoding = settingsService.getEnableHardwareDecoding();
       final debugLoggingEnabled = settingsService.getEnableDebugLogging();
-      final useExoPlayer = settingsService.getUseExoPlayer();
+      // Live TV on Android: use Live TV Player setting (default MPV for reliability)
+      final useExoPlayer = (Platform.isAndroid && widget.isLive)
+          ? settingsService.getUseExoPlayerForLiveTv()
+          : settingsService.getUseExoPlayer();
 
       // Create player (on Android, uses ExoPlayer by default, MPV as fallback)
       player = Player(useExoPlayer: useExoPlayer);

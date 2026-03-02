@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:flex_color_picker/flex_color_picker.dart';
 import '../../i18n/strings.g.dart';
 import '../../services/settings_service.dart';
 import '../../utils/platform_detector.dart';
-import '../../focus/key_event_utils.dart';
-import '../../widgets/desktop_app_bar.dart';
-import '../../widgets/tv_color_picker.dart';
+import '../../widgets/focused_scroll_scaffold.dart';
+import '../../widgets/color_picker.dart';
 import '../../widgets/tv_number_spinner.dart';
 
 class SubtitleStylingScreen extends StatefulWidget {
@@ -17,8 +16,7 @@ class SubtitleStylingScreen extends StatefulWidget {
   State<SubtitleStylingScreen> createState() => _SubtitleStylingScreenState();
 }
 
-// Composable widget for slider sections
-class _StylingSliderSection extends StatelessWidget {
+class _StylingSliderSection extends StatefulWidget {
   final String label;
   final int value;
   final double min;
@@ -40,34 +38,78 @@ class _StylingSliderSection extends StatelessWidget {
   });
 
   @override
+  State<_StylingSliderSection> createState() => _StylingSliderSectionState();
+}
+
+class _StylingSliderSectionState extends State<_StylingSliderSection> {
+  late final FocusNode _sliderFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _sliderFocusNode = FocusNode(onKeyEvent: _handleSliderKey);
+  }
+
+  KeyEventResult _handleSliderKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.arrowDown) {
+      node.focusInDirection(
+        key == LogicalKeyboardKey.arrowUp ? TraversalDirection.up : TraversalDirection.down,
+      );
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.arrowRight) {
+      final step = (widget.max - widget.min) / widget.divisions;
+      final current = widget.value.toDouble();
+      final newValue = (key == LogicalKeyboardKey.arrowLeft ? current - step : current + step)
+          .clamp(widget.min, widget.max);
+      if (newValue != current) {
+        widget.onChanged(newValue);
+      }
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  void dispose() {
+    _sliderFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final formattedValue = valueFormatter?.call(value) ?? value.toString();
+    final formattedValue = widget.valueFormatter?.call(widget.value) ?? widget.value.toString();
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label), Text(formattedValue)]),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(widget.label), Text(formattedValue)]),
           const SizedBox(height: 8),
           Row(
             children: [
               Text(
-                valueFormatter?.call(min.toInt()) ?? min.toInt().toString(),
+                widget.valueFormatter?.call(widget.min.toInt()) ?? widget.min.toInt().toString(),
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
               Expanded(
                 child: Slider(
-                  value: value.toDouble(),
-                  min: min,
-                  max: max,
-                  divisions: divisions,
+                  focusNode: _sliderFocusNode,
+                  value: widget.value.toDouble(),
+                  min: widget.min,
+                  max: widget.max,
+                  divisions: widget.divisions,
                   label: formattedValue,
-                  onChanged: onChanged,
-                  onChangeEnd: onChangeEnd,
+                  onChanged: widget.onChanged,
+                  onChangeEnd: widget.onChangeEnd,
                 ),
               ),
               Text(
-                valueFormatter?.call(max.toInt()) ?? max.toInt().toString(),
+                widget.valueFormatter?.call(widget.max.toInt()) ?? widget.max.toInt().toString(),
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
@@ -115,6 +157,7 @@ class _ColorSettingTile extends StatelessWidget {
 class _SubtitleStylingScreenState extends State<SubtitleStylingScreen> {
   late SettingsService _settingsService;
   bool _isLoading = true;
+  final _contentKey = GlobalKey();
 
   int _fontSize = 55;
   String _textColor = '#FFFFFF';
@@ -128,6 +171,20 @@ class _SubtitleStylingScreenState extends State<SubtitleStylingScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  void _focusFirstItem() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final contentContext = _contentKey.currentContext;
+      if (contentContext == null) return;
+      final scope = FocusScope.of(contentContext);
+      final firstChild = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
+        (node) => node!.canRequestFocus && node.context != null,
+        orElse: () => null,
+      );
+      firstChild?.requestFocus();
+    });
   }
 
   Future<void> _loadSettings() async {
@@ -144,6 +201,7 @@ class _SubtitleStylingScreenState extends State<SubtitleStylingScreen> {
       _subtitlePosition = _settingsService.getSubtitlePosition();
       _isLoading = false;
     });
+    _focusFirstItem();
   }
 
   Color _hexToColor(String hexString) {
@@ -215,38 +273,7 @@ class _SubtitleStylingScreenState extends State<SubtitleStylingScreen> {
     ).then((_) => saveFocusNode.dispose());
   }
 
-  Future<void> _showColorPicker(String title, String currentColor, Function(String) onColorSelected) async {
-    Color initialColor = _hexToColor(currentColor);
-
-    final Color selectedColor = await showColorPickerDialog(
-      context,
-      initialColor,
-      title: Text(title),
-      barrierColor: Colors.black54,
-      width: 40,
-      height: 40,
-      spacing: 0,
-      runSpacing: 0,
-      borderRadius: 4,
-      wheelDiameter: 165,
-      enableOpacity: false,
-      showColorCode: true,
-      colorCodeHasColor: true,
-      pickersEnabled: const <ColorPickerType, bool>{
-        ColorPickerType.both: false,
-        ColorPickerType.primary: true,
-        ColorPickerType.accent: false,
-        ColorPickerType.wheel: true,
-        ColorPickerType.custom: false,
-      },
-      actionButtons: const ColorPickerActionButtons(okButton: true, closeButton: true, dialogActionButtons: false),
-    );
-
-    final hexColor = _colorToHex(selectedColor);
-    onColorSelected(hexColor);
-  }
-
-  void _showTvColorPicker(String title, String currentColor, Function(String) onColorSelected) {
+  void _showColorPicker(String title, String currentColor, Function(String) onColorSelected) {
     Color pickerColor = _hexToColor(currentColor);
     final saveFocusNode = FocusNode();
 
@@ -257,7 +284,7 @@ class _SubtitleStylingScreenState extends State<SubtitleStylingScreen> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: Text(title),
-              content: TvColorPicker(
+              content: HsvColorPicker(
                 initialColor: pickerColor,
                 onColorChanged: (color) => setDialogState(() => pickerColor = color),
                 onConfirm: () => saveFocusNode.requestFocus(),
@@ -283,32 +310,26 @@ class _SubtitleStylingScreenState extends State<SubtitleStylingScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Focus(
-        autofocus: true,
-        onKeyEvent: (_, event) => handleBackKeyNavigation(context, event),
-        child: const Scaffold(body: Center(child: CircularProgressIndicator())),
+      return FocusedScrollScaffold(
+        title: Text(t.screens.subtitleStyling),
+        slivers: const [SliverFillRemaining(child: Center(child: CircularProgressIndicator()))],
       );
     }
 
-    return Focus(
-      autofocus: true,
-      onKeyEvent: (_, event) => handleBackKeyNavigation(context, event),
-      child: Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            CustomAppBar(title: Text(t.screens.subtitleStyling), pinned: true),
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(delegate: SliverChildListDelegate([_buildStylingCard(), const SizedBox(height: 24)])),
-            ),
-          ],
+    return FocusedScrollScaffold(
+      title: Text(t.screens.subtitleStyling),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(delegate: SliverChildListDelegate([_buildStylingCard(), const SizedBox(height: 24)])),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildStylingCard() {
     return Card(
+      key: _contentKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -406,11 +427,7 @@ class _SubtitleStylingScreenState extends State<SubtitleStylingScreen> {
                 _settingsService.setSubtitleTextColor(color);
               }
 
-              if (PlatformDetector.isTV()) {
-                _showTvColorPicker(t.subtitlingStyling.textColor, _textColor, onColorSelected);
-              } else {
-                _showColorPicker(t.subtitlingStyling.textColor, _textColor, onColorSelected);
-              }
+              _showColorPicker(t.subtitlingStyling.textColor, _textColor, onColorSelected);
             },
           ),
           const Divider(),
@@ -458,11 +475,7 @@ class _SubtitleStylingScreenState extends State<SubtitleStylingScreen> {
                 _settingsService.setSubtitleBorderColor(color);
               }
 
-              if (PlatformDetector.isTV()) {
-                _showTvColorPicker(t.subtitlingStyling.borderColor, _borderColor, onColorSelected);
-              } else {
-                _showColorPicker(t.subtitlingStyling.borderColor, _borderColor, onColorSelected);
-              }
+              _showColorPicker(t.subtitlingStyling.borderColor, _borderColor, onColorSelected);
             },
           ),
           const Divider(),
@@ -513,11 +526,7 @@ class _SubtitleStylingScreenState extends State<SubtitleStylingScreen> {
                 _settingsService.setSubtitleBackgroundColor(color);
               }
 
-              if (PlatformDetector.isTV()) {
-                _showTvColorPicker(t.subtitlingStyling.backgroundColor, _backgroundColor, onColorSelected);
-              } else {
-                _showColorPicker(t.subtitlingStyling.backgroundColor, _backgroundColor, onColorSelected);
-              }
+              _showColorPicker(t.subtitlingStyling.backgroundColor, _backgroundColor, onColorSelected);
             },
           ),
         ],

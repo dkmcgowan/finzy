@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import '../../focus/dpad_navigator.dart';
+import '../../focus/input_mode_tracker.dart';
 import '../../mixins/tab_navigation_mixin.dart';
 import '../../../services/jellyfin_client.dart';
 import '../../models/hub.dart';
@@ -14,7 +14,6 @@ import '../../models/library_sort.dart';
 import '../../providers/hidden_libraries_provider.dart';
 import '../../providers/libraries_provider.dart';
 import '../../providers/multi_server_provider.dart';
-import '../../providers/jellyfin_profile_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../providers/server_state_provider.dart';
 import '../../providers/playback_state_provider.dart';
@@ -33,8 +32,9 @@ import '../../i18n/strings.g.dart';
 import '../../constants/library_constants.dart';
 import '../../utils/error_message_utils.dart';
 import '../auth_screen.dart';
+import '../main_screen.dart';
 import '../profile/jellyfin_profile_switch_screen.dart';
-import '../../widgets/quick_connect_authorize_dialog.dart';
+import '../../widgets/profile_app_bar_button.dart';
 import 'state_messages.dart';
 import 'library_inline_list_view.dart';
 import 'library_inline_genre_view.dart';
@@ -103,9 +103,11 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
   /// When non-null, show this playlist or collection inline (back + grid) instead of tab content.
   dynamic _inlinePlaylistOrCollection;
+  final _inlineListViewKey = GlobalKey();
 
   /// When non-null, show this genre's grid inline (Genre tab header tap). Back returns to Genre tab.
   Hub? _inlineGenreHub;
+  final _inlineGenreViewKey = GlobalKey();
   /// When non-null, show inline "all favorites" for this hub (global Favorites sidebar, Jellyfin).
   Hub? _inlineFavoritesHub;
 
@@ -114,6 +116,9 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
   /// Key for the library dropdown popup menu button
   final _libraryDropdownKey = GlobalKey<PopupMenuButtonState<String>>();
+
+  /// Key for the profile menu (used to open programmatically on D-pad Select)
+  final _profileMenuKey = GlobalKey<PopupMenuButtonState<String>>();
 
   // Focus nodes for tab chips (order depends on _effectiveTabCount)
   final _recommendedTabChipFocusNode = FocusNode(debugLabel: 'tab_chip_recommended');
@@ -172,6 +177,9 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   /// Global Favorites view: one hub per library.
   List<Hub> _globalFavoritesHubs = [];
   bool _areGlobalFavoritesLoading = false;
+
+  /// Keys for HubSections in global Favorites view (for D-pad focus when DOWN from app bar).
+  final List<GlobalKey<HubSectionState>> _globalFavoritesHubKeys = [];
   String? _globalFavoritesError;
 
   @override
@@ -260,38 +268,42 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   /// Focus the first item in the currently active tab.
   /// Used for initial load and tab switching - focuses the grid content directly.
   void _focusCurrentTab() {
-    // Don't focus during tab animations - wait for animation to complete
-    // This prevents race conditions during focus restoration
-    if (tabController.indexIsChanging) {
-      return;
-    }
+    // Don't focus during tab animations
+    if (tabController.indexIsChanging) return;
 
-    // Scroll to top so tab content (grid) is visible when focusing from app bar
-    if (_outerScrollController.hasClients && _outerScrollController.offset > 0) {
-      _outerScrollController.jumpTo(0);
-    }
+    // Global Favorites: skip if data hasn't loaded yet.
+    // The post-load callback in _loadGlobalFavorites handles focus once ready.
+    if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey && _areGlobalFavoritesLoading) return;
 
     // Re-enable auto-focus since user is navigating into tab content
-    // Only call setState if the value actually changes to avoid unnecessary rebuilds
     if (suppressAutoFocus) {
       setState(() {
         suppressAutoFocus = false;
       });
     }
 
+    // Scroll to top so tab content is visible when focusing from app bar
+    if (_outerScrollController.hasClients && _outerScrollController.offset > 0) {
+      _outerScrollController.jumpTo(0);
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
+      // Global Favorites view: focus first HubSection directly
+      if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
+        _focusFirstGlobalFavoritesHub();
+        return;
+      }
+
       final tabState = _getTabState(tabController.index);
       if (tabState != null) {
-        // Browse tab (index 0 when multiple tabs) has chips bar - focus that first
         if (tabController.index == 0 && _effectiveTabCount > 1) {
           (tabState as dynamic).focusChipsBar();
         } else {
           (tabState as dynamic).focusFirstItem();
         }
       } else {
-        // State not available yet, retry after another frame
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           _focusCurrentTabImmediate();
@@ -300,11 +312,40 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     });
   }
 
+  /// Focus the first HubSection in the global Favorites view.
+  /// Uses memory to restore the user's last position within the hub.
+  void _focusFirstGlobalFavoritesHub() {
+    if (_globalFavoritesHubKeys.isEmpty || _globalFavoritesHubs.isEmpty) return;
+    _globalFavoritesHubKeys.first.currentState?.requestFocusFromMemory();
+  }
+
+  bool _handleGlobalFavoritesVerticalNav(int hubIndex, bool isUp) {
+    final targetIndex = isUp ? hubIndex - 1 : hubIndex + 1;
+    if (targetIndex < 0) return false;
+    if (targetIndex >= _globalFavoritesHubKeys.length) return true;
+    final targetState = _globalFavoritesHubKeys[targetIndex].currentState;
+    if (targetState != null) {
+      targetState.requestFocusFromMemory();
+      return true;
+    }
+    return false;
+  }
+
   /// Focus without additional frame delay (used for retry)
   void _focusCurrentTabImmediate() {
     final tabState = _getTabState(tabController.index);
     if (tabState != null) {
       (tabState as dynamic).focusFirstItem();
+    }
+  }
+
+  /// UP from content: focus tab bar when there are focusable tab chips,
+  /// otherwise focus refresh button (e.g. Favorites or single-tab libraries).
+  void _onContentNavigateUp() {
+    if (_effectiveTabCount > 1 && _selectedLibraryGlobalKey != kJellyfinFavoritesKey) {
+      focusTabBar();
+    } else {
+      _refreshButtonFocusNode.requestFocus();
     }
   }
 
@@ -371,14 +412,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     // Track that this tab has loaded
     _loadedTabs.add(tabIndex);
 
-    // Don't auto-focus if suppressed (e.g., when navigating via tab bar)
+    // Don't auto-focus if suppressed or not using keyboard
     if (suppressAutoFocus) return;
 
-    // Only focus if this is the currently active tab
+    // Only focus if this is the currently active tab and in keyboard mode
     if (tabController.index == tabIndex && mounted) {
-      // Use post-frame callback to ensure the widget tree is fully built
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && tabController.index == tabIndex && !suppressAutoFocus) {
+        if (mounted && tabController.index == tabIndex && !suppressAutoFocus && InputModeTracker.isKeyboardMode(context)) {
           _focusCurrentTab();
         }
       });
@@ -407,13 +447,42 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     }
   }
 
+  /// Down from app bar actions: go to tab bar when tabs exist, content otherwise.
+  void _navigateDownFromAppBar() {
+    // Inline views take priority — they replace the tab content
+    if (_inlinePlaylistOrCollection != null) {
+      (_inlineListViewKey.currentState as dynamic)?.focusFirstItem();
+      return;
+    }
+    if (_inlineGenreHub != null) {
+      (_inlineGenreViewKey.currentState as dynamic)?.focusFirstItem();
+      return;
+    }
+
+    if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
+      _focusFirstGlobalFavoritesHub();
+    } else if (_effectiveTabCount > 1) {
+      focusTabBar();
+    } else {
+      // Single-tab libraries (Collections/Playlists): focus content directly
+      final tabState = _getTabState(0);
+      if (tabState != null) {
+        (tabState as dynamic).focusFirstItem();
+      }
+    }
+  }
+
   /// Handle key events for the refresh button in app bar
   KeyEventResult _handleRefreshKeyEvent(FocusNode _, KeyEvent event) {
     if (!event.isActionable) return KeyEventResult.ignored;
     final key = event.logicalKey;
 
     if (key.isLeftKey) {
-      getTabChipFocusNode(_effectiveTabCount - 1).requestFocus();
+      if (_effectiveTabCount > 1 && _selectedLibraryGlobalKey != kJellyfinFavoritesKey) {
+        getTabChipFocusNode(_effectiveTabCount - 1).requestFocus();
+      } else {
+        MainScreenFocusScope.of(context)?.focusSidebar();
+      }
       return KeyEventResult.handled;
     }
     if (key.isRightKey) {
@@ -424,7 +493,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       return KeyEventResult.handled; // Block at boundary
     }
     if (key.isDownKey) {
-      _focusCurrentTab();
+      _navigateDownFromAppBar();
       return KeyEventResult.handled;
     }
     if (key.isSelectKey) {
@@ -438,7 +507,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     return KeyEventResult.ignored;
   }
 
-  /// Handle key events for the profile button in app bar
+  /// Handle key events for the profile button in app bar (D-pad nav; select opens menu)
   KeyEventResult _handleProfileKeyEvent(FocusNode _, KeyEvent event) {
     if (!event.isActionable) return KeyEventResult.ignored;
     final key = event.logicalKey;
@@ -451,11 +520,11 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       return KeyEventResult.handled;
     }
     if (key.isDownKey) {
-      _focusCurrentTab();
+      _navigateDownFromAppBar();
       return KeyEventResult.handled;
     }
     if (key.isSelectKey) {
-      _showProfileMenu(context);
+      _profileMenuKey.currentState?.showButtonMenu();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -494,72 +563,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         );
       }
     }
-  }
-
-  void _showProfileMenu(BuildContext context) {
-    final jellyfinProvider = context.read<JellyfinProfileProvider>();
-    final showSwitch = jellyfinProvider.currentUser != null;
-    final RenderBox? button = _profileButtonFocusNode.context?.findRenderObject() as RenderBox?;
-    if (button == null) return;
-
-    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-    final Offset topLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
-    // Position menu below the avatar so it doesn't cover the icon.
-    // Use a non-zero anchor rect so Flutter consistently places it below.
-    final Rect anchor = Rect.fromLTWH(
-      topLeft.dx,
-      topLeft.dy + button.size.height + 8,
-      button.size.width,
-      button.size.height,
-    );
-    final position = RelativeRect.fromRect(anchor, Offset.zero & overlay.size);
-
-    showMenu<String>(
-      context: context,
-      position: position,
-      items: [
-        if (showSwitch)
-          PopupMenuItem(
-            value: 'switch_profile',
-            child: Row(
-              children: [
-                AppIcon(Symbols.people_rounded, fill: 1),
-                const SizedBox(width: 8),
-                Text(t.discover.switchProfile),
-              ],
-            ),
-          ),
-        PopupMenuItem(
-          value: 'quick_connect',
-          child: Row(
-            children: [
-              AppIcon(Symbols.qr_code_2_rounded, fill: 1),
-              const SizedBox(width: 8),
-              Text(t.common.quickConnect),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'logout',
-          child: Row(
-            children: [
-              AppIcon(Symbols.logout_rounded, fill: 1),
-              const SizedBox(width: 8),
-              Text(t.common.logout),
-            ],
-          ),
-        ),
-      ],
-    ).then((value) {
-      if (!context.mounted) return;
-      if (value == 'switch_profile') {
-        _handleJellyfinSwitchProfile(context);
-      } else if (value == 'quick_connect') {
-        showDialog(context: context, builder: (_) => const QuickConnectAuthorizeDialog());
-      } else if (value == 'logout') {
-        _handleLogout();
-      }
-    });
   }
 
   @override
@@ -699,7 +702,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     // However, on first load the tab might finish loading before the tab index
     // is restored. Check if the current tab has already loaded and focus if so.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _selectedLibraryGlobalKey == libraryGlobalKey && _loadedTabs.contains(tabController.index)) {
+      if (mounted && _selectedLibraryGlobalKey == libraryGlobalKey && _loadedTabs.contains(tabController.index) && InputModeTracker.isKeyboardMode(context)) {
         _focusCurrentTab();
       }
     });
@@ -785,6 +788,12 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         _globalFavoritesHubs = hubs;
         _areGlobalFavoritesLoading = false;
         _globalFavoritesError = null;
+      });
+      // Focus the first hub after data loads and widgets are built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedLibraryGlobalKey == kJellyfinFavoritesKey && !suppressAutoFocus && InputModeTracker.isKeyboardMode(context)) {
+          _focusFirstGlobalFavoritesHub();
+        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -1104,7 +1113,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           isActive: tabController.index == 0,
           suppressAutoFocus: suppressAutoFocus,
           onDataLoaded: () => _handleTabDataLoaded(0),
-          onBack: focusTabBar,
+          onBack: _onContentNavigateUp,
         ),
         LibraryRecommendedTab(
           key: _recommendedTabKey,
@@ -1112,7 +1121,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           isActive: tabController.index == 1,
           suppressAutoFocus: suppressAutoFocus,
           onDataLoaded: () => _handleTabDataLoaded(1),
-          onBack: focusTabBar,
+          onBack: _onContentNavigateUp,
         ),
         LibraryFavoritesTab(
           key: _favoritesTabKey,
@@ -1120,7 +1129,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           isActive: tabController.index == 2,
           suppressAutoFocus: suppressAutoFocus,
           onDataLoaded: () => _handleTabDataLoaded(2),
-          onBack: focusTabBar,
+          onBack: _onContentNavigateUp,
         ),
         LibraryGenreTab(
           key: _genreTabKey,
@@ -1128,7 +1137,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           isActive: tabController.index == 3,
           suppressAutoFocus: suppressAutoFocus,
           onDataLoaded: () => _handleTabDataLoaded(3),
-          onBack: focusTabBar,
+          onBack: _onContentNavigateUp,
           onGenreHeaderTap: (hub) => setState(() => _inlineGenreHub = hub),
         ),
       ];
@@ -1141,7 +1150,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           isActive: tabController.index == 0,
           suppressAutoFocus: suppressAutoFocus,
           onDataLoaded: () => _handleTabDataLoaded(0),
-          onBack: focusTabBar,
+          onBack: _onContentNavigateUp,
         ),
         LibraryRecommendedTab(
           key: _recommendedTabKey,
@@ -1149,7 +1158,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           isActive: tabController.index == 1,
           suppressAutoFocus: suppressAutoFocus,
           onDataLoaded: () => _handleTabDataLoaded(1),
-          onBack: focusTabBar,
+          onBack: _onContentNavigateUp,
         ),
         LibraryFavoritesTab(
           key: _favoritesTabKey,
@@ -1157,7 +1166,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           isActive: tabController.index == 2,
           suppressAutoFocus: suppressAutoFocus,
           onDataLoaded: () => _handleTabDataLoaded(2),
-          onBack: focusTabBar,
+          onBack: _onContentNavigateUp,
         ),
       ];
     }
@@ -1171,7 +1180,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             isActive: true,
             suppressAutoFocus: suppressAutoFocus,
             onDataLoaded: () => _handleTabDataLoaded(0),
-            onBack: focusTabBar,
+            onBack: _onContentNavigateUp,
             onCollectionTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
           )
         else
@@ -1181,7 +1190,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             isActive: true,
             suppressAutoFocus: suppressAutoFocus,
             onDataLoaded: () => _handleTabDataLoaded(0),
-            onBack: focusTabBar,
+            onBack: _onContentNavigateUp,
             onPlaylistTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
           ),
       ];
@@ -1193,7 +1202,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         isActive: tabController.index == 0,
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(0),
-        onBack: focusTabBar,
+        onBack: _onContentNavigateUp,
       ),
       LibraryRecommendedTab(
         key: _recommendedTabKey,
@@ -1201,7 +1210,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         isActive: tabController.index == 1,
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(1),
-        onBack: focusTabBar,
+        onBack: _onContentNavigateUp,
       ),
       LibraryFavoritesTab(
         key: _favoritesTabKey,
@@ -1209,7 +1218,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         isActive: tabController.index == 2,
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(2),
-        onBack: focusTabBar,
+        onBack: _onContentNavigateUp,
       ),
       LibraryCollectionsTab(
         key: _collectionsTabKey,
@@ -1217,7 +1226,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         isActive: tabController.index == 3,
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(3),
-        onBack: focusTabBar,
+        onBack: _onContentNavigateUp,
         onCollectionTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
       ),
       LibraryPlaylistsTab(
@@ -1226,7 +1235,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         isActive: tabController.index == 4,
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(4),
-        onBack: focusTabBar,
+        onBack: _onContentNavigateUp,
         onPlaylistTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
       ),
     ];
@@ -1376,16 +1385,29 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         ),
       ];
     }
+    // Ensure we have keys for each hub (for D-pad focus)
+    while (_globalFavoritesHubKeys.length < _globalFavoritesHubs.length) {
+      _globalFavoritesHubKeys.add(GlobalKey<HubSectionState>());
+    }
+    if (_globalFavoritesHubKeys.length > _globalFavoritesHubs.length) {
+      _globalFavoritesHubKeys.length = _globalFavoritesHubs.length;
+    }
+
     return [
-      for (final hub in _globalFavoritesHubs)
+      for (var i = 0; i < _globalFavoritesHubs.length; i++) ...[
         SliverToBoxAdapter(
           child: HubSection(
-            hub: hub,
-            icon: hub.type.toLowerCase() == 'movie' ? Symbols.movie_rounded : Symbols.tv_rounded,
+            key: _globalFavoritesHubKeys[i],
+            hub: _globalFavoritesHubs[i],
+            icon: _globalFavoritesHubs[i].type.toLowerCase() == 'movie' ? Symbols.movie_rounded : Symbols.tv_rounded,
             onRefresh: (_) => _loadGlobalFavorites(),
-            onHeaderTap: () => setState(() => _inlineFavoritesHub = hub),
+            onHeaderTap: () => setState(() => _inlineFavoritesHub = _globalFavoritesHubs[i]),
+            onVerticalNavigation: (isUp) => _handleGlobalFavoritesVerticalNav(i, isUp),
+            onNavigateUp: i == 0 ? () => _refreshButtonFocusNode.requestFocus() : null,
+            onNavigateToSidebar: () => MainScreenFocusScope.of(context)?.focusSidebar(),
           ),
         ),
+      ],
       const SliverToBoxAdapter(child: SizedBox(height: 24)),
     ];
   }
@@ -1462,42 +1484,24 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                             ),
                           ),
                         ),
-                        Consumer2<UserProfileProvider, JellyfinProfileProvider>(
-                          builder: (context, userProvider, jellyfinProvider, child) {
-                            Widget avatar;
-                            final jUser = jellyfinProvider.currentUser;
-                            if (jUser != null) {
-                              final imageUrl = jellyfinProvider.imageUrlFor(jUser);
-                              avatar = imageUrl.isNotEmpty
-                                  ? ClipOval(
-                                      child: CachedNetworkImage(
-                                        imageUrl: imageUrl,
-                                        width: 32,
-                                        height: 32,
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, loadingProgress) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
-                                        errorWidget: (context, error, stackTrace) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
-                                      ),
-                                    )
-                                  : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32);
-                            } else {
-                              avatar = const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32);
-                            }
-                            return Focus(
-                              focusNode: _profileButtonFocusNode,
-                              onKeyEvent: _handleProfileKeyEvent,
-                              child: Container(
+                        Focus(
+                          focusNode: _profileButtonFocusNode,
+                          onKeyEvent: _handleProfileKeyEvent,
+                          child: Builder(
+                            builder: (context) {
+                              return Container(
                                 decoration: BoxDecoration(
                                   color: _isProfileFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
                                   borderRadius: const BorderRadius.all(Radius.circular(20)),
                                 ),
-                                child: IconButton(
-                                  icon: avatar,
-                                  onPressed: () => _showProfileMenu(context),
+                                child: ProfileAppBarButton(
+                                  menuKey: _profileMenuKey,
+                                  onSwitchProfile: () => _handleJellyfinSwitchProfile(context),
+                                  onLogout: _handleLogout,
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -1544,21 +1548,25 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                   SliverFillRemaining(
                     child: _inlineGenreHub != null
                         ? LibraryInlineGenreView(
+                            key: _inlineGenreViewKey,
                             hub: _inlineGenreHub!,
                             library: selectedLibrary,
                             onBack: () {
                               setState(() => _inlineGenreHub = null);
-                              focusTabBar();
+                              _focusCurrentTab();
                             },
+                            onNavigateUp: _onContentNavigateUp,
                           )
                         : _inlinePlaylistOrCollection != null
                             ? LibraryInlineListView(
+                                key: _inlineListViewKey,
                                 library: selectedLibrary,
                                 item: _inlinePlaylistOrCollection,
                                 onBack: () {
                                   setState(() => _inlinePlaylistOrCollection = null);
-                                  focusTabBar();
+                                  _focusCurrentTab();
                                 },
+                                onNavigateUp: _onContentNavigateUp,
                               )
                             : TabBarView(
                                 key: ValueKey(_selectedLibraryGlobalKey),

@@ -43,20 +43,22 @@ Avoid downloading ImageMagick from random “download” buttons; use winget (or
 
 ---
 
-## What `scripts/generate_android_icons.sh` does (different job)
+## What `scripts/generate_finzy_pngs.py` also generates (Android drawable icons)
 
-That script does **not** create the three PNGs above. It:
+The Python script writes these directly into **android/app/src/main/res/**:
 
-- Reads **assets/finzy.svg**.
-- Produces **Android-only** files and writes them straight into **android/app/src/main/res/**:
-  - **drawable-*/ic_stat_notification.png** – white silhouette for the status bar / notifications.
-  - **mipmap-*/ic_launcher_monochrome.png** – monochrome launcher icon at several densities.
+- **drawable-*/ic_launcher_monochrome.png** – monochrome launcher icon (adaptive icon themed layer).
+- **drawable-*/ic_stat_notification.png** – white silhouette for the status bar / notifications.
+- **drawable-*/tv_banner.png** – Android TV launcher banner (16:9).
+
+## What `scripts/generate_android_icons.sh` does (alternative, macOS/Linux)
+
+That Bash script does **not** create the three PNGs in assets. It reads **assets/finzy.svg** and produces the same Android drawable icons (ic_stat_notification, ic_launcher_monochrome) using rsvg-convert + ImageMagick. Use it if you prefer Bash on macOS/Linux; otherwise **generate_finzy_pngs.py** handles everything.
 
 So:
 
 - **App launcher icon** (and Windows/Linux icons) → from **assets/** via **flutter_launcher_icons** (using the 3 PNGs).
-- **Android notification icon** and **Android monochrome launcher** (optional, from SVG) → **generate_android_icons.sh** (needs Bash, rsvg-convert, ImageMagick; typically used on macOS/Linux).
-- **Android TV launcher banner** (`drawable-*/tv_banner.png`) → **generate_finzy_pngs.py** (same run as the 3 PNGs above).
+- **Android notification icon**, **monochrome launcher**, and **TV banner** → **generate_finzy_pngs.py** (single script, works on Windows).
 
 ---
 

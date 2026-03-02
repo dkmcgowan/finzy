@@ -19,6 +19,21 @@ enum EpisodePosterMode { seriesPoster, seasonPoster, episodeThumbnail }
 
 enum TimeFormat { twelveHour, twentyFourHour }
 
+/// Performance tier for image quality and grid preload. Small = fastest, Large = best quality.
+enum PerformanceProfile { small, medium, large }
+
+/// Grid preload level (cacheExtent). Low = fewer off-screen items, High = smoother scroll.
+enum GridPreloadLevel { low, medium, high }
+
+extension GridPreloadLevelExt on GridPreloadLevel {
+  /// Cache extent in logical pixels for scroll views.
+  double get cacheExtent => switch (this) {
+        GridPreloadLevel.low => 150,
+        GridPreloadLevel.medium => 250,
+        GridPreloadLevel.high => 400,
+      };
+}
+
 class SettingsService extends BaseSharedPreferencesService {
   static const String _keyThemeMode = 'theme_mode';
   static const String _keyEnableDebugLogging = 'enable_debug_logging';
@@ -78,6 +93,7 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyDefaultPlaybackSpeed = 'default_playback_speed';
   static const String _keyAutoPlayNextEpisode = 'auto_play_next_episode';
   static const String _keyUseExoPlayer = 'use_exoplayer';
+  static const String _keyUseExoPlayerForLiveTv = 'use_exoplayer_for_livetv';
   static const String _keyAlwaysKeepSidebarOpen = 'always_keep_sidebar_open';
   static const String _keyShowUnwatchedCount = 'show_unwatched_count';
   static const String _keyGlobalShaderPreset = 'global_shader_preset';
@@ -87,6 +103,11 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyCustomExternalPlayers = 'custom_external_players';
   static const String _keyConfirmExitOnBack = 'confirm_exit_on_back';
   static const String _keyTimeFormat = 'time_format';
+  static const String _keyImageQuality = 'performance_image_quality';
+  static const String _keyPosterSize = 'performance_poster_size';
+  static const String _keyReduceAnimations = 'performance_reduce_animations';
+  static const String _keyGridPreload = 'performance_grid_preload';
+  static const String _keyHideSupportDevelopment = 'hide_support_development';
 
   SettingsService._();
 
@@ -215,6 +236,51 @@ class SettingsService extends BaseSharedPreferencesService {
 
   TimeFormat getTimeFormat() {
     return _getEnumValue(_keyTimeFormat, TimeFormat.values, TimeFormat.twelveHour);
+  }
+
+  // Performance: Image Quality (TV default: small, else: medium)
+  Future<void> setImageQuality(PerformanceProfile profile) async {
+    await prefs.setString(_keyImageQuality, profile.name);
+  }
+
+  PerformanceProfile getImageQuality() {
+    return _getEnumValue(_keyImageQuality, PerformanceProfile.values, PerformanceProfile.medium);
+  }
+
+  // Performance: Poster Size (TV default: small, else: medium)
+  Future<void> setPosterSize(PerformanceProfile profile) async {
+    await prefs.setString(_keyPosterSize, profile.name);
+  }
+
+  PerformanceProfile getPosterSize() {
+    return _getEnumValue(_keyPosterSize, PerformanceProfile.values, PerformanceProfile.medium);
+  }
+
+  // Performance: Reduce Animations (TV default: on, else: off)
+  Future<void> setReduceAnimations(bool enabled) async {
+    await prefs.setBool(_keyReduceAnimations, enabled);
+  }
+
+  bool getReduceAnimations() {
+    return prefs.getBool(_keyReduceAnimations) ?? false;
+  }
+
+  // Performance: Grid Preload (TV default: low, else: medium)
+  Future<void> setGridPreload(GridPreloadLevel level) async {
+    await prefs.setString(_keyGridPreload, level.name);
+  }
+
+  GridPreloadLevel getGridPreload() {
+    return _getEnumValue(_keyGridPreload, GridPreloadLevel.values, GridPreloadLevel.medium);
+  }
+
+  // Advanced: Hide Support Development section (default: off)
+  Future<void> setHideSupportDevelopment(bool enabled) async {
+    await prefs.setBool(_keyHideSupportDevelopment, enabled);
+  }
+
+  bool getHideSupportDevelopment() {
+    return prefs.getBool(_keyHideSupportDevelopment) ?? false;
   }
 
   // Show Hero Section
@@ -1101,6 +1167,15 @@ class SettingsService extends BaseSharedPreferencesService {
     return prefs.getBool(_keyUseExoPlayer) ?? true; // Default: ExoPlayer
   }
 
+  // Live TV player on Android: ExoPlayer (false) or MPV (true). Default: MPV (more reliable for Live TV)
+  Future<void> setUseExoPlayerForLiveTv(bool useExo) async {
+    await prefs.setBool(_keyUseExoPlayerForLiveTv, useExo);
+  }
+
+  bool getUseExoPlayerForLiveTv() {
+    return prefs.getBool(_keyUseExoPlayerForLiveTv) ?? false; // Default: MPV (false = use MPV)
+  }
+
   // Always Keep Sidebar Open (Desktop/TV only)
   Future<void> setAlwaysKeepSidebarOpen(bool enabled) async {
     await prefs.setBool(_keyAlwaysKeepSidebarOpen, enabled);
@@ -1249,6 +1324,7 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyDefaultPlaybackSpeed),
       prefs.remove(_keyAutoPlayNextEpisode),
       prefs.remove(_keyUseExoPlayer),
+      prefs.remove(_keyUseExoPlayerForLiveTv),
       prefs.remove(_keyAlwaysKeepSidebarOpen),
       prefs.remove(_keyShowUnwatchedCount),
       prefs.remove(_keyGlobalShaderPreset),
@@ -1259,6 +1335,11 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyConfirmExitOnBack),
       prefs.remove(_keyEnableTrickplay),
       prefs.remove(_keyEnableChapterImages),
+      prefs.remove(_keyImageQuality),
+      prefs.remove(_keyPosterSize),
+      prefs.remove(_keyReduceAnimations),
+      prefs.remove(_keyGridPreload),
+      prefs.remove(_keyHideSupportDevelopment),
     ]);
   }
 

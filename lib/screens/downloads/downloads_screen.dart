@@ -3,25 +3,17 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../../models/media_metadata.dart';
 import '../../providers/download_provider.dart';
-import '../../providers/hidden_libraries_provider.dart';
 import '../../providers/multi_server_provider.dart';
-import '../../providers/playback_state_provider.dart';
-import '../../providers/server_state_provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../providers/user_profile_provider.dart';
 import '../../utils/global_key_utils.dart';
-import '../../utils/dialogs.dart';
 import '../../mixins/tab_navigation_mixin.dart';
 import '../../utils/grid_size_calculator.dart';
 import '../../utils/platform_detector.dart';
-import '../../widgets/profile_app_bar_button.dart';
 import '../../widgets/focusable_tab_chip.dart';
 import '../../widgets/focusable_media_card.dart';
 import '../../widgets/media_grid_delegate.dart';
 import '../../widgets/download_tree_view.dart';
-import '../auth_screen.dart';
 import '../main_screen.dart';
-import '../profile/jellyfin_profile_switch_screen.dart';
 import '../libraries/state_messages.dart';
 import '../../i18n/strings.g.dart';
 
@@ -139,38 +131,6 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
     return Text(t.downloads.title);
   }
 
-  void _handleJellyfinSwitchProfile(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const JellyfinProfileSwitchScreen()));
-  }
-
-  Future<void> _handleLogout() async {
-    final confirm = await showConfirmDialog(
-      context,
-      title: t.common.logout,
-      message: t.messages.logoutConfirm,
-      confirmText: t.common.logout,
-      isDestructive: true,
-    );
-    if (confirm && mounted) {
-      final userProfileProvider = context.read<UserProfileProvider>();
-      final multiServerProvider = context.read<MultiServerProvider>();
-      final serverStateProvider = context.read<ServerStateProvider>();
-      final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
-      final playbackStateProvider = context.read<PlaybackStateProvider>();
-      await userProfileProvider.logout();
-      multiServerProvider.clearAllConnections();
-      serverStateProvider.reset();
-      await hiddenLibrariesProvider.refresh();
-      playbackStateProvider.clearShuffle();
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const AuthScreen()),
-          (route) => false,
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -195,17 +155,9 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
                 right: 16,
                 bottom: 8,
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Expanded(child: _buildAppBarTitle()),
-                    ProfileAppBarButton(
-                      onSwitchProfile: () => _handleJellyfinSwitchProfile(context),
-                      onLogout: _handleLogout,
-                    ),
-                  ],
-                ),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: _buildAppBarTitle(),
               ),
             ),
           ),
@@ -274,6 +226,7 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
                             onCancel: downloadProvider.cancelDownload,
                             onDelete: downloadProvider.deleteDownload,
                             onNavigateLeft: () => MainScreenFocusScope.of(context)?.focusSidebar(),
+                            onNavigateUp: focusTabBar,
                             onBack: focusTabBar,
                             suppressAutoFocus: suppressAutoFocus,
                           );
@@ -283,11 +236,13 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
                         type: DownloadType.tvShows,
                         suppressAutoFocus: suppressAutoFocus,
                         onBack: focusTabBar,
+                        onNavigateUp: focusTabBar,
                       ),
                       _DownloadsGridContent(
                         type: DownloadType.movies,
                         suppressAutoFocus: suppressAutoFocus,
                         onBack: focusTabBar,
+                        onNavigateUp: focusTabBar,
                       ),
                     ],
                   ),
@@ -308,8 +263,9 @@ class _DownloadsGridContent extends StatefulWidget {
   final DownloadType type;
   final bool suppressAutoFocus;
   final VoidCallback? onBack;
+  final VoidCallback? onNavigateUp;
 
-  const _DownloadsGridContent({required this.type, required this.suppressAutoFocus, this.onBack});
+  const _DownloadsGridContent({required this.type, required this.suppressAutoFocus, this.onBack, this.onNavigateUp});
 
   @override
   State<_DownloadsGridContent> createState() => _DownloadsGridContentState();
@@ -383,12 +339,14 @@ class _DownloadsGridContentState extends State<_DownloadsGridContent> {
                 final item = items[index];
                 final isFirstColumn = GridSizeCalculator.isFirstColumn(index, columnCount);
                 final isFirst = index == 0;
+                final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
                 return FocusableMediaCard(
                   item: item,
                   focusNode: isFirst ? _firstItemFocusNode : null,
                   onBack: widget.onBack,
-                  isOffline: true, // Downloaded content works without server
+                  isOffline: true,
                   onNavigateLeft: isFirstColumn ? _navigateToSidebar : null,
+                  onNavigateUp: isFirstRow ? widget.onNavigateUp : null,
                 );
               },
             );

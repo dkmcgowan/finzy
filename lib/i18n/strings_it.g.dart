@@ -265,6 +265,10 @@ class _TranslationsSettingsIt implements TranslationsSettingsEn {
 	@override String get exoPlayerDescription => 'Lettore nativo Android con migliore supporto hardware';
 	@override String get mpv => 'MPV';
 	@override String get mpvDescription => 'Lettore avanzato con più funzionalità e supporto sottotitoli ASS';
+	@override String get liveTvPlayer => 'Lettore TV in diretta';
+	@override String get liveTvPlayerDescription => 'MPV consigliato per la TV in diretta. ExoPlayer può avere problemi su alcuni dispositivi.';
+	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get hardwareDecoding => 'Decodifica Hardware';
 	@override String get hardwareDecodingDescription => 'Utilizza l\'accelerazione hardware quando disponibile';
 	@override String get bufferSize => 'Dimensione buffer';
@@ -280,10 +284,10 @@ class _TranslationsSettingsIt implements TranslationsSettingsEn {
 	@override String get rememberTrackSelectionsDescription => 'Salva automaticamente le preferenze delle lingue audio e sottotitoli quando cambi tracce durante la riproduzione';
 	@override String get clickVideoTogglesPlayback => 'Fai clic sul video per avviare o mettere in pausa la riproduzione.';
 	@override String get clickVideoTogglesPlaybackDescription => 'Se questa opzione è abilitata, facendo clic sul lettore video la riproduzione verrà avviata o messa in pausa. In caso contrario, facendo clic verranno mostrati o nascosti i controlli di riproduzione.';
-	@override String get videoPlayerControls => 'Controlli del lettore video';
+	@override String get videoPlayerControls => 'Controlli tastiera del lettore video';
 	@override String get keyboardShortcuts => 'Scorciatoie da tastiera';
 	@override String get keyboardShortcutsDescription => 'Personalizza le scorciatoie da tastiera';
-	@override String get videoPlayerNavigation => 'Navigazione del lettore video';
+	@override String get videoPlayerNavigation => 'Navigazione tastiera del lettore video';
 	@override String get videoPlayerNavigationDescription => 'Usa i tasti freccia per navigare nei controlli del lettore video';
 	@override String get debugLogging => 'Log di debug';
 	@override String get debugLoggingDescription => 'Abilita il logging dettagliato per la risoluzione dei problemi';
@@ -329,6 +333,8 @@ class _TranslationsSettingsIt implements TranslationsSettingsEn {
 	@override String get downloads => 'Download';
 	@override String get downloadLocationDescription => 'Scegli dove salvare i contenuti scaricati';
 	@override String get downloadLocationDefault => 'Predefinita (Archiviazione App)';
+	@override String get downloadsDefault => 'Download Predefinita (Archiviazione App)';
+	@override String get libraryOrder => 'Gestione Librerie';
 	@override String get downloadLocationCustom => 'Posizione Personalizzata';
 	@override String get selectFolder => 'Seleziona Cartella';
 	@override String get resetToDefault => 'Ripristina Predefinita';
@@ -349,6 +355,22 @@ class _TranslationsSettingsIt implements TranslationsSettingsEn {
 	@override String get requireProfileSelectionOnOpenDescription => 'Mostra la selezione del profilo ogni volta che l\'app viene aperta';
 	@override String get confirmExitOnBack => 'Conferma prima di uscire';
 	@override String get confirmExitOnBackDescription => 'Mostra una finestra di conferma quando si preme indietro per uscire dall\'app';
+	@override String get performance => 'Prestazioni';
+	@override String get performanceImageQuality => 'Qualità immagine';
+	@override String get performanceImageQualityDescription => 'Qualità inferiore carica più velocemente. Piccolo = più veloce, Grande = migliore qualità.';
+	@override String get performancePosterSize => 'Dimensione poster';
+	@override String get performancePosterSizeDescription => 'Dimensione delle card poster nelle griglie. Piccolo = più elementi, Grande = card più grandi.';
+	@override String get performanceReduceAnimations => 'Riduci animazioni';
+	@override String get performanceReduceAnimationsDescription => 'Transizioni più brevi per una sensazione più reattiva';
+	@override String get performanceGridPreload => 'Precaricamento griglia';
+	@override String get performanceGridPreloadDescription => 'Quanti elementi fuori schermo caricare. Basso = più veloce, Alto = scorrimento più fluido.';
+	@override String get performanceSmall => 'Piccolo';
+	@override String get performanceMedium => 'Medio';
+	@override String get performanceLarge => 'Grande';
+	@override String get performanceLow => 'Basso';
+	@override String get performanceHigh => 'Alto';
+	@override String get hideSupportDevelopment => 'Nascondi Supporta lo sviluppo';
+	@override String get hideSupportDevelopmentDescription => 'Nascondi la sezione Supporta lo sviluppo nelle Impostazioni';
 }
 
 // Path: search
@@ -1389,6 +1411,10 @@ extension on TranslationsIt {
 			'settings.exoPlayerDescription' => 'Lettore nativo Android con migliore supporto hardware',
 			'settings.mpv' => 'MPV',
 			'settings.mpvDescription' => 'Lettore avanzato con più funzionalità e supporto sottotitoli ASS',
+			'settings.liveTvPlayer' => 'Lettore TV in diretta',
+			'settings.liveTvPlayerDescription' => 'MPV consigliato per la TV in diretta. ExoPlayer può avere problemi su alcuni dispositivi.',
+			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.hardwareDecoding' => 'Decodifica Hardware',
 			'settings.hardwareDecodingDescription' => 'Utilizza l\'accelerazione hardware quando disponibile',
 			'settings.bufferSize' => 'Dimensione buffer',
@@ -1404,10 +1430,10 @@ extension on TranslationsIt {
 			'settings.rememberTrackSelectionsDescription' => 'Salva automaticamente le preferenze delle lingue audio e sottotitoli quando cambi tracce durante la riproduzione',
 			'settings.clickVideoTogglesPlayback' => 'Fai clic sul video per avviare o mettere in pausa la riproduzione.',
 			'settings.clickVideoTogglesPlaybackDescription' => 'Se questa opzione è abilitata, facendo clic sul lettore video la riproduzione verrà avviata o messa in pausa. In caso contrario, facendo clic verranno mostrati o nascosti i controlli di riproduzione.',
-			'settings.videoPlayerControls' => 'Controlli del lettore video',
+			'settings.videoPlayerControls' => 'Controlli tastiera del lettore video',
 			'settings.keyboardShortcuts' => 'Scorciatoie da tastiera',
 			'settings.keyboardShortcutsDescription' => 'Personalizza le scorciatoie da tastiera',
-			'settings.videoPlayerNavigation' => 'Navigazione del lettore video',
+			'settings.videoPlayerNavigation' => 'Navigazione tastiera del lettore video',
 			'settings.videoPlayerNavigationDescription' => 'Usa i tasti freccia per navigare nei controlli del lettore video',
 			'settings.debugLogging' => 'Log di debug',
 			'settings.debugLoggingDescription' => 'Abilita il logging dettagliato per la risoluzione dei problemi',
@@ -1453,6 +1479,8 @@ extension on TranslationsIt {
 			'settings.downloads' => 'Download',
 			'settings.downloadLocationDescription' => 'Scegli dove salvare i contenuti scaricati',
 			'settings.downloadLocationDefault' => 'Predefinita (Archiviazione App)',
+			'settings.downloadsDefault' => 'Download Predefinita (Archiviazione App)',
+			'settings.libraryOrder' => 'Gestione Librerie',
 			'settings.downloadLocationCustom' => 'Posizione Personalizzata',
 			'settings.selectFolder' => 'Seleziona Cartella',
 			'settings.resetToDefault' => 'Ripristina Predefinita',
@@ -1473,6 +1501,22 @@ extension on TranslationsIt {
 			'settings.requireProfileSelectionOnOpenDescription' => 'Mostra la selezione del profilo ogni volta che l\'app viene aperta',
 			'settings.confirmExitOnBack' => 'Conferma prima di uscire',
 			'settings.confirmExitOnBackDescription' => 'Mostra una finestra di conferma quando si preme indietro per uscire dall\'app',
+			'settings.performance' => 'Prestazioni',
+			'settings.performanceImageQuality' => 'Qualità immagine',
+			'settings.performanceImageQualityDescription' => 'Qualità inferiore carica più velocemente. Piccolo = più veloce, Grande = migliore qualità.',
+			'settings.performancePosterSize' => 'Dimensione poster',
+			'settings.performancePosterSizeDescription' => 'Dimensione delle card poster nelle griglie. Piccolo = più elementi, Grande = card più grandi.',
+			'settings.performanceReduceAnimations' => 'Riduci animazioni',
+			'settings.performanceReduceAnimationsDescription' => 'Transizioni più brevi per una sensazione più reattiva',
+			'settings.performanceGridPreload' => 'Precaricamento griglia',
+			'settings.performanceGridPreloadDescription' => 'Quanti elementi fuori schermo caricare. Basso = più veloce, Alto = scorrimento più fluido.',
+			'settings.performanceSmall' => 'Piccolo',
+			'settings.performanceMedium' => 'Medio',
+			'settings.performanceLarge' => 'Grande',
+			'settings.performanceLow' => 'Basso',
+			'settings.performanceHigh' => 'Alto',
+			'settings.hideSupportDevelopment' => 'Nascondi Supporta lo sviluppo',
+			'settings.hideSupportDevelopmentDescription' => 'Nascondi la sezione Supporta lo sviluppo nelle Impostazioni',
 			'search.hint' => 'Cerca film. spettacoli, musica...',
 			'search.tryDifferentTerm' => 'Prova altri termini di ricerca',
 			'search.searchYourMedia' => 'Cerca nei tuoi media',
@@ -1741,6 +1785,8 @@ extension on TranslationsIt {
 			'libraries.tabs.suggestions' => 'Suggerimenti',
 			'libraries.tabs.browse' => 'Esplora',
 			'libraries.tabs.genres' => 'Generi',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.tabs.favorites' => 'Preferiti',
 			'libraries.tabs.collections' => 'Raccolte',
 			'libraries.tabs.playlists' => 'Playlist',
@@ -1763,8 +1809,6 @@ extension on TranslationsIt {
 			'hubDetail.dateAdded' => 'Data aggiunta',
 			'hubDetail.rating' => 'Valutazione',
 			'hubDetail.noItemsFound' => 'Nessun elemento trovato',
-			_ => null,
-		} ?? switch (path) {
 			'logs.clearLogs' => 'Cancella log',
 			'logs.copyLogs' => 'Copia log',
 			'logs.error' => 'Errore:',

@@ -219,9 +219,51 @@ def main():
     mono_rgba.save(mono_path, "PNG")
     print(f"Wrote {mono_path} ({w}x{h}, monochrome)")
 
-    # 4) Android TV launcher banners (16:9, required for TV launcher)
-    # android:banner uses @drawable/tv_banner - different from phone ic_launcher
+    # 4) Android drawable icons: ic_launcher_monochrome + ic_stat_notification
+    # ic_launcher.xml references @drawable/ic_launcher_monochrome (adaptive icon monochrome layer)
+    # ic_stat_notification: white silhouette for status bar / notifications (system tints it)
     ANDROID_RES = os.path.join(REPO_ROOT, "android", "app", "src", "main", "res")
+    MONOCHROME_SIZES = {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}
+    NOTIFICATION_SIZES = {"mdpi": 24, "hdpi": 36, "xhdpi": 48, "xxhdpi": 72, "xxxhdpi": 96}
+
+    # White silhouette: extract alpha from icon, fill shape with white (Android tints notification icons)
+    r, g, b, a = icon_1024.split()
+    white_silhouette = Image.new("RGBA", icon_1024.size, (255, 255, 255, 0))
+    white_silhouette.paste((255, 255, 255, 255), (0, 0), a)
+
+    print("")
+    print("Generating Android drawable icons...")
+    for density in MONOCHROME_SIZES:
+        out_dir = os.path.join(ANDROID_RES, f"drawable-{density}")
+        os.makedirs(out_dir, exist_ok=True)
+        # ic_launcher_monochrome.png (108dp base for adaptive icon monochrome layer)
+        mono_size = MONOCHROME_SIZES[density]
+        mono_resized = mono_rgba.resize((mono_size, mono_size), Image.LANCZOS)
+        mono_out = os.path.join(out_dir, "ic_launcher_monochrome.png")
+        mono_resized.save(mono_out, "PNG")
+        print(f"  Wrote {mono_out} ({mono_size}x{mono_size})")
+        # ic_stat_notification.png (24dp base, white silhouette for notifications)
+        notif_size = NOTIFICATION_SIZES[density]
+        notif_resized = white_silhouette.resize((notif_size, notif_size), Image.LANCZOS)
+        notif_out = os.path.join(out_dir, "ic_stat_notification.png")
+        notif_resized.save(notif_out, "PNG")
+        print(f"  Wrote {notif_out} ({notif_size}x{notif_size})")
+
+    # Also write ic_launcher_monochrome to mipmap-* (some tooling/legacy expects it there)
+    print("")
+    print("Generating Android mipmap ic_launcher_monochrome...")
+    for density in MONOCHROME_SIZES:
+        out_dir = os.path.join(ANDROID_RES, f"mipmap-{density}")
+        os.makedirs(out_dir, exist_ok=True)
+        mono_size = MONOCHROME_SIZES[density]
+        mono_resized = mono_rgba.resize((mono_size, mono_size), Image.LANCZOS)
+        mono_out = os.path.join(out_dir, "ic_launcher_monochrome.png")
+        mono_resized.save(mono_out, "PNG")
+        print(f"  Wrote {mono_out} ({mono_size}x{mono_size})")
+
+    # 5) Android TV launcher banners (16:9, required for TV launcher)
+    # android:banner uses @drawable/tv_banner - different from phone ic_launcher
+    # Style: dark background, smaller logo left, "Finzy" text right (like Jellyfin on Android TV)
     TV_BANNER_SIZES = {
         "mdpi": (160, 90),
         "hdpi": (240, 135),
@@ -229,21 +271,87 @@ def main():
         "xxhdpi": (480, 270),
         "xxxhdpi": (640, 360),
     }
-    # White background per Android TV guidelines (avoid transparency)
-    BANNER_BG = (255, 255, 255)
+    # Dark navy blue background (similar to Jellyfin TV branding)
+    BANNER_BG = (0x1A, 0x1F, 0x2E)
+    BANNER_TEXT_COLOR = (255, 255, 255)
+    # Logo uses ~1/3 of banner height; text "Finzy" to the right
+    LOGO_HEIGHT_FRAC = 0.45  # logo height as fraction of banner height
+    LOGO_TEXT_GAP_FRAC = 0.04  # gap between logo and text
+
+    # Inter font (matches getfinzy.com) - Bold for thicker "Finzy" text
+    INTER_FONT_PATH = os.path.join(ASSETS, "fonts", "Inter-Bold.ttf")
+    INTER_FONT_FALLBACK = os.path.join(ASSETS, "fonts", "Inter-SemiBold.ttf")
+    INTER_FONT_FALLBACK2 = os.path.join(ASSETS, "fonts", "Inter-Regular.ttf")
+
+    def _load_banner_font(size: int):
+        """Load Inter font to match getfinzy.com; fallback to system fonts."""
+        from PIL import ImageFont
+        for path in (INTER_FONT_PATH, INTER_FONT_FALLBACK, INTER_FONT_FALLBACK2):
+            if os.path.isfile(path):
+                try:
+                    return ImageFont.truetype(path, size)
+                except OSError:
+                    pass
+        # Fallback to system fonts
+        candidates = []
+        if sys.platform == "win32":
+            candidates = [
+                os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts", "segoeui.ttf"),
+                os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts", "arial.ttf"),
+            ]
+        elif sys.platform == "darwin":
+            candidates = [
+                "/System/Library/Fonts/Helvetica.ttc",
+                "/System/Library/Fonts/SFNSDisplay.ttf",
+            ]
+        else:
+            candidates = [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/TTF/DejaVuSans.ttf",
+            ]
+        for path in candidates:
+            if os.path.isfile(path):
+                try:
+                    return ImageFont.truetype(path, size)
+                except OSError:
+                    pass
+        return ImageFont.load_default()
+
+    # Crop icon to visible content so transparent padding doesn't skew centering
+    icon_bbox = icon_1024.getbbox()
+    icon_cropped = icon_1024.crop(icon_bbox) if icon_bbox else icon_1024
+
     print("")
     print("Generating Android TV launcher banners (tv_banner.png)...")
+    from PIL import ImageDraw
     for density, (banner_w, banner_h) in TV_BANNER_SIZES.items():
         out_dir = os.path.join(ANDROID_RES, f"drawable-{density}")
         os.makedirs(out_dir, exist_ok=True)
-        scale = min(banner_w / icon_1024.width, banner_h / icon_1024.height)
-        icon_w = int(round(icon_1024.width * scale))
-        icon_h = int(round(icon_1024.height * scale))
-        icon_scaled = icon_1024.resize((icon_w, icon_h), Image.LANCZOS)
+        logo_h = int(round(banner_h * LOGO_HEIGHT_FRAC))
+        scale = logo_h / icon_cropped.height
+        icon_w = int(round(icon_cropped.width * scale))
+        icon_h = logo_h
+        icon_scaled = icon_cropped.resize((icon_w, icon_h), Image.LANCZOS)
         canvas = Image.new("RGBA", (banner_w, banner_h), (*BANNER_BG, 255))
-        x = (banner_w - icon_scaled.width) // 2
-        y = (banner_h - icon_scaled.height) // 2
-        canvas.paste(icon_scaled, (x, y), icon_scaled)
+        gap = int(banner_w * LOGO_TEXT_GAP_FRAC)
+        font_size = max(14, int(banner_h * 0.38))
+        font = _load_banner_font(font_size)
+        draw = ImageDraw.Draw(canvas)
+        stroke_w = max(1, font_size // 28)
+        text_bbox = draw.textbbox((0, 0), "Finzy", font=font, anchor="lt",
+                                  stroke_width=stroke_w)
+        text_w = text_bbox[2] - text_bbox[0]
+        total_w = icon_w + gap + text_w
+        logo_x = (banner_w - total_w) // 2
+        logo_y = (banner_h - icon_h) // 2
+        canvas.paste(icon_scaled, (logo_x, logo_y), icon_scaled)
+        text_x = logo_x + icon_w + gap
+        logo_center_y = logo_y + icon_h // 2
+        text_nudge_up = max(1, int(icon_h * 0.06))
+        text_y = logo_center_y - text_nudge_up
+        draw.text((text_x, text_y), "Finzy", fill=BANNER_TEXT_COLOR, font=font,
+                  anchor="lm", stroke_width=stroke_w, stroke_fill=BANNER_TEXT_COLOR)
         out_path = os.path.join(out_dir, "tv_banner.png")
         canvas.save(out_path, "PNG")
         print(f"  Wrote {out_path} ({banner_w}x{banner_h})")

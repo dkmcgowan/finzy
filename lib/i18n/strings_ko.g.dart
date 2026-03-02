@@ -265,6 +265,10 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get exoPlayerDescription => '더 나은 하드웨어 지원을 제공하는 Android 네이티브 플레이어';
 	@override String get mpv => 'MPV';
 	@override String get mpvDescription => '더 많은 기능과 ASS 자막을 지원하는 고급 플레이어';
+	@override String get liveTvPlayer => '라이브 TV 플레이어';
+	@override String get liveTvPlayerDescription => '라이브 TV에는 MPV를 권장합니다. ExoPlayer는 일부 기기에서 문제가 있을 수 있습니다.';
+	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get hardwareDecoding => '하드웨어 디코딩';
 	@override String get hardwareDecodingDescription => '가능한 경우 하드웨어 가속을 사용합니다';
 	@override String get bufferSize => '버퍼 크기';
@@ -280,10 +284,10 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get rememberTrackSelectionsDescription => '재생 중 트랙을 변경할 때 오디오 및 자막 언어 설정을 자동으로 저장합니다';
 	@override String get clickVideoTogglesPlayback => '비디오를 클릭하여 재생/일시정지를 전환하세요.';
 	@override String get clickVideoTogglesPlaybackDescription => '이 옵션이 활성화되어 있으면 비디오 플레이어를 클릭할 때 재생 또는 일시정지가 됩니다. 그렇지 않으면 클릭 시 재생 컨트롤이 표시되거나 숨겨집니다.';
-	@override String get videoPlayerControls => '비디오 플레이어 컨트롤';
+	@override String get videoPlayerControls => '비디오 플레이어 키보드 컨트롤';
 	@override String get keyboardShortcuts => '키보드 단축키';
 	@override String get keyboardShortcutsDescription => '사용자 정의 키보드 단축키';
-	@override String get videoPlayerNavigation => '비디오 플레이어 탐색';
+	@override String get videoPlayerNavigation => '키보드 비디오 플레이어 탐색';
 	@override String get videoPlayerNavigationDescription => '방향 키를 사용하여 비디오 플레이어 컨트롤 탐색';
 	@override String get debugLogging => '디버그 로깅';
 	@override String get debugLoggingDescription => '문제 해결을 위해 상세 로깅 활성화';
@@ -329,6 +333,8 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get downloads => '다운로드';
 	@override String get downloadLocationDescription => '다운로드 콘텐츠 저장 위치 선택';
 	@override String get downloadLocationDefault => '기본값 (앱 저장소)';
+	@override String get downloadsDefault => '다운로드 기본값 (앱 저장소)';
+	@override String get libraryOrder => '라이브러리 관리';
 	@override String get downloadLocationCustom => '사용자 지정 위치';
 	@override String get selectFolder => '폴더 선택';
 	@override String get resetToDefault => '기본값으로 재설정';
@@ -349,6 +355,22 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get requireProfileSelectionOnOpenDescription => '앱을 열 때마다 프로필 선택 화면을 표시합니다';
 	@override String get confirmExitOnBack => '종료 전 확인';
 	@override String get confirmExitOnBackDescription => '뒤로 버튼을 눌러 앱을 종료할 때 확인 대화상자를 표시합니다';
+	@override String get performance => '성능';
+	@override String get performanceImageQuality => '이미지 품질';
+	@override String get performanceImageQualityDescription => '낮은 품질은 더 빠르게 로드됩니다. 작음 = 가장 빠름, 큼 = 최고 품질.';
+	@override String get performancePosterSize => '포스터 크기';
+	@override String get performancePosterSizeDescription => '그리드의 포스터 카드 크기. 작음 = 더 많은 항목, 큼 = 더 큰 카드.';
+	@override String get performanceReduceAnimations => '애니메이션 줄이기';
+	@override String get performanceReduceAnimationsDescription => '더 빠른 느낌을 위한 짧은 전환';
+	@override String get performanceGridPreload => '그리드 사전 로드';
+	@override String get performanceGridPreloadDescription => '화면 밖 항목 로드 수. 낮음 = 더 빠름, 높음 = 더 부드러운 스크롤.';
+	@override String get performanceSmall => '작음';
+	@override String get performanceMedium => '중간';
+	@override String get performanceLarge => '큼';
+	@override String get performanceLow => '낮음';
+	@override String get performanceHigh => '높음';
+	@override String get hideSupportDevelopment => '개발 지원 숨기기';
+	@override String get hideSupportDevelopmentDescription => '설정에서 개발 지원 섹션 숨기기';
 }
 
 // Path: search
@@ -1389,6 +1411,10 @@ extension on TranslationsKo {
 			'settings.exoPlayerDescription' => '더 나은 하드웨어 지원을 제공하는 Android 네이티브 플레이어',
 			'settings.mpv' => 'MPV',
 			'settings.mpvDescription' => '더 많은 기능과 ASS 자막을 지원하는 고급 플레이어',
+			'settings.liveTvPlayer' => '라이브 TV 플레이어',
+			'settings.liveTvPlayerDescription' => '라이브 TV에는 MPV를 권장합니다. ExoPlayer는 일부 기기에서 문제가 있을 수 있습니다.',
+			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.hardwareDecoding' => '하드웨어 디코딩',
 			'settings.hardwareDecodingDescription' => '가능한 경우 하드웨어 가속을 사용합니다',
 			'settings.bufferSize' => '버퍼 크기',
@@ -1404,10 +1430,10 @@ extension on TranslationsKo {
 			'settings.rememberTrackSelectionsDescription' => '재생 중 트랙을 변경할 때 오디오 및 자막 언어 설정을 자동으로 저장합니다',
 			'settings.clickVideoTogglesPlayback' => '비디오를 클릭하여 재생/일시정지를 전환하세요.',
 			'settings.clickVideoTogglesPlaybackDescription' => '이 옵션이 활성화되어 있으면 비디오 플레이어를 클릭할 때 재생 또는 일시정지가 됩니다. 그렇지 않으면 클릭 시 재생 컨트롤이 표시되거나 숨겨집니다.',
-			'settings.videoPlayerControls' => '비디오 플레이어 컨트롤',
+			'settings.videoPlayerControls' => '비디오 플레이어 키보드 컨트롤',
 			'settings.keyboardShortcuts' => '키보드 단축키',
 			'settings.keyboardShortcutsDescription' => '사용자 정의 키보드 단축키',
-			'settings.videoPlayerNavigation' => '비디오 플레이어 탐색',
+			'settings.videoPlayerNavigation' => '키보드 비디오 플레이어 탐색',
 			'settings.videoPlayerNavigationDescription' => '방향 키를 사용하여 비디오 플레이어 컨트롤 탐색',
 			'settings.debugLogging' => '디버그 로깅',
 			'settings.debugLoggingDescription' => '문제 해결을 위해 상세 로깅 활성화',
@@ -1453,6 +1479,8 @@ extension on TranslationsKo {
 			'settings.downloads' => '다운로드',
 			'settings.downloadLocationDescription' => '다운로드 콘텐츠 저장 위치 선택',
 			'settings.downloadLocationDefault' => '기본값 (앱 저장소)',
+			'settings.downloadsDefault' => '다운로드 기본값 (앱 저장소)',
+			'settings.libraryOrder' => '라이브러리 관리',
 			'settings.downloadLocationCustom' => '사용자 지정 위치',
 			'settings.selectFolder' => '폴더 선택',
 			'settings.resetToDefault' => '기본값으로 재설정',
@@ -1473,6 +1501,22 @@ extension on TranslationsKo {
 			'settings.requireProfileSelectionOnOpenDescription' => '앱을 열 때마다 프로필 선택 화면을 표시합니다',
 			'settings.confirmExitOnBack' => '종료 전 확인',
 			'settings.confirmExitOnBackDescription' => '뒤로 버튼을 눌러 앱을 종료할 때 확인 대화상자를 표시합니다',
+			'settings.performance' => '성능',
+			'settings.performanceImageQuality' => '이미지 품질',
+			'settings.performanceImageQualityDescription' => '낮은 품질은 더 빠르게 로드됩니다. 작음 = 가장 빠름, 큼 = 최고 품질.',
+			'settings.performancePosterSize' => '포스터 크기',
+			'settings.performancePosterSizeDescription' => '그리드의 포스터 카드 크기. 작음 = 더 많은 항목, 큼 = 더 큰 카드.',
+			'settings.performanceReduceAnimations' => '애니메이션 줄이기',
+			'settings.performanceReduceAnimationsDescription' => '더 빠른 느낌을 위한 짧은 전환',
+			'settings.performanceGridPreload' => '그리드 사전 로드',
+			'settings.performanceGridPreloadDescription' => '화면 밖 항목 로드 수. 낮음 = 더 빠름, 높음 = 더 부드러운 스크롤.',
+			'settings.performanceSmall' => '작음',
+			'settings.performanceMedium' => '중간',
+			'settings.performanceLarge' => '큼',
+			'settings.performanceLow' => '낮음',
+			'settings.performanceHigh' => '높음',
+			'settings.hideSupportDevelopment' => '개발 지원 숨기기',
+			'settings.hideSupportDevelopmentDescription' => '설정에서 개발 지원 섹션 숨기기',
 			'search.hint' => '영화, 시리즈, 음악 등을 검색하세요...',
 			'search.tryDifferentTerm' => '다른 검색어를 시도해 보세요',
 			'search.searchYourMedia' => '미디어 검색',
@@ -1741,6 +1785,8 @@ extension on TranslationsKo {
 			'libraries.tabs.suggestions' => '추천',
 			'libraries.tabs.browse' => '찾아보기',
 			'libraries.tabs.genres' => '장르',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.tabs.favorites' => '즐겨찾기',
 			'libraries.tabs.collections' => '컬렉션',
 			'libraries.tabs.playlists' => '재생 목록',
@@ -1763,8 +1809,6 @@ extension on TranslationsKo {
 			'hubDetail.dateAdded' => '추가 날짜',
 			'hubDetail.rating' => '평점',
 			'hubDetail.noItemsFound' => '항목이 없습니다',
-			_ => null,
-		} ?? switch (path) {
 			'logs.clearLogs' => '로그 지우기',
 			'logs.copyLogs' => '로그 복사',
 			'logs.error' => '오류:',

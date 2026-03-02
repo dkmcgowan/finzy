@@ -33,6 +33,7 @@ import '../../services/update_service.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../utils/platform_detector.dart';
 import '../../widgets/desktop_app_bar.dart';
+import '../../widgets/focused_scroll_scaffold.dart';
 import '../../widgets/tv_number_spinner.dart';
 import 'hotkey_recorder_widget.dart';
 import 'about_screen.dart';
@@ -63,6 +64,12 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   late final FocusMemoryTracker _focusTracker;
 
   // Setting keys for focus tracking
+  static const _kAppearance = 'appearance';
+  static const _kVideoPlayback = 'video_playback';
+
+  static const _kAdvanced = 'advanced';
+  static const _kUpdates = 'updates';
+  static const _kAbout = 'about';
   static const _kTheme = 'theme';
   static const _kLanguage = 'language';
   static const _kLibraryDensity = 'library_density';
@@ -77,6 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kShowUnwatchedCount = 'show_unwatched_count';
   static const _kConfirmExitOnBack = 'confirm_exit_on_back';
   static const _kPlayerBackend = 'player_backend';
+  static const _kLiveTvPlayer = 'live_tv_player';
   static const _kHardwareDecoding = 'hardware_decoding';
   static const _kMatchContentFrameRate = 'match_content_frame_rate';
   static const _kBufferSize = 'buffer_size';
@@ -108,13 +116,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kClearCache = 'clear_cache';
   static const _kResetSettings = 'reset_settings';
   static const _kCheckForUpdates = 'check_for_updates';
-  static const _kAbout = 'about';
   static const _kSupportCoffee = 'support_coffee';
   static const _kSupportLunch = 'support_lunch';
   static const _kSupportDev = 'support_dev';
   static const _kLibrariesSection = 'libraries_section';
+
+  static const _kImageQuality = 'image_quality';
+  static const _kPosterSize = 'poster_size';
+  static const _kReduceAnimations = 'reduce_animations';
+  static const _kGridPreload = 'grid_preload';
+  static const _kHideSupportDevelopment = 'hide_support_development';
   KeyboardShortcutsService? _keyboardService;
-  bool _librariesSectionExpanded = false; // TV only: collapsed by default
   late final bool _keyboardShortcutsSupported = KeyboardShortcutsService.isPlatformSupported();
   bool _isLoading = true;
 
@@ -142,16 +154,25 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
 
   bool _matchContentFrameRate = false;
   bool _useExoPlayer = true; // Android only: ExoPlayer vs MPV
+  bool _useExoPlayerForLiveTv = false; // Android only: Live TV player (default MPV)
   bool _confirmExitOnBack = true;
+  bool _hideSupportDevelopment = false;
 
   // Update checking state
   bool _isCheckingForUpdate = false;
   Map<String, dynamic>? _updateInfo;
 
+  final _sectionNotifier = ValueNotifier<int>(0);
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    _sectionNotifier.value++;
+  }
+
   @override
   void initState() {
     super.initState();
-    _librariesSectionExpanded = !PlatformDetector.isTV(); // Expanded by default on non-TV
     _focusTracker = FocusMemoryTracker(
       onFocusChanged: () {
         // ignore: no-empty-block - setState triggers rebuild to update focus styling
@@ -164,6 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
 
   @override
   void dispose() {
+    _sectionNotifier.dispose();
     _focusTracker.dispose();
     super.dispose();
   }
@@ -221,7 +243,9 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
 
       _matchContentFrameRate = _settingsService.getMatchContentFrameRate();
       _useExoPlayer = _settingsService.getUseExoPlayer();
+      _useExoPlayerForLiveTv = _settingsService.getUseExoPlayerForLiveTv();
       _confirmExitOnBack = _settingsService.getConfirmExitOnBack();
+      _hideSupportDevelopment = _settingsService.getHideSupportDevelopment();
       _isLoading = false;
     });
   }
@@ -234,6 +258,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
 
     return Scaffold(
       body: Focus(
+        canRequestFocus: false,
         onKeyEvent: _handleKeyEvent,
         child: CustomScrollView(
           slivers: [
@@ -246,24 +271,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  if (SupportService.instance.isAvailable) ...[
+                  if (SupportService.instance.isAvailable && !_hideSupportDevelopment) ...[
                     _buildSupportDevelopmentSection(),
                     const SizedBox(height: 24),
                   ],
-                  _buildAppearanceSection(),
-                  const SizedBox(height: 24),
-                  _buildLibrariesSection(),
-                  const SizedBox(height: 24),
-                  _buildVideoPlaybackSection(),
-                  const SizedBox(height: 24),
-                  _buildDownloadsSection(),
-                  const SizedBox(height: 24),
-                  if (_keyboardShortcutsSupported) ...[_buildKeyboardShortcutsSection(), const SizedBox(height: 24)],
-                  _buildAdvancedSection(),
-                  const SizedBox(height: 24),
-                  if (UpdateService.isUpdateCheckEnabled) ...[_buildUpdateSection(), const SizedBox(height: 24)],
-                  _buildAboutSection(),
-                  const SizedBox(height: 24),
+                  _buildSectionNavTile(_kAppearance, t.settings.appearance, Symbols.palette_rounded, _buildAppearanceContent, autofocus: true),
+                  _buildSectionNavTile(_kLibrariesSection, t.navigation.libraries, Symbols.video_library_rounded, _buildLibrariesContent),
+                  _buildSectionNavTile(_kVideoPlayback, t.settings.videoPlayback, Symbols.play_circle_rounded, _buildVideoPlaybackContent),
+                  _buildSectionNavTile(_kAdvanced, t.settings.advanced, Symbols.tune_rounded, _buildAdvancedContent),
+                  if (UpdateService.isUpdateCheckEnabled)
+                    _buildSectionNavTile(_kUpdates, t.settings.updates, Symbols.system_update_rounded, _buildUpdateContent),
+                  _buildSectionNavTile(_kAbout, t.settings.about, Symbols.info_rounded, null, directRoute: const AboutScreen()),
                 ]),
               ),
             ),
@@ -273,28 +291,49 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     );
   }
 
+  Widget _buildSectionNavTile(String sectionKey, String title, IconData icon, Widget Function()? buildContent, {Widget? directRoute, bool autofocus = false}) {
+    return ListTile(
+      autofocus: autofocus,
+      focusNode: _focusTracker.get(sectionKey),
+      leading: AppIcon(icon, fill: 1),
+      title: Text(title),
+      trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+      onTap: () async {
+        if (directRoute != null) {
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => directRoute));
+        } else if (buildContent != null) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => _SettingsSectionPage(title: title, content: buildContent, rebuildNotifier: _sectionNotifier),
+            ),
+          );
+        }
+        if (mounted) _loadSettings();
+      },
+    );
+  }
+
   Widget _buildSupportDevelopmentSection() {
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
+          ListTile(
+            focusNode: _focusTracker.get('support_header'),
+            title: Text(
               t.settings.supportDevelopment,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-            child: Text(
+            subtitle: Text(
               t.settings.supportDevelopmentDescription,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.normal,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const Divider(height: 1),
           _buildSupportTierTile(
             key: _kSupportCoffee,
             icon: Symbols.coffee_rounded,
@@ -347,19 +386,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     }
   }
 
-  Widget _buildAppearanceSection() {
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              t.settings.appearance,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Consumer<ThemeProvider>(
+  Widget _buildAppearanceContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {
               return ListTile(
                 focusNode: _focusTracker.get(_kTheme),
@@ -526,46 +557,204 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                 await _settingsService.setConfirmExitOnBack(value);
               },
             ),
-        ],
-      ),
+      ],
     );
   }
 
-  Widget _buildLibrariesSection() {
+  List<Widget> _buildPerformanceItems() {
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    return [
+      ListTile(
+        focusNode: _focusTracker.get(_kImageQuality),
+        leading: const AppIcon(Symbols.image_rounded, fill: 1),
+        title: Text(t.settings.performanceImageQuality),
+        subtitle: Text(settingsProvider.imageQualityDisplayName),
+        trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+        onTap: () => _showImageQualityDialog(settingsProvider),
+      ),
+      ListTile(
+        focusNode: _focusTracker.get(_kPosterSize),
+        leading: const AppIcon(Symbols.grid_view_rounded, fill: 1),
+        title: Text(t.settings.performancePosterSize),
+        subtitle: Text(settingsProvider.posterSizeDisplayName),
+        trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+        onTap: () => _showPosterSizeDialog(settingsProvider),
+      ),
+      SwitchListTile(
+        focusNode: _focusTracker.get(_kReduceAnimations),
+        secondary: const AppIcon(Symbols.animation_rounded, fill: 1),
+        title: Text(t.settings.performanceReduceAnimations),
+        subtitle: Text(t.settings.performanceReduceAnimationsDescription),
+        value: settingsProvider.reduceAnimations,
+        onChanged: (value) async {
+          await settingsProvider.setReduceAnimations(value);
+        },
+      ),
+      ListTile(
+        focusNode: _focusTracker.get(_kGridPreload),
+        leading: const AppIcon(Symbols.view_carousel_rounded, fill: 1),
+        title: Text(t.settings.performanceGridPreload),
+        subtitle: Text(settingsProvider.gridPreloadDisplayName),
+        trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+        onTap: () => _showGridPreloadDialog(settingsProvider),
+      ),
+    ];
+  }
+
+  Future<void> _showImageQualityDialog(SettingsProvider settingsProvider) async {
+    final selected = await showDialog<settings.PerformanceProfile>(
+      context: context,
+      builder: (context) => _PerformanceProfileDialog(
+        title: t.settings.performanceImageQuality,
+        value: settingsProvider.imageQuality,
+        onSelected: (v) => Navigator.pop(context, v),
+      ),
+    );
+    if (selected != null && mounted) {
+      await settingsProvider.setImageQuality(selected);
+    }
+  }
+
+  Future<void> _showPosterSizeDialog(SettingsProvider settingsProvider) async {
+    final selected = await showDialog<settings.PerformanceProfile>(
+      context: context,
+      builder: (context) => _PerformanceProfileDialog(
+        title: t.settings.performancePosterSize,
+        value: settingsProvider.posterSize,
+        onSelected: (v) => Navigator.pop(context, v),
+      ),
+    );
+    if (selected != null && mounted) {
+      await settingsProvider.setPosterSize(selected);
+    }
+  }
+
+  Future<void> _showGridPreloadDialog(SettingsProvider settingsProvider) async {
+    final selected = await showDialog<settings.GridPreloadLevel>(
+      context: context,
+      builder: (context) => _GridPreloadDialog(
+        value: settingsProvider.gridPreload,
+        onSelected: (v) => Navigator.pop(context, v),
+      ),
+    );
+    if (selected != null && mounted) {
+      await settingsProvider.setGridPreload(selected);
+    }
+  }
+
+  Widget _buildLibrariesContent() {
     return Consumer2<LibrariesProvider, HiddenLibrariesProvider>(
       builder: (context, librariesProvider, hiddenProvider, child) {
         final allLibraries = _buildOrderedLibraries(librariesProvider);
         final hiddenKeys = hiddenProvider.hiddenLibraryKeys;
         final isTV = PlatformDetector.isTV();
 
-        if (isTV) {
-          return _buildLibrariesSectionTV(allLibraries, hiddenKeys, librariesProvider, hiddenProvider);
-        }
-
-        // Phone/desktop: drag to reorder, no collapse
-        return Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  t.navigation.libraries,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ..._buildDownloadsItems(),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.only(left: 16, top: 8, right: 16, bottom: 4),
+              child: Text(
+                t.settings.libraryOrder,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-              if (allLibraries.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(
-                    t.discover.noItemsFound,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+            ),
+            if (isTV)
+              _buildLibrariesListTV(allLibraries, hiddenKeys, librariesProvider, hiddenProvider)
+            else
+              _buildLibrariesListNonTV(allLibraries, hiddenKeys, librariesProvider, hiddenProvider),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildDownloadsItems() {
+    final storageService = DownloadStorageService.instance;
+    final isCustom = storageService.isUsingCustomPath();
+
+    return [
+      SwitchListTile(
+        focusNode: _focusTracker.get(_kShowDownloads),
+        secondary: const AppIcon(Symbols.download_rounded, fill: 1),
+        title: Text(t.settings.showDownloads),
+        subtitle: Text(t.settings.showDownloadsDescription),
+        value: _showDownloads,
+        onChanged: (value) async {
+          setState(() => _showDownloads = value);
+          await _settingsService.setShowDownloads(value);
+        },
+      ),
+      if (!Platform.isIOS)
+        FutureBuilder<String>(
+          future: storageService.getCurrentDownloadPathDisplay(),
+          builder: (context, snapshot) {
+            final currentPath = snapshot.data ?? '...';
+            return ListTile(
+              focusNode: _focusTracker.get(_kDownloadLocation),
+              leading: const AppIcon(Symbols.folder_rounded, fill: 1),
+              title: Text(isCustom ? t.settings.downloadLocationCustom : t.settings.downloadsDefault),
+              subtitle: Text(currentPath, maxLines: 2, overflow: TextOverflow.ellipsis),
+              trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+              onTap: () => _showDownloadLocationDialog(),
+            );
+          },
+        ),
+      SwitchListTile(
+        focusNode: _focusTracker.get(_kDownloadOnWifiOnly),
+        secondary: const AppIcon(Symbols.wifi_rounded, fill: 1),
+        title: Text(t.settings.downloadOnWifiOnly),
+        subtitle: Text(t.settings.downloadOnWifiOnlyDescription),
+        value: _downloadOnWifiOnly,
+        onChanged: (value) async {
+          setState(() => _downloadOnWifiOnly = value);
+          await _settingsService.setDownloadOnWifiOnly(value);
+        },
+      ),
+    ];
+  }
+
+  Widget _buildLibrariesListTV(
+    List<MediaLibrary> allLibraries,
+    Set<String> hiddenKeys,
+    LibrariesProvider librariesProvider,
+    HiddenLibrariesProvider hiddenProvider,
+  ) {
+    return _buildLibrariesSectionTV(
+      allLibraries,
+      hiddenKeys,
+      librariesProvider,
+      hiddenProvider,
+      sectionHeaderFocusNode: _focusTracker.get(_kLibrariesSection),
+    );
+  }
+
+  Widget _buildLibrariesListNonTV(
+    List<MediaLibrary> allLibraries,
+    Set<String> hiddenKeys,
+    LibrariesProvider librariesProvider,
+    HiddenLibrariesProvider hiddenProvider,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (allLibraries.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  t.discover.noItemsFound,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                )
-              else
-                ReorderableListView.builder(
+                ),
+              )
+            else
+              ReorderableListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   buildDefaultDragHandles: false,
@@ -590,10 +779,10 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                         children: [
                           ReorderableDragStartListener(
                             index: index,
-                            child: const Icon(Icons.drag_handle, size: 20),
+                            child: const Icon(Icons.drag_handle, size: 24),
                           ),
-                          const SizedBox(width: 8),
-                          AppIcon(_getLibraryIcon(library.type), fill: 1, size: 20),
+                          const SizedBox(width: 12),
+                          AppIcon(_getLibraryIcon(library.type), fill: 1, size: 24),
                         ],
                       ),
                       title: Text(
@@ -607,12 +796,12 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                         children: [
                           if (!isFavorites) ...[
                             IconButton(
-                              icon: const AppIcon(Symbols.refresh_rounded, fill: 1, size: 20),
+                              icon: const AppIcon(Symbols.refresh_rounded, fill: 1, size: 24),
                               tooltip: t.libraries.scanLibraryFiles,
                               onPressed: () => _scanLibrary(library),
                             ),
                             IconButton(
-                              icon: const AppIcon(Symbols.sync_rounded, fill: 1, size: 20),
+                              icon: const AppIcon(Symbols.sync_rounded, fill: 1, size: 24),
                               tooltip: t.libraries.refreshMetadata,
                               onPressed: () => _refreshLibraryMetadata(library),
                             ),
@@ -622,7 +811,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                             icon: AppIcon(
                               isHidden ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
                               fill: 1,
-                              size: 20,
+                              size: 24,
                             ),
                             tooltip: isHidden ? t.libraries.showLibrary : t.libraries.hideLibrary,
                             onPressed: () => _toggleLibraryVisibility(library, hiddenProvider, librariesProvider),
@@ -633,59 +822,42 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                   },
                 ),
             ],
-          ),
         );
-      },
-    );
   }
 
   Widget _buildLibrariesSectionTV(
     List<MediaLibrary> allLibraries,
     Set<String> hiddenKeys,
     LibrariesProvider librariesProvider,
-    HiddenLibrariesProvider hiddenProvider,
-  ) {
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(
-            focusNode: _focusTracker.get(_kLibrariesSection),
-            leading: const AppIcon(Symbols.video_library_rounded, fill: 1),
-            title: Text(
-              t.navigation.libraries,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            trailing: Icon(
-              _librariesSectionExpanded ? Icons.expand_less : Icons.expand_more,
-            ),
-            onTap: () => setState(() => _librariesSectionExpanded = !_librariesSectionExpanded),
-          ),
-          if (_librariesSectionExpanded) ...[
-            if (allLibraries.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  t.discover.noItemsFound,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              )
-            else
-              _LibraryRowsTV(
-                libraries: allLibraries,
-                hiddenKeys: hiddenKeys,
-                librariesProvider: librariesProvider,
-                hiddenProvider: hiddenProvider,
-                onScanLibrary: _scanLibrary,
-                onRefreshMetadata: _refreshLibraryMetadata,
-                onToggleVisibility: _toggleLibraryVisibility,
-                getLibraryIcon: _getLibraryIcon,
+    HiddenLibrariesProvider hiddenProvider, {
+    FocusNode? sectionHeaderFocusNode,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (allLibraries.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              t.discover.noItemsFound,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-          ],
-        ],
-      ),
+            ),
+          )
+        else
+          _LibraryRowsTV(
+            libraries: allLibraries,
+            hiddenKeys: hiddenKeys,
+            librariesProvider: librariesProvider,
+            hiddenProvider: hiddenProvider,
+            onScanLibrary: _scanLibrary,
+            onRefreshMetadata: _refreshLibraryMetadata,
+            onToggleVisibility: _toggleLibraryVisibility,
+            getLibraryIcon: _getLibraryIcon,
+            sectionHeaderFocusNode: sectionHeaderFocusNode,
+          ),
+      ],
     );
   }
 
@@ -790,21 +962,13 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     }
   }
 
-  Widget _buildVideoPlaybackSection() {
+  Widget _buildVideoPlaybackContent() {
     final isMobile = PlatformDetector.isMobile(context);
 
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              t.settings.videoPlayback,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-          if (Platform.isAndroid)
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (Platform.isAndroid)
             ListTile(
               focusNode: _focusTracker.get(_kPlayerBackend),
               leading: const AppIcon(Symbols.play_circle_rounded, fill: 1),
@@ -812,6 +976,15 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               subtitle: Text(_useExoPlayer ? t.settings.exoPlayerDescription : t.settings.mpvDescription),
               trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
               onTap: () => _showPlayerBackendDialog(),
+            ),
+          if (Platform.isAndroid)
+            ListTile(
+              focusNode: _focusTracker.get(_kLiveTvPlayer),
+              leading: const AppIcon(Symbols.live_tv_rounded, fill: 1),
+              title: Text(t.settings.liveTvPlayer),
+              subtitle: Text(_useExoPlayerForLiveTv ? t.settings.exoPlayerDescription : t.settings.mpvDescription),
+              trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+              onTap: () => _showLiveTvPlayerDialog(),
             ),
           SwitchListTile(
             focusNode: _focusTracker.get(_kHardwareDecoding),
@@ -968,17 +1141,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                 await _settingsService.setClickVideoTogglesPlayback(value);
               },
             ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.only(left: 16, top: 8, right: 16),
-            child: Text(
-              t.settings.autoSkip,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
           SwitchListTile(
             focusNode: _focusTracker.get(_kAutoSkipIntro),
             secondary: const AppIcon(Symbols.fast_forward_rounded, fill: 1),
@@ -1043,68 +1205,9 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
             onTap: () => _showAutoSkipDelayDialog(),
           ),
         ],
-      ),
     );
   }
 
-  Widget _buildDownloadsSection() {
-    final storageService = DownloadStorageService.instance;
-    final isCustom = storageService.isUsingCustomPath();
-
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              t.settings.downloads,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-          SwitchListTile(
-            focusNode: _focusTracker.get(_kShowDownloads),
-            secondary: const AppIcon(Symbols.download_rounded, fill: 1),
-            title: Text(t.settings.showDownloads),
-            subtitle: Text(t.settings.showDownloadsDescription),
-            value: _showDownloads,
-            onChanged: (value) async {
-              setState(() => _showDownloads = value);
-              await _settingsService.setShowDownloads(value);
-            },
-          ),
-          // Download location picker - not available on iOS
-          if (!Platform.isIOS)
-            FutureBuilder<String>(
-              future: storageService.getCurrentDownloadPathDisplay(),
-              builder: (context, snapshot) {
-                final currentPath = snapshot.data ?? '...';
-
-                return ListTile(
-                  focusNode: _focusTracker.get(_kDownloadLocation),
-                  leading: const AppIcon(Symbols.folder_rounded, fill: 1),
-                  title: Text(isCustom ? t.settings.downloadLocationCustom : t.settings.downloadLocationDefault),
-                  subtitle: Text(currentPath, maxLines: 2, overflow: TextOverflow.ellipsis),
-                  trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-                  onTap: () => _showDownloadLocationDialog(),
-                );
-              },
-            ),
-          SwitchListTile(
-            focusNode: _focusTracker.get(_kDownloadOnWifiOnly),
-            secondary: const AppIcon(Symbols.wifi_rounded, fill: 1),
-            title: Text(t.settings.downloadOnWifiOnly),
-            subtitle: Text(t.settings.downloadOnWifiOnlyDescription),
-            value: _downloadOnWifiOnly,
-            onChanged: (value) async {
-              setState(() => _downloadOnWifiOnly = value);
-              await _settingsService.setDownloadOnWifiOnly(value);
-            },
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _showDownloadLocationDialog() async {
     final storageService = DownloadStorageService.instance;
@@ -1141,7 +1244,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               child: Text(t.settings.resetToDefault),
             ),
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(t.common.cancel)),
-          FilledButton(
+          TextButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
               await _selectDownloadLocation();
@@ -1212,20 +1315,16 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     }
   }
 
-  Widget _buildKeyboardShortcutsSection() {
-    if (_keyboardService == null) return const SizedBox.shrink();
-
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              t.settings.keyboardShortcuts,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
+  Widget _buildAdvancedContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Consumer<SettingsProvider>(
+          builder: (context, settingsProvider, child) {
+            return Column(children: _buildPerformanceItems());
+          },
+        ),
+        if (_keyboardShortcutsSupported && _keyboardService != null) ...[
           ListTile(
             focusNode: _focusTracker.get(_kVideoPlayerControls),
             leading: const AppIcon(Symbols.keyboard_rounded, fill: 1),
@@ -1248,23 +1347,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
             },
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAdvancedSection() {
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              t.settings.advanced,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-          SwitchListTile(
+        SwitchListTile(
             focusNode: _focusTracker.get(_kDebugLogging),
             secondary: const AppIcon(Symbols.bug_report_rounded, fill: 1),
             title: Text(t.settings.debugLogging),
@@ -1303,26 +1386,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
             trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
             onTap: () => _showResetSettingsDialog(),
           ),
-        ],
-      ),
+      ],
     );
   }
 
-  Widget _buildUpdateSection() {
+  Widget _buildUpdateContent() {
     final hasUpdate = _updateInfo != null && _updateInfo!['hasUpdate'] == true;
 
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              t.settings.updates,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-          ListTile(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
             focusNode: _focusTracker.get(_kCheckForUpdates),
             leading: AppIcon(
               hasUpdate ? Symbols.system_update_rounded : Symbols.check_circle_rounded,
@@ -1343,26 +1417,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                       _checkForUpdates();
                     }
                   },
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildAboutSection() {
-    return Card(
-      child: ListTile(
-        focusNode: _focusTracker.get(_kAbout),
-        leading: const AppIcon(Symbols.info_rounded, fill: 1),
-        title: Text(t.settings.about),
-        subtitle: Text(t.settings.aboutDescription),
-        trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-        onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen()));
-        },
-      ),
-    );
-  }
 
   void _showThemeDialog(ThemeProvider themeProvider) {
     showDialog(
@@ -1581,6 +1640,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   }) {
     final controller = TextEditingController(text: currentValue.toString());
     String? errorText;
+    final cancelFocusNode = FocusNode();
     final saveFocusNode = FocusNode();
 
     showDialog(
@@ -1590,36 +1650,47 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: Text(title),
-              content: TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: labelText,
-                  hintText: t.settings.durationHint(min: min, max: max),
-                  errorText: errorText,
-                  suffixText: suffixText,
+              content: KeyboardListener(
+                focusNode: FocusNode(skipTraversal: true),
+                onKeyEvent: (event) {
+                  if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    cancelFocusNode.requestFocus();
+                  }
+                },
+                child: TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: labelText,
+                    hintText: t.settings.durationHint(min: min, max: max),
+                    errorText: errorText,
+                    suffixText: suffixText,
+                  ),
+                  autofocus: true,
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: () {
+                    saveFocusNode.requestFocus();
+                  },
+                  onChanged: (value) {
+                    final parsed = int.tryParse(value);
+                    setDialogState(() {
+                      if (parsed == null) {
+                        errorText = t.settings.validationErrorEnterNumber;
+                      } else if (parsed < min || parsed > max) {
+                        errorText = t.settings.validationErrorDuration(min: min, max: max, unit: labelText.toLowerCase());
+                      } else {
+                        errorText = null;
+                      }
+                    });
+                  },
                 ),
-                autofocus: true,
-                textInputAction: TextInputAction.done,
-                onEditingComplete: () {
-                  // Move focus to Save button when keyboard checkmark is pressed
-                  saveFocusNode.requestFocus();
-                },
-                onChanged: (value) {
-                  final parsed = int.tryParse(value);
-                  setDialogState(() {
-                    if (parsed == null) {
-                      errorText = t.settings.validationErrorEnterNumber;
-                    } else if (parsed < min || parsed > max) {
-                      errorText = t.settings.validationErrorDuration(min: min, max: max, unit: labelText.toLowerCase());
-                    } else {
-                      errorText = null;
-                    }
-                  });
-                },
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(t.common.cancel)),
+                TextButton(
+                  focusNode: cancelFocusNode,
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(t.common.cancel),
+                ),
                 TextButton(
                   focusNode: saveFocusNode,
                   onPressed: () async {
@@ -1639,7 +1710,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
         );
       },
     ).then((_) {
-      // Clean up focus node when dialog is dismissed
+      cancelFocusNode.dispose();
       saveFocusNode.dispose();
     });
   }
@@ -1772,6 +1843,61 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     );
   }
 
+  void _showLiveTvPlayerDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(t.settings.liveTvPlayer),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  t.settings.liveTvPlayerDescription,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ),
+              ListTile(
+                leading: AppIcon(
+                  !_useExoPlayerForLiveTv ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.liveTvMpv),
+                subtitle: Text(t.settings.mpvDescription),
+                onTap: () async {
+                  setState(() {
+                    _useExoPlayerForLiveTv = false;
+                  });
+                  await _settingsService.setUseExoPlayerForLiveTv(false);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: AppIcon(
+                  _useExoPlayerForLiveTv ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.liveTvExoPlayer),
+                subtitle: Text(t.settings.exoPlayerDescription),
+                onTap: () async {
+                  setState(() {
+                    _useExoPlayerForLiveTv = true;
+                  });
+                  await _settingsService.setUseExoPlayerForLiveTv(true);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
+        );
+      },
+    );
+  }
+
   void _showKeyboardShortcutsDialog() {
     if (_keyboardService == null) return;
 
@@ -1819,14 +1945,15 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
             TextButton(
               onPressed: () async {
                 final navigator = Navigator.of(context);
+                final settingsProvider = context.read<SettingsProvider>();
                 await _settingsService.resetAllSettings();
                 await _keyboardService?.resetToDefaults();
-                if (mounted) {
-                  navigator.pop();
-                  showSuccessSnackBar(this.context, t.settings.resetSettingsSuccess);
-                  // Reload settings
-                  _loadSettings();
-                }
+                if (!mounted) return;
+                await settingsProvider.refresh();
+                navigator.pop();
+                // ignore: use_build_context_synchronously - guarded by mounted check
+                showSuccessSnackBar(this.context, t.settings.resetSettingsSuccess);
+                _loadSettings();
               },
               child: Text(t.common.reset),
             ),
@@ -2125,11 +2252,26 @@ class _KeyboardShortcutsScreen extends StatefulWidget {
 class _KeyboardShortcutsScreenState extends State<_KeyboardShortcutsScreen> {
   Map<String, HotKey> _hotkeys = {};
   bool _isLoading = true;
+  final _contentKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _loadHotkeys();
+  }
+
+  void _focusFirstItem() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final contentContext = _contentKey.currentContext;
+      if (contentContext == null) return;
+      final scope = FocusScope.of(contentContext);
+      final firstChild = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
+        (node) => node!.canRequestFocus && node.context != null,
+        orElse: () => null,
+      );
+      firstChild?.requestFocus();
+    });
   }
 
   Future<void> _loadHotkeys() async {
@@ -2139,65 +2281,65 @@ class _KeyboardShortcutsScreenState extends State<_KeyboardShortcutsScreen> {
       _hotkeys = widget.keyboardService.hotkeys;
       _isLoading = false;
     });
+    _focusFirstItem();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return FocusedScrollScaffold(
+        title: Text(t.settings.keyboardShortcuts),
+        slivers: const [SliverFillRemaining(child: Center(child: CircularProgressIndicator()))],
+      );
     }
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          CustomAppBar(
-            title: Text(t.settings.keyboardShortcuts),
-            pinned: true,
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  await widget.keyboardService.resetToDefaults();
-                  await _loadHotkeys();
-                  if (mounted) {
-                    showSuccessSnackBar(this.context, t.settings.shortcutsReset);
-                  }
-                },
-                child: Text(t.common.reset),
-              ),
-            ],
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final actions = _hotkeys.keys.toList();
-                final action = actions[index];
-                final hotkey = _hotkeys[action]!;
+    return FocusedScrollScaffold(
+      title: Text(t.settings.keyboardShortcuts),
+      actions: [
+        TextButton(
+          onPressed: () async {
+            await widget.keyboardService.resetToDefaults();
+            await _loadHotkeys();
+            if (mounted) {
+              showSuccessSnackBar(this.context, t.settings.shortcutsReset);
+            }
+          },
+          child: Text(t.common.reset),
+        ),
+      ],
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            key: _contentKey,
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final actions = _hotkeys.keys.toList();
+              final action = actions[index];
+              final hotkey = _hotkeys[action]!;
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text(widget.keyboardService.getActionDisplayName(action)),
-                    subtitle: Text(action),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        border: Border.fromBorderSide(BorderSide(color: Theme.of(context).dividerColor)),
-                        borderRadius: const BorderRadius.all(Radius.circular(6)),
-                      ),
-                      child: Text(
-                        widget.keyboardService.formatHotkey(hotkey),
-                        style: const TextStyle(fontFamily: 'monospace'),
-                      ),
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(widget.keyboardService.getActionDisplayName(action)),
+                  subtitle: Text(action),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      border: Border.fromBorderSide(BorderSide(color: Theme.of(context).dividerColor)),
+                      borderRadius: const BorderRadius.all(Radius.circular(6)),
                     ),
-                    onTap: () => _editHotkey(action, hotkey),
+                    child: Text(
+                      widget.keyboardService.formatHotkey(hotkey),
+                      style: const TextStyle(fontFamily: 'monospace'),
+                    ),
                   ),
-                );
-              }, childCount: _hotkeys.length),
-            ),
+                  onTap: () => _editHotkey(action, hotkey),
+                ),
+              );
+            }, childCount: _hotkeys.length),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -2256,6 +2398,7 @@ class _LibraryRowsTV extends StatefulWidget {
   final Future<void> Function(MediaLibrary) onRefreshMetadata;
   final Future<void> Function(MediaLibrary, HiddenLibrariesProvider, LibrariesProvider) onToggleVisibility;
   final IconData Function(String) getLibraryIcon;
+  final FocusNode? sectionHeaderFocusNode;
 
   const _LibraryRowsTV({
     required this.libraries,
@@ -2266,6 +2409,7 @@ class _LibraryRowsTV extends StatefulWidget {
     required this.onRefreshMetadata,
     required this.onToggleVisibility,
     required this.getLibraryIcon,
+    this.sectionHeaderFocusNode,
   });
 
   @override
@@ -2274,26 +2418,47 @@ class _LibraryRowsTV extends StatefulWidget {
 
 class _LibraryRowsTVState extends State<_LibraryRowsTV> {
   final List<FocusNode> _centerFocusNodes = [];
-  final List<FocusNode> _reorderFocusNodes = [];
-  final List<FocusNode> _actionsFocusNodes = [];
+  final List<FocusNode> _reorderUpFocusNodes = [];
+  final List<FocusNode> _reorderDownFocusNodes = [];
+  final List<FocusNode> _scanFocusNodes = [];
+  final List<FocusNode> _refreshFocusNodes = [];
+  final List<FocusNode> _visibilityFocusNodes = [];
 
   @override
   void initState() {
     super.initState();
     _ensureFocusNodes(widget.libraries.length);
-    for (final node in _centerFocusNodes) {
-      node.addListener(_onFocusChange);
-    }
-    for (final node in _reorderFocusNodes) {
-      node.addListener(_onFocusChange);
-    }
-    for (final node in _actionsFocusNodes) {
-      node.addListener(_onFocusChange);
-    }
   }
 
   void _onFocusChange() {
     if (mounted) setState(() {});
+    // Scroll focused row into view when navigating with D-pad
+    for (var i = 0; i < _centerFocusNodes.length; i++) {
+      FocusNode? focused;
+      if (_centerFocusNodes[i].hasFocus) {
+        focused = _centerFocusNodes[i];
+      } else if (_reorderUpFocusNodes[i].hasFocus) {
+        focused = _reorderUpFocusNodes[i];
+      } else if (_reorderDownFocusNodes[i].hasFocus) {
+        focused = _reorderDownFocusNodes[i];
+      } else if (_scanFocusNodes[i].hasFocus) {
+        focused = _scanFocusNodes[i];
+      } else if (_refreshFocusNodes[i].hasFocus) {
+        focused = _refreshFocusNodes[i];
+      } else if (_visibilityFocusNodes[i].hasFocus) {
+        focused = _visibilityFocusNodes[i];
+      }
+      if (focused != null) {
+        final ctx = focused.context;
+        if (ctx != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            Scrollable.ensureVisible(ctx, alignment: 0.5, duration: const Duration(milliseconds: 200));
+          });
+        }
+        break;
+      }
+    }
   }
 
   @override
@@ -2304,30 +2469,57 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
 
   void _ensureFocusNodes(int count) {
     while (_centerFocusNodes.length < count) {
-      final centerNode = FocusNode(debugLabel: 'LibraryRowCenter${_centerFocusNodes.length}');
+      final i = _centerFocusNodes.length;
+      final centerNode = FocusNode(debugLabel: 'LibraryRowCenter$i');
       centerNode.addListener(_onFocusChange);
       _centerFocusNodes.add(centerNode);
-      final reorderNode = FocusNode(debugLabel: 'LibraryRowReorder${_reorderFocusNodes.length}');
-      reorderNode.skipTraversal = true;
-      reorderNode.addListener(_onFocusChange);
-      _reorderFocusNodes.add(reorderNode);
-      final actionsNode = FocusNode(debugLabel: 'LibraryRowActions${_actionsFocusNodes.length}');
-      actionsNode.skipTraversal = true;
-      actionsNode.addListener(_onFocusChange);
-      _actionsFocusNodes.add(actionsNode);
+
+      final upNode = FocusNode(debugLabel: 'LibraryRowReorderUp$i');
+      upNode.skipTraversal = true;
+      upNode.addListener(_onFocusChange);
+      _reorderUpFocusNodes.add(upNode);
+
+      final downNode = FocusNode(debugLabel: 'LibraryRowReorderDown$i');
+      downNode.skipTraversal = true;
+      downNode.addListener(_onFocusChange);
+      _reorderDownFocusNodes.add(downNode);
+
+      final scanNode = FocusNode(debugLabel: 'LibraryRowScan$i');
+      scanNode.skipTraversal = true;
+      scanNode.addListener(_onFocusChange);
+      _scanFocusNodes.add(scanNode);
+
+      final refreshNode = FocusNode(debugLabel: 'LibraryRowRefresh$i');
+      refreshNode.skipTraversal = true;
+      refreshNode.addListener(_onFocusChange);
+      _refreshFocusNodes.add(refreshNode);
+
+      final visibilityNode = FocusNode(debugLabel: 'LibraryRowVisibility$i');
+      visibilityNode.skipTraversal = true;
+      visibilityNode.addListener(_onFocusChange);
+      _visibilityFocusNodes.add(visibilityNode);
     }
     if (_centerFocusNodes.length > count) {
       for (var i = count; i < _centerFocusNodes.length; i++) {
         _centerFocusNodes[i].removeListener(_onFocusChange);
-        _reorderFocusNodes[i].removeListener(_onFocusChange);
-        _actionsFocusNodes[i].removeListener(_onFocusChange);
+        _reorderUpFocusNodes[i].removeListener(_onFocusChange);
+        _reorderDownFocusNodes[i].removeListener(_onFocusChange);
+        _scanFocusNodes[i].removeListener(_onFocusChange);
+        _refreshFocusNodes[i].removeListener(_onFocusChange);
+        _visibilityFocusNodes[i].removeListener(_onFocusChange);
         _centerFocusNodes[i].dispose();
-        _reorderFocusNodes[i].dispose();
-        _actionsFocusNodes[i].dispose();
+        _reorderUpFocusNodes[i].dispose();
+        _reorderDownFocusNodes[i].dispose();
+        _scanFocusNodes[i].dispose();
+        _refreshFocusNodes[i].dispose();
+        _visibilityFocusNodes[i].dispose();
       }
       _centerFocusNodes.length = count;
-      _reorderFocusNodes.length = count;
-      _actionsFocusNodes.length = count;
+      _reorderUpFocusNodes.length = count;
+      _reorderDownFocusNodes.length = count;
+      _scanFocusNodes.length = count;
+      _refreshFocusNodes.length = count;
+      _visibilityFocusNodes.length = count;
     }
   }
 
@@ -2336,10 +2528,19 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
     for (final node in _centerFocusNodes) {
       node.dispose();
     }
-    for (final node in _reorderFocusNodes) {
+    for (final node in _reorderUpFocusNodes) {
       node.dispose();
     }
-    for (final node in _actionsFocusNodes) {
+    for (final node in _reorderDownFocusNodes) {
+      node.dispose();
+    }
+    for (final node in _scanFocusNodes) {
+      node.dispose();
+    }
+    for (final node in _refreshFocusNodes) {
+      node.dispose();
+    }
+    for (final node in _visibilityFocusNodes) {
       node.dispose();
     }
     super.dispose();
@@ -2360,59 +2561,172 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
     if (key.isUpKey) {
       if (index > 0) {
         _centerFocusNodes[index - 1].requestFocus();
+      } else if (widget.sectionHeaderFocusNode != null) {
+        widget.sectionHeaderFocusNode!.requestFocus();
       }
       return KeyEventResult.handled;
     }
     if (key.isDownKey) {
       if (index < widget.libraries.length - 1) {
         _centerFocusNodes[index + 1].requestFocus();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
+    if (key.isLeftKey) {
+      _reorderDownFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isRightKey) {
+      final isFavorites = widget.libraries[index].globalKey == kJellyfinFavoritesKey;
+      (isFavorites ? _visibilityFocusNodes[index] : _scanFocusNodes[index]).requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  KeyEventResult _handleReorderUpKey(FocusNode node, KeyEvent event, int index) {
+    if (!event.isActionable) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space || key.isSelectKey) {
+      if (index > 0) _moveLibrary(index, index - 1);
+      return KeyEventResult.handled;
+    }
+    if (key.isRightKey) {
+      _centerFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isDownKey) {
+      _reorderDownFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isUpKey) {
+      if (index > 0) {
+        _centerFocusNodes[index - 1].requestFocus();
+      } else if (widget.sectionHeaderFocusNode != null) {
+        widget.sectionHeaderFocusNode!.requestFocus();
       }
       return KeyEventResult.handled;
     }
-    if (key.isLeftKey) {
-      _reorderFocusNodes[index].requestFocus();
-      return KeyEventResult.handled;
-    }
-    if (key.isRightKey) {
-      _actionsFocusNodes[index].requestFocus();
-      return KeyEventResult.handled;
-    }
     return KeyEventResult.ignored;
   }
 
-  KeyEventResult _handleReorderKey(FocusNode node, KeyEvent event, int index) {
+  KeyEventResult _handleReorderDownKey(FocusNode node, KeyEvent event, int index) {
     if (!event.isActionable) return KeyEventResult.ignored;
     final key = event.logicalKey;
 
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space || key.isSelectKey) {
+      if (index < widget.libraries.length - 1) _moveLibrary(index, index + 1);
+      return KeyEventResult.handled;
+    }
     if (key.isRightKey) {
       _centerFocusNodes[index].requestFocus();
       return KeyEventResult.handled;
     }
     if (key.isUpKey) {
-      if (index > 0) _centerFocusNodes[index - 1].requestFocus();
+      _reorderUpFocusNodes[index].requestFocus();
       return KeyEventResult.handled;
     }
     if (key.isDownKey) {
-      if (index < widget.libraries.length - 1) _centerFocusNodes[index + 1].requestFocus();
+      if (index < widget.libraries.length - 1) {
+        _centerFocusNodes[index + 1].requestFocus();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  KeyEventResult _handleScanKey(FocusNode node, KeyEvent event, int index) {
+    if (!event.isActionable) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space || key.isSelectKey) {
+      widget.onScanLibrary(widget.libraries[index]);
+      return KeyEventResult.handled;
+    }
+    if (key.isLeftKey) {
+      _centerFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isRightKey) {
+      _refreshFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isUpKey) {
+      if (index > 0) {
+        _centerFocusNodes[index - 1].requestFocus();
+      } else if (widget.sectionHeaderFocusNode != null) {
+        widget.sectionHeaderFocusNode!.requestFocus();
+      }
+      return KeyEventResult.handled;
+    }
+    if (key.isDownKey && index < widget.libraries.length - 1) {
+      _centerFocusNodes[index + 1].requestFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
   }
 
-  KeyEventResult _handleActionsKey(FocusNode node, KeyEvent event, int index) {
+  KeyEventResult _handleRefreshKey(FocusNode node, KeyEvent event, int index) {
     if (!event.isActionable) return KeyEventResult.ignored;
     final key = event.logicalKey;
 
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space || key.isSelectKey) {
+      widget.onRefreshMetadata(widget.libraries[index]);
+      return KeyEventResult.handled;
+    }
     if (key.isLeftKey) {
+      _scanFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isRightKey) {
+      _visibilityFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isUpKey) {
+      if (index > 0) {
+        _centerFocusNodes[index - 1].requestFocus();
+      } else if (widget.sectionHeaderFocusNode != null) {
+        widget.sectionHeaderFocusNode!.requestFocus();
+      }
+      return KeyEventResult.handled;
+    }
+    if (key.isDownKey && index < widget.libraries.length - 1) {
+      _centerFocusNodes[index + 1].requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  KeyEventResult _handleVisibilityKey(FocusNode node, KeyEvent event, int index) {
+    if (!event.isActionable) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    final isFavorites = widget.libraries[index].globalKey == kJellyfinFavoritesKey;
+
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space || key.isSelectKey) {
+      widget.onToggleVisibility(widget.libraries[index], widget.hiddenProvider, widget.librariesProvider);
+      return KeyEventResult.handled;
+    }
+    if (key.isLeftKey) {
+      (isFavorites ? _centerFocusNodes[index] : _refreshFocusNodes[index]).requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (key.isRightKey) {
       _centerFocusNodes[index].requestFocus();
       return KeyEventResult.handled;
     }
     if (key.isUpKey) {
-      if (index > 0) _centerFocusNodes[index - 1].requestFocus();
+      if (index > 0) {
+        _centerFocusNodes[index - 1].requestFocus();
+      } else if (widget.sectionHeaderFocusNode != null) {
+        widget.sectionHeaderFocusNode!.requestFocus();
+      }
       return KeyEventResult.handled;
     }
-    if (key.isDownKey) {
-      if (index < widget.libraries.length - 1) _centerFocusNodes[index + 1].requestFocus();
+    if (key.isDownKey && index < widget.libraries.length - 1) {
+      _centerFocusNodes[index + 1].requestFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -2431,40 +2745,47 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
 
         return Padding(
           key: ValueKey(library.globalKey),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           child: Row(
             children: [
-              // Left: Up/Down reorder (all libraries including Favorites)
               Focus(
-                  focusNode: _reorderFocusNodes[index],
-                  onKeyEvent: (n, e) => _handleReorderKey(n, e, index),
-                  child: Builder(
-                    builder: (_) {
-                      final hasFocus = _reorderFocusNodes[index].hasFocus;
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_upward, size: 18),
-                              tooltip: 'Move up',
-                              onPressed: index > 0 ? () => _moveLibrary(index, index - 1) : null,
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.arrow_downward, size: 18),
-                              tooltip: 'Move down',
-                              onPressed: index < widget.libraries.length - 1 ? () => _moveLibrary(index, index + 1) : null,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                focusNode: _reorderUpFocusNodes[index],
+                onKeyEvent: (n, e) => _handleReorderUpKey(n, e, index),
+                child: Builder(
+                  builder: (_) {
+                    final hasFocus = _reorderUpFocusNodes[index].hasFocus;
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
+                      child: Icon(
+                        Icons.arrow_upward,
+                        size: 24,
+                        color: index > 0 ? null : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                      ),
+                    );
+                  },
                 ),
-              const SizedBox(width: 8),
-              // Center: Library name
+              ),
+              const SizedBox(width: 4),
+              Focus(
+                focusNode: _reorderDownFocusNodes[index],
+                onKeyEvent: (n, e) => _handleReorderDownKey(n, e, index),
+                child: Builder(
+                  builder: (_) {
+                    final hasFocus = _reorderDownFocusNodes[index].hasFocus;
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
+                      child: Icon(
+                        Icons.arrow_downward,
+                        size: 24,
+                        color: index < widget.libraries.length - 1 ? null : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Focus(
                   focusNode: _centerFocusNodes[index],
@@ -2473,16 +2794,16 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
                     builder: (_) {
                       final hasFocus = _centerFocusNodes[index].hasFocus;
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
                         child: Row(
                           children: [
-                            AppIcon(widget.getLibraryIcon(library.type), fill: 1, size: 20),
-                            const SizedBox(width: 12),
+                            AppIcon(widget.getLibraryIcon(library.type), fill: 1, size: 24),
+                            const SizedBox(width: 16),
                             Expanded(
                               child: Text(
                                 library.title,
-                                style: theme.textTheme.bodyLarge?.copyWith(
+                                style: theme.textTheme.titleMedium?.copyWith(
                                   color: isHidden ? theme.colorScheme.onSurfaceVariant : null,
                                 ),
                               ),
@@ -2494,42 +2815,52 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              // Right: Scan, Refresh, Visibility
+              const SizedBox(width: 12),
+              if (!isFavorites) ...[
+                Focus(
+                  focusNode: _scanFocusNodes[index],
+                  onKeyEvent: (n, e) => _handleScanKey(n, e, index),
+                  child: Builder(
+                    builder: (_) {
+                      final hasFocus = _scanFocusNodes[index].hasFocus;
+                      return Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
+                        child: const AppIcon(Symbols.refresh_rounded, fill: 1, size: 24),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Focus(
+                  focusNode: _refreshFocusNodes[index],
+                  onKeyEvent: (n, e) => _handleRefreshKey(n, e, index),
+                  child: Builder(
+                    builder: (_) {
+                      final hasFocus = _refreshFocusNodes[index].hasFocus;
+                      return Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
+                        child: const AppIcon(Symbols.sync_rounded, fill: 1, size: 24),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
               Focus(
-                focusNode: _actionsFocusNodes[index],
-                onKeyEvent: (n, e) => _handleActionsKey(n, e, index),
+                focusNode: _visibilityFocusNodes[index],
+                onKeyEvent: (n, e) => _handleVisibilityKey(n, e, index),
                 child: Builder(
                   builder: (_) {
-                    final hasFocus = _actionsFocusNodes[index].hasFocus;
+                    final hasFocus = _visibilityFocusNodes[index].hasFocus;
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.all(8),
                       decoration: FocusTheme.focusDecoration(context, isFocused: showFocus && hasFocus),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (!isFavorites) ...[
-                            IconButton(
-                              icon: const AppIcon(Symbols.refresh_rounded, fill: 1, size: 20),
-                              tooltip: t.libraries.scanLibraryFiles,
-                              onPressed: () => widget.onScanLibrary(library),
-                            ),
-                            IconButton(
-                              icon: const AppIcon(Symbols.sync_rounded, fill: 1, size: 20),
-                              tooltip: t.libraries.refreshMetadata,
-                              onPressed: () => widget.onRefreshMetadata(library),
-                            ),
-                          ],
-                          IconButton(
-                            icon: AppIcon(
-                              isHidden ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
-                              fill: 1,
-                              size: 20,
-                            ),
-                            tooltip: isHidden ? t.libraries.showLibrary : t.libraries.hideLibrary,
-                            onPressed: () => widget.onToggleVisibility(library, widget.hiddenProvider, widget.librariesProvider),
-                          ),
-                        ],
+                      child: AppIcon(
+                        isHidden ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
+                        fill: 1,
+                        size: 24,
                       ),
                     );
                   },
@@ -2539,6 +2870,139 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
           ),
         );
       }),
+    );
+  }
+}
+
+/// Dialog for selecting PerformanceProfile (Small / Medium / Large).
+class _PerformanceProfileDialog extends StatelessWidget {
+  final String title;
+  final settings.PerformanceProfile value;
+  final void Function(settings.PerformanceProfile) onSelected;
+
+  const _PerformanceProfileDialog({
+    required this.title,
+    required this.value,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: settings.PerformanceProfile.values.map((v) {
+          return ListTile(
+            leading: AppIcon(
+              value == v ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+              fill: 1,
+            ),
+            title: Text(v == settings.PerformanceProfile.small
+                ? t.settings.performanceSmall
+                : v == settings.PerformanceProfile.medium
+                    ? t.settings.performanceMedium
+                    : t.settings.performanceLarge),
+            onTap: () => onSelected(v),
+          );
+        }).toList(),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
+    );
+  }
+}
+
+/// Dialog for selecting GridPreloadLevel (Low / Medium / High).
+class _SettingsSectionPage extends StatefulWidget {
+  final String title;
+  final Widget Function() content;
+  final ValueNotifier<int>? rebuildNotifier;
+
+  const _SettingsSectionPage({required this.title, required this.content, this.rebuildNotifier});
+
+  @override
+  State<_SettingsSectionPage> createState() => _SettingsSectionPageState();
+}
+
+class _SettingsSectionPageState extends State<_SettingsSectionPage> {
+  final _contentKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.rebuildNotifier?.addListener(_onParentStateChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final contentContext = _contentKey.currentContext;
+      if (contentContext == null) return;
+      final scope = FocusScope.of(contentContext);
+      final firstChild = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
+        (node) => node!.canRequestFocus && node.context != null,
+        orElse: () => null,
+      );
+      firstChild?.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.rebuildNotifier?.removeListener(_onParentStateChanged);
+    super.dispose();
+  }
+
+  void _onParentStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusedScrollScaffold(
+      title: Text(widget.title),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              Card(key: _contentKey, child: widget.content()),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GridPreloadDialog extends StatelessWidget {
+  final settings.GridPreloadLevel value;
+  final void Function(settings.GridPreloadLevel) onSelected;
+
+  const _GridPreloadDialog({
+    required this.value,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(t.settings.performanceGridPreload),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: settings.GridPreloadLevel.values.map((v) {
+          return ListTile(
+            leading: AppIcon(
+              value == v ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+              fill: 1,
+            ),
+            title: Text(v == settings.GridPreloadLevel.low
+                ? t.settings.performanceLow
+                : v == settings.GridPreloadLevel.medium
+                    ? t.settings.performanceMedium
+                    : t.settings.performanceHigh),
+            onTap: () => onSelected(v),
+          );
+        }).toList(),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
     );
   }
 }

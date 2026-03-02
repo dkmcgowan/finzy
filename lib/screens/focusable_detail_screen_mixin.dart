@@ -41,8 +41,7 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
   bool isAppBarFocused = false;
   int appBarFocusedButton = 0; // 0=play, 1=shuffle, 2=delete (or less if fewer buttons)
 
-  // Flag to prevent PopScope from exiting when BACK was handled by a key handler
-  bool backHandledByKeyEvent = false;
+  
 
   /// Number of app bar buttons (override if different from 3)
   int get appBarButtonCount => 3;
@@ -74,10 +73,9 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
     scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
   }
 
-  /// Handle BACK key from content - navigate to app bar and set flag to prevent PopScope exit
+  /// Handle BACK key from content - pop the screen directly
   void handleBackFromContent() {
-    backHandledByKeyEvent = true;
-    navigateToAppBar();
+    Navigator.pop(context);
   }
 
   /// Navigate focus from app bar down to the grid
@@ -99,20 +97,7 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
 
   /// Handle back navigation for PopScope. Returns true if should pop.
   bool handleBackNavigation() {
-    // If BACK was already handled by a key event, don't pop
-    if (backHandledByKeyEvent) {
-      backHandledByKeyEvent = false;
-      return false;
-    }
-
-    if (isAppBarFocused) {
-      // Already on app bar, allow exit
-      return true;
-    } else {
-      // Focus app bar first
-      navigateToAppBar();
-      return false;
-    }
+    return true;
   }
 
   /// Focus a specific app bar button by index

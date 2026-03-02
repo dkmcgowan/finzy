@@ -10,15 +10,22 @@ import 'quick_connect_authorize_dialog.dart';
 
 /// Profile avatar + menu (Switch Profile / Logout) for app bars.
 /// Use in [actions] of [DesktopSliverAppBar] or [CustomAppBar] for a uniform header.
+///
+/// Pass [menuKey] to open the menu programmatically (e.g. for D-pad Select).
 class ProfileAppBarButton extends StatelessWidget {
   const ProfileAppBarButton({
     super.key,
     this.onSwitchProfile,
     this.onLogout,
+    this.menuKey,
   });
 
   final VoidCallback? onSwitchProfile;
   final VoidCallback? onLogout;
+
+  /// Optional key for the PopupMenuButton. Use [PopupMenuButtonState.showButtonMenu]
+  /// to open the menu programmatically (e.g. when handling D-pad Select).
+  final GlobalKey<PopupMenuButtonState<String>>? menuKey;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +52,7 @@ class ProfileAppBarButton extends StatelessWidget {
           avatar = const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32);
         }
         return PopupMenuButton<String>(
+          key: menuKey,
           icon: avatar,
           offset: const Offset(0, 8),
           onSelected: (value) {

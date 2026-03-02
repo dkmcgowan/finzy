@@ -59,6 +59,7 @@ class DownloadTreeView extends StatefulWidget {
   final void Function(String globalKey)? onCancel;
   final void Function(String globalKey)? onDelete;
   final VoidCallback? onNavigateLeft;
+  final VoidCallback? onNavigateUp;
   final VoidCallback? onBack;
   final bool suppressAutoFocus;
 
@@ -72,6 +73,7 @@ class DownloadTreeView extends StatefulWidget {
     this.onCancel,
     this.onDelete,
     this.onNavigateLeft,
+    this.onNavigateUp,
     this.onBack,
     this.suppressAutoFocus = false,
   });
@@ -359,6 +361,7 @@ class _DownloadTreeViewState extends State<DownloadTreeView> {
       onCancel: widget.onCancel,
       onDelete: widget.onDelete,
       onNavigateLeft: widget.onNavigateLeft,
+      onNavigateUp: isFirst ? widget.onNavigateUp : null,
       onBack: widget.onBack,
       rowFocusNode: isFirst ? _firstItemFocusNode : null,
       autofocus: isFirst && !widget.suppressAutoFocus,
@@ -454,6 +457,7 @@ class _DownloadTreeItem extends StatefulWidget {
   final void Function(String globalKey)? onCancel;
   final void Function(String globalKey)? onDelete;
   final VoidCallback? onNavigateLeft;
+  final VoidCallback? onNavigateUp;
   final VoidCallback? onBack;
   final FocusNode? rowFocusNode;
   final bool autofocus;
@@ -472,6 +476,7 @@ class _DownloadTreeItem extends StatefulWidget {
     this.onCancel,
     this.onDelete,
     this.onNavigateLeft,
+    this.onNavigateUp,
     this.onBack,
     this.rowFocusNode,
     this.autofocus = false,
@@ -601,6 +606,7 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
         autofocus: widget.autofocus,
         onSelect: canExpand ? widget.onToggleExpansion : null,
         onNavigateLeft: widget.onNavigateLeft,
+        onNavigateUp: widget.onNavigateUp,
         onNavigateRight: hasActions ? _focusFirstButton : null,
         onBack: widget.onBack,
         borderRadius: 8.0,

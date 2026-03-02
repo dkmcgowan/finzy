@@ -454,6 +454,8 @@ class HubSectionState extends State<HubSection> {
                     builder: (scrollController) => ListView.builder(
                       controller: scrollController,
                       scrollDirection: Axis.horizontal,
+                      // ignore: deprecated_member_use
+                      cacheExtent: context.read<SettingsProvider>().gridPreloadCacheExtent,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                       itemCount: isKeyboardMode ? _totalItemCount : widget.hub.items.length,
                       itemBuilder: (context, index) {

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/widgets.dart';
 import '../services/jellyfin_client.dart';
+import '../services/settings_service.dart';
 
 /// Image types for different transcoding strategies
 enum ImageType {
@@ -35,7 +36,14 @@ class MediaImageHelper {
   /// Computes an effective device pixel ratio that accounts for displays where
   /// the platform-reported DPR doesn't reflect the true physical density
   /// (common on Linux X11 with compositor scaling).
-  static double effectiveDevicePixelRatio(BuildContext context) {
+  /// When [performanceProfile] is [PerformanceProfile.small], returns 1.0 for faster loading.
+  static double effectiveDevicePixelRatio(
+    BuildContext context, {
+    PerformanceProfile? performanceProfile,
+  }) {
+    if (performanceProfile == PerformanceProfile.small) {
+      return 1.0;
+    }
     final reportedDpr = MediaQuery.of(context).devicePixelRatio;
     try {
       final displayWidth = View.of(context).display.size.width;
@@ -109,6 +117,7 @@ class MediaImageHelper {
     required int width,
     int? height,
     String imageType = 'Primary',
+    int quality = 90,
   }) {
     final baseUrl = client.baseUrl;
     final token = client.token;
@@ -117,7 +126,7 @@ class MediaImageHelper {
       'fillWidth': width.toString(),
       if (height != null) 'fillHeight': height.toString(),
       'maxWidth': (width * 2).clamp(width, _maxTranscodedWidth).toString(),
-      'quality': '90',
+      'quality': quality.toString(),
       if (token != null && token.isNotEmpty) 'ApiKey': token,
     };
 
@@ -129,6 +138,7 @@ class MediaImageHelper {
   /// Creates an optimized image URL for server content
   /// Falls back to original URL if transcoding is not appropriate
   /// If client is null (offline mode), returns empty string for relative paths
+  /// When [performanceProfile] is [PerformanceProfile.small], uses quality 75 for faster loading.
   static String getOptimizedImageUrl({
     JellyfinClient? client,
     required String? thumbPath,
@@ -137,6 +147,7 @@ class MediaImageHelper {
     required double devicePixelRatio,
     bool enableTranscoding = true,
     ImageType imageType = ImageType.poster,
+    PerformanceProfile? performanceProfile,
   }) {
     if (thumbPath == null || thumbPath.isEmpty) {
       return '';
@@ -181,12 +192,14 @@ class MediaImageHelper {
     }
 
     try {
+      final quality = performanceProfile == PerformanceProfile.small ? 75 : 90;
       return buildImageUrl(
         client: client,
         itemId: basePath,
         width: width,
         height: height,
         imageType: _jellyfinApiImageType(imageType),
+        quality: quality,
       );
     } catch (e) {
       return client.getThumbnailUrl(basePath);
@@ -194,15 +207,20 @@ class MediaImageHelper {
   }
 
   /// Generates cache-friendly dimensions for memory caching
+  /// When [performanceProfile] is [PerformanceProfile.small], uses lower caps (600×900) for less memory.
   static (int memWidth, int memHeight) getMemCacheDimensions({
     required int displayWidth,
     required int displayHeight,
     double scaleFactor = 1.0,
+    PerformanceProfile? performanceProfile,
   }) {
     final scaledWidth = (displayWidth * scaleFactor).round();
     final scaledHeight = (displayHeight * scaleFactor).round();
+    final (maxW, maxH) = performanceProfile == PerformanceProfile.small
+        ? (600, 900)
+        : (1200, 1800);
 
-    return (scaledWidth.clamp(120, 1200), scaledHeight.clamp(180, 1800));
+    return (scaledWidth.clamp(120, maxW), scaledHeight.clamp(180, maxH));
   }
 
   /// Determines if an image path is suitable for resizing via the Jellyfin Images API.

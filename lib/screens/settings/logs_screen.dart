@@ -6,8 +6,7 @@ import 'package:logger/logger.dart';
 import '../../i18n/strings.g.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/snackbar_helper.dart';
-import '../../focus/key_event_utils.dart';
-import '../../widgets/desktop_app_bar.dart';
+import '../../widgets/focused_scroll_scaffold.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
@@ -18,11 +17,35 @@ class LogsScreen extends StatefulWidget {
 
 class _LogsScreenState extends State<LogsScreen> {
   List<LogEntry> _logs = [];
+  late final FocusNode _firstEntryFocusNode;
 
   @override
   void initState() {
     super.initState();
+    _firstEntryFocusNode = FocusNode(onKeyEvent: _handleFirstEntryKey);
     _logs = MemoryLogOutput.getLogs();
+  }
+
+  @override
+  void dispose() {
+    _firstEntryFocusNode.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _handleFirstEntryKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.arrowUp) {
+      return KeyEventResult.ignored;
+    }
+    final scope = FocusScope.of(node.context!);
+    final backButton = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
+      (n) => n!.canRequestFocus && n.context != null && n != node,
+      orElse: () => null,
+    );
+    if (backButton != null) {
+      backButton.requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   void _loadLogs() {
@@ -108,53 +131,46 @@ class _LogsScreenState extends State<LogsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Focus(
-      autofocus: true,
-      onKeyEvent: (_, event) => handleBackKeyNavigation(context, event),
-      child: Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            CustomAppBar(
-              title: Text(t.screens.logs),
-              pinned: true,
-              actions: [
-                IconButton(
-                  icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
-                  onPressed: _loadLogs,
-                  tooltip: t.common.refresh,
-                ),
-                IconButton(
-                  icon: const AppIcon(Symbols.content_copy_rounded, fill: 1),
-                  onPressed: _logs.isNotEmpty ? _copyAllLogs : null,
-                  tooltip: t.logs.copyLogs,
-                ),
-                IconButton(
-                  icon: const AppIcon(Symbols.delete_outline_rounded, fill: 1),
-                  onPressed: _logs.isNotEmpty ? _clearLogs : null,
-                  tooltip: t.logs.clearLogs,
-                ),
-              ],
-            ),
-            if (_logs.isEmpty)
-              SliverFillRemaining(child: Center(child: Text(t.messages.noLogsAvailable)))
-            else
-              SliverPadding(
-                padding: const EdgeInsets.all(8),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final log = _logs[index];
-                    return _LogEntryCard(
-                      log: log,
-                      formatTime: _formatTime,
-                      levelColor: _getLevelColor(log.level),
-                      levelIcon: _getLevelIcon(log.level),
-                    );
-                  }, childCount: _logs.length),
-                ),
-              ),
-          ],
+    return FocusedScrollScaffold(
+      title: Text(t.screens.logs),
+      actions: [
+        IconButton(
+          icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
+          onPressed: _loadLogs,
+          tooltip: t.common.refresh,
         ),
-      ),
+        IconButton(
+          icon: const AppIcon(Symbols.content_copy_rounded, fill: 1),
+          onPressed: _logs.isNotEmpty ? _copyAllLogs : null,
+          tooltip: t.logs.copyLogs,
+        ),
+        IconButton(
+          icon: const AppIcon(Symbols.delete_outline_rounded, fill: 1),
+          onPressed: _logs.isNotEmpty ? _clearLogs : null,
+          tooltip: t.logs.clearLogs,
+        ),
+      ],
+      slivers: [
+        if (_logs.isEmpty)
+          SliverFillRemaining(child: Center(child: Text(t.messages.noLogsAvailable)))
+        else
+          SliverPadding(
+            padding: const EdgeInsets.all(8),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final log = _logs[index];
+                return _LogEntryCard(
+                  log: log,
+                  formatTime: _formatTime,
+                  levelColor: _getLevelColor(log.level),
+                  levelIcon: _getLevelIcon(log.level),
+                  autofocus: index == 0,
+                  focusNode: index == 0 ? _firstEntryFocusNode : null,
+                );
+              }, childCount: _logs.length),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -164,8 +180,10 @@ class _LogEntryCard extends StatefulWidget {
   final String Function(DateTime) formatTime;
   final Color levelColor;
   final IconData levelIcon;
+  final bool autofocus;
+  final FocusNode? focusNode;
 
-  const _LogEntryCard({required this.log, required this.formatTime, required this.levelColor, required this.levelIcon});
+  const _LogEntryCard({required this.log, required this.formatTime, required this.levelColor, required this.levelIcon, this.autofocus = false, this.focusNode});
 
   @override
   State<_LogEntryCard> createState() => _LogEntryCardState();
@@ -181,7 +199,9 @@ class _LogEntryCardState extends State<_LogEntryCard> {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
-        onTap: hasErrorOrStackTrace ? () => setState(() => _isExpanded = !_isExpanded) : null,
+        focusNode: widget.focusNode,
+        autofocus: widget.autofocus,
+        onTap: hasErrorOrStackTrace ? () => setState(() => _isExpanded = !_isExpanded) : () {},
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(

@@ -9,7 +9,6 @@ import '../utils/snackbar_helper.dart';
 import 'base_media_list_detail_screen.dart';
 import 'focusable_detail_screen_mixin.dart';
 import '../mixins/grid_focus_node_mixin.dart';
-import '../focus/key_event_utils.dart';
 
 /// Screen to display the contents of a collection
 class CollectionDetailScreen extends StatefulWidget {
@@ -120,14 +119,10 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (BackKeyCoordinator.consumeIfHandled()) return;
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        final shouldPop = handleBackNavigation();
-        if (shouldPop && mounted) {
-          Navigator.pop(context);
-        }
+        Navigator.pop(context);
       },
       child: Scaffold(
         body: CustomScrollView(

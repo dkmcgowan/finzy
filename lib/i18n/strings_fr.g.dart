@@ -265,6 +265,10 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 	@override String get exoPlayerDescription => 'Lecteur natif Android avec meilleur support matériel';
 	@override String get mpv => 'MPV';
 	@override String get mpvDescription => 'Lecteur avancé avec plus de fonctionnalités et support des sous-titres ASS';
+	@override String get liveTvPlayer => 'Lecteur TV en direct';
+	@override String get liveTvPlayerDescription => 'MPV recommandé pour la TV en direct. ExoPlayer peut poser des problèmes sur certains appareils.';
+	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get hardwareDecoding => 'Décodage matériel';
 	@override String get hardwareDecodingDescription => 'Utilisez l\'accélération matérielle lorsqu\'elle est disponible.';
 	@override String get bufferSize => 'Taille du Buffer';
@@ -280,10 +284,10 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 	@override String get rememberTrackSelectionsDescription => 'Enregistrer automatiquement les préférences linguistiques pour l\'audio et les sous-titres lorsque vous changez de piste pendant la lecture';
 	@override String get clickVideoTogglesPlayback => 'Cliquez sur la vidéo pour basculer entre lecture et pause.';
 	@override String get clickVideoTogglesPlaybackDescription => 'Si cette option est activée, cliquer sur le lecteur vidéo lancera ou mettra en pause la vidéo. Sinon, le clic affichera ou masquera les commandes de lecture.';
-	@override String get videoPlayerControls => 'Commandes du lecteur vidéo';
+	@override String get videoPlayerControls => 'Raccourcis clavier du lecteur vidéo';
 	@override String get keyboardShortcuts => 'Raccourcis clavier';
 	@override String get keyboardShortcutsDescription => 'Personnaliser les raccourcis clavier';
-	@override String get videoPlayerNavigation => 'Navigation dans le lecteur vidéo';
+	@override String get videoPlayerNavigation => 'Navigation clavier du lecteur vidéo';
 	@override String get videoPlayerNavigationDescription => 'Utilisez les touches fléchées pour naviguer dans les commandes du lecteur vidéo.';
 	@override String get debugLogging => 'Journalisation de débogage';
 	@override String get debugLoggingDescription => 'Activer la journalisation détaillée pour le dépannage';
@@ -329,6 +333,8 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 	@override String get downloads => 'Téléchargement';
 	@override String get downloadLocationDescription => 'Choisissez où stocker le contenu téléchargé';
 	@override String get downloadLocationDefault => 'Par défaut (stockage de l\'application)';
+	@override String get downloadsDefault => 'Téléchargements par défaut (stockage de l\'application)';
+	@override String get libraryOrder => 'Gestion des bibliothèques';
 	@override String get downloadLocationCustom => 'Emplacement personnalisé';
 	@override String get selectFolder => 'Sélectionner un dossier';
 	@override String get resetToDefault => 'Réinitialiser les paramètres par défaut';
@@ -349,6 +355,22 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 	@override String get requireProfileSelectionOnOpenDescription => 'Afficher la sélection de profil à chaque ouverture de l\'application';
 	@override String get confirmExitOnBack => 'Confirmer avant de quitter';
 	@override String get confirmExitOnBackDescription => 'Afficher une boîte de dialogue de confirmation en appuyant sur retour pour quitter';
+	@override String get performance => 'Performances';
+	@override String get performanceImageQuality => 'Qualité d\'image';
+	@override String get performanceImageQualityDescription => 'Une qualité inférieure charge plus rapidement. Petit = plus rapide, Grand = meilleure qualité.';
+	@override String get performancePosterSize => 'Taille des affiches';
+	@override String get performancePosterSizeDescription => 'Taille des cartes d\'affiches dans les grilles. Petit = plus d\'éléments, Grand = cartes plus grandes.';
+	@override String get performanceReduceAnimations => 'Réduire les animations';
+	@override String get performanceReduceAnimationsDescription => 'Transitions plus courtes pour une sensation plus réactive';
+	@override String get performanceGridPreload => 'Préchargement de la grille';
+	@override String get performanceGridPreloadDescription => 'Nombre d\'éléments hors écran à charger. Faible = plus rapide, Élevé = défilement plus fluide.';
+	@override String get performanceSmall => 'Petit';
+	@override String get performanceMedium => 'Moyen';
+	@override String get performanceLarge => 'Grand';
+	@override String get performanceLow => 'Faible';
+	@override String get performanceHigh => 'Élevé';
+	@override String get hideSupportDevelopment => 'Masquer Soutenir le développement';
+	@override String get hideSupportDevelopmentDescription => 'Masquer la section Soutenir le développement dans les paramètres';
 }
 
 // Path: search
@@ -1389,6 +1411,10 @@ extension on TranslationsFr {
 			'settings.exoPlayerDescription' => 'Lecteur natif Android avec meilleur support matériel',
 			'settings.mpv' => 'MPV',
 			'settings.mpvDescription' => 'Lecteur avancé avec plus de fonctionnalités et support des sous-titres ASS',
+			'settings.liveTvPlayer' => 'Lecteur TV en direct',
+			'settings.liveTvPlayerDescription' => 'MPV recommandé pour la TV en direct. ExoPlayer peut poser des problèmes sur certains appareils.',
+			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.hardwareDecoding' => 'Décodage matériel',
 			'settings.hardwareDecodingDescription' => 'Utilisez l\'accélération matérielle lorsqu\'elle est disponible.',
 			'settings.bufferSize' => 'Taille du Buffer',
@@ -1404,10 +1430,10 @@ extension on TranslationsFr {
 			'settings.rememberTrackSelectionsDescription' => 'Enregistrer automatiquement les préférences linguistiques pour l\'audio et les sous-titres lorsque vous changez de piste pendant la lecture',
 			'settings.clickVideoTogglesPlayback' => 'Cliquez sur la vidéo pour basculer entre lecture et pause.',
 			'settings.clickVideoTogglesPlaybackDescription' => 'Si cette option est activée, cliquer sur le lecteur vidéo lancera ou mettra en pause la vidéo. Sinon, le clic affichera ou masquera les commandes de lecture.',
-			'settings.videoPlayerControls' => 'Commandes du lecteur vidéo',
+			'settings.videoPlayerControls' => 'Raccourcis clavier du lecteur vidéo',
 			'settings.keyboardShortcuts' => 'Raccourcis clavier',
 			'settings.keyboardShortcutsDescription' => 'Personnaliser les raccourcis clavier',
-			'settings.videoPlayerNavigation' => 'Navigation dans le lecteur vidéo',
+			'settings.videoPlayerNavigation' => 'Navigation clavier du lecteur vidéo',
 			'settings.videoPlayerNavigationDescription' => 'Utilisez les touches fléchées pour naviguer dans les commandes du lecteur vidéo.',
 			'settings.debugLogging' => 'Journalisation de débogage',
 			'settings.debugLoggingDescription' => 'Activer la journalisation détaillée pour le dépannage',
@@ -1453,6 +1479,8 @@ extension on TranslationsFr {
 			'settings.downloads' => 'Téléchargement',
 			'settings.downloadLocationDescription' => 'Choisissez où stocker le contenu téléchargé',
 			'settings.downloadLocationDefault' => 'Par défaut (stockage de l\'application)',
+			'settings.downloadsDefault' => 'Téléchargements par défaut (stockage de l\'application)',
+			'settings.libraryOrder' => 'Gestion des bibliothèques',
 			'settings.downloadLocationCustom' => 'Emplacement personnalisé',
 			'settings.selectFolder' => 'Sélectionner un dossier',
 			'settings.resetToDefault' => 'Réinitialiser les paramètres par défaut',
@@ -1473,6 +1501,22 @@ extension on TranslationsFr {
 			'settings.requireProfileSelectionOnOpenDescription' => 'Afficher la sélection de profil à chaque ouverture de l\'application',
 			'settings.confirmExitOnBack' => 'Confirmer avant de quitter',
 			'settings.confirmExitOnBackDescription' => 'Afficher une boîte de dialogue de confirmation en appuyant sur retour pour quitter',
+			'settings.performance' => 'Performances',
+			'settings.performanceImageQuality' => 'Qualité d\'image',
+			'settings.performanceImageQualityDescription' => 'Une qualité inférieure charge plus rapidement. Petit = plus rapide, Grand = meilleure qualité.',
+			'settings.performancePosterSize' => 'Taille des affiches',
+			'settings.performancePosterSizeDescription' => 'Taille des cartes d\'affiches dans les grilles. Petit = plus d\'éléments, Grand = cartes plus grandes.',
+			'settings.performanceReduceAnimations' => 'Réduire les animations',
+			'settings.performanceReduceAnimationsDescription' => 'Transitions plus courtes pour une sensation plus réactive',
+			'settings.performanceGridPreload' => 'Préchargement de la grille',
+			'settings.performanceGridPreloadDescription' => 'Nombre d\'éléments hors écran à charger. Faible = plus rapide, Élevé = défilement plus fluide.',
+			'settings.performanceSmall' => 'Petit',
+			'settings.performanceMedium' => 'Moyen',
+			'settings.performanceLarge' => 'Grand',
+			'settings.performanceLow' => 'Faible',
+			'settings.performanceHigh' => 'Élevé',
+			'settings.hideSupportDevelopment' => 'Masquer Soutenir le développement',
+			'settings.hideSupportDevelopmentDescription' => 'Masquer la section Soutenir le développement dans les paramètres',
 			'search.hint' => 'Rechercher des films, des séries, de la musique...',
 			'search.tryDifferentTerm' => 'Essayez un autre terme de recherche',
 			'search.searchYourMedia' => 'Rechercher dans vos médias',
@@ -1741,6 +1785,8 @@ extension on TranslationsFr {
 			'libraries.tabs.suggestions' => 'Suggestions',
 			'libraries.tabs.browse' => 'Parcourir',
 			'libraries.tabs.genres' => 'Genres',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.tabs.favorites' => 'Favoris',
 			'libraries.tabs.collections' => 'Collections',
 			'libraries.tabs.playlists' => 'Playlists',
@@ -1763,8 +1809,6 @@ extension on TranslationsFr {
 			'hubDetail.dateAdded' => 'Date d\'ajout',
 			'hubDetail.rating' => 'Évaluation',
 			'hubDetail.noItemsFound' => 'Aucun élément trouvé',
-			_ => null,
-		} ?? switch (path) {
 			'logs.clearLogs' => 'Effacer les logs',
 			'logs.copyLogs' => 'Copier les logs',
 			'logs.error' => 'Erreur:',

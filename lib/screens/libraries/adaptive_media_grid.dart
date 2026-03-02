@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../services/settings_service.dart' show ViewMode, LibraryDensity;
+import '../../services/settings_service.dart' show LibraryDensity, ViewMode;
 import '../../utils/grid_size_calculator.dart';
 import '../../utils/layout_constants.dart';
 import '../main_screen.dart';
@@ -87,11 +87,13 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
     final effectivePadding = basePadding.copyWith(top: basePadding.top + _focusDecorationPadding);
     final effectiveAspectRatio = childAspectRatio ?? GridLayoutConstants.posterAspectRatio;
 
+    final cacheExtent = context.read<SettingsProvider>().gridPreloadCacheExtent;
     if (viewMode == ViewMode.list) {
       // In list view, all items are in a single column (first column)
       return ListView.builder(
         padding: effectivePadding,
-        // Allow focus decoration to render outside scroll bounds
+        // ignore: deprecated_member_use
+        cacheExtent: cacheExtent,
         clipBehavior: Clip.none,
         itemCount: items.length,
         itemBuilder: (ctx, index) {
@@ -117,7 +119,8 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
 
           return GridView.builder(
             padding: effectivePadding,
-            // Allow focus decoration to render outside scroll bounds
+            // ignore: deprecated_member_use
+            cacheExtent: cacheExtent,
             clipBehavior: Clip.none,
             gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: maxCrossAxisExtent,

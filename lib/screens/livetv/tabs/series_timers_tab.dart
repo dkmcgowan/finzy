@@ -14,9 +14,10 @@ import '../../../utils/snackbar_helper.dart';
 
 class SeriesTimersTab extends StatefulWidget {
   final VoidCallback? onNavigateUp;
+  final VoidCallback? onNavigateLeft;
   final VoidCallback? onBack;
 
-  const SeriesTimersTab({super.key, this.onNavigateUp, this.onBack});
+  const SeriesTimersTab({super.key, this.onNavigateUp, this.onNavigateLeft, this.onBack});
 
   @override
   State<SeriesTimersTab> createState() => SeriesTimersTabState();
@@ -219,6 +220,7 @@ class SeriesTimersTabState extends State<SeriesTimersTab> {
           enableLongPress: isTV,
           onLongPress: isTV ? () => _showSeriesTimerContextMenu(sub) : null,
           onNavigateUp: index == 0 ? widget.onNavigateUp : null,
+          onNavigateLeft: widget.onNavigateLeft,
           onBack: widget.onBack,
           child: _buildSeriesTimerCard(sub, theme),
         );

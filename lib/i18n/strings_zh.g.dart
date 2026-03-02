@@ -265,6 +265,10 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get exoPlayerDescription => 'Android 原生播放器，硬件支持更好';
 	@override String get mpv => 'MPV';
 	@override String get mpvDescription => '功能更多的高级播放器，支持 ASS 字幕';
+	@override String get liveTvPlayer => '直播电视播放器';
+	@override String get liveTvPlayerDescription => '直播电视推荐使用 MPV。ExoPlayer 在某些设备上可能有问题。';
+	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get hardwareDecoding => '硬件解码';
 	@override String get hardwareDecodingDescription => '如果可用，使用硬件加速';
 	@override String get bufferSize => '缓冲区大小';
@@ -280,10 +284,10 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get rememberTrackSelectionsDescription => '在播放过程中更改音轨时自动保存音频和字幕语言偏好';
 	@override String get clickVideoTogglesPlayback => '点击视频可切换播放/暂停';
 	@override String get clickVideoTogglesPlaybackDescription => '如果启用此选项，点击视频播放器将播放或暂停视频。否则，点击将显示或隐藏播放控件';
-	@override String get videoPlayerControls => '视频播放器控制';
+	@override String get videoPlayerControls => '视频播放器键盘控制';
 	@override String get keyboardShortcuts => '键盘快捷键';
 	@override String get keyboardShortcutsDescription => '自定义键盘快捷键';
-	@override String get videoPlayerNavigation => '视频播放器导航';
+	@override String get videoPlayerNavigation => '键盘视频播放器导航';
 	@override String get videoPlayerNavigationDescription => '使用方向键导航视频播放器控件';
 	@override String get debugLogging => '调试日志';
 	@override String get debugLoggingDescription => '启用详细日志记录以便故障排除';
@@ -329,6 +333,8 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get downloads => '下载';
 	@override String get downloadLocationDescription => '选择下载内容的存储位置';
 	@override String get downloadLocationDefault => '默认（应用存储）';
+	@override String get downloadsDefault => '下载默认（应用存储）';
+	@override String get libraryOrder => '媒体库管理';
 	@override String get downloadLocationCustom => '自定义位置';
 	@override String get selectFolder => '选择文件夹';
 	@override String get resetToDefault => '重置为默认';
@@ -349,6 +355,22 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get requireProfileSelectionOnOpenDescription => '每次打开应用时显示配置文件选择';
 	@override String get confirmExitOnBack => '退出前确认';
 	@override String get confirmExitOnBackDescription => '按返回键退出应用时显示确认对话框';
+	@override String get performance => '性能';
+	@override String get performanceImageQuality => '图像质量';
+	@override String get performanceImageQualityDescription => '较低质量加载更快。小 = 最快，大 = 最佳质量。';
+	@override String get performancePosterSize => '海报大小';
+	@override String get performancePosterSizeDescription => '网格中海报卡片的大小。小 = 更多项目，大 = 更大卡片。';
+	@override String get performanceReduceAnimations => '减少动画';
+	@override String get performanceReduceAnimationsDescription => '更短的过渡以获得更灵敏的感觉';
+	@override String get performanceGridPreload => '网格预加载';
+	@override String get performanceGridPreloadDescription => '加载多少屏幕外项目。低 = 更快，高 = 更流畅的滚动。';
+	@override String get performanceSmall => '小';
+	@override String get performanceMedium => '中';
+	@override String get performanceLarge => '大';
+	@override String get performanceLow => '低';
+	@override String get performanceHigh => '高';
+	@override String get hideSupportDevelopment => '隐藏支持开发';
+	@override String get hideSupportDevelopmentDescription => '在设置中隐藏支持开发部分';
 }
 
 // Path: search
@@ -1389,6 +1411,10 @@ extension on TranslationsZh {
 			'settings.exoPlayerDescription' => 'Android 原生播放器，硬件支持更好',
 			'settings.mpv' => 'MPV',
 			'settings.mpvDescription' => '功能更多的高级播放器，支持 ASS 字幕',
+			'settings.liveTvPlayer' => '直播电视播放器',
+			'settings.liveTvPlayerDescription' => '直播电视推荐使用 MPV。ExoPlayer 在某些设备上可能有问题。',
+			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.hardwareDecoding' => '硬件解码',
 			'settings.hardwareDecodingDescription' => '如果可用，使用硬件加速',
 			'settings.bufferSize' => '缓冲区大小',
@@ -1404,10 +1430,10 @@ extension on TranslationsZh {
 			'settings.rememberTrackSelectionsDescription' => '在播放过程中更改音轨时自动保存音频和字幕语言偏好',
 			'settings.clickVideoTogglesPlayback' => '点击视频可切换播放/暂停',
 			'settings.clickVideoTogglesPlaybackDescription' => '如果启用此选项，点击视频播放器将播放或暂停视频。否则，点击将显示或隐藏播放控件',
-			'settings.videoPlayerControls' => '视频播放器控制',
+			'settings.videoPlayerControls' => '视频播放器键盘控制',
 			'settings.keyboardShortcuts' => '键盘快捷键',
 			'settings.keyboardShortcutsDescription' => '自定义键盘快捷键',
-			'settings.videoPlayerNavigation' => '视频播放器导航',
+			'settings.videoPlayerNavigation' => '键盘视频播放器导航',
 			'settings.videoPlayerNavigationDescription' => '使用方向键导航视频播放器控件',
 			'settings.debugLogging' => '调试日志',
 			'settings.debugLoggingDescription' => '启用详细日志记录以便故障排除',
@@ -1453,6 +1479,8 @@ extension on TranslationsZh {
 			'settings.downloads' => '下载',
 			'settings.downloadLocationDescription' => '选择下载内容的存储位置',
 			'settings.downloadLocationDefault' => '默认（应用存储）',
+			'settings.downloadsDefault' => '下载默认（应用存储）',
+			'settings.libraryOrder' => '媒体库管理',
 			'settings.downloadLocationCustom' => '自定义位置',
 			'settings.selectFolder' => '选择文件夹',
 			'settings.resetToDefault' => '重置为默认',
@@ -1473,6 +1501,22 @@ extension on TranslationsZh {
 			'settings.requireProfileSelectionOnOpenDescription' => '每次打开应用时显示配置文件选择',
 			'settings.confirmExitOnBack' => '退出前确认',
 			'settings.confirmExitOnBackDescription' => '按返回键退出应用时显示确认对话框',
+			'settings.performance' => '性能',
+			'settings.performanceImageQuality' => '图像质量',
+			'settings.performanceImageQualityDescription' => '较低质量加载更快。小 = 最快，大 = 最佳质量。',
+			'settings.performancePosterSize' => '海报大小',
+			'settings.performancePosterSizeDescription' => '网格中海报卡片的大小。小 = 更多项目，大 = 更大卡片。',
+			'settings.performanceReduceAnimations' => '减少动画',
+			'settings.performanceReduceAnimationsDescription' => '更短的过渡以获得更灵敏的感觉',
+			'settings.performanceGridPreload' => '网格预加载',
+			'settings.performanceGridPreloadDescription' => '加载多少屏幕外项目。低 = 更快，高 = 更流畅的滚动。',
+			'settings.performanceSmall' => '小',
+			'settings.performanceMedium' => '中',
+			'settings.performanceLarge' => '大',
+			'settings.performanceLow' => '低',
+			'settings.performanceHigh' => '高',
+			'settings.hideSupportDevelopment' => '隐藏支持开发',
+			'settings.hideSupportDevelopmentDescription' => '在设置中隐藏支持开发部分',
 			'search.hint' => '搜索电影、系列、音乐...',
 			'search.tryDifferentTerm' => '尝试不同的搜索词',
 			'search.searchYourMedia' => '搜索媒体',
@@ -1741,6 +1785,8 @@ extension on TranslationsZh {
 			'libraries.tabs.suggestions' => '推荐',
 			'libraries.tabs.browse' => '浏览',
 			'libraries.tabs.genres' => '类型',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.tabs.favorites' => '收藏',
 			'libraries.tabs.collections' => '合集',
 			'libraries.tabs.playlists' => '播放列表',
@@ -1763,8 +1809,6 @@ extension on TranslationsZh {
 			'hubDetail.dateAdded' => '添加日期',
 			'hubDetail.rating' => '评分',
 			'hubDetail.noItemsFound' => '未找到项目',
-			_ => null,
-		} ?? switch (path) {
 			'logs.clearLogs' => '清除日志',
 			'logs.copyLogs' => '复制日志',
 			'logs.error' => '错误:',

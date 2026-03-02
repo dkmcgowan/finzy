@@ -15,9 +15,10 @@ import '../../../widgets/app_icon.dart';
 
 class ScheduledTab extends StatefulWidget {
   final VoidCallback? onNavigateUp;
+  final VoidCallback? onNavigateLeft;
   final VoidCallback? onBack;
 
-  const ScheduledTab({super.key, this.onNavigateUp, this.onBack});
+  const ScheduledTab({super.key, this.onNavigateUp, this.onNavigateLeft, this.onBack});
 
   @override
   State<ScheduledTab> createState() => ScheduledTabState();
@@ -162,6 +163,7 @@ class ScheduledTabState extends State<ScheduledTab> {
           enableLongPress: isTV && timer.key != null,
           onLongPress: isTV && timer.key != null ? () => _cancelTimer(timer) : null,
           onNavigateUp: index == 0 ? widget.onNavigateUp : null,
+          onNavigateLeft: widget.onNavigateLeft,
           onBack: widget.onBack,
           child: _buildScheduledCard(timer, theme),
         );

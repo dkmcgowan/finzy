@@ -6,7 +6,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
-import '../../services/auth_failure_service.dart';
 import '../../services/jellyfin_client.dart';
 import '../i18n/strings.g.dart';
 import '../services/update_service.dart';
@@ -122,7 +121,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
   @override
   void initState() {
     super.initState();
-    AuthFailureService.isOnAuthOrSetupFlow = false;
     _isOffline = widget.isOfflineMode;
 
     WidgetsBinding.instance.addObserver(this);
@@ -428,13 +426,22 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     });
   }
 
-  void _handleOfflineStatusChanged() {
+  Future<void> _handleOfflineStatusChanged() async {
     final newOffline = _offlineModeProvider?.isOffline ?? widget.isOfflineMode;
 
     if (newOffline == _isOffline) return;
 
     final previousTabId = _tabIdForIndex(_isOffline, _currentIndex);
     final wasOffline = _isOffline;
+
+    // When coming back online, refresh Live TV availability before rebuilding.
+    // Fixes race: OfflineModeProvider notifies before checkLiveTvAvailability completes,
+    // so _buildScreens would read hasLiveTv=false and omit the Live TV tab.
+    if (!newOffline) {
+      await context.read<MultiServerProvider>().checkLiveTvAvailability();
+      if (!mounted) return;
+    }
+
     setState(() {
       _isReconnecting = false;
       _isOffline = newOffline;
@@ -454,7 +461,9 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
             previousTabId != NavigationTabId.downloads &&
             _tabIdForIndex(true, _currentIndex) == NavigationTabId.downloads;
       } else {
-        // Coming back online: restore the last online tab if we forced a switch to Downloads.
+        // Coming back online: sync Live TV state (we awaited checkLiveTvAvailability above)
+        _lastHasLiveTv = _multiServerProvider?.hasLiveTv ?? false;
+        // Restore the last online tab if we forced a switch to Downloads.
         if (_autoSwitchedToDownloads) {
           final restoredTab = _lastOnlineTabId ?? NavigationTabId.discover;
           final restoredIndex = NavigationTab.indexFor(restoredTab, isOffline: _isOffline, hasLiveTv: _hasLiveTv);
@@ -467,10 +476,11 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     });
 
     // Refresh sidebar focus after rebuilding navigation
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _sideNavKey.currentState?.focusActiveItem();
-    });
-
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sideNavKey.currentState?.focusActiveItem();
+      });
+    }
   }
 
   void _focusSidebar() {

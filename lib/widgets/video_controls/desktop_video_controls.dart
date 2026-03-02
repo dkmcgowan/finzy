@@ -198,15 +198,17 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
     // Create focus nodes for track controls (up to 8 buttons)
     _trackControlFocusNodes = List.generate(8, (i) => FocusNode(debugLabel: 'TrackControl$i'));
 
-    _buttonFocusNodes = [
-      _prevItemFocusNode,
-      _prevChapterFocusNode,
-      _skipBackFocusNode,
-      _playPauseFocusNode,
-      _skipForwardFocusNode,
-      _nextChapterFocusNode,
-      _nextItemFocusNode,
-    ];
+    _buttonFocusNodes = widget.isLive
+        ? [_playPauseFocusNode]
+        : [
+            _prevItemFocusNode,
+            _prevChapterFocusNode,
+            _skipBackFocusNode,
+            _playPauseFocusNode,
+            _skipForwardFocusNode,
+            _nextChapterFocusNode,
+            _nextItemFocusNode,
+          ];
   }
 
   @override
@@ -231,9 +233,14 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
     _playPauseFocusNode.requestFocus();
   }
 
-  /// Request focus on the timeline (called when controls shown via LEFT/RIGHT)
+  /// Request focus on the timeline (called when controls shown via LEFT/RIGHT).
+  /// Falls back to play/pause for live TV where timeline is hidden.
   void requestTimelineFocus() {
-    _timelineFocusNode.requestFocus();
+    if (widget.isLive) {
+      _playPauseFocusNode.requestFocus();
+    } else {
+      _timelineFocusNode.requestFocus();
+    }
   }
 
   /// Get focus node for volume control
@@ -282,7 +289,9 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
     }
 
     if (key == LogicalKeyboardKey.arrowUp) {
-      _timelineFocusNode.requestFocus();
+      if (!widget.isLive) {
+        _timelineFocusNode.requestFocus();
+      }
       widget.onFocusActivity?.call();
       return KeyEventResult.handled;
     }
@@ -302,7 +311,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
   KeyEventResult _handleVolumeKeyEvent(FocusNode _, KeyEvent event) {
     return _handleDirectionalNavigation(
       event,
-      leftTarget: _nextItemFocusNode,
+      leftTarget: _buttonFocusNodes.last,
       rightTarget: _trackControlFocusNodes.isNotEmpty ? _trackControlFocusNodes.first : null,
     );
   }
@@ -550,7 +559,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                   builder: (context, isPlaying) {
                     return _buildFocusableButton(
                       focusNode: _playPauseFocusNode,
-                      index: 3,
+                      index: _buttonFocusNodes.indexOf(_playPauseFocusNode),
                       icon: isPlaying ? Symbols.pause_rounded : Symbols.play_arrow_rounded,
                       iconSize: 32,
                       onPressed: widget.canControl

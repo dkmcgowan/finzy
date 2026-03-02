@@ -265,6 +265,10 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get exoPlayerDescription => 'Android-native speler met betere hardware-ondersteuning';
 	@override String get mpv => 'MPV';
 	@override String get mpvDescription => 'Geavanceerde speler met meer functies en ASS-ondertitelondersteuning';
+	@override String get liveTvPlayer => 'Live TV-speler';
+	@override String get liveTvPlayerDescription => 'MPV aanbevolen voor Live TV. ExoPlayer kan problemen veroorzaken op sommige apparaten.';
+	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get hardwareDecoding => 'Hardware decodering';
 	@override String get hardwareDecodingDescription => 'Gebruik hardware versnelling indien beschikbaar';
 	@override String get bufferSize => 'Buffer grootte';
@@ -280,10 +284,10 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get rememberTrackSelectionsDescription => 'Bewaar automatisch audio- en ondertiteltaalvoorkeuren wanneer je tracks wijzigt tijdens afspelen';
 	@override String get clickVideoTogglesPlayback => 'Klik op de video om afspelen/pauzeren te wisselen.';
 	@override String get clickVideoTogglesPlaybackDescription => 'Als deze optie is ingeschakeld, wordt de video afgespeeld of gepauzeerd wanneer je op de videospeler klikt. Anders worden bij een klik de afspeelbedieningen weergegeven of verborgen.';
-	@override String get videoPlayerControls => 'Videospeler bediening';
+	@override String get videoPlayerControls => 'Videospeler toetsenbordbediening';
 	@override String get keyboardShortcuts => 'Toetsenbord sneltoetsen';
 	@override String get keyboardShortcutsDescription => 'Pas toetsenbord sneltoetsen aan';
-	@override String get videoPlayerNavigation => 'Videospeler navigatie';
+	@override String get videoPlayerNavigation => 'Toetsenbord videospeler navigatie';
 	@override String get videoPlayerNavigationDescription => 'Gebruik pijltjestoetsen om door de videospeler bediening te navigeren';
 	@override String get debugLogging => 'Debug logging';
 	@override String get debugLoggingDescription => 'Schakel gedetailleerde logging in voor probleemoplossing';
@@ -329,6 +333,8 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get downloads => 'Downloads';
 	@override String get downloadLocationDescription => 'Kies waar gedownloade content wordt opgeslagen';
 	@override String get downloadLocationDefault => 'Standaard (App-opslag)';
+	@override String get downloadsDefault => 'Downloads Standaard (App-opslag)';
+	@override String get libraryOrder => 'Bibliotheekbeheer';
 	@override String get downloadLocationCustom => 'Aangepaste Locatie';
 	@override String get selectFolder => 'Selecteer Map';
 	@override String get resetToDefault => 'Herstel naar Standaard';
@@ -349,6 +355,22 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get requireProfileSelectionOnOpenDescription => 'Toon profielselectie telkens wanneer de app wordt geopend';
 	@override String get confirmExitOnBack => 'Bevestigen voor afsluiten';
 	@override String get confirmExitOnBackDescription => 'Toon een bevestigingsvenster bij het drukken op terug om de app af te sluiten';
+	@override String get performance => 'Prestaties';
+	@override String get performanceImageQuality => 'Beeldkwaliteit';
+	@override String get performanceImageQualityDescription => 'Lagere kwaliteit laadt sneller. Klein = snelst, Groot = beste kwaliteit.';
+	@override String get performancePosterSize => 'Postergrootte';
+	@override String get performancePosterSizeDescription => 'Grootte van posterkarten in rasters. Klein = meer items, Groot = grotere kaarten.';
+	@override String get performanceReduceAnimations => 'Animaties verminderen';
+	@override String get performanceReduceAnimationsDescription => 'Kortere overgangen voor snellere respons';
+	@override String get performanceGridPreload => 'Raster voorladen';
+	@override String get performanceGridPreloadDescription => 'Hoeveel items buiten het scherm te laden. Laag = sneller, Hoog = vloeiender scrollen.';
+	@override String get performanceSmall => 'Klein';
+	@override String get performanceMedium => 'Middel';
+	@override String get performanceLarge => 'Groot';
+	@override String get performanceLow => 'Laag';
+	@override String get performanceHigh => 'Hoog';
+	@override String get hideSupportDevelopment => 'Ondersteun ontwikkeling verbergen';
+	@override String get hideSupportDevelopmentDescription => 'Verberg de sectie Ondersteun ontwikkeling in Instellingen';
 }
 
 // Path: search
@@ -1389,6 +1411,10 @@ extension on TranslationsNl {
 			'settings.exoPlayerDescription' => 'Android-native speler met betere hardware-ondersteuning',
 			'settings.mpv' => 'MPV',
 			'settings.mpvDescription' => 'Geavanceerde speler met meer functies en ASS-ondertitelondersteuning',
+			'settings.liveTvPlayer' => 'Live TV-speler',
+			'settings.liveTvPlayerDescription' => 'MPV aanbevolen voor Live TV. ExoPlayer kan problemen veroorzaken op sommige apparaten.',
+			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.hardwareDecoding' => 'Hardware decodering',
 			'settings.hardwareDecodingDescription' => 'Gebruik hardware versnelling indien beschikbaar',
 			'settings.bufferSize' => 'Buffer grootte',
@@ -1404,10 +1430,10 @@ extension on TranslationsNl {
 			'settings.rememberTrackSelectionsDescription' => 'Bewaar automatisch audio- en ondertiteltaalvoorkeuren wanneer je tracks wijzigt tijdens afspelen',
 			'settings.clickVideoTogglesPlayback' => 'Klik op de video om afspelen/pauzeren te wisselen.',
 			'settings.clickVideoTogglesPlaybackDescription' => 'Als deze optie is ingeschakeld, wordt de video afgespeeld of gepauzeerd wanneer je op de videospeler klikt. Anders worden bij een klik de afspeelbedieningen weergegeven of verborgen.',
-			'settings.videoPlayerControls' => 'Videospeler bediening',
+			'settings.videoPlayerControls' => 'Videospeler toetsenbordbediening',
 			'settings.keyboardShortcuts' => 'Toetsenbord sneltoetsen',
 			'settings.keyboardShortcutsDescription' => 'Pas toetsenbord sneltoetsen aan',
-			'settings.videoPlayerNavigation' => 'Videospeler navigatie',
+			'settings.videoPlayerNavigation' => 'Toetsenbord videospeler navigatie',
 			'settings.videoPlayerNavigationDescription' => 'Gebruik pijltjestoetsen om door de videospeler bediening te navigeren',
 			'settings.debugLogging' => 'Debug logging',
 			'settings.debugLoggingDescription' => 'Schakel gedetailleerde logging in voor probleemoplossing',
@@ -1453,6 +1479,8 @@ extension on TranslationsNl {
 			'settings.downloads' => 'Downloads',
 			'settings.downloadLocationDescription' => 'Kies waar gedownloade content wordt opgeslagen',
 			'settings.downloadLocationDefault' => 'Standaard (App-opslag)',
+			'settings.downloadsDefault' => 'Downloads Standaard (App-opslag)',
+			'settings.libraryOrder' => 'Bibliotheekbeheer',
 			'settings.downloadLocationCustom' => 'Aangepaste Locatie',
 			'settings.selectFolder' => 'Selecteer Map',
 			'settings.resetToDefault' => 'Herstel naar Standaard',
@@ -1473,6 +1501,22 @@ extension on TranslationsNl {
 			'settings.requireProfileSelectionOnOpenDescription' => 'Toon profielselectie telkens wanneer de app wordt geopend',
 			'settings.confirmExitOnBack' => 'Bevestigen voor afsluiten',
 			'settings.confirmExitOnBackDescription' => 'Toon een bevestigingsvenster bij het drukken op terug om de app af te sluiten',
+			'settings.performance' => 'Prestaties',
+			'settings.performanceImageQuality' => 'Beeldkwaliteit',
+			'settings.performanceImageQualityDescription' => 'Lagere kwaliteit laadt sneller. Klein = snelst, Groot = beste kwaliteit.',
+			'settings.performancePosterSize' => 'Postergrootte',
+			'settings.performancePosterSizeDescription' => 'Grootte van posterkarten in rasters. Klein = meer items, Groot = grotere kaarten.',
+			'settings.performanceReduceAnimations' => 'Animaties verminderen',
+			'settings.performanceReduceAnimationsDescription' => 'Kortere overgangen voor snellere respons',
+			'settings.performanceGridPreload' => 'Raster voorladen',
+			'settings.performanceGridPreloadDescription' => 'Hoeveel items buiten het scherm te laden. Laag = sneller, Hoog = vloeiender scrollen.',
+			'settings.performanceSmall' => 'Klein',
+			'settings.performanceMedium' => 'Middel',
+			'settings.performanceLarge' => 'Groot',
+			'settings.performanceLow' => 'Laag',
+			'settings.performanceHigh' => 'Hoog',
+			'settings.hideSupportDevelopment' => 'Ondersteun ontwikkeling verbergen',
+			'settings.hideSupportDevelopmentDescription' => 'Verberg de sectie Ondersteun ontwikkeling in Instellingen',
 			'search.hint' => 'Zoek films, series, muziek...',
 			'search.tryDifferentTerm' => 'Probeer een andere zoekterm',
 			'search.searchYourMedia' => 'Zoek in je media',
@@ -1741,6 +1785,8 @@ extension on TranslationsNl {
 			'libraries.tabs.suggestions' => 'Suggesties',
 			'libraries.tabs.browse' => 'Bladeren',
 			'libraries.tabs.genres' => 'Genres',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.tabs.favorites' => 'Favorieten',
 			'libraries.tabs.collections' => 'Collecties',
 			'libraries.tabs.playlists' => 'Afspeellijsten',
@@ -1763,8 +1809,6 @@ extension on TranslationsNl {
 			'hubDetail.dateAdded' => 'Datum toegevoegd',
 			'hubDetail.rating' => 'Beoordeling',
 			'hubDetail.noItemsFound' => 'Geen items gevonden',
-			_ => null,
-		} ?? switch (path) {
 			'logs.clearLogs' => 'Wis logs',
 			'logs.copyLogs' => 'Kopieer logs',
 			'logs.error' => 'Fout:',

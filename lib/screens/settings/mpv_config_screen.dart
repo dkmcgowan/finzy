@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../i18n/strings.g.dart';
@@ -6,8 +7,7 @@ import '../../models/mpv_config_models.dart';
 import '../../utils/dialogs.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../services/settings_service.dart';
-import '../../focus/key_event_utils.dart';
-import '../../widgets/desktop_app_bar.dart';
+import '../../widgets/focused_scroll_scaffold.dart';
 
 class MpvConfigScreen extends StatefulWidget {
   const MpvConfigScreen({super.key});
@@ -19,6 +19,7 @@ class MpvConfigScreen extends StatefulWidget {
 class _MpvConfigScreenState extends State<MpvConfigScreen> {
   late SettingsService _settingsService;
   bool _isLoading = true;
+  final _contentKey = GlobalKey();
 
   List<MpvConfigEntry> _entries = [];
   List<MpvPreset> _presets = [];
@@ -27,6 +28,20 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  void _focusFirstItem() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final contentContext = _contentKey.currentContext;
+      if (contentContext == null) return;
+      final scope = FocusScope.of(contentContext);
+      final firstChild = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
+        (node) => node!.canRequestFocus && node.context != null,
+        orElse: () => null,
+      );
+      firstChild?.requestFocus();
+    });
   }
 
   Future<void> _loadSettings() async {
@@ -38,6 +53,7 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
       _presets = _settingsService.getMpvPresets();
       _isLoading = false;
     });
+    _focusFirstItem();
   }
 
   Future<void> _saveEntries() async {
@@ -82,41 +98,59 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
     final valueFocusNode = FocusNode();
     final saveFocusNode = FocusNode();
 
+    final cancelFocusNode = FocusNode();
+
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(isEdit ? t.mpvConfig.editProperty : t.mpvConfig.addProperty),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: keyController,
-              focusNode: keyFocusNode,
-              decoration: InputDecoration(labelText: t.mpvConfig.propertyKey, hintText: t.mpvConfig.propertyKeyHint),
-              autofocus: true,
-              textInputAction: TextInputAction.next,
-              onSubmitted: (_) => valueFocusNode.requestFocus(),
+            KeyboardListener(
+              focusNode: FocusNode(skipTraversal: true),
+              onKeyEvent: (event) {
+                if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                  valueFocusNode.requestFocus();
+                }
+              },
+              child: TextField(
+                controller: keyController,
+                focusNode: keyFocusNode,
+                decoration: InputDecoration(labelText: t.mpvConfig.propertyKey, hintText: t.mpvConfig.propertyKeyHint),
+                autofocus: true,
+                textInputAction: TextInputAction.next,
+                onSubmitted: (_) => valueFocusNode.requestFocus(),
+              ),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: valueController,
-              focusNode: valueFocusNode,
-              decoration: InputDecoration(
-                labelText: t.mpvConfig.propertyValue,
-                hintText: t.mpvConfig.propertyValueHint,
+            KeyboardListener(
+              focusNode: FocusNode(skipTraversal: true),
+              onKeyEvent: (event) {
+                if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                  cancelFocusNode.requestFocus();
+                }
+              },
+              child: TextField(
+                controller: valueController,
+                focusNode: valueFocusNode,
+                decoration: InputDecoration(
+                  labelText: t.mpvConfig.propertyValue,
+                  hintText: t.mpvConfig.propertyValueHint,
+                ),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => saveFocusNode.requestFocus(),
               ),
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => saveFocusNode.requestFocus(),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(t.common.cancel)),
+          TextButton(focusNode: cancelFocusNode, onPressed: () => Navigator.pop(dialogContext, false), child: Text(t.common.cancel)),
           TextButton(
             focusNode: saveFocusNode,
             onPressed: () {
               if (keyController.text.isNotEmpty && valueController.text.isNotEmpty) {
-                Navigator.pop(context, true);
+                Navigator.pop(dialogContext, true);
               }
             },
             child: Text(t.common.save),
@@ -144,6 +178,7 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
     keyFocusNode.dispose();
     valueFocusNode.dispose();
     saveFocusNode.dispose();
+    cancelFocusNode.dispose();
   }
 
   Future<bool> _showConfirmDeleteDialog({required String title, required String content}) {
@@ -164,22 +199,35 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
     if (_entries.isEmpty) return;
 
     final nameController = TextEditingController();
+    final cancelFocusNode = FocusNode();
+    final saveFocusNode = FocusNode();
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(t.mpvConfig.saveAsPreset),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(labelText: t.mpvConfig.presetName, hintText: t.mpvConfig.presetNameHint),
-          autofocus: true,
+        content: KeyboardListener(
+          focusNode: FocusNode(skipTraversal: true),
+          onKeyEvent: (event) {
+            if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
+              cancelFocusNode.requestFocus();
+            }
+          },
+          child: TextField(
+            controller: nameController,
+            decoration: InputDecoration(labelText: t.mpvConfig.presetName, hintText: t.mpvConfig.presetNameHint),
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => saveFocusNode.requestFocus(),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(t.common.cancel)),
+          TextButton(focusNode: cancelFocusNode, onPressed: () => Navigator.pop(dialogContext, false), child: Text(t.common.cancel)),
           TextButton(
+            focusNode: saveFocusNode,
             onPressed: () {
               if (nameController.text.isNotEmpty) {
-                Navigator.pop(context, true);
+                Navigator.pop(dialogContext, true);
               }
             },
             child: Text(t.common.save),
@@ -201,6 +249,8 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
     }
 
     nameController.dispose();
+    cancelFocusNode.dispose();
+    saveFocusNode.dispose();
   }
 
   Future<void> _loadPreset(MpvPreset preset) async {
@@ -237,39 +287,33 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Focus(
-        autofocus: true,
-        onKeyEvent: (_, event) => handleBackKeyNavigation(context, event),
-        child: const Scaffold(body: Center(child: CircularProgressIndicator())),
+      return FocusedScrollScaffold(
+        title: Text(t.screens.mpvConfig),
+        slivers: const [SliverFillRemaining(child: Center(child: CircularProgressIndicator()))],
       );
     }
 
-    return Focus(
-      autofocus: true,
-      onKeyEvent: (_, event) => handleBackKeyNavigation(context, event),
-      child: Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            CustomAppBar(title: Text(t.screens.mpvConfig), pinned: true),
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildPresetsCard(),
-                  const SizedBox(height: 16),
-                  _buildEntriesCard(),
-                  const SizedBox(height: 24),
-                ]),
-              ),
-            ),
-          ],
+    return FocusedScrollScaffold(
+      title: Text(t.screens.mpvConfig),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildPresetsCard(),
+              const SizedBox(height: 16),
+              _buildEntriesCard(),
+              const SizedBox(height: 24),
+            ]),
+          ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildPresetsCard() {
     return Card(
+      key: _contentKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

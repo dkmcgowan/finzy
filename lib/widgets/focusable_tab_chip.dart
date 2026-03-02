@@ -83,6 +83,7 @@ class _FocusableTabChipState extends State<FocusableTabChip> with FocusableChipS
         onNavigateLeft: widget.onNavigateLeft,
         onNavigateRight: widget.onNavigateRight,
         onNavigateDown: widget.onNavigateDown,
+        onNavigateUp: () {},
         onBack: widget.onBack,
       ),
     );

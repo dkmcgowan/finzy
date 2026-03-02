@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../focus/dpad_navigator.dart';
 import '../focus/key_event_utils.dart';
 import 'desktop_app_bar.dart';
 
@@ -9,7 +11,7 @@ import 'desktop_app_bar.dart';
 /// - Keyboard navigation (back key handling)
 /// - Custom scrollable content with slivers
 /// - Consistent app bar with title and optional actions
-class FocusedScrollScaffold extends StatelessWidget {
+class FocusedScrollScaffold extends StatefulWidget {
   /// The title to display in the app bar.
   /// Can be a Text widget or a more complex widget like Column.
   final Widget title;
@@ -39,20 +41,56 @@ class FocusedScrollScaffold extends StatelessWidget {
   });
 
   @override
+  State<FocusedScrollScaffold> createState() => _FocusedScrollScaffoldState();
+}
+
+class _FocusedScrollScaffoldState extends State<FocusedScrollScaffold> {
+  bool _sawBackKeyDown = false;
+
+  KeyEventResult _handleKeyEvent(KeyEvent event) {
+    if (!event.logicalKey.isBackKey) return KeyEventResult.ignored;
+
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return KeyEventResult.ignored;
+
+    if (BackKeyUpSuppressor.consumeIfSuppressed(event)) {
+      return KeyEventResult.handled;
+    }
+
+    if (event is KeyDownEvent || event is KeyRepeatEvent) {
+      _sawBackKeyDown = true;
+      return KeyEventResult.handled;
+    }
+
+    if (event is KeyUpEvent) {
+      if (!_sawBackKeyDown) {
+        return KeyEventResult.handled;
+      }
+      _sawBackKeyDown = false;
+      BackKeyCoordinator.markHandled();
+      BackKeyUpSuppressor.markClosedViaBackKey();
+      Navigator.pop(context);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Focus(
-      autofocus: true,
-      onKeyEvent: (_, event) => handleBackKeyNavigation(context, event),
+      canRequestFocus: false,
+      onKeyEvent: (_, event) => _handleKeyEvent(event),
       child: Scaffold(
         body: CustomScrollView(
           slivers: [
             CustomAppBar(
-              title: title,
-              pinned: pinned,
-              actions: actions,
-              automaticallyImplyLeading: automaticallyImplyLeading,
+              title: widget.title,
+              pinned: widget.pinned,
+              actions: widget.actions,
+              automaticallyImplyLeading: widget.automaticallyImplyLeading,
             ),
-            ...slivers,
+            ...widget.slivers,
           ],
         ),
       ),

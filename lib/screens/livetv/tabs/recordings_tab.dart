@@ -11,9 +11,10 @@ import '../../../widgets/hub_section.dart';
 
 class RecordingsTab extends StatefulWidget {
   final VoidCallback? onNavigateUp;
+  final VoidCallback? onNavigateLeft;
   final VoidCallback? onBack;
 
-  const RecordingsTab({super.key, this.onNavigateUp, this.onBack});
+  const RecordingsTab({super.key, this.onNavigateUp, this.onNavigateLeft, this.onBack});
 
   @override
   State<RecordingsTab> createState() => RecordingsTabState();
@@ -107,6 +108,7 @@ class RecordingsTabState extends State<RecordingsTab> {
             return true;
           },
           onNavigateUp: widget.onNavigateUp,
+          onNavigateToSidebar: widget.onNavigateLeft,
           onBack: widget.onBack,
         ),
       ],

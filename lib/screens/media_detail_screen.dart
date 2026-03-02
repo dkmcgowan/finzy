@@ -78,6 +78,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   late final FocusNode _seasonsFocusNode;
   late final FocusNode _playButtonFocusNode;
   late final FocusNode _ratingChipFocusNode;
+  late final FocusNode _backButtonFocusNode;
   Timer? _selectKeyTimer;
   bool _isSelectKeyDown = false;
   bool _longPressTriggered = false;
@@ -98,6 +99,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
   final _similarSectionKey = GlobalKey();
 
   final _overviewSectionKey = GlobalKey();
+  late final FocusNode _overviewFocusNode;
 
   // Locked focus pattern for cast
   int _focusedCastIndex = 0;
@@ -263,8 +265,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     _extrasFocusNode = FocusNode(debugLabel: 'extras_row');
     _playButtonFocusNode = FocusNode(debugLabel: 'play_button');
     _ratingChipFocusNode = FocusNode(debugLabel: 'rating_chip');
+    _backButtonFocusNode = FocusNode(debugLabel: 'detail_back');
     _castFocusNode = FocusNode(debugLabel: 'cast_row');
     _similarItemsFocusNode = FocusNode(debugLabel: 'similar_items_row');
+    _overviewFocusNode = FocusNode(debugLabel: 'overview_section');
     _loadFullMetadata();
   }
 
@@ -283,10 +287,12 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     _extrasFocusNode.dispose();
     _playButtonFocusNode.dispose();
     _ratingChipFocusNode.dispose();
+    _backButtonFocusNode.dispose();
     _castFocusNode.dispose();
     _castScrollController.dispose();
     _similarItemsFocusNode.dispose();
     _similarItemsScrollController.dispose();
+    _overviewFocusNode.dispose();
     _selectKeyTimer?.cancel();
     super.dispose();
   }
@@ -1143,17 +1149,36 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     });
   }
 
+  /// Handle key events for the back button
+  KeyEventResult _handleBackButtonKeyEvent(FocusNode _, KeyEvent event) {
+    final key = event.logicalKey;
+    if (!event.isActionable) return KeyEventResult.ignored;
+
+    if (key.isUpKey || key.isLeftKey || key.isRightKey) {
+      return KeyEventResult.handled;
+    }
+
+    if (key.isDownKey) {
+      _playButtonFocusNode.requestFocus();
+      return KeyEventResult.handled;
+    }
+
+    if (key.isSelectKey) {
+      Navigator.pop(context, _watchStateChanged);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
   /// Intercept DOWN from the play button row to focus the first available section
   KeyEventResult _handlePlayButtonKeyEvent(FocusNode _, KeyEvent event) {
     final key = event.logicalKey;
     if (!event.isActionable) return KeyEventResult.ignored;
 
-    // UP: focus the rating chip if available
     if (key.isUpKey) {
-      if (!widget.isOffline) {
-        _ratingChipFocusNode.requestFocus();
-        return KeyEventResult.handled;
-      }
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      _backButtonFocusNode.requestFocus();
       return KeyEventResult.handled;
     }
 
@@ -1161,7 +1186,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
     final metadata = _fullMetadata ?? widget.metadata;
 
-    // DOWN order: seasons → cast (overview is non-focusable; only actionable items get focus)
+    // DOWN order: overview → seasons → cast → similar
+    if (metadata.summary != null || metadata.studio != null || metadata.contentRating != null) {
+      _overviewFocusNode.requestFocus();
+      _scrollSectionIntoView(_overviewSectionKey);
+      return KeyEventResult.handled;
+    }
+
     if (metadata.isShow && _seasons.isNotEmpty) {
       _seasonsFocusNode.requestFocus();
       _scrollSectionIntoView(_seasonsSectionKey);
@@ -1174,7 +1205,36 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    return KeyEventResult.handled; // consume to prevent unwanted traversal
+    return KeyEventResult.handled;
+  }
+
+  /// Handle key events for the overview/summary section
+  KeyEventResult _handleOverviewKeyEvent(FocusNode _, KeyEvent event) {
+    final key = event.logicalKey;
+    if (!event.isActionable) return KeyEventResult.ignored;
+
+    if (key.isUpKey) {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      _playButtonFocusNode.requestFocus();
+      return KeyEventResult.handled;
+    }
+
+    if (key.isDownKey) {
+      final metadata = _fullMetadata ?? widget.metadata;
+      if (metadata.isShow && _seasons.isNotEmpty) {
+        _seasonsFocusNode.requestFocus();
+        _scrollSectionIntoView(_seasonsSectionKey);
+      } else if (metadata.role != null && metadata.role!.isNotEmpty) {
+        _castFocusNode.requestFocus();
+        _scrollSectionIntoView(_castSectionKey);
+      } else if (_similarItems != null && _similarItems!.isNotEmpty) {
+        _similarItemsFocusNode.requestFocus();
+        _scrollSectionIntoView(_similarSectionKey);
+      }
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
   }
 
   /// Get the responsive card width used by seasons/extras/cast rows
@@ -1255,10 +1315,16 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // UP: play button (overview is non-focusable)
+    // UP: overview → play button
     if (key.isUpKey) {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-      _playButtonFocusNode.requestFocus();
+      final metadata = _fullMetadata ?? widget.metadata;
+      if (metadata.summary != null || metadata.studio != null || metadata.contentRating != null) {
+        _overviewFocusNode.requestFocus();
+        _scrollSectionIntoView(_overviewSectionKey);
+      } else {
+        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        _playButtonFocusNode.requestFocus();
+      }
       return KeyEventResult.handled;
     }
 
@@ -1364,11 +1430,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // UP: seasons (if show) → play button (overview is non-focusable)
+    // UP: seasons → overview → play button
     if (key.isUpKey) {
       if (metadata.isShow && _seasons.isNotEmpty) {
         _seasonsFocusNode.requestFocus();
         _scrollSectionIntoView(_seasonsSectionKey);
+      } else if (metadata.summary != null || metadata.studio != null || metadata.contentRating != null) {
+        _overviewFocusNode.requestFocus();
+        _scrollSectionIntoView(_overviewSectionKey);
       } else {
         _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
         _playButtonFocusNode.requestFocus();
@@ -1434,7 +1503,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // UP: cast → seasons → play button (overview is non-focusable)
+    // UP: cast → seasons → overview → play button
     if (key.isUpKey) {
       final metadata = _fullMetadata ?? widget.metadata;
       if (metadata.role != null && metadata.role!.isNotEmpty) {
@@ -1443,6 +1512,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       } else if (metadata.isShow && _seasons.isNotEmpty) {
         _seasonsFocusNode.requestFocus();
         _scrollSectionIntoView(_seasonsSectionKey);
+      } else if (metadata.summary != null || metadata.studio != null || metadata.contentRating != null) {
+        _overviewFocusNode.requestFocus();
+        _scrollSectionIntoView(_overviewSectionKey);
       } else {
         _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
         _playButtonFocusNode.requestFocus();
@@ -1452,6 +1524,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
     // DOWN: consume (nothing below similar items)
     if (key.isDownKey) {
+      return KeyEventResult.handled;
+    }
+
+    // SELECT: open the focused similar item
+    if (key.isSelectKey) {
+      if (event is KeyDownEvent) {
+        _similarCardKeys[_focusedSimilarIndex]?.currentState?.handleTap();
+      }
       return KeyEventResult.handled;
     }
 
@@ -1877,37 +1957,60 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Summary (non-focusable; only actionable items get D-pad focus on TV)
-                        if (metadata.summary != null) ...[
-                          Text(
-                            key: _overviewSectionKey,
-                            t.discover.overview,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 12),
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: isTv
-                                ? Text(
-                                    metadata.summary!,
-                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
-                                  )
-                                : CollapsibleText(
-                                    text: metadata.summary!,
-                                    maxLines: isMobile ? 6 : 4,
-                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
+                        if (metadata.summary != null || metadata.studio != null || metadata.contentRating != null) ...[
+                          Focus(
+                            focusNode: _overviewFocusNode,
+                            onKeyEvent: _handleOverviewKeyEvent,
+                            child: ListenableBuilder(
+                              listenable: _overviewFocusNode,
+                              builder: (context, _) {
+                                final focused = _overviewFocusNode.hasFocus;
+                                return Container(
+                                  key: _overviewSectionKey,
+                                  decoration: BoxDecoration(
+                                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                                    border: focused
+                                        ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
+                                        : null,
+                                    color: focused
+                                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
+                                        : null,
                                   ),
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (metadata.summary != null) ...[
+                                        Text(
+                                          t.discover.overview,
+                                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        isTv
+                                            ? Text(
+                                                metadata.summary!,
+                                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
+                                              )
+                                            : CollapsibleText(
+                                                text: metadata.summary!,
+                                                maxLines: focused ? 100 : (isMobile ? 6 : 4),
+                                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
+                                              ),
+                                      ],
+                                      if (metadata.studio != null) ...[
+                                        if (metadata.summary != null) const SizedBox(height: 16),
+                                        _buildInfoRow(t.discover.studio, metadata.studio!),
+                                      ],
+                                      if (metadata.contentRating != null) ...[
+                                        const SizedBox(height: 12),
+                                        _buildInfoRow(t.discover.rating, formatContentRating(metadata.contentRating!)),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                          const SizedBox(height: 24),
-                        ],
-
-                        // Studio and rating (under description)
-                        if (metadata.studio != null) ...[
-                          _buildInfoRow(t.discover.studio, metadata.studio!),
-                          if (metadata.contentRating != null) const SizedBox(height: 12) else const SizedBox(height: 24),
-                        ],
-                        if (metadata.contentRating != null) ...[
-                          _buildInfoRow(t.discover.rating, formatContentRating(metadata.contentRating!)),
                           const SizedBox(height: 24),
                         ],
 
@@ -2019,13 +2122,31 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
             Positioned(
               top: 0,
               left: 0,
-              child: DesktopAppBarHelper.buildAdjustedLeading(
-                AppBarBackButton(
-                  style: BackButtonStyle.circular,
-                  onPressed: () => Navigator.pop(context, _watchStateChanged),
+              child: Focus(
+                focusNode: _backButtonFocusNode,
+                onKeyEvent: _handleBackButtonKeyEvent,
+                child: ListenableBuilder(
+                  listenable: _backButtonFocusNode,
+                  builder: (context, _) {
+                    final focused = _backButtonFocusNode.hasFocus && InputModeTracker.isKeyboardMode(context);
+                    return Container(
+                      decoration: focused
+                          ? BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
+                            )
+                          : null,
+                      child: DesktopAppBarHelper.buildAdjustedLeading(
+                        AppBarBackButton(
+                          style: BackButtonStyle.circular,
+                          onPressed: () => Navigator.pop(context, _watchStateChanged),
+                        ),
+                        context: context,
+                      )!,
+                    );
+                  },
                 ),
-                context: context,
-              )!,
+              ),
             ),
           ],
         ),

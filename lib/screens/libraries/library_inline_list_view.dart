@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
+import '../../focus/input_mode_tracker.dart';
 import '../../models/media_library.dart';
 import '../../models/media_metadata.dart';
 import '../../models/playlist.dart';
 import '../../providers/settings_provider.dart';
+import '../../screens/main_screen.dart';
 import '../../services/api_cache.dart';
 import '../../services/jellyfin_client.dart';
 import '../../utils/grid_size_calculator.dart';
@@ -20,11 +22,15 @@ class LibraryInlineListView extends StatefulWidget {
   final dynamic item; // Playlist or MediaMetadata (collection)
   final VoidCallback onBack;
 
+  /// Called when UP is pressed from the top row (navigate to app bar).
+  final VoidCallback? onNavigateUp;
+
   const LibraryInlineListView({
     super.key,
     required this.library,
     required this.item,
     required this.onBack,
+    this.onNavigateUp,
   });
 
   @override
@@ -38,6 +44,14 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
   /// Fetched series metadata for show cards that lacked unwatched count (playlist API often omits UserData).
   Map<String, MediaMetadata> _enrichedShowCounts = {};
 
+  final FocusNode _firstItemFocusNode = FocusNode(debugLabel: 'inline_list_first_item');
+
+  void focusFirstItem() {
+    if (_items.isNotEmpty) {
+      _firstItemFocusNode.requestFocus();
+    }
+  }
+
   String get _title {
     if (widget.item is Playlist) {
       return (widget.item as Playlist).title;
@@ -49,6 +63,12 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
   void initState() {
     super.initState();
     _loadItems();
+  }
+
+  @override
+  void dispose() {
+    _firstItemFocusNode.dispose();
+    super.dispose();
   }
 
   /// Collapse playlist items so episodes/seasons show as one card per show (like collections).
@@ -121,6 +141,13 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
           _items = list;
           _isLoading = false;
         });
+        if (list.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && InputModeTracker.isKeyboardMode(context)) {
+              _firstItemFocusNode.requestFocus();
+            }
+          });
+        }
         if (widget.item is Playlist && list.isNotEmpty) {
           await _enrichShowCounts(client);
         }
@@ -228,6 +255,8 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
                               builder: (context, settingsProvider, _) {
                                 final density = settingsProvider.libraryDensity;
                                 final maxCrossAxisExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, density);
+                                final availableWidth = constraints.maxWidth - 32; // horizontal padding
+                                final columnCount = GridSizeCalculator.getColumnCount(availableWidth, maxCrossAxisExtent);
                                 final displayItems = _displayItems;
                                 return GridView.builder(
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -240,11 +269,16 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
                                   itemCount: displayItems.length,
                                   itemBuilder: (context, index) {
                                     final item = displayItems[index];
+                                    final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
+                                    final isFirstColumn = index % columnCount == 0;
                                     return FocusableMediaCard(
                                       key: Key(item.itemId),
                                       item: item,
+                                      focusNode: index == 0 ? _firstItemFocusNode : null,
                                       onListRefresh: _loadItems,
                                       onBack: widget.onBack,
+                                      onNavigateUp: isFirstRow ? widget.onNavigateUp : null,
+                                      onNavigateLeft: isFirstColumn ? () => MainScreenFocusScope.of(context)?.focusSidebar() : null,
                                     );
                                   },
                                 );

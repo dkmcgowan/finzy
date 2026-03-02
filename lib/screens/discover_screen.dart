@@ -1272,7 +1272,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                 ),
               ),
-              // Hero controls: (1) Pause/Play = toggle auto-scroll, (2) Dots = which item (solid = active, muted = inactive)
+              // Hero controls: (1) Pause/Play = toggle auto-scroll (hidden on TV - no way to interact), (2) Dots = which item
               Positioned(
                 bottom: 16,
                 left: -26,
@@ -1280,25 +1280,25 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Pause/Play: toggles auto-scroll
-                    GestureDetector(
-                      onTap: () {
-                        if (_isAutoScrollPaused) {
-                          _resumeAutoScroll();
-                        } else {
-                          _pauseAutoScroll();
-                        }
-                      },
-                      child: AppIcon(
-                        _isAutoScrollPaused ? Symbols.play_arrow_rounded : Symbols.pause_rounded,
-                        fill: 1,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        size: 18,
-                        semanticLabel: '${_isAutoScrollPaused ? t.common.play : t.common.pause} auto-scroll',
+                    // Pause/Play: toggles auto-scroll — hidden on TV (no touch/hover, D-pad can't trigger it)
+                    if (!PlatformDetector.isTV())
+                      GestureDetector(
+                        onTap: () {
+                          if (_isAutoScrollPaused) {
+                            _resumeAutoScroll();
+                          } else {
+                            _pauseAutoScroll();
+                          }
+                        },
+                        child: AppIcon(
+                          _isAutoScrollPaused ? Symbols.play_arrow_rounded : Symbols.pause_rounded,
+                          fill: 1,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          size: 18,
+                          semanticLabel: '${_isAutoScrollPaused ? t.common.play : t.common.pause} auto-scroll',
+                        ),
                       ),
-                    ),
-                    // Spacer to separate indicators from button
-                    const SizedBox(width: 8),
+                    if (!PlatformDetector.isTV()) const SizedBox(width: 8),
                     // Page indicators: dots only; active = solid, inactive = muted
                     ...() {
                       final range = _getVisibleDotRange();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -27,7 +28,7 @@ import '../filters_bottom_sheet.dart';
 import '../sort_bottom_sheet.dart';
 import '../state_messages.dart';
 import '../../../services/storage_service.dart';
-import '../../../services/settings_service.dart' show ViewMode, EpisodePosterMode;
+import '../../../services/settings_service.dart' show EpisodePosterMode, ViewMode;
 import '../../../mixins/grid_focus_node_mixin.dart';
 import '../../../mixins/item_updatable.dart';
 import '../../../mixins/deletion_aware.dart';
@@ -675,6 +676,13 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   /// Whether the device is a phone (not tablet/desktop/TV).
   bool _isPhone(BuildContext context) => PlatformDetector.isPhone(context);
 
+  /// On Android phones, the alpha bar is hidden (users scroll via content; reserved space looks broken).
+  bool _shouldShowAlphaBarOnThisDevice(BuildContext context) {
+    if (!_shouldShowAlphaJumpBar) return false;
+    if (Platform.isAndroid && _isPhone(context)) return false;
+    return true;
+  }
+
   /// The letter currently visible at the top of the grid.
   /// Uses the actual item's first char (stripping "The ", "A ", "An ") — matches sort order.
   String get _currentAlphaLetter {
@@ -959,8 +967,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
               },
             ),
           ),
-          // Alpha jump bar / scroll handle on the right edge
-          if (_shouldShowAlphaJumpBar)
+          // Alpha jump bar / scroll handle on the right edge (hidden on Android phone)
+          if (_shouldShowAlphaBarOnThisDevice(context))
             Positioned(
               top: _measuredChipsBarHeight,
               right: 0,
@@ -1012,11 +1020,14 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
         }
         return false;
       },
-      child: CustomScrollView(
-        controller: _scrollController,
-        // Allow focus decoration to render outside scroll bounds
-        clipBehavior: Clip.none,
-        slivers: _buildContentSlivers(),
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) => CustomScrollView(
+          controller: _scrollController,
+          // ignore: deprecated_member_use
+          cacheExtent: settings.gridPreloadCacheExtent,
+          clipBehavior: Clip.none,
+          slivers: _buildContentSlivers(),
+        ),
       ),
     );
   }
@@ -1151,7 +1162,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     final isPhone = _isPhone(context);
     final topPadding = isPhone ? _gridTopPaddingPhone : _gridTopPadding;
     _effectiveTopPadding = topPadding;
-    final rightPadding = _shouldShowAlphaJumpBar
+    final rightPadding = _shouldShowAlphaBarOnThisDevice(context)
         ? (isPhone ? _alphaScrollHandleWidth : _alphaJumpBarWidth)
         : 8.0;
 

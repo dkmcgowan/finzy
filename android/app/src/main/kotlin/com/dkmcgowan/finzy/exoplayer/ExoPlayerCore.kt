@@ -78,9 +78,6 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     companion object {
         private const val TAG = "ExoPlayerCore"
         private const val SHORT_VIDEO_LENGTH_MS = 300000L // 5 minutes
-        /** Timeout for live streams: if ExoPlayer hasn't started playing by then, trigger MPV fallback.
-         *  On Android TV, ExoPlayer can hang in buffering without firing onPlayerError. */
-        private const val LIVE_STREAM_TIMEOUT_MS = 7000L
     }
 
     private var surfaceView: SurfaceView? = null
@@ -115,9 +112,6 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     private val externalSubtitles = mutableListOf<MediaItem.SubtitleConfiguration>()
     private var currentMediaUri: String? = null
     private var currentHeaders: Map<String, String>? = null
-
-    // Live stream timeout: on Android TV, ExoPlayer may hang buffering without firing onPlayerError
-    private var liveStreamTimeoutRunnable: Runnable? = null
 
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
@@ -450,37 +444,6 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
         positionUpdateRunnable = null
     }
 
-    private fun cancelLiveStreamTimeout() {
-        liveStreamTimeoutRunnable?.let { handler.removeCallbacks(it) }
-        liveStreamTimeoutRunnable = null
-    }
-
-    private fun scheduleLiveStreamTimeout(uri: String, headers: Map<String, String>?) {
-        cancelLiveStreamTimeout()
-        liveStreamTimeoutRunnable = Runnable {
-            liveStreamTimeoutRunnable = null
-            val player = exoPlayer ?: return@Runnable
-            if (currentMediaUri != uri) return@Runnable
-            val state = player.playbackState
-            if (state == Player.STATE_BUFFERING || state == Player.STATE_IDLE) {
-                Log.w(TAG, "Live stream timeout: still buffering after ${LIVE_STREAM_TIMEOUT_MS}ms, triggering MPV fallback")
-                val handled = delegate?.onFormatUnsupported(
-                    uri = uri,
-                    headers = headers,
-                    positionMs = lastPosition,
-                    errorMessage = "Live stream timed out (no playback after ${LIVE_STREAM_TIMEOUT_MS / 1000}s)"
-                ) ?: false
-                if (!handled) {
-                    delegate?.onEvent("end-file", mapOf(
-                        "reason" to "error",
-                        "message" to "Live stream timed out"
-                    ))
-                }
-            }
-        }
-        handler.postDelayed(liveStreamTimeoutRunnable!!, LIVE_STREAM_TIMEOUT_MS)
-    }
-
     // Player.Listener
 
     override fun onCues(cueGroup: CueGroup) {
@@ -512,7 +475,6 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
                 delegate?.onPropertyChange("paused-for-cache", true)
             }
             Player.STATE_READY -> {
-                cancelLiveStreamTimeout()
                 delegate?.onPropertyChange("paused-for-cache", false)
                 delegate?.onEvent("playback-restart", null)
                 emitTrackList()
@@ -531,7 +493,6 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
 
     override fun onPlayerError(error: PlaybackException) {
         Log.e(TAG, "Player error: ${error.message} (code: ${error.errorCode})", error)
-        cancelLiveStreamTimeout()
 
         if (currentMediaUri != null) {
             Log.w(TAG, "ExoPlayer error (code ${error.errorCode}) - attempting fallback to MPV")
@@ -716,7 +677,6 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     fun open(uri: String, headers: Map<String, String>?, startPositionMs: Long, autoPlay: Boolean, isLive: Boolean = false) {
         if (!isInitialized) return
 
-        cancelLiveStreamTimeout()
         currentMediaUri = uri
         currentHeaders = headers
         externalSubtitles.clear()
@@ -746,8 +706,7 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
                 playWhenReady = autoPlay
             }
 
-            scheduleLiveStreamTimeout(uri, headers)
-            Log.d(TAG, "Opened live: $uri, startPosition: ${startPositionMs}ms, autoPlay: $autoPlay (timeout in ${LIVE_STREAM_TIMEOUT_MS}ms)")
+            Log.d(TAG, "Opened live: $uri, startPosition: ${startPositionMs}ms, autoPlay: $autoPlay")
             return
         }
 
@@ -1299,7 +1258,6 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     fun dispose() {
         Log.d(TAG, "Disposing")
 
-        cancelLiveStreamTimeout()
         stopPositionUpdates()
         clearVideoFrameRate()
         abandonAudioFocus()

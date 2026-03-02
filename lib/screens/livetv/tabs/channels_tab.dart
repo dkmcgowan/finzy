@@ -18,9 +18,10 @@ import '../../../widgets/optimized_image.dart';
 class ChannelsTab extends StatefulWidget {
   final List<LiveTvChannel> channels;
   final VoidCallback? onNavigateUp;
+  final VoidCallback? onNavigateLeft;
   final VoidCallback? onBack;
 
-  const ChannelsTab({super.key, required this.channels, this.onNavigateUp, this.onBack});
+  const ChannelsTab({super.key, required this.channels, this.onNavigateUp, this.onNavigateLeft, this.onBack});
 
   @override
   State<ChannelsTab> createState() => ChannelsTabState();
@@ -100,6 +101,7 @@ class ChannelsTabState extends State<ChannelsTab> {
               itemCount: widget.channels.length,
               itemBuilder: (context, index) {
                 final channel = widget.channels[index];
+                final isFirstColumn = index % columnCount == 0;
                 return FocusableWrapper(
                   focusNode: index == 0 ? _firstItemFocusNode : null,
                   autofocus: index == 0,
@@ -107,6 +109,7 @@ class ChannelsTabState extends State<ChannelsTab> {
                   useComfortableZone: true,
                   onSelect: () => _tuneChannel(channel),
                   onNavigateUp: index < columnCount ? widget.onNavigateUp : null,
+                  onNavigateLeft: isFirstColumn ? widget.onNavigateLeft : null,
                   onBack: widget.onBack,
                   child: _ChannelCard(channel: channel, onTap: () => _tuneChannel(channel)),
                 );

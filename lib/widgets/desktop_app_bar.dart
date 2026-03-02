@@ -3,7 +3,7 @@ import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../utils/desktop_window_padding.dart';
 import '../services/fullscreen_state_manager.dart';
-import 'app_bar_back_button.dart';
+
 
 /// Configuration class for common app bar properties.
 /// Reduces duplication between different app bar implementations.
@@ -187,7 +187,11 @@ class DesktopTopBar extends StatelessWidget {
           final canPop = parentRoute?.canPop ?? false;
 
           if (canPop) {
-            effectiveLeading = AppBarBackButton(style: BackButtonStyle.plain, onPressed: onBackPressed);
+            effectiveLeading = IconButton(
+              icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+              onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            );
           }
         }
 

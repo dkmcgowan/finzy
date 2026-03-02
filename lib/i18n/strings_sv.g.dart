@@ -265,6 +265,10 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get exoPlayerDescription => 'Android-nativ spelare med bättre hårdvarustöd';
 	@override String get mpv => 'MPV';
 	@override String get mpvDescription => 'Avancerad spelare med fler funktioner och ASS-undertextstöd';
+	@override String get liveTvPlayer => 'Live TV-spelare';
+	@override String get liveTvPlayerDescription => 'MPV rekommenderas för Live TV. ExoPlayer kan ha problem på vissa enheter.';
+	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get hardwareDecoding => 'Hårdvaruavkodning';
 	@override String get hardwareDecodingDescription => 'Använd hårdvaruacceleration när tillgängligt';
 	@override String get bufferSize => 'Bufferstorlek';
@@ -280,10 +284,10 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get rememberTrackSelectionsDescription => 'Spara automatiskt ljud- och undertextspråkpreferenser när du ändrar spår under uppspelning';
 	@override String get clickVideoTogglesPlayback => 'Klicka på videon för att växla mellan spela upp och pausa.';
 	@override String get clickVideoTogglesPlaybackDescription => 'Om detta är aktiverat kommer ett klick på videospelaren att starta eller pausa videon. Annars visas eller döljs uppspelningskontrollerna när du klickar.';
-	@override String get videoPlayerControls => 'Videospelar-kontroller';
+	@override String get videoPlayerControls => 'Tangentbordskontroller för videospelaren';
 	@override String get keyboardShortcuts => 'Tangentbordsgenvägar';
 	@override String get keyboardShortcutsDescription => 'Anpassa tangentbordsgenvägar';
-	@override String get videoPlayerNavigation => 'Navigering i videospelaren';
+	@override String get videoPlayerNavigation => 'Tangentbordsnavigering i videospelaren';
 	@override String get videoPlayerNavigationDescription => 'Använd piltangenter för att navigera videospelarens kontroller';
 	@override String get debugLogging => 'Felsökningsloggning';
 	@override String get debugLoggingDescription => 'Aktivera detaljerad loggning för felsökning';
@@ -329,6 +333,8 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get downloads => 'Nedladdningar';
 	@override String get downloadLocationDescription => 'Välj var nedladdat innehåll ska lagras';
 	@override String get downloadLocationDefault => 'Standard (App-lagring)';
+	@override String get downloadsDefault => 'Nedladdningar Standard (App-lagring)';
+	@override String get libraryOrder => 'Bibliotekshantering';
 	@override String get downloadLocationCustom => 'Anpassad Plats';
 	@override String get selectFolder => 'Välj Mapp';
 	@override String get resetToDefault => 'Återställ till Standard';
@@ -349,6 +355,22 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get requireProfileSelectionOnOpenDescription => 'Visa profilval varje gång appen öppnas';
 	@override String get confirmExitOnBack => 'Bekräfta innan avslut';
 	@override String get confirmExitOnBackDescription => 'Visa en bekräftelsedialog när du trycker tillbaka för att avsluta appen';
+	@override String get performance => 'Prestanda';
+	@override String get performanceImageQuality => 'Bildkvalitet';
+	@override String get performanceImageQualityDescription => 'Lägre kvalitet laddar snabbare. Liten = snabbast, Stor = bäst kvalitet.';
+	@override String get performancePosterSize => 'Affischstorlek';
+	@override String get performancePosterSizeDescription => 'Storlek på affischkort i rutnät. Liten = fler objekt, Stor = större kort.';
+	@override String get performanceReduceAnimations => 'Minska animationer';
+	@override String get performanceReduceAnimationsDescription => 'Kortare övergångar för snabbare känsla';
+	@override String get performanceGridPreload => 'Rutnätsförladdning';
+	@override String get performanceGridPreloadDescription => 'Hur många objekt utanför skärmen som laddas. Låg = snabbare, Hög = mjukare scrollning.';
+	@override String get performanceSmall => 'Liten';
+	@override String get performanceMedium => 'Medium';
+	@override String get performanceLarge => 'Stor';
+	@override String get performanceLow => 'Låg';
+	@override String get performanceHigh => 'Hög';
+	@override String get hideSupportDevelopment => 'Dölj Stöd utvecklingen';
+	@override String get hideSupportDevelopmentDescription => 'Dölj avsnittet Stöd utvecklingen i Inställningar';
 }
 
 // Path: search
@@ -1389,6 +1411,10 @@ extension on TranslationsSv {
 			'settings.exoPlayerDescription' => 'Android-nativ spelare med bättre hårdvarustöd',
 			'settings.mpv' => 'MPV',
 			'settings.mpvDescription' => 'Avancerad spelare med fler funktioner och ASS-undertextstöd',
+			'settings.liveTvPlayer' => 'Live TV-spelare',
+			'settings.liveTvPlayerDescription' => 'MPV rekommenderas för Live TV. ExoPlayer kan ha problem på vissa enheter.',
+			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.hardwareDecoding' => 'Hårdvaruavkodning',
 			'settings.hardwareDecodingDescription' => 'Använd hårdvaruacceleration när tillgängligt',
 			'settings.bufferSize' => 'Bufferstorlek',
@@ -1404,10 +1430,10 @@ extension on TranslationsSv {
 			'settings.rememberTrackSelectionsDescription' => 'Spara automatiskt ljud- och undertextspråkpreferenser när du ändrar spår under uppspelning',
 			'settings.clickVideoTogglesPlayback' => 'Klicka på videon för att växla mellan spela upp och pausa.',
 			'settings.clickVideoTogglesPlaybackDescription' => 'Om detta är aktiverat kommer ett klick på videospelaren att starta eller pausa videon. Annars visas eller döljs uppspelningskontrollerna när du klickar.',
-			'settings.videoPlayerControls' => 'Videospelar-kontroller',
+			'settings.videoPlayerControls' => 'Tangentbordskontroller för videospelaren',
 			'settings.keyboardShortcuts' => 'Tangentbordsgenvägar',
 			'settings.keyboardShortcutsDescription' => 'Anpassa tangentbordsgenvägar',
-			'settings.videoPlayerNavigation' => 'Navigering i videospelaren',
+			'settings.videoPlayerNavigation' => 'Tangentbordsnavigering i videospelaren',
 			'settings.videoPlayerNavigationDescription' => 'Använd piltangenter för att navigera videospelarens kontroller',
 			'settings.debugLogging' => 'Felsökningsloggning',
 			'settings.debugLoggingDescription' => 'Aktivera detaljerad loggning för felsökning',
@@ -1453,6 +1479,8 @@ extension on TranslationsSv {
 			'settings.downloads' => 'Nedladdningar',
 			'settings.downloadLocationDescription' => 'Välj var nedladdat innehåll ska lagras',
 			'settings.downloadLocationDefault' => 'Standard (App-lagring)',
+			'settings.downloadsDefault' => 'Nedladdningar Standard (App-lagring)',
+			'settings.libraryOrder' => 'Bibliotekshantering',
 			'settings.downloadLocationCustom' => 'Anpassad Plats',
 			'settings.selectFolder' => 'Välj Mapp',
 			'settings.resetToDefault' => 'Återställ till Standard',
@@ -1473,6 +1501,22 @@ extension on TranslationsSv {
 			'settings.requireProfileSelectionOnOpenDescription' => 'Visa profilval varje gång appen öppnas',
 			'settings.confirmExitOnBack' => 'Bekräfta innan avslut',
 			'settings.confirmExitOnBackDescription' => 'Visa en bekräftelsedialog när du trycker tillbaka för att avsluta appen',
+			'settings.performance' => 'Prestanda',
+			'settings.performanceImageQuality' => 'Bildkvalitet',
+			'settings.performanceImageQualityDescription' => 'Lägre kvalitet laddar snabbare. Liten = snabbast, Stor = bäst kvalitet.',
+			'settings.performancePosterSize' => 'Affischstorlek',
+			'settings.performancePosterSizeDescription' => 'Storlek på affischkort i rutnät. Liten = fler objekt, Stor = större kort.',
+			'settings.performanceReduceAnimations' => 'Minska animationer',
+			'settings.performanceReduceAnimationsDescription' => 'Kortare övergångar för snabbare känsla',
+			'settings.performanceGridPreload' => 'Rutnätsförladdning',
+			'settings.performanceGridPreloadDescription' => 'Hur många objekt utanför skärmen som laddas. Låg = snabbare, Hög = mjukare scrollning.',
+			'settings.performanceSmall' => 'Liten',
+			'settings.performanceMedium' => 'Medium',
+			'settings.performanceLarge' => 'Stor',
+			'settings.performanceLow' => 'Låg',
+			'settings.performanceHigh' => 'Hög',
+			'settings.hideSupportDevelopment' => 'Dölj Stöd utvecklingen',
+			'settings.hideSupportDevelopmentDescription' => 'Dölj avsnittet Stöd utvecklingen i Inställningar',
 			'search.hint' => 'Sök filmer, serier, musik...',
 			'search.tryDifferentTerm' => 'Prova en annan sökterm',
 			'search.searchYourMedia' => 'Sök i dina media',
@@ -1741,6 +1785,8 @@ extension on TranslationsSv {
 			'libraries.tabs.suggestions' => 'Förslag',
 			'libraries.tabs.browse' => 'Bläddra',
 			'libraries.tabs.genres' => 'Genrer',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.tabs.favorites' => 'Favoriter',
 			'libraries.tabs.collections' => 'Samlingar',
 			'libraries.tabs.playlists' => 'Spellistor',
@@ -1763,8 +1809,6 @@ extension on TranslationsSv {
 			'hubDetail.dateAdded' => 'Datum tillagd',
 			'hubDetail.rating' => 'Betyg',
 			'hubDetail.noItemsFound' => 'Inga objekt hittades',
-			_ => null,
-		} ?? switch (path) {
 			'logs.clearLogs' => 'Rensa loggar',
 			'logs.copyLogs' => 'Kopiera loggar',
 			'logs.error' => 'Fel:',

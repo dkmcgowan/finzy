@@ -282,13 +282,6 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
 
   /// Handle back navigation for PopScope - extends mixin with move mode support
   bool _handleBackNavigation() {
-    // If BACK was already handled by a key event, don't pop
-    if (backHandledByKeyEvent) {
-      backHandledByKeyEvent = false;
-      return false;
-    }
-
-    // If in move mode, cancel move instead of navigating
     if (_movingIndex != null) {
       _cancelMoveMode();
       return false;

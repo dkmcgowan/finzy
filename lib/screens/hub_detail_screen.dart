@@ -50,7 +50,6 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   late final FocusNode _firstItemFocusNode = FocusNode(debugLabel: 'hub_detail_first_item');
   late final FocusNode _sortButtonFocusNode = FocusNode(debugLabel: 'hub_detail_sort');
   bool _isAppBarFocused = false;
-  bool _backHandledByKeyEvent = false;
 
   /// Key for getting a context below OverlaySheetHost
   final GlobalKey _overlayChildKey = GlobalKey();
@@ -118,8 +117,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   }
 
   void _handleBackFromContent() {
-    _backHandledByKeyEvent = true;
-    _navigateToAppBar();
+    Navigator.pop(context);
   }
 
   KeyEventResult _handleSortButtonKeyEvent(FocusNode _, KeyEvent event) {
@@ -291,13 +289,10 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     final sortButtonFocused = isKeyboardMode && _isAppBarFocused;
 
     return PopScope(
-      canPop: !isKeyboardMode || _isAppBarFocused,
+      canPop: true,
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop || _backHandledByKeyEvent) {
-          _backHandledByKeyEvent = false;
-          return;
-        }
-        _navigateToAppBar();
+        if (didPop) return;
+        Navigator.pop(context);
       },
       child: OverlaySheetHost(
         child: Scaffold(

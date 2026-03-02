@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
+import '../../focus/input_mode_tracker.dart';
 import '../../models/hub.dart';
 import '../../models/media_library.dart';
 import '../../models/media_metadata.dart';
 import '../../providers/settings_provider.dart';
+import '../../screens/main_screen.dart';
 import '../../utils/grid_size_calculator.dart';
 import '../../utils/layout_constants.dart';
 import '../../utils/provider_extensions.dart';
@@ -18,11 +20,15 @@ class LibraryInlineGenreView extends StatefulWidget {
   final MediaLibrary library;
   final VoidCallback onBack;
 
+  /// Called when UP is pressed from the top row (navigate to app bar).
+  final VoidCallback? onNavigateUp;
+
   const LibraryInlineGenreView({
     super.key,
     required this.hub,
     required this.library,
     required this.onBack,
+    this.onNavigateUp,
   });
 
   @override
@@ -35,6 +41,13 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
   bool _hasMore = true;
   String? _errorMessage;
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _firstItemFocusNode = FocusNode(debugLabel: 'inline_genre_first_item');
+
+  void focusFirstItem() {
+    if (_items.isNotEmpty) {
+      _firstItemFocusNode.requestFocus();
+    }
+  }
 
   /// Parse hubKey "genre_sectionId_genreKey" into (sectionId, genreKey). GenreKey may contain underscores.
   static (String sectionId, String genreKey)? _parseGenreHubKey(String hubKey) {
@@ -51,10 +64,18 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
     super.initState();
     _items = List.from(widget.hub.items);
     _scrollController.addListener(_onScroll);
+    if (_items.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && InputModeTracker.isKeyboardMode(context)) {
+          _firstItemFocusNode.requestFocus();
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    _firstItemFocusNode.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -162,9 +183,11 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
                             item.usesWideAspectRatio(episodePosterMode));
                         final maxCrossAxisExtent =
                             GridSizeCalculator.getMaxCrossAxisExtent(context, density);
+                        final availableWidth = MediaQuery.of(context).size.width - 32;
                         if (useWideLayout) {
                           final wideExtent = GridSizeCalculator.getMaxCrossAxisExtentWithPadding(
                                 context, density, 16) * 1.8;
+                          final columnCount = GridSizeCalculator.getColumnCount(availableWidth, wideExtent);
                           return GridView.builder(
                             controller: _scrollController,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -189,18 +212,24 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
                                 );
                               }
                               final item = _items[index];
+                              final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
+                              final isFirstColumn = index % columnCount == 0;
                               return FocusableMediaCard(
                                 key: Key(item.itemId),
                                 item: item,
+                                focusNode: index == 0 ? _firstItemFocusNode : null,
                                 onListRefresh: () async {
                                   _items = List.from(widget.hub.items);
                                   await _loadMore();
                                 },
                                 onBack: widget.onBack,
+                                onNavigateUp: isFirstRow ? widget.onNavigateUp : null,
+                                onNavigateLeft: isFirstColumn ? () => MainScreenFocusScope.of(context)?.focusSidebar() : null,
                               );
                             },
                           );
                         }
+                        final columnCount = GridSizeCalculator.getColumnCount(availableWidth, maxCrossAxisExtent);
                         return GridView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -225,14 +254,19 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
                               );
                             }
                             final item = _items[index];
+                            final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
+                            final isFirstColumn = index % columnCount == 0;
                             return FocusableMediaCard(
                               key: Key(item.itemId),
                               item: item,
+                              focusNode: index == 0 ? _firstItemFocusNode : null,
                               onListRefresh: () async {
                                 _items = List.from(widget.hub.items);
                                 await _loadMore();
                               },
                               onBack: widget.onBack,
+                              onNavigateUp: isFirstRow ? widget.onNavigateUp : null,
+                              onNavigateLeft: isFirstColumn ? () => MainScreenFocusScope.of(context)?.focusSidebar() : null,
                             );
                           },
                         );

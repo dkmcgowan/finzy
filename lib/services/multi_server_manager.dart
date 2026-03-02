@@ -231,8 +231,10 @@ class MultiServerManager {
           lastError = e;
           final is401 = _isAuthError(e);
           if (is401) {
-            // 401 = auth failure, not reachability. Don't mark offline.
-            appLogger.w('Server $serverId returned 401 (auth), not marking offline');
+            // 401 = invalid token. Mark offline (match Plezy) — user sees offline UI
+            // with reconnect; no global redirect to login on every 401.
+            appLogger.w('Server $serverId returned 401 (auth), marking offline');
+            updateServerStatus(serverId, false);
             return;
           }
           if (attempt < _healthCheckRetries - 1) {

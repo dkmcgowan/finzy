@@ -13,7 +13,6 @@ import '../services/server_registry.dart';
 import '../services/storage_service.dart';
 import '../providers/multi_server_provider.dart';
 import '../providers/libraries_provider.dart';
-import '../services/auth_failure_service.dart';
 import '../services/offline_watch_sync_service.dart';
 import '../i18n/strings.g.dart';
 import '../theme/mono_tokens.dart';
@@ -46,16 +45,18 @@ class _AuthScreenState extends State<AuthScreen> {
   final _jellyfinUsernameController = TextEditingController();
   final _jellyfinPasswordController = TextEditingController();
 
+  /// Focus node for server URL field — used for TV autofocus and explicit order
+  final FocusNode _serverUrlFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
-    AuthFailureService.isOnAuthOrSetupFlow = true;
   }
 
   @override
   void dispose() {
-    AuthFailureService.isOnAuthOrSetupFlow = false;
     _quickConnectPollTimer?.cancel();
+    _serverUrlFocusNode.dispose();
     _jellyfinUrlController.dispose();
     _jellyfinUsernameController.dispose();
     _jellyfinPasswordController.dispose();
@@ -436,112 +437,167 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildJellyfinServerStep() {
     final isTV = PlatformDetector.isTV();
     final theme = Theme.of(context);
-    // On Android TV, use a more prominent focus/cursor so D-pad users can see where focus is
+    // On Android TV, use a prominent focus border so D-pad users can see where focus is
     final decoration = InputDecoration(
       labelText: t.auth.jellyfinServerUrl,
       hintText: t.auth.jellyfinServerUrlHint,
       border: const OutlineInputBorder(),
+      enabledBorder: isTV
+          ? OutlineInputBorder(
+              borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.5), width: 1.5),
+            )
+          : null,
       focusedBorder: isTV
           ? OutlineInputBorder(
-              borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.5),
+              borderSide: BorderSide(color: theme.colorScheme.primary, width: 4),
             )
           : null,
     );
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TextFormField(
-          controller: _jellyfinUrlController,
-          decoration: decoration,
-          cursorColor: isTV ? theme.colorScheme.primary : null,
-          cursorWidth: isTV ? 2.5 : 2.0,
-          keyboardType: TextInputType.url,
-          textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => _jellyfinConnectToServer(),
-        ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _isAuthenticating ? null : _jellyfinConnectToServer,
-          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-          child: _isAuthenticating
-              ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Connect'),
-        ),
-        if (_errorMessage != null) ...[
-          const SizedBox(height: 16),
-          Text(
-            _errorMessage!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-            textAlign: TextAlign.center,
+
+    final connectButton = ElevatedButton(
+      onPressed: _isAuthenticating ? null : _jellyfinConnectToServer,
+      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+      child: _isAuthenticating
+          ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+          : const Text('Connect'),
+    );
+
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(1),
+            child: TextFormField(
+              focusNode: _serverUrlFocusNode,
+              autofocus: true,
+              controller: _jellyfinUrlController,
+              decoration: decoration,
+              cursorColor: isTV ? theme.colorScheme.primary : null,
+              cursorWidth: isTV ? 3 : 2.0,
+              keyboardType: TextInputType.url,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _jellyfinConnectToServer(),
+            ),
           ),
+          const SizedBox(height: 24),
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(2),
+            child: isTV
+                ? FocusableWrapper(
+                    onSelect: _isAuthenticating ? null : _jellyfinConnectToServer,
+                    canRequestFocus: !_isAuthenticating,
+                    child: connectButton,
+                  )
+                : connectButton,
+          ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
   Widget _buildJellyfinUsersStep() {
     final users = _jellyfinPublicUsers ?? [];
     final isTV = PlatformDetector.isTV();
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Select a user',
-          style: Theme.of(context).textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 20),
-        // Users as clickable squares in a grid (no fixed-height box; grid scrolls with page)
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: isTV ? 140 : 120,
-            childAspectRatio: 0.85,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-          ),
-          itemCount: users.length,
-          itemBuilder: (context, index) {
-            final user = users[index];
-            final imageUrl = user.primaryImageTag != null ? user.imageUrl(_jellyfinBaseUrl!) : null;
-            final card = _buildJellyfinUserCard(
-              label: user.name,
-              imageUrl: imageUrl,
-              onTap: () => _showJellyfinUserOptions(user),
-            );
-            return isTV
-                ? FocusableWrapper(
-                    onSelect: () => _showJellyfinUserOptions(user),
-                    child: card,
-                  )
-                : card;
-          },
-        ),
-        const SizedBox(height: 24),
-        // Two buttons same style as Connect on server step
-        ElevatedButton(
-          onPressed: () => _jellyfinGoToManual(null),
-          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-          child: const Text('Manual login'),
-        ),
-        const SizedBox(height: 12),
-        ElevatedButton(
-          onPressed: _jellyfinBackToServer,
-          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-          child: const Text('Change server'),
-        ),
-        if (_errorMessage != null) ...[
-          const SizedBox(height: 12),
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           Text(
-            _errorMessage!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+            'Select a user',
+            style: Theme.of(context).textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 20),
+          // Users as clickable squares in a grid — profiles first in focus order for TV
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(1),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: isTV ? 140 : 120,
+                childAspectRatio: 0.85,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+              ),
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                final user = users[index];
+                final imageUrl = user.primaryImageTag != null ? user.imageUrl(_jellyfinBaseUrl!) : null;
+                final card = _buildJellyfinUserCard(
+                  label: user.name,
+                  imageUrl: imageUrl,
+                  onTap: () => _showJellyfinUserOptions(user),
+                );
+                return isTV
+                    ? FocusableWrapper(
+                        autofocus: index == 0,
+                        onSelect: () => _showJellyfinUserOptions(user),
+                        child: card,
+                      )
+                    : card;
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(2),
+            child: isTV
+                ? FocusableWrapper(
+                    onSelect: () => _jellyfinGoToManual(null),
+                    child: ElevatedButton(
+                      onPressed: () => _jellyfinGoToManual(null),
+                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                      child: const Text('Manual login'),
+                    ),
+                  )
+                : ElevatedButton(
+                    onPressed: () => _jellyfinGoToManual(null),
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                    child: const Text('Manual login'),
+                  ),
+          ),
+          const SizedBox(height: 12),
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(3),
+            child: isTV
+                ? FocusableWrapper(
+                    onSelect: _jellyfinBackToServer,
+                    child: ElevatedButton(
+                      onPressed: _jellyfinBackToServer,
+                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                      child: const Text('Change server'),
+                    ),
+                  )
+                : ElevatedButton(
+                    onPressed: _jellyfinBackToServer,
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                    child: const Text('Change server'),
+                  ),
+          ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _errorMessage!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 

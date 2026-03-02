@@ -1493,14 +1493,16 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
   bool _handleGlobalKeyEvent(KeyEvent event) {
     if (!mounted) return false;
 
+    // Skip ALL global shortcuts while an overlay sheet (playback settings,
+    // chapters, etc.) is open. The sheet's FocusScope handles its own key
+    // events. Without this, volume/escape/seek shortcuts leak through
+    // while the user is navigating the dialog.
+    final sheetOpen = OverlaySheetController.maybeOf(context)?.isOpen ?? false;
+    if (sheetOpen) return false;
+
     // TV back key fallback — Focus.onKeyEvent won't fire if _focusNode lost focus
     if (PlatformDetector.isTV() && event.logicalKey.isBackKey) {
       if (!_focusNode.hasFocus) {
-        // Skip if an overlay sheet is open — the sheet's FocusScope handles
-        // back keys via its own onKeyEvent. Without this check, this global
-        // handler would call Navigator.pop() alongside the sheet's handler.
-        final sheetOpen = OverlaySheetController.maybeOf(context)?.isOpen ?? false;
-        if (sheetOpen) return false;
         final backResult = handleBackKeyAction(event, () {
           if (!_showControls) {
             _showControlsWithFocus();

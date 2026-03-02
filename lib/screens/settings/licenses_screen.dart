@@ -85,6 +85,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
+                  autofocus: index == 0,
                   title: Text(
                     packageName,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
