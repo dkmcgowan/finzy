@@ -125,7 +125,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kPosterSize = 'poster_size';
   static const _kReduceAnimations = 'reduce_animations';
   static const _kGridPreload = 'grid_preload';
-  static const _kHideSupportDevelopment = 'hide_support_development';
   KeyboardShortcutsService? _keyboardService;
   late final bool _keyboardShortcutsSupported = KeyboardShortcutsService.isPlatformSupported();
   bool _isLoading = true;
