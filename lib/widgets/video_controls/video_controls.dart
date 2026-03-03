@@ -1504,11 +1504,15 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
     if (PlatformDetector.isTV() && event.logicalKey.isBackKey) {
       if (!_focusNode.hasFocus) {
         final backResult = handleBackKeyAction(event, () {
-          if (!_showControls) {
-            _showControlsWithFocus();
-          } else {
-            (widget.onBack ?? () => Navigator.of(context).pop(true))();
+          if (_showControls) {
+            setState(() {
+              _showControls = false;
+            });
+            widget.controlsVisible?.value = false;
+            _focusNode.requestFocus();
+            return;
           }
+          (widget.onBack ?? () => Navigator.of(context).pop(true))();
         });
         if (backResult != KeyEventResult.ignored) return true;
       }
@@ -1652,11 +1656,18 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
                 _toggleFullscreen();
                 return;
               }
-              if (!_showControls) {
-                _showControlsWithFocus();
+              // Back/Escape: hide controls first when visible, exit only when already hidden
+              if (_showControls) {
+                setState(() {
+                  _showControls = false;
+                });
+                widget.controlsVisible?.value = false;
+                _focusNode.requestFocus();
+                if (Platform.isMacOS) {
+                  _updateTrafficLightVisibility();
+                }
                 return;
               }
-              // Controls visible - navigate back
               (widget.onBack ?? () => Navigator.of(context).pop(true))();
             });
             if (backResult != KeyEventResult.ignored) {
@@ -1722,11 +1733,12 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
             }
 
             // On desktop/TV, show controls on directional input
-            // LEFT/RIGHT focuses timeline for seeking, UP/DOWN focuses play/pause
-            if (!isMobile && _isDirectionalKey(key) && _videoPlayerNavigationEnabled) {
+            // For live TV: always handle directional keys (no timeline to seek)
+            // For shows/movies: only when navigation enabled; LEFT/RIGHT focuses timeline, UP/DOWN focuses play/pause
+            if (!isMobile && _isDirectionalKey(key) && (_videoPlayerNavigationEnabled || widget.isLive)) {
               if (!_showControls) {
                 final isHorizontal = key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.arrowRight;
-                if (isHorizontal) {
+                if (isHorizontal && !widget.isLive) {
                   _showControlsWithTimelineFocus();
                 } else {
                   _showControlsWithFocus();

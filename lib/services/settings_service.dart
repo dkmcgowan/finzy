@@ -606,8 +606,8 @@ class SettingsService extends BaseSharedPreferencesService {
   }
 
   bool getVideoPlayerNavigationEnabled() {
-    // Default: enabled on Android TV, disabled elsewhere
-    return prefs.getBool(_keyVideoPlayerNavigationEnabled) ?? TvDetectionService.isTVSync();
+    // Default: enabled (arrow keys show and navigate overlay)
+    return prefs.getBool(_keyVideoPlayerNavigationEnabled) ?? true;
   }
 
   // Performance Overlay (show debug stats on video player)
