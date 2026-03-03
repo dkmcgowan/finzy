@@ -224,6 +224,7 @@ class DesktopTopBar extends StatelessWidget {
 /// using [DesktopTopBar] directly for a more unified approach.
 class CustomAppBar extends StatelessWidget {
   final Widget? title;
+  final Widget? leading;
   final List<Widget>? actions;
   final VoidCallback? onBackPressed;
   final double? elevation;
@@ -242,6 +243,7 @@ class CustomAppBar extends StatelessWidget {
   const CustomAppBar({
     super.key,
     this.title,
+    this.leading,
     this.actions,
     this.onBackPressed,
     this.elevation,
@@ -261,6 +263,7 @@ class CustomAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DesktopTopBar(
+      leading: leading,
       config: DesktopAppBarConfig(
         title: title,
         actions: actions,

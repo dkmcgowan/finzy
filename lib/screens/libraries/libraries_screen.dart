@@ -103,6 +103,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
   /// When non-null, show this playlist or collection inline (back + grid) instead of tab content.
   dynamic _inlinePlaylistOrCollection;
+  /// Index of the collection/playlist that was opened (for restoring focus on back).
+  int? _inlinePlaylistOrCollectionIndex;
   final _inlineListViewKey = GlobalKey();
 
   /// When non-null, show this genre's grid inline (Genre tab header tap). Back returns to Genre tab.
@@ -110,6 +112,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   final _inlineGenreViewKey = GlobalKey();
   /// When non-null, show inline "all favorites" for this hub (global Favorites sidebar, Jellyfin).
   Hub? _inlineFavoritesHub;
+  final _inlineFavoritesViewKey = GlobalKey();
 
   /// Effective number of tabs for the selected library (4 for movie/show, 1 for collection/playlist).
   int _effectiveTabCount = 5;
@@ -338,6 +341,20 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     }
   }
 
+  /// Restore focus to the collection/playlist at [index] when closing inline view.
+  void _focusItemAtOnTab(int? index, bool isCollection) {
+    final tabState = _getTabState(tabController.index);
+    if (tabState == null) {
+      _focusCurrentTab();
+      return;
+    }
+    if (index != null) {
+      (tabState as dynamic).focusItemAt(index);
+    } else {
+      (tabState as dynamic).focusFirstItem();
+    }
+  }
+
   /// UP from content: focus tab bar when there are focusable tab chips,
   /// otherwise focus refresh button (e.g. Favorites or single-tab libraries).
   void _onContentNavigateUp() {
@@ -449,6 +466,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   /// Down from app bar actions: go to tab bar when tabs exist, content otherwise.
   void _navigateDownFromAppBar() {
     // Inline views take priority — they replace the tab content
+    if (_inlineFavoritesHub != null) {
+      (_inlineFavoritesViewKey.currentState as dynamic)?.focusFirstItem();
+      return;
+    }
     if (_inlinePlaylistOrCollection != null) {
       (_inlineListViewKey.currentState as dynamic)?.focusFirstItem();
       return;
@@ -614,6 +635,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       _updateState(() {
         _selectedLibraryGlobalKey = kJellyfinFavoritesKey;
         _inlinePlaylistOrCollection = null;
+        _inlinePlaylistOrCollectionIndex = null;
         _inlineGenreHub = null;
         _inlineFavoritesHub = null;
         _errorMessage = null;
@@ -664,6 +686,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     _updateState(() {
       _selectedLibraryGlobalKey = libraryGlobalKey;
       _inlinePlaylistOrCollection = null;
+      _inlinePlaylistOrCollectionIndex = null;
       _inlineGenreHub = null;
       _inlineFavoritesHub = null;
       _errorMessage = null;
@@ -941,6 +964,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       _items.clear();
       _errorMessage = null;
       _inlinePlaylistOrCollection = null;
+      _inlinePlaylistOrCollectionIndex = null;
       _inlineGenreHub = null;
       _inlineFavoritesHub = null;
     });
@@ -1180,7 +1204,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             suppressAutoFocus: suppressAutoFocus,
             onDataLoaded: () => _handleTabDataLoaded(0),
             onBack: _onContentNavigateUp,
-            onCollectionTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
+            onCollectionTap: (item, index) => setState(() {
+                  _inlinePlaylistOrCollection = item;
+                  _inlinePlaylistOrCollectionIndex = index;
+                }),
           )
         else
           LibraryPlaylistsTab(
@@ -1190,7 +1217,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             suppressAutoFocus: suppressAutoFocus,
             onDataLoaded: () => _handleTabDataLoaded(0),
             onBack: _onContentNavigateUp,
-            onPlaylistTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
+            onPlaylistTap: (item, index) => setState(() {
+                  _inlinePlaylistOrCollection = item;
+                  _inlinePlaylistOrCollectionIndex = index;
+                }),
           ),
       ];
     }
@@ -1226,7 +1256,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(3),
         onBack: _onContentNavigateUp,
-        onCollectionTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
+        onCollectionTap: (item, index) => setState(() {
+              _inlinePlaylistOrCollection = item;
+              _inlinePlaylistOrCollectionIndex = index;
+            }),
       ),
       LibraryPlaylistsTab(
         key: _playlistsTabKey,
@@ -1235,7 +1268,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(4),
         onBack: _onContentNavigateUp,
-        onPlaylistTap: (item) => setState(() => _inlinePlaylistOrCollection = item),
+        onPlaylistTap: (item, index) => setState(() {
+              _inlinePlaylistOrCollection = item;
+              _inlinePlaylistOrCollectionIndex = index;
+            }),
       ),
     ];
   }
@@ -1350,9 +1386,14 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final libs = context.read<LibrariesProvider>().libraries.where((l) => l.globalKey == key).toList();
     if (libs.isEmpty) return const SizedBox.shrink();
     return LibraryInlineFavoritesView(
+      key: _inlineFavoritesViewKey,
       hub: _inlineFavoritesHub!,
       library: libs.first,
-      onBack: () => setState(() => _inlineFavoritesHub = null),
+      onBack: () {
+        setState(() => _inlineFavoritesHub = null);
+        _focusFirstGlobalFavoritesHub();
+      },
+      onNavigateUp: _onContentNavigateUp,
     );
   }
 
@@ -1562,8 +1603,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                                 library: selectedLibrary,
                                 item: _inlinePlaylistOrCollection,
                                 onBack: () {
-                                  setState(() => _inlinePlaylistOrCollection = null);
-                                  _focusCurrentTab();
+                                  final index = _inlinePlaylistOrCollectionIndex;
+                                  final isCollection = _inlinePlaylistOrCollection is MediaMetadata;
+                                  setState(() {
+                                    _inlinePlaylistOrCollection = null;
+                                    _inlinePlaylistOrCollectionIndex = null;
+                                  });
+                                  _focusItemAtOnTab(index, isCollection);
                                 },
                                 onNavigateUp: _onContentNavigateUp,
                               )

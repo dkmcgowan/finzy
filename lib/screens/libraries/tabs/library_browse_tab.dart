@@ -1145,9 +1145,10 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   }
 
   // Top padding for grid content = chips bar height + extra space for focus decoration.
-  // Chips bar is ~48px, focus ring extends ~6px beyond item bounds.
+  // Chips bar is ~48px, focus ring extends ~8px beyond item bounds, scale adds ~2%.
+  // Use generous clearance on TV/desktop so the top row is never covered by the chips bar.
   // On phone there's no D-pad focus decoration so extra clearance is unnecessary.
-  static const double _gridTopPadding = _chipsBarHeight + 12.0;
+  static const double _gridTopPadding = _chipsBarHeight + 24.0;
   static const double _gridTopPaddingPhone = _chipsBarHeight;
 
   /// Width of the alpha jump bar widget (desktop/tablet/TV)

@@ -141,7 +141,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       }
     }
 
-    if (!event.logicalKey.isBackKey) return KeyEventResult.ignored;
+    if (!event.logicalKey.isBackKey && !event.logicalKey.isLeftKey) return KeyEventResult.ignored;
 
     final route = ModalRoute.of(context);
     if (route != null && !route.isCurrent) return KeyEventResult.ignored;
@@ -171,7 +171,13 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     final key = event.logicalKey;
     if (!event.isActionable) return KeyEventResult.ignored;
 
-    if (key.isUpKey || key.isLeftKey || key.isRightKey) {
+    if (key.isUpKey || key.isRightKey) {
+      return KeyEventResult.handled;
+    }
+    if (key.isLeftKey) {
+      if (event is KeyUpEvent) {
+        Navigator.pop(context);
+      }
       return KeyEventResult.handled;
     }
 

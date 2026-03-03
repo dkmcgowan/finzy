@@ -94,20 +94,18 @@ class BottomSheetHeader extends StatelessWidget {
         children: [
           if (resolvedLeading != null) ...[resolvedLeading, const SizedBox(width: 8)],
           Expanded(child: Text(title, style: effectiveTitleStyle)),
-          ?action,
-          ExcludeFocusTraversal(
-            child: IconButton(
-              focusNode: closeFocusNode,
-              icon: AppIcon(Symbols.close_rounded, fill: 1, color: iconColor),
-              onPressed: onClose ?? () {
-                final sheetController = OverlaySheetController.maybeOf(context);
-                if (sheetController != null) {
-                  sheetController.close();
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-            ),
+          if (action != null) action!,
+          IconButton(
+            focusNode: closeFocusNode,
+            icon: AppIcon(Symbols.close_rounded, fill: 1, color: iconColor),
+            onPressed: onClose ?? () {
+              final sheetController = OverlaySheetController.maybeOf(context);
+              if (sheetController != null) {
+                sheetController.close();
+              } else {
+                Navigator.pop(context);
+              }
+            },
           ),
         ],
       ),

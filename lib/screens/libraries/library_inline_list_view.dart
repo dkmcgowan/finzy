@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
-import '../../focus/input_mode_tracker.dart';
 import '../../models/media_library.dart';
 import '../../models/media_metadata.dart';
 import '../../models/playlist.dart';
@@ -141,13 +140,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
           _items = list;
           _isLoading = false;
         });
-        if (list.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && InputModeTracker.isKeyboardMode(context)) {
-              _firstItemFocusNode.requestFocus();
-            }
-          });
-        }
+        // No auto-focus: back button gets focus. Down from app bar (via focusFirstItem) goes to grid.
         if (widget.item is Playlist && list.isNotEmpty) {
           await _enrichShowCounts(client);
         }

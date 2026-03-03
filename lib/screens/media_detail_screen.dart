@@ -1143,7 +1143,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     final key = event.logicalKey;
     if (!event.isActionable) return KeyEventResult.ignored;
 
-    if (key.isUpKey || key.isLeftKey || key.isRightKey) {
+    if (key.isUpKey || key.isRightKey) {
+      return KeyEventResult.handled;
+    }
+    if (key.isLeftKey) {
+      if (event is KeyUpEvent) {
+        Navigator.pop(context, _watchStateChanged);
+      }
       return KeyEventResult.handled;
     }
 
@@ -1707,7 +1713,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     final isTv = PlatformDetector.isTV();
 
     KeyEventResult handleBack(FocusNode _, KeyEvent event) =>
-        handleBackKeyNavigation(context, event, result: _watchStateChanged);
+        handleBackOrLeftKeyNavigation(context, event, result: _watchStateChanged);
 
     // Show loading state while fetching full metadata
     if (_isLoadingMetadata) {

@@ -48,7 +48,9 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   String? _errorMessage;
 
   late final FocusNode _firstItemFocusNode = FocusNode(debugLabel: 'hub_detail_first_item');
+  late final FocusNode _backButtonFocusNode = FocusNode(debugLabel: 'hub_detail_back');
   late final FocusNode _sortButtonFocusNode = FocusNode(debugLabel: 'hub_detail_sort');
+  late final FocusNode _screenFocusNode = FocusNode(debugLabel: 'hub_detail_screen');
   bool _isAppBarFocused = false;
 
   /// Key for getting a context below OverlaySheetHost
@@ -62,7 +64,8 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   @override
   void initState() {
     super.initState();
-    _sortButtonFocusNode.addListener(_onSortButtonFocusChange);
+    _backButtonFocusNode.addListener(_onAppBarFocusChange);
+    _sortButtonFocusNode.addListener(_onAppBarFocusChange);
     // Start with items already loaded in the hub
     _items = widget.hub.items;
     _filteredItems = widget.hub.items;
@@ -72,27 +75,24 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     }
     // Load sorts based on the library type
     _loadSorts();
-    // Auto-focus first grid item in keyboard mode after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (InputModeTracker.isKeyboardMode(context) && _filteredItems.isNotEmpty) {
-        _firstItemFocusNode.requestFocus();
-      }
-    });
+    // No auto-focus: start with app bar (back button) focused. Down from app bar goes to grid.
   }
 
   @override
   void dispose() {
-    _sortButtonFocusNode.removeListener(_onSortButtonFocusChange);
+    _backButtonFocusNode.removeListener(_onAppBarFocusChange);
+    _sortButtonFocusNode.removeListener(_onAppBarFocusChange);
     _firstItemFocusNode.dispose();
+    _backButtonFocusNode.dispose();
     _sortButtonFocusNode.dispose();
+    _screenFocusNode.dispose();
     disposeGridFocusNodes();
     super.dispose();
   }
 
-  void _onSortButtonFocusChange() {
+  void _onAppBarFocusChange() {
     if (!mounted) return;
-    final hasFocus = _sortButtonFocusNode.hasFocus;
+    final hasFocus = _backButtonFocusNode.hasFocus || _sortButtonFocusNode.hasFocus;
     if (hasFocus && !_isAppBarFocused) {
       setState(() => _isAppBarFocused = true);
     } else if (!hasFocus && _isAppBarFocused) {
@@ -113,23 +113,47 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
 
   void _navigateToAppBar() {
     setState(() => _isAppBarFocused = true);
-    _sortButtonFocusNode.requestFocus();
+    // Focus back button first; Right from back goes to sort
+    _backButtonFocusNode.requestFocus();
   }
 
   void _handleBackFromContent() {
     Navigator.pop(context);
   }
 
+  KeyEventResult _handleBackButtonKeyEvent(FocusNode _, KeyEvent event) {
+    final key = event.logicalKey;
+
+    final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
+    if (backResult != KeyEventResult.ignored) return backResult;
+
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    if (key.isDownKey && _filteredItems.isNotEmpty) {
+      _focusGrid();
+      return KeyEventResult.handled;
+    }
+    if (key.isRightKey) {
+      _sortButtonFocusNode.requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   KeyEventResult _handleSortButtonKeyEvent(FocusNode _, KeyEvent event) {
     final key = event.logicalKey;
 
-    final backResult = handleBackKeyAction(event, () => Navigator.pop(context));
+    final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
     if (backResult != KeyEventResult.ignored) return backResult;
 
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
     if (key.isDownKey) {
       _focusGrid();
+      return KeyEventResult.handled;
+    }
+    if (key.isLeftKey) {
+      _backButtonFocusNode.requestFocus();
       return KeyEventResult.handled;
     }
     if (key.isSelectKey) {
@@ -286,7 +310,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   @override
   Widget build(BuildContext context) {
     final isKeyboardMode = InputModeTracker.isKeyboardMode(context);
-    final sortButtonFocused = isKeyboardMode && _isAppBarFocused;
+    final sortButtonFocused = isKeyboardMode && _sortButtonFocusNode.hasFocus;
 
     return PopScope(
       canPop: true,
@@ -295,13 +319,40 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
         Navigator.pop(context);
       },
       child: OverlaySheetHost(
-        child: Scaffold(
+        child: Focus(
+          focusNode: _screenFocusNode,
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            if (!event.isActionable) return KeyEventResult.ignored;
+            if (event.logicalKey.isBackKey || event.logicalKey.isLeftKey) {
+              return handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
+            }
+            if (event.logicalKey.isDownKey && _filteredItems.isNotEmpty) {
+              _focusGrid();
+              return KeyEventResult.handled;
+            }
+            if (event.logicalKey.isSelectKey && _filteredItems.isNotEmpty) {
+              _focusGrid();
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: Scaffold(
           key: _overlayChildKey,
           body: CustomScrollView(
             clipBehavior: Clip.none,
             slivers: [
               CustomAppBar(
                 title: Text(widget.hub.title),
+                leading: Focus(
+                  focusNode: _backButtonFocusNode,
+                  onKeyEvent: _handleBackButtonKeyEvent,
+                  child: IconButton(
+                    icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+                    onPressed: () => Navigator.pop(context),
+                    tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  ),
+                ),
                 pinned: true,
                 actions: [
                   Focus(
@@ -385,7 +436,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                                   item: item,
                                   onRefresh: _handleItemRefresh,
                                   onNavigateUp: isFirstRow ? _navigateToAppBar : null,
-                                  onNavigateLeft: isFirstColumn ? () {} : null,
+                                  onNavigateLeft: isFirstColumn ? _handleBackFromContent : null,
                                   onBack: _handleBackFromContent,
                                   onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
                                   mixedHubContext: isMixedHub,
@@ -401,6 +452,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                 ),
             ],
           ),
+        ),
         ),
       ),
     );

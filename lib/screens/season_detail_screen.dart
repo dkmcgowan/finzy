@@ -229,7 +229,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
       _suppressNextBackKeyUp = false;
       return KeyEventResult.handled;
     }
-    return handleBackKeyNavigation(context, event, result: _watchStateChanged);
+    return handleBackOrLeftKeyNavigation(context, event, result: _watchStateChanged);
   }
 
   @override

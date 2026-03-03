@@ -270,12 +270,19 @@ class _FocusableWrapperState extends State<FocusableWrapper> with SingleTickerPr
       final position = scrollable.position;
       final currentOffset = position.pixels;
 
-      // Target: item center should be at scrollAlignment of viewport
-      // Add padding to ensure focus decoration is fully visible
-      final targetViewportY = viewportHeight * widget.scrollAlignment;
-      var scrollDelta = itemVerticalCenter - targetViewportY;
+      // When item is near the top of the viewport, use alignment 0.0 so we keep it
+      // at the top with padding—never scroll it off-screen by trying to center it.
+      // This fixes the top row being partially covered by the header on TV.
+      final effectiveAlignment = itemPosition.dy < viewportHeight * 0.25
+          ? 0.0
+          : widget.scrollAlignment;
 
-      // If item would be near the top edge, add extra scroll to show focus decoration
+      // Target: item top at effectiveAlignment (top) or item center (center alignment)
+      final targetViewportY = viewportHeight * effectiveAlignment;
+      final referenceY = effectiveAlignment == 0.0 ? itemTop : itemVerticalCenter;
+      var scrollDelta = referenceY - targetViewportY;
+
+      // Ensure focus decoration stays visible: item top must be at least _focusDecorationPadding from viewport top
       final projectedItemTop = itemTop - scrollDelta;
       if (projectedItemTop < _focusDecorationPadding) {
         scrollDelta -= (_focusDecorationPadding - projectedItemTop);

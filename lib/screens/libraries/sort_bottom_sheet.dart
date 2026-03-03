@@ -103,7 +103,6 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
 
               return Focus(
                 canRequestFocus: false,
-                skipTraversal: true,
                 onKeyEvent: (node, event) {
                   if (!event.isActionable) return KeyEventResult.ignored;
                   if (!isSelected) return KeyEventResult.ignored;

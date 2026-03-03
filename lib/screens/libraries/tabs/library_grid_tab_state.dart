@@ -25,6 +25,23 @@ abstract class LibraryGridTabState<T, W extends BaseLibraryTab<T>> extends BaseL
     super.dispose();
   }
 
+  /// Focus the grid item at [index] (for restoring focus after closing inline view).
+  void focusItemAt(int index) {
+    if (index < 0 || index >= items.length) {
+      focusFirstItem();
+      return;
+    }
+    void request() {
+      if (!mounted) return;
+      final node = index == 0 ? firstItemFocusNode : getGridItemFocusNode(index, prefix: focusNodeDebugLabel.replaceAll('_first_item', '_grid_item'));
+      if (!node.hasFocus) node.requestFocus();
+      final ctx = node.context;
+      if (ctx != null) Scrollable.ensureVisible(ctx, alignment: 0.5);
+    }
+    request();
+    WidgetsBinding.instance.addPostFrameCallback((_) => request());
+  }
+
   @override
   Widget buildContent(List<T> items) {
     cleanupGridFocusNodes(items.length);

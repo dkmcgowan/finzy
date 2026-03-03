@@ -120,18 +120,20 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
     final key = event.logicalKey;
     final maxButton = appBarButtonCount - 1;
 
-    final backResult = handleBackKeyAction(event, () => Navigator.pop(context));
+    // Left from leftmost button (or Back) = pop; Left from other buttons = move to previous
+    if (key.isLeftKey && appBarFocusedButton > 0) {
+      if (event is KeyDownEvent) {
+        setState(() => appBarFocusedButton--);
+        _focusAppBarButton(appBarFocusedButton);
+      }
+      return KeyEventResult.handled;
+    }
+    final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
     if (backResult != KeyEventResult.ignored) {
       return backResult;
     }
 
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-
-    if (key.isLeftKey && appBarFocusedButton > 0) {
-      setState(() => appBarFocusedButton--);
-      _focusAppBarButton(appBarFocusedButton);
-      return KeyEventResult.handled;
-    }
     if (key.isRightKey && appBarFocusedButton < maxButton) {
       setState(() => appBarFocusedButton++);
       _focusAppBarButton(appBarFocusedButton);
@@ -240,6 +242,7 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                 itemBuilder: (context, index) {
                   final item = items[index];
                   final inFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
+                  final inFirstColumn = GridSizeCalculator.isFirstColumn(index, columnCount);
                   final focusNode = index == 0
                       ? firstItemFocusNode
                       : getGridItemFocusNode(index, prefix: 'detail_grid_item');
@@ -252,6 +255,7 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                     collectionId: collectionId,
                     onListRefresh: onListRefresh,
                     onNavigateUp: inFirstRow ? navigateToAppBar : null,
+                    onNavigateLeft: inFirstColumn ? handleBackFromContent : null,
                     onBack: handleBackFromContent,
                     onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
                   );

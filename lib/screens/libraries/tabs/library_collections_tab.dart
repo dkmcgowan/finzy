@@ -12,7 +12,8 @@ import 'library_grid_tab_state.dart';
 /// Shows collections for the current library
 class LibraryCollectionsTab extends BaseLibraryTab<MediaMetadata> {
   /// When set, tapping a collection shows it inline in the library (no push to detail screen).
-  final void Function(MediaMetadata)? onCollectionTap;
+  /// Receives (item, index) so the caller can restore focus to that index when closing.
+  final void Function(MediaMetadata item, int index)? onCollectionTap;
 
   const LibraryCollectionsTab({
     super.key,
@@ -67,7 +68,7 @@ class _LibraryCollectionsTabState extends LibraryGridTabState<MediaMetadata, Lib
       onBack: widget.onBack,
       onNavigateUp: gridContext?.isFirstRow == true ? widget.onBack : null,
       onNavigateLeft: gridContext?.isFirstColumn == true ? gridContext?.navigateToSidebar : null,
-      onTapOverride: widget.onCollectionTap != null ? () => widget.onCollectionTap!(item) : null,
+      onTapOverride: widget.onCollectionTap != null ? () => widget.onCollectionTap!(item, index) : null,
     );
   }
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
-import '../../focus/input_mode_tracker.dart';
 import '../../models/hub.dart';
 import '../../models/media_library.dart';
 import '../../models/media_metadata.dart';
@@ -64,13 +63,7 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
     super.initState();
     _items = List.from(widget.hub.items);
     _scrollController.addListener(_onScroll);
-    if (_items.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && InputModeTracker.isKeyboardMode(context)) {
-          _firstItemFocusNode.requestFocus();
-        }
-      });
-    }
+    // No auto-focus: back button gets focus. Down from app bar (via focusFirstItem) goes to grid.
   }
 
   @override
