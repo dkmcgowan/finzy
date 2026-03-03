@@ -82,12 +82,12 @@ class MultiServerProvider extends ChangeNotifier {
   }
 
   /// Reconnect all servers after a profile switch
-  Future<int> reconnectWithServers(List<RegisteredServer> servers, {String? clientIdentifier}) async {
+  Future<int> reconnectWithServers(List<RegisteredServer> servers, {String? clientIdentifier, String? deviceId}) async {
     _serverManager.disconnectAll();
     _aggregationService.clearCache();
     appLogger.d('MultiServerProvider: Cleared connections, reconnecting to ${servers.length} servers');
 
-    final connectedCount = await _serverManager.connectToAllServers(servers, clientIdentifier: clientIdentifier);
+    final connectedCount = await _serverManager.connectToAllServers(servers, clientIdentifier: clientIdentifier, deviceId: deviceId);
 
     appLogger.i('MultiServerProvider: Reconnected to $connectedCount/${servers.length} servers after profile switch');
     notifyListeners();

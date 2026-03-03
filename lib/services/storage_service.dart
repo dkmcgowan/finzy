@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:uuid/uuid.dart';
+
 import '../utils/log_redaction_manager.dart';
 import 'base_shared_preferences_service.dart';
 
@@ -92,6 +94,19 @@ class StorageService extends BaseSharedPreferencesService {
 
   String? getClientIdentifier() {
     return prefs.getString(_keyClientId);
+  }
+
+  /// Get or create a unique device identifier for Jellyfin API headers.
+  /// Generated once per installation and persisted across launches.
+  /// Each installation gets its own DeviceId so Jellyfin tracks them as
+  /// separate devices and doesn't invalidate tokens across instances.
+  Future<String> getOrCreateDeviceId() async {
+    const key = 'jellyfin_device_id';
+    final existing = prefs.getString(key);
+    if (existing != null && existing.isNotEmpty) return existing;
+    final deviceId = const Uuid().v4();
+    await prefs.setString(key, deviceId);
+    return deviceId;
   }
 
   // Clear all credentials

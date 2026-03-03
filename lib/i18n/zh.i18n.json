@@ -85,8 +85,7 @@
   },
   "settings": {
     "title": "设置",
-    "supportDevelopment": "支持开发",
-    "supportDevelopmentDescription": "如果你喜欢本应用并想支持持续开发，可以在下方打赏。完全自愿——应用将保持免费。",
+    "supportOptionalCaption": "可选——应用保持免费",
     "supportTierCoffee": "请我喝杯咖啡",
     "supportTierLunch": "请我吃顿午餐",
     "supportTierSupport": "支持开发",

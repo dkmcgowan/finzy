@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../i18n/strings.g.dart';
 import '../providers/multi_server_provider.dart';
 import '../utils/provider_extensions.dart';
+
+const _buttonPadding = EdgeInsets.symmetric(horizontal: 18, vertical: 14);
+const _buttonShape = StadiumBorder();
 
 class QuickConnectAuthorizeDialog extends StatefulWidget {
   const QuickConnectAuthorizeDialog({super.key});
@@ -14,11 +18,15 @@ class QuickConnectAuthorizeDialog extends StatefulWidget {
 
 class _QuickConnectAuthorizeDialogState extends State<QuickConnectAuthorizeDialog> {
   final _codeController = TextEditingController();
+  final _textFieldFocusNode = FocusNode();
+  final _cancelFocusNode = FocusNode();
   bool _isAuthorizing = false;
 
   @override
   void dispose() {
     _codeController.dispose();
+    _textFieldFocusNode.dispose();
+    _cancelFocusNode.dispose();
     super.dispose();
   }
 
@@ -54,9 +62,34 @@ class _QuickConnectAuthorizeDialogState extends State<QuickConnectAuthorizeDialo
     }
   }
 
+  KeyEventResult _handleTextFieldKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      _cancelFocusNode.requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      Navigator.of(context).pop();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  KeyEventResult _handleButtonKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      _textFieldFocusNode.requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasServer = context.read<MultiServerProvider>().hasConnectedServers;
+    final buttonStyle = TextButton.styleFrom(padding: _buttonPadding, shape: _buttonShape);
 
     return AlertDialog(
       title: Text(t.common.quickConnect),
@@ -66,29 +99,56 @@ class _QuickConnectAuthorizeDialogState extends State<QuickConnectAuthorizeDialo
         children: [
           Text(t.common.quickConnectDescription),
           const SizedBox(height: 24),
-          TextField(
-            controller: _codeController,
-            enabled: hasServer && !_isAuthorizing,
-            decoration: InputDecoration(
-              labelText: t.common.quickConnectCode,
-              border: const OutlineInputBorder(),
+          Focus(
+            onKeyEvent: _handleTextFieldKey,
+            child: TextField(
+              controller: _codeController,
+              focusNode: _textFieldFocusNode,
+              enabled: hasServer && !_isAuthorizing,
+              decoration: InputDecoration(
+                labelText: t.common.quickConnectCode,
+                border: const OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _authorize(),
+              autofocus: true,
             ),
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _authorize(),
-            autofocus: true,
           ),
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: _isAuthorizing ? null : () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
-        ),
-        FilledButton(
-          onPressed: _isAuthorizing ? null : _authorize,
-          child: _isAuthorizing
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(t.common.authorize),
+        Focus(
+          skipTraversal: true,
+          onKeyEvent: _handleButtonKey,
+          child: FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(0),
+                  child: TextButton(
+                    focusNode: _cancelFocusNode,
+                    onPressed: _isAuthorizing ? null : () => Navigator.of(context).pop(),
+                    style: buttonStyle,
+                    child: Text(t.common.cancel),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(1),
+                  child: TextButton(
+                    onPressed: _isAuthorizing ? null : _authorize,
+                    style: buttonStyle,
+                    child: _isAuthorizing
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Text(t.common.authorize),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );

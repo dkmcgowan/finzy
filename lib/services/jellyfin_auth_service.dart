@@ -46,19 +46,25 @@ class JellyfinAuthService {
 
   static const _clientName = 'Finzy';
   static const _clientVersion = '1.0.0';
-  static const _deviceId = 'finzy-jellyfin';
+  static const defaultDeviceId = 'finzy-jellyfin';
 
   /// Build Authorization header without token (for login).
-  static String _authHeaderNoToken() =>
-      'MediaBrowser Client="$_clientName", Device="Finzy", DeviceId="$_deviceId", Version="$_clientVersion"';
+  static String authHeaderNoToken({String? deviceId}) =>
+      'MediaBrowser Client="$_clientName", Device="Finzy", DeviceId="${deviceId ?? defaultDeviceId}", Version="$_clientVersion"';
+
+  /// Build Authorization header with token (for post-login API calls).
+  static String authHeaderWithToken(String token, {String? deviceId}) =>
+      'MediaBrowser Client="$_clientName", Device="Finzy", DeviceId="${deviceId ?? defaultDeviceId}", Version="$_clientVersion", Token="$token"';
 
   /// Authenticate by username and password.
   /// [baseUrl] should be the server base URL (e.g. https://jellyfin.example.com).
+  /// [deviceId] should be a per-installation UUID from [StorageService.getOrCreateDeviceId].
   /// Returns [JellyfinAuthResult] with token and userId, or throws on failure.
   static Future<JellyfinAuthResult> authenticateByName({
     required String baseUrl,
     required String username,
     required String password,
+    String? deviceId,
     Duration timeout = const Duration(seconds: 15),
   }) async {
     final dio = Dio(
@@ -67,7 +73,7 @@ class JellyfinAuthService {
         connectTimeout: timeout,
         receiveTimeout: timeout,
         contentType: 'application/json',
-        headers: {'Authorization': _authHeaderNoToken()},
+        headers: {'Authorization': authHeaderNoToken(deviceId: deviceId)},
       ),
     );
 
@@ -138,6 +144,7 @@ class JellyfinAuthService {
   /// Throws if Quick Connect is disabled (e.g. 401).
   static Future<JellyfinQuickConnectState> quickConnectInitiate(
     String baseUrl, {
+    String? deviceId,
     Duration timeout = const Duration(seconds: 10),
   }) async {
     final dio = Dio(
@@ -145,7 +152,7 @@ class JellyfinAuthService {
         baseUrl: baseUrl,
         connectTimeout: timeout,
         receiveTimeout: timeout,
-        headers: {'Authorization': _authHeaderNoToken()},
+        headers: {'Authorization': authHeaderNoToken(deviceId: deviceId)},
       ),
     );
     final response = await dio.post<Map<String, dynamic>>('/QuickConnect/Initiate');
@@ -178,6 +185,7 @@ class JellyfinAuthService {
   static Future<JellyfinAuthResult> authenticateWithQuickConnect(
     String baseUrl,
     String secret, {
+    String? deviceId,
     Duration timeout = const Duration(seconds: 15),
   }) async {
     final dio = Dio(
@@ -186,7 +194,7 @@ class JellyfinAuthService {
         connectTimeout: timeout,
         receiveTimeout: timeout,
         contentType: 'application/json',
-        headers: {'Authorization': _authHeaderNoToken()},
+        headers: {'Authorization': authHeaderNoToken(deviceId: deviceId)},
       ),
     );
     final response = await dio.post<Map<String, dynamic>>(

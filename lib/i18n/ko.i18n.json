@@ -85,8 +85,7 @@
   },
   "settings": {
     "title": "설정",
-    "supportDevelopment": "개발 지원",
-    "supportDevelopmentDescription": "앱을 즐기시고 지속적인 개발을 지원하고 싶다면 아래에서 팁을 남겨 주세요. 완전히 선택 사항이며 앱은 계속 무료입니다.",
+    "supportOptionalCaption": "선택 사항 — 앱은 계속 무료입니다",
     "supportTierCoffee": "커피 한 잔 사주기",
     "supportTierLunch": "점심 한 끼 사주기",
     "supportTierSupport": "개발 지원하기",

@@ -44,6 +44,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
   final ScrollController _scrollController = ScrollController();
 
+  late final FocusNode _rootFocusNode;
   late final FocusNode _backButtonFocusNode;
   late final FocusNode _bioFocusNode;
   late final FocusNode _filmographyFocusNode;
@@ -59,6 +60,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _rootFocusNode = FocusNode(debugLabel: 'person_root');
     _backButtonFocusNode = FocusNode(debugLabel: 'person_back');
     _bioFocusNode = FocusNode(debugLabel: 'person_bio');
     _filmographyFocusNode = FocusNode(debugLabel: 'person_filmography');
@@ -68,6 +70,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _rootFocusNode.dispose();
     _backButtonFocusNode.dispose();
     _bioFocusNode.dispose();
     _filmographyFocusNode.dispose();
@@ -103,7 +106,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && InputModeTracker.isKeyboardMode(context)) {
-          _focusFirstContent();
+          _rootFocusNode.requestFocus();
         }
       });
     } catch (e) {
@@ -121,7 +124,23 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
   // ── Key event handlers ──
 
-  KeyEventResult _handleRootKeyEvent(KeyEvent event) {
+  KeyEventResult _handleRootKeyEvent(FocusNode node, KeyEvent event) {
+    if (_rootFocusNode.hasPrimaryFocus) {
+      if (!event.isActionable) return KeyEventResult.ignored;
+      final key = event.logicalKey;
+      if (key.isDownKey) {
+        _focusFirstContent();
+        return KeyEventResult.handled;
+      }
+      if (key.isUpKey) {
+        _backButtonFocusNode.requestFocus();
+        return KeyEventResult.handled;
+      }
+      if (key.isLeftKey || key.isRightKey || key.isSelectKey) {
+        return KeyEventResult.handled;
+      }
+    }
+
     if (!event.logicalKey.isBackKey) return KeyEventResult.ignored;
 
     final route = ModalRoute.of(context);
@@ -301,8 +320,8 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     final isWide = screenWidth >= 600;
 
     return Focus(
-      canRequestFocus: false,
-      onKeyEvent: (_, event) => _handleRootKeyEvent(event),
+      focusNode: _rootFocusNode,
+      onKeyEvent: _handleRootKeyEvent,
       child: Scaffold(
         body: Stack(
           children: [
@@ -310,14 +329,28 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
               controller: _scrollController,
               slivers: [
                 SliverToBoxAdapter(
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 56, left: 24, right: 24, bottom: 8),
-                      child: isWide
-                          ? _buildWideHeader(imageUrl)
-                          : _buildNarrowHeader(imageUrl),
-                    ),
+                  child: Stack(
+                    children: [
+                      SafeArea(
+                        bottom: false,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 56, left: 24, right: 24, bottom: 8),
+                          child: isWide
+                              ? _buildWideHeader(imageUrl)
+                              : _buildNarrowHeader(imageUrl),
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        child: FocusableAppBarBackButton(
+                          focusNode: _backButtonFocusNode,
+                          onKeyEvent: _handleBackButtonKeyEvent,
+                          onPressed: () => Navigator.pop(context),
+                          useDarkBase: true,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -372,30 +405,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                   ),
                 ],
               ],
-            ),
-
-            Positioned(
-              top: 0,
-              left: 0,
-              child: Focus(
-                focusNode: _backButtonFocusNode,
-                onKeyEvent: _handleBackButtonKeyEvent,
-                child: ListenableBuilder(
-                  listenable: _backButtonFocusNode,
-                  builder: (context, _) {
-                    final focused = _backButtonFocusNode.hasFocus && InputModeTracker.isKeyboardMode(context);
-                    return Container(
-                      decoration: focused
-                          ? BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
-                            )
-                          : null,
-                      child: AppBarBackButton(style: BackButtonStyle.circular),
-                    );
-                  },
-                ),
-              ),
             ),
           ],
         ),

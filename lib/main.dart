@@ -35,6 +35,8 @@ import 'services/server_connection_orchestrator.dart';
 import 'services/data_aggregation_service.dart';
 import 'services/in_app_review_service.dart';
 import 'services/support_service.dart';
+import 'models/registered_server.dart';
+import 'services/jellyfin_auth_service.dart';
 import 'services/server_registry.dart';
 import 'services/download_manager_service.dart';
 import 'services/pip_service.dart';
@@ -393,6 +395,8 @@ class _SetupScreenState extends State<SetupScreen> {
     // Load all configured servers
     final servers = await registry.getServers();
 
+    appLogger.i('_loadSavedCredentials: ${servers.length} server(s) found');
+
     if (servers.isEmpty) {
       if (mounted) {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthScreen()));
@@ -403,6 +407,8 @@ class _SetupScreenState extends State<SetupScreen> {
     if (!mounted) return;
 
     try {
+      final deviceId = await storage.getOrCreateDeviceId();
+
       // Retry connection on cold start — TV/phone network may not be ready immediately
       var result = await ServerConnectionOrchestrator.connectAndInitialize(
         servers: servers,
@@ -410,10 +416,10 @@ class _SetupScreenState extends State<SetupScreen> {
         librariesProvider: context.read<LibrariesProvider>(),
         syncService: context.read<OfflineWatchSyncService>(),
         clientIdentifier: storage.getClientIdentifier(),
+        deviceId: deviceId,
       );
 
       if (!result.hasConnections) {
-        appLogger.w('Initial connection failed, retrying after delay...');
         await Future<void>.delayed(const Duration(seconds: 2));
         if (!mounted) return;
         context.read<MultiServerProvider>().clearAllConnections();
@@ -423,6 +429,7 @@ class _SetupScreenState extends State<SetupScreen> {
           librariesProvider: context.read<LibrariesProvider>(),
           syncService: context.read<OfflineWatchSyncService>(),
           clientIdentifier: storage.getClientIdentifier(),
+          deviceId: deviceId,
         );
       }
 
@@ -440,12 +447,22 @@ class _SetupScreenState extends State<SetupScreen> {
           MaterialPageRoute(builder: (context) => MainScreen(client: result.firstClient!)),
         );
       } else {
-        await context.read<DownloadProvider>().ensureInitialized();
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen(isOfflineMode: true)),
-        );
+        // Check if any server is reachable — if so, it's an auth issue, not network
+        if (await _isAnyServerReachable(servers)) {
+          appLogger.i('Server reachable but auth failed — redirecting to login');
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AuthScreen()),
+          );
+        } else {
+          await context.read<DownloadProvider>().ensureInitialized();
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainScreen(isOfflineMode: true)),
+          );
+        }
       }
     } catch (e, stackTrace) {
       appLogger.e('Error during multi-server connection', error: e, stackTrace: stackTrace);
@@ -461,13 +478,28 @@ class _SetupScreenState extends State<SetupScreen> {
     }
   }
 
+  Future<bool> _isAnyServerReachable(List<RegisteredServer> servers) async {
+    for (final server in servers) {
+      if (await JellyfinAuthService.testConnection(server.jellyfinData.baseUrl,
+          timeout: const Duration(seconds: 3))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [const CircularProgressIndicator(), const SizedBox(height: 16), Text(t.common.loading)],
+          children: [
+            const CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 16),
+            Text(t.common.loading, style: const TextStyle(color: Colors.white)),
+          ],
         ),
       ),
     );

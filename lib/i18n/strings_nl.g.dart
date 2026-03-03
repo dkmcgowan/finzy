@@ -202,8 +202,7 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Instellingen';
-	@override String get supportDevelopment => 'Ondersteun ontwikkeling';
-	@override String get supportDevelopmentDescription => 'Als je de app leuk vindt en de doorlopende ontwikkeling wilt ondersteunen, kun je hieronder een fooi achterlaten. Helemaal vrijblijvend — de app blijft gratis.';
+	@override String get supportOptionalCaption => 'Optioneel — app blijft gratis';
 	@override String get supportTierCoffee => 'Trakteer mij op een koffie';
 	@override String get supportTierLunch => 'Trakteer mij op een lunch';
 	@override String get supportTierSupport => 'Ondersteun ontwikkeling';
@@ -1348,8 +1347,7 @@ extension on TranslationsNl {
 			'update.latestVersion' => 'Je hebt de nieuwste versie',
 			'update.checkFailed' => 'Kon niet controleren op updates',
 			'settings.title' => 'Instellingen',
-			'settings.supportDevelopment' => 'Ondersteun ontwikkeling',
-			'settings.supportDevelopmentDescription' => 'Als je de app leuk vindt en de doorlopende ontwikkeling wilt ondersteunen, kun je hieronder een fooi achterlaten. Helemaal vrijblijvend — de app blijft gratis.',
+			'settings.supportOptionalCaption' => 'Optioneel — app blijft gratis',
 			'settings.supportTierCoffee' => 'Trakteer mij op een koffie',
 			'settings.supportTierLunch' => 'Trakteer mij op een lunch',
 			'settings.supportTierSupport' => 'Ondersteun ontwikkeling',
@@ -1785,9 +1783,9 @@ extension on TranslationsNl {
 			'libraries.tabs.suggestions' => 'Suggesties',
 			'libraries.tabs.browse' => 'Bladeren',
 			'libraries.tabs.genres' => 'Genres',
+			'libraries.tabs.favorites' => 'Favorieten',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.tabs.favorites' => 'Favorieten',
 			'libraries.tabs.collections' => 'Collecties',
 			'libraries.tabs.playlists' => 'Afspeellijsten',
 			'libraries.groupings.all' => 'Alles',

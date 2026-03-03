@@ -202,8 +202,7 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Inställningar';
-	@override String get supportDevelopment => 'Stöd utvecklingen';
-	@override String get supportDevelopmentDescription => 'Om du gillar appen och vill stödja den löpande utvecklingen kan du lämna en dricks nedan. Helt frivilligt — appen förblir gratis.';
+	@override String get supportOptionalCaption => 'Frivilligt — appen förblir gratis';
 	@override String get supportTierCoffee => 'Bjud mig på en kaffe';
 	@override String get supportTierLunch => 'Bjud mig på lunch';
 	@override String get supportTierSupport => 'Stöd utvecklingen';
@@ -1348,8 +1347,7 @@ extension on TranslationsSv {
 			'update.latestVersion' => 'Du har den senaste versionen',
 			'update.checkFailed' => 'Misslyckades att kontrollera uppdateringar',
 			'settings.title' => 'Inställningar',
-			'settings.supportDevelopment' => 'Stöd utvecklingen',
-			'settings.supportDevelopmentDescription' => 'Om du gillar appen och vill stödja den löpande utvecklingen kan du lämna en dricks nedan. Helt frivilligt — appen förblir gratis.',
+			'settings.supportOptionalCaption' => 'Frivilligt — appen förblir gratis',
 			'settings.supportTierCoffee' => 'Bjud mig på en kaffe',
 			'settings.supportTierLunch' => 'Bjud mig på lunch',
 			'settings.supportTierSupport' => 'Stöd utvecklingen',
@@ -1785,9 +1783,9 @@ extension on TranslationsSv {
 			'libraries.tabs.suggestions' => 'Förslag',
 			'libraries.tabs.browse' => 'Bläddra',
 			'libraries.tabs.genres' => 'Genrer',
+			'libraries.tabs.favorites' => 'Favoriter',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.tabs.favorites' => 'Favoriter',
 			'libraries.tabs.collections' => 'Samlingar',
 			'libraries.tabs.playlists' => 'Spellistor',
 			'libraries.groupings.all' => 'Alla',

@@ -19,6 +19,7 @@ class _AboutScreenState extends State<AboutScreen> {
   String _appVersion = '';
   SettingsService? _settingsService;
   bool _hideSupportDevelopment = false;
+  final _contentKey = GlobalKey();
 
   @override
   void initState() {
@@ -39,6 +40,17 @@ class _AboutScreenState extends State<AboutScreen> {
       _appVersion = packageInfo.version;
       _settingsService = settingsService;
       _hideSupportDevelopment = settingsService.getHideSupportDevelopment();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final contentContext = _contentKey.currentContext;
+      if (contentContext == null) return;
+      final scope = FocusScope.of(contentContext);
+      final firstChild = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
+        (node) => node!.canRequestFocus && node.context != null,
+        orElse: () => null,
+      );
+      firstChild?.requestFocus();
     });
   }
 
@@ -82,8 +94,8 @@ class _AboutScreenState extends State<AboutScreen> {
               const SizedBox(height: 40),
 
               Card(
+                key: _contentKey,
                 child: ListTile(
-                  autofocus: true,
                   leading: const AppIcon(Symbols.description_rounded, fill: 1),
                   title: Text(t.about.openSourceLicenses),
                   subtitle: Text(t.about.viewLicensesDescription),

@@ -21,7 +21,7 @@ class DataAggregationService {
   /// Fetch libraries from all online servers
   /// Libraries are automatically tagged with server info by client
   Future<List<MediaLibrary>> getLibrariesFromAllServers() async {
-    return _perServer<MediaLibrary>(
+    return await _perServer<MediaLibrary>(
       operationName: 'fetching libraries',
       operation: (serverId, client, server) async {
         return await client.getLibraries();

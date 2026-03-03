@@ -645,7 +645,12 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
     if (registeredServers.isNotEmpty) {
       final clientId = storage.getClientIdentifier();
-      final connectedCount = await multiServerProvider.reconnectWithServers(registeredServers, clientIdentifier: clientId);
+      final deviceId = await storage.getOrCreateDeviceId();
+      final connectedCount = await multiServerProvider.reconnectWithServers(
+        registeredServers,
+        clientIdentifier: clientId,
+        deviceId: deviceId,
+      );
       appLogger.d('Reconnected to $connectedCount/${registeredServers.length} servers after Jellyfin profile switch');
 
       if (connectedCount > 0) {

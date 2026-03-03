@@ -207,7 +207,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final allLibraries = librariesProvider.libraries;
 
     if (allLibraries.isEmpty) {
-      // No libraries available yet
       return;
     }
 

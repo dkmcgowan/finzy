@@ -36,6 +36,7 @@ class ServerConnectionOrchestrator {
     required LibrariesProvider librariesProvider,
     required OfflineWatchSyncService syncService,
     String? clientIdentifier,
+    String? deviceId,
     Duration timeout = ConnectionTimeouts.connectAll,
   }) async {
     appLogger.i('Connecting to ${servers.length} servers...');
@@ -43,6 +44,7 @@ class ServerConnectionOrchestrator {
     final connectedCount = await multiServerProvider.serverManager.connectToAllServers(
       servers,
       clientIdentifier: clientIdentifier,
+      deviceId: deviceId,
       timeout: timeout,
     );
 
@@ -56,7 +58,7 @@ class ServerConnectionOrchestrator {
       try {
         await librariesProvider.loadLibraries();
       } catch (e) {
-        appLogger.w('Failed to load libraries during connection', error: e);
+        appLogger.w('loadLibraries failed', error: e);
         // Continue anyway — MainScreen will retry
       }
 
@@ -68,8 +70,6 @@ class ServerConnectionOrchestrator {
       if (onlineClients.isNotEmpty) {
         firstClient = onlineClients.values.first;
       }
-    } else {
-      appLogger.w('Failed to connect to any servers');
     }
 
     return ConnectionResult(connectedCount: connectedCount, firstClient: firstClient);

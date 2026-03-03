@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show KeyEvent, KeyEventResult;
+import 'package:finzy/utils/desktop_window_padding.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -32,16 +34,26 @@ class AppBarBackButton extends StatefulWidget {
   /// [onPressed] is called when the button is tapped. If null, defaults to Navigator.pop.
   /// [color] overrides the default icon color. If null, uses white for circular/video, theme default for plain.
   /// [semanticLabel] provides accessibility label for screen readers.
+  /// [isFocused] when true, uses gray background (surfaceContainerHighest) like action buttons.
+  /// [isDarkBase] when true (person/cast screen), unfocused uses black circle + white icon.
   const AppBarBackButton({
     super.key,
     this.style = BackButtonStyle.circular,
     this.onPressed,
     this.color,
     this.semanticLabel,
+    this.isFocused = false,
+    this.isDarkBase = false,
   });
 
   /// The visual style of the back button
   final BackButtonStyle style;
+
+  /// When true, uses gray background (surfaceContainerHighest) like action buttons.
+  final bool isFocused;
+
+  /// When true, unfocused uses black circle + white icon (for person/cast screen).
+  final bool isDarkBase;
 
   /// Callback when the button is pressed. Defaults to Navigator.of(context).pop()
   final VoidCallback? onPressed;
@@ -96,33 +108,73 @@ class _AppBarBackButtonState extends State<AppBarBackButton> with TickerProvider
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkTheme = theme.brightness == Brightness.dark;
+    final isCircular = widget.style == BackButtonStyle.circular;
 
-    final Color effectiveColor;
-    switch (widget.style) {
-      case BackButtonStyle.plain:
-        effectiveColor = widget.color ?? (isDarkTheme ? Colors.white : Colors.black);
-        break;
-      case BackButtonStyle.circular:
-      case BackButtonStyle.video:
-        effectiveColor = widget.color ?? Colors.white;
-        break;
+    if (isCircular) {
+      // Circular style: unified base/highlight for both hover and keyboard focus
+      final highlightBg = theme.colorScheme.surfaceContainerHighest;
+      final highlightIcon = theme.colorScheme.onSurface;
+
+      final Color baseBg;
+      final Color baseIcon;
+      if (widget.isDarkBase) {
+        baseBg = theme.scaffoldBackgroundColor;
+        baseIcon = theme.colorScheme.onSurfaceVariant;
+      } else {
+        baseBg = Colors.black.withValues(alpha: 0.3);
+        baseIcon = Colors.white;
+      }
+
+      final buttonWidget = MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => _onHoverChange(true),
+        onExit: (_) => _onHoverChange(false),
+        child: GestureDetector(
+          onTap: _handlePressed,
+          child: AnimatedBuilder(
+            animation: _backgroundAnimation,
+            builder: (context, child) {
+              final t = widget.isFocused ? 1.0 : _backgroundAnimation.value;
+              final bg = Color.lerp(baseBg, highlightBg, t)!;
+              final ic = Color.lerp(baseIcon, highlightIcon, t)!;
+              return Container(
+                margin: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+                child: AppIcon(Symbols.arrow_back_rounded, fill: 1, color: ic, size: 20),
+              );
+            },
+          ),
+        ),
+      );
+
+      final button = widget.semanticLabel != null
+          ? Semantics(label: widget.semanticLabel, button: true, excludeSemantics: true, child: buttonWidget)
+          : buttonWidget;
+
+      return SafeArea(child: button);
     }
 
+    // Non-circular styles (plain, video)
+    final Color effectiveColor;
     final Color baseColor;
     final Color hoverColor;
     switch (widget.style) {
-      case BackButtonStyle.circular:
-        baseColor = Colors.black.withValues(alpha: 0.3);
-        hoverColor = Colors.black.withValues(alpha: 0.5);
-        break;
       case BackButtonStyle.plain:
-        hoverColor = (isDarkTheme ? Colors.white : Colors.black).withValues(alpha: 0.2);
+        effectiveColor = widget.color ?? (isDarkTheme ? Colors.white : Colors.black);
         baseColor = Colors.transparent;
+        hoverColor = (isDarkTheme ? Colors.white : Colors.black).withValues(alpha: 0.2);
         break;
       case BackButtonStyle.video:
+        effectiveColor = widget.color ?? Colors.white;
         baseColor = Colors.transparent;
         hoverColor = Colors.black.withValues(alpha: 0.3);
         break;
+      default:
+        effectiveColor = widget.color ?? Colors.white;
+        baseColor = Colors.transparent;
+        hoverColor = Colors.transparent;
     }
 
     final buttonWidget = MouseRegion(
@@ -134,13 +186,12 @@ class _AppBarBackButtonState extends State<AppBarBackButton> with TickerProvider
         child: AnimatedBuilder(
           animation: _backgroundAnimation,
           builder: (context, child) {
-            final currentColor = Color.lerp(baseColor, hoverColor, _backgroundAnimation.value);
-
+            final displayBg = Color.lerp(baseColor, hoverColor, _backgroundAnimation.value)!;
             return Container(
               margin: const EdgeInsets.all(8),
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: currentColor, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: displayBg, shape: BoxShape.circle),
               child: AppIcon(Symbols.arrow_back_rounded, fill: 1, color: effectiveColor, size: 20),
             );
           },
@@ -152,6 +203,57 @@ class _AppBarBackButtonState extends State<AppBarBackButton> with TickerProvider
         ? Semantics(label: widget.semanticLabel, button: true, excludeSemantics: true, child: buttonWidget)
         : buttonWidget;
 
-    return widget.style == BackButtonStyle.circular ? SafeArea(child: button) : button;
+    return button;
+  }
+}
+
+/// A focusable back button for detail screens with consistent focus styling.
+///
+/// [useDarkBase]: When true (person/cast screen), black circle + white icon unfocused,
+/// grey when focused. When false (movie/show hero), light circle unfocused, dark when focused.
+class FocusableAppBarBackButton extends StatelessWidget {
+  const FocusableAppBarBackButton({
+    super.key,
+    required this.focusNode,
+    required this.onKeyEvent,
+    required this.onPressed,
+    this.useAdjustedLeading = false,
+    this.useDarkBase = false,
+  });
+
+  final FocusNode focusNode;
+  final KeyEventResult Function(FocusNode node, KeyEvent event) onKeyEvent;
+  final VoidCallback onPressed;
+
+  /// When true, wraps in [DesktopAppBarHelper.buildAdjustedLeading] for macOS
+  /// window controls padding. Use for MediaDetailScreen overlay.
+  final bool useAdjustedLeading;
+
+  /// When true (person/cast screen), black circle + white icon. Grey when focused.
+  final bool useDarkBase;
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      focusNode: focusNode,
+      onKeyEvent: onKeyEvent,
+      child: ListenableBuilder(
+        listenable: focusNode,
+        builder: (context, _) {
+          final focused = focusNode.hasFocus;
+
+          final button = AppBarBackButton(
+            style: BackButtonStyle.circular,
+            onPressed: onPressed,
+            isFocused: focused,
+            isDarkBase: useDarkBase,
+          );
+
+          return useAdjustedLeading
+              ? DesktopAppBarHelper.buildAdjustedLeading(button, context: context)!
+              : button;
+        },
+      ),
+    );
   }
 }

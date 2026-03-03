@@ -40,7 +40,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../utils/video_player_navigation.dart';
 import '../widgets/app_bar_back_button.dart';
 import 'person_detail_screen.dart';
-import '../utils/desktop_window_padding.dart';
 import '../widgets/horizontal_scroll_with_arrows.dart';
 import '../widgets/media_context_menu.dart';
 import '../widgets/placeholder_container.dart';
@@ -381,24 +380,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       onKeyEvent: _handlePlayButtonKeyEvent,
       child: Row(
         children: [
-          SizedBox(
-            height: 48,
-            child: FilledButton(
-              focusNode: _playButtonFocusNode,
-              autofocus: InputModeTracker.isKeyboardMode(context),
-              onPressed: onPlayPressed,
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 16)),
-              child: playButtonLabel.isNotEmpty
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        playButtonIcon,
-                        const SizedBox(width: 8),
-                        Text(playButtonLabel, style: const TextStyle(fontSize: 16)),
-                      ],
-                    )
-                  : playButtonIcon,
-            ),
+          IconButton.filledTonal(
+            focusNode: _playButtonFocusNode,
+            autofocus: InputModeTracker.isKeyboardMode(context),
+            onPressed: onPlayPressed,
+            icon: playButtonIcon,
+            tooltip: playButtonLabel.isNotEmpty ? playButtonLabel : null,
+            iconSize: 20,
+            style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
           ),
           const SizedBox(width: 12),
           // Restart / Play from start (when play would resume — hide if play already starts from 0)
@@ -1805,26 +1794,28 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                             : const PlaceholderContainer(),
                       ),
 
-                      // Gradient overlay
+                      // Gradient overlay (IgnorePointer so back button receives taps)
                       Positioned(
                         top: 0,
                         left: 0,
                         right: 0,
                         bottom: -1, // Extend 1px past to prevent subpixel gap
-                        child: Builder(
-                          builder: (context) {
-                            final bgColor = Theme.of(context).scaffoldBackgroundColor;
-                            return Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [Colors.transparent, bgColor.withValues(alpha: 0.9), bgColor],
-                                  stops: const [0.3, 0.8, 1.0],
+                        child: IgnorePointer(
+                          child: Builder(
+                            builder: (context) {
+                              final bgColor = Theme.of(context).scaffoldBackgroundColor;
+                              return Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [Colors.transparent, bgColor.withValues(alpha: 0.9), bgColor],
+                                    stops: const [0.3, 0.8, 1.0],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       ),
 
@@ -1944,6 +1935,18 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                               ],
                             ),
                           ),
+                        ),
+                      ),
+
+                      // Back button last so it's always on top (hover + tap work)
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        child: FocusableAppBarBackButton(
+                          focusNode: _backButtonFocusNode,
+                          onKeyEvent: _handleBackButtonKeyEvent,
+                          onPressed: () => Navigator.pop(context, _watchStateChanged),
+                          useAdjustedLeading: true,
                         ),
                       ),
                     ],
@@ -2115,36 +2118,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                       ),
                     ),
                   ),
-                ),
-              ),
-            ),
-            // Back button (always visible)
-            Positioned(
-              top: 0,
-              left: 0,
-              child: Focus(
-                focusNode: _backButtonFocusNode,
-                onKeyEvent: _handleBackButtonKeyEvent,
-                child: ListenableBuilder(
-                  listenable: _backButtonFocusNode,
-                  builder: (context, _) {
-                    final focused = _backButtonFocusNode.hasFocus && InputModeTracker.isKeyboardMode(context);
-                    return Container(
-                      decoration: focused
-                          ? BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
-                            )
-                          : null,
-                      child: DesktopAppBarHelper.buildAdjustedLeading(
-                        AppBarBackButton(
-                          style: BackButtonStyle.circular,
-                          onPressed: () => Navigator.pop(context, _watchStateChanged),
-                        ),
-                        context: context,
-                      )!,
-                    );
-                  },
                 ),
               ),
             ),

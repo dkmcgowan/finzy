@@ -1,30 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'platform_detector.dart';
 
 /// Helper class for managing device orientation preferences across the app.
 class OrientationHelper {
-  /// Restores default orientation preferences based on device type.
+  /// Restores default orientation preferences.
   ///
-  /// For phones: Locks to portrait-only (up and down)
-  /// For tablets/desktop: Allows all orientations
-  ///
-  /// This should be called when leaving full-screen experiences like
+  /// Allows all orientations (portrait and landscape) so the app rotates
+  /// with the device. Called when leaving full-screen experiences like
   /// the video player to restore the app's default orientation behavior.
   static void restoreDefaultOrientations(BuildContext context) {
-    final isPhone = PlatformDetector.isPhone(context);
-
-    if (isPhone) {
-      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-    } else {
-      // For tablets and desktop, allow all orientations
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-    }
+    // Allow all orientations on mobile and desktop
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
   }
 
   /// Sets orientation to landscape-only mode.

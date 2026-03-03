@@ -9,6 +9,8 @@ import '../../models/hotkey_model.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../auth_screen.dart';
+import '../profile/jellyfin_profile_switch_screen.dart';
 import '../../constants/library_constants.dart';
 import '../../focus/dpad_navigator.dart';
 import '../../focus/focus_memory_tracker.dart';
@@ -20,8 +22,12 @@ import '../main_screen.dart';
 import '../../mixins/refreshable.dart';
 import '../../providers/hidden_libraries_provider.dart';
 import '../../providers/libraries_provider.dart';
+import '../../providers/multi_server_provider.dart';
+import '../../providers/playback_state_provider.dart';
+import '../../providers/server_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/provider_extensions.dart';
 
@@ -30,9 +36,11 @@ import '../../services/saf_storage_service.dart';
 import '../../services/keyboard_shortcuts_service.dart';
 import '../../services/settings_service.dart' as settings;
 import '../../services/update_service.dart';
+import '../../utils/dialogs.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../utils/platform_detector.dart';
 import '../../widgets/desktop_app_bar.dart';
+import '../../widgets/quick_connect_authorize_dialog.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import '../../widgets/tv_number_spinner.dart';
 import 'hotkey_recorder_widget.dart';
@@ -70,6 +78,9 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kAdvanced = 'advanced';
   static const _kUpdates = 'updates';
   static const _kAbout = 'about';
+  static const _kSwitchProfile = 'switch_profile';
+  static const _kQuickConnect = 'quick_connect';
+  static const _kLogout = 'logout';
   static const _kTheme = 'theme';
   static const _kLanguage = 'language';
   static const _kLibraryDensity = 'library_density';
@@ -249,6 +260,59 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     });
   }
 
+  void _handleSwitchProfile() {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const JellyfinProfileSwitchScreen()));
+  }
+
+  void _handleQuickConnect() {
+    showDialog(context: context, builder: (_) => const QuickConnectAuthorizeDialog()).then((_) {
+      if (mounted) _restoreFocusTo(_kQuickConnect);
+    });
+  }
+
+  void _restoreFocusTo(String key) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      FocusScope.of(context).requestFocus(_focusTracker.get(key));
+    });
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showConfirmDialog(
+      context,
+      title: t.common.logout,
+      message: t.messages.logoutConfirm,
+      confirmText: t.common.logout,
+      isDestructive: true,
+    );
+
+    if (!confirm && mounted) {
+      _restoreFocusTo(_kLogout);
+      return;
+    }
+
+    if (confirm && mounted) {
+      final userProfileProvider = Provider.of<UserProfileProvider>(context, listen: false);
+      final multiServerProvider = context.read<MultiServerProvider>();
+      final serverStateProvider = context.read<ServerStateProvider>();
+      final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
+      final playbackStateProvider = context.read<PlaybackStateProvider>();
+
+      await userProfileProvider.logout();
+      multiServerProvider.clearAllConnections();
+      serverStateProvider.reset();
+      await hiddenLibrariesProvider.refresh();
+      playbackStateProvider.clearShuffle();
+
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -272,7 +336,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                 delegate: SliverChildListDelegate([
                   if (SupportService.instance.isAvailable && !_hideSupportDevelopment) ...[
                     _buildSupportDevelopmentSection(),
-                    const SizedBox(height: 24),
                   ],
                   _buildSectionNavTile(_kAppearance, t.settings.appearance, Symbols.palette_rounded, _buildAppearanceContent, autofocus: true),
                   _buildSectionNavTile(_kLibrariesSection, t.navigation.libraries, Symbols.video_library_rounded, _buildLibrariesContent),
@@ -281,6 +344,25 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                   if (UpdateService.isUpdateCheckEnabled)
                     _buildSectionNavTile(_kUpdates, t.settings.updates, Symbols.system_update_rounded, _buildUpdateContent),
                   _buildSectionNavTile(_kAbout, t.settings.about, Symbols.info_rounded, null, directRoute: const AboutScreen()),
+                  ListTile(
+                    focusNode: _focusTracker.get(_kSwitchProfile),
+                    leading: const AppIcon(Symbols.switch_account_rounded, fill: 1),
+                    title: Text(t.discover.switchProfile),
+                    trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+                    onTap: () => _handleSwitchProfile(),
+                  ),
+                  ListTile(
+                    focusNode: _focusTracker.get(_kQuickConnect),
+                    leading: const AppIcon(Symbols.qr_code_rounded, fill: 1),
+                    title: Text(t.common.quickConnect),
+                    onTap: () => _handleQuickConnect(),
+                  ),
+                  ListTile(
+                    focusNode: _focusTracker.get(_kLogout),
+                    leading: AppIcon(Symbols.logout_rounded, fill: 1, color: Theme.of(context).colorScheme.error),
+                    title: Text(t.common.logout, style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                    onTap: () => _handleLogout(),
+                  ),
                 ]),
               ),
             ),
@@ -314,48 +396,33 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   }
 
   Widget _buildSupportDevelopmentSection() {
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(
-            focusNode: _focusTracker.get('support_header'),
-            title: Text(
-              t.settings.supportDevelopment,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            subtitle: Text(
-              t.settings.supportDevelopmentDescription,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          _buildSupportTierTile(
-            key: _kSupportCoffee,
-            icon: Symbols.coffee_rounded,
-            title: t.settings.supportTierCoffee,
-            amount: '\$${SupportTier.coffee.amount.toStringAsFixed(2)}',
-            tier: SupportTier.coffee,
-          ),
-          _buildSupportTierTile(
-            key: _kSupportLunch,
-            icon: Symbols.restaurant_rounded,
-            title: t.settings.supportTierLunch,
-            amount: '\$${SupportTier.lunch.amount.toStringAsFixed(2)}',
-            tier: SupportTier.lunch,
-          ),
-          _buildSupportTierTile(
-            key: _kSupportDev,
-            icon: Symbols.rocket_launch_rounded,
-            title: t.settings.supportTierSupport,
-            amount: '\$${SupportTier.support.amount.toStringAsFixed(2)}',
-            tier: SupportTier.support,
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildSupportTierTile(
+          key: _kSupportCoffee,
+          icon: Symbols.coffee_rounded,
+          title: t.settings.supportTierCoffee,
+          amount: '\$${SupportTier.coffee.amount.toStringAsFixed(2)}',
+          tier: SupportTier.coffee,
+        ),
+        _buildSupportTierTile(
+          key: _kSupportLunch,
+          icon: Symbols.restaurant_rounded,
+          title: t.settings.supportTierLunch,
+          amount: '\$${SupportTier.lunch.amount.toStringAsFixed(2)}',
+          tier: SupportTier.lunch,
+        ),
+        _buildSupportTierTile(
+          key: _kSupportDev,
+          icon: Symbols.rocket_launch_rounded,
+          title: t.settings.supportTierSupport,
+          amount: '\$${SupportTier.support.amount.toStringAsFixed(2)}',
+          tier: SupportTier.support,
+        ),
+        const Divider(height: 32),
+      ],
     );
   }
 
@@ -729,7 +796,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       hiddenKeys,
       librariesProvider,
       hiddenProvider,
-      sectionHeaderFocusNode: _focusTracker.get(_kLibrariesSection),
+      sectionHeaderFocusNode: _focusTracker.get(_kDownloadOnWifiOnly),
     );
   }
 
@@ -1070,7 +1137,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
             },
           ),
           // MPV Config is only available when using MPV player backend
-          if (!Platform.isAndroid || !_useExoPlayer)
+          if (!Platform.isAndroid || !_useExoPlayer || !_useExoPlayerForLiveTv)
             ListTile(
               focusNode: _focusTracker.get(_kMpvConfig),
               leading: const AppIcon(Symbols.tune_rounded, fill: 1),
@@ -2592,6 +2659,16 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
       if (index > 0) _moveLibrary(index, index - 1);
       return KeyEventResult.handled;
     }
+    if (key.isLeftKey) {
+      if (index > 0) {
+        final prev = widget.libraries[index - 1];
+        final isPrevFavorites = prev.globalKey == kJellyfinFavoritesKey;
+        (isPrevFavorites ? _centerFocusNodes[index - 1] : _visibilityFocusNodes[index - 1]).requestFocus();
+      } else if (widget.sectionHeaderFocusNode != null) {
+        widget.sectionHeaderFocusNode!.requestFocus();
+      }
+      return KeyEventResult.handled;
+    }
     if (key.isRightKey) {
       _centerFocusNodes[index].requestFocus();
       return KeyEventResult.handled;
@@ -2619,6 +2696,10 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
       if (index < widget.libraries.length - 1) _moveLibrary(index, index + 1);
       return KeyEventResult.handled;
     }
+    if (key.isLeftKey) {
+      _reorderUpFocusNodes[index].requestFocus();
+      return KeyEventResult.handled;
+    }
     if (key.isRightKey) {
       _centerFocusNodes[index].requestFocus();
       return KeyEventResult.handled;
@@ -2629,7 +2710,7 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
     }
     if (key.isDownKey) {
       if (index < widget.libraries.length - 1) {
-        _centerFocusNodes[index + 1].requestFocus();
+        _reorderDownFocusNodes[index + 1].requestFocus();
         return KeyEventResult.handled;
       }
       return KeyEventResult.ignored;
@@ -2662,7 +2743,8 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
       return KeyEventResult.handled;
     }
     if (key.isDownKey && index < widget.libraries.length - 1) {
-      _centerFocusNodes[index + 1].requestFocus();
+      final nextIsFavorites = widget.libraries[index + 1].globalKey == kJellyfinFavoritesKey;
+      (nextIsFavorites ? _visibilityFocusNodes[index + 1] : _scanFocusNodes[index + 1]).requestFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -2693,7 +2775,8 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
       return KeyEventResult.handled;
     }
     if (key.isDownKey && index < widget.libraries.length - 1) {
-      _centerFocusNodes[index + 1].requestFocus();
+      final nextIsFavorites = widget.libraries[index + 1].globalKey == kJellyfinFavoritesKey;
+      (nextIsFavorites ? _visibilityFocusNodes[index + 1] : _refreshFocusNodes[index + 1]).requestFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -2725,7 +2808,7 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
       return KeyEventResult.handled;
     }
     if (key.isDownKey && index < widget.libraries.length - 1) {
-      _centerFocusNodes[index + 1].requestFocus();
+      _visibilityFocusNodes[index + 1].requestFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;

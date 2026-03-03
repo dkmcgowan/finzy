@@ -16,7 +16,7 @@ class JellyfinConfig {
     required this.userId,
     required this.serverId,
     this.serverName,
-    this.deviceId = 'finzy-jellyfin',
+    required this.deviceId,
     this.clientName = 'Finzy',
     this.clientVersion = '1.0.0',
   });

@@ -7,6 +7,7 @@ import '../models/jellyfin_config.dart';
 import '../models/registered_server.dart';
 import '../utils/app_logger.dart';
 import '../utils/connection_constants.dart';
+import 'jellyfin_auth_service.dart';
 import 'jellyfin_client.dart';
 
 /// Manages multiple Jellyfin server connections.
@@ -38,6 +39,9 @@ class MultiServerManager {
 
   /// Cached client identifier for reconnection without async storage lookup
   String? _clientIdentifier;
+
+  /// Per-installation device ID for Jellyfin auth headers
+  String? _deviceId;
 
   /// Get all registered server IDs
   List<String> get serverIds => _servers.keys.toList();
@@ -80,6 +84,7 @@ class MultiServerManager {
       userId: data.userId,
       serverId: data.serverId,
       serverName: data.serverName,
+      deviceId: _deviceId ?? JellyfinAuthService.defaultDeviceId,
     );
     return JellyfinClient(config, serverId: data.serverId, serverName: data.serverName);
   }
@@ -89,6 +94,7 @@ class MultiServerManager {
   Future<int> connectToAllServers(
     List<RegisteredServer> servers, {
     String? clientIdentifier,
+    String? deviceId,
     Duration timeout = ConnectionTimeouts.connectAll,
     Function(String serverId, JellyfinClient client)? onServerConnected,
     Function(String serverId, Object error)? onServerFailed,
@@ -102,6 +108,7 @@ class MultiServerManager {
 
     final effectiveClientId = clientIdentifier ?? DateTime.now().millisecondsSinceEpoch.toString();
     _clientIdentifier = effectiveClientId;
+    if (deviceId != null) _deviceId = deviceId;
 
     final connectionFutures = servers.map((registered) async {
       final serverId = registered.serverId;
@@ -122,7 +129,7 @@ class MultiServerManager {
 
         return serverId;
       } catch (e, stackTrace) {
-        appLogger.e('Failed to connect to $serverName', error: e, stackTrace: stackTrace);
+        appLogger.e('Failed to connect to server $serverName', error: e, stackTrace: stackTrace);
 
         _servers[serverId] = registered;
         _serverStatus[serverId] = false;
@@ -269,17 +276,10 @@ class MultiServerManager {
         final status = results.isNotEmpty ? results.first : ConnectivityResult.none;
 
         if (status == ConnectivityResult.none) {
-          appLogger.w('Connectivity lost, pausing until network returns');
           return;
         }
 
-        appLogger.d(
-          'Connectivity change detected, re-probing offline servers',
-          error: {
-            'status': status.name,
-            'serverCount': _servers.length,
-          },
-        );
+        appLogger.d('Connectivity change detected, re-probing offline servers');
 
         // Brief delay so the new network is ready (Android can report connectivity
         // before TCP is actually usable).

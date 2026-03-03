@@ -8,12 +8,36 @@ import '../../i18n/strings.g.dart';
 import '../../theme/mono_tokens.dart';
 import '../../utils/platform_detector.dart';
 import '../../focus/focusable_wrapper.dart';
+import '../../widgets/focused_scroll_scaffold.dart';
 import 'jellyfin_add_user_screen.dart';
 
 /// Screen to switch between stored Jellyfin users on this device.
 /// Shows stored users as icon grid; "Add user" square opens add-user flow (remaining users + manual/back).
-class JellyfinProfileSwitchScreen extends StatelessWidget {
+class JellyfinProfileSwitchScreen extends StatefulWidget {
   const JellyfinProfileSwitchScreen({super.key});
+
+  @override
+  State<JellyfinProfileSwitchScreen> createState() => _JellyfinProfileSwitchScreenState();
+}
+
+class _JellyfinProfileSwitchScreenState extends State<JellyfinProfileSwitchScreen> {
+  final _contentKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final contentContext = _contentKey.currentContext;
+      if (contentContext == null) return;
+      final scope = FocusScope.of(contentContext);
+      final firstChild = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
+        (node) => node!.canRequestFocus && node.context != null,
+        orElse: () => null,
+      );
+      firstChild?.requestFocus();
+    });
+  }
 
   static Widget _buildUserCard({
     required BuildContext context,
@@ -89,115 +113,106 @@ class JellyfinProfileSwitchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t.discover.switchProfile),
-      ),
-      body: Consumer<JellyfinProfileProvider>(
-        builder: (context, provider, _) {
-          final users = provider.users;
-          final baseUrl = provider.baseUrl;
-          final isTV = PlatformDetector.isTV();
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: FocusTraversalGroup(
-                  policy: OrderedTraversalPolicy(),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      FocusTraversalOrder(
-                        order: const NumericFocusOrder(1),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: isTV ? 200 : 160,
-                            childAspectRatio: 0.9,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                          ),
-                          itemCount: users.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == users.length) {
-                              final card = _buildUserCard(
-                                context: context,
-                                label: 'Add user',
-                                icon: Symbols.person_add_rounded,
-                                onTap: baseUrl.isEmpty
-                                    ? null
-                                    : () async {
-                                        final added = await Navigator.push<bool>(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => JellyfinAddUserScreen(
-                                              baseUrl: baseUrl,
-                                              existingUserIds: users.map((u) => u.userId).toSet(),
-                                            ),
-                                          ),
-                                        );
-                                        if (context.mounted && added == true) {
-                                          await provider.refresh();
-                                        }
-                                      },
-                              );
-                              return isTV && baseUrl.isNotEmpty
-                                  ? FocusableWrapper(
-                                      autofocus: users.isEmpty,
-                                      onSelect: () async {
-                                        final added = await Navigator.push<bool>(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => JellyfinAddUserScreen(
-                                              baseUrl: baseUrl,
-                                              existingUserIds: users.map((u) => u.userId).toSet(),
-                                            ),
-                                          ),
-                                        );
-                                        if (context.mounted && added == true) {
-                                          await provider.refresh();
-                                        }
-                                      },
-                                      child: card,
-                                    )
-                                  : card;
-                            }
-                            final user = users[index];
-                            final isCurrent = provider.currentUser?.userId == user.userId;
-                            final imageUrl = provider.imageUrlFor(user);
-                            final card = _buildUserCard(
-                              context: context,
-                              label: user.userName,
-                              imageUrl: imageUrl.isNotEmpty ? imageUrl : null,
-                              icon: Symbols.person_rounded,
-                              isCurrent: isCurrent,
-                              onTap: isCurrent
-                                  ? () => Navigator.of(context).pop()
-                                  : () => _switchToUser(context, provider, user),
-                            );
-                            return isTV
-                                ? FocusableWrapper(
-                                    autofocus: index == 0,
-                                    onSelect: isCurrent
-                                        ? () => Navigator.of(context).pop()
-                                        : () => _switchToUser(context, provider, user),
-                                    child: card,
-                                  )
-                                : card;
-                          },
-                        ),
+    return FocusedScrollScaffold(
+      title: Text(t.discover.switchProfile),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(24),
+          sliver: SliverToBoxAdapter(
+            child: Consumer<JellyfinProfileProvider>(
+              builder: (context, provider, _) {
+                final users = provider.users;
+                final baseUrl = provider.baseUrl;
+                final isTV = PlatformDetector.isTV();
+                return Center(
+                  child: ConstrainedBox(
+                    key: _contentKey,
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: isTV ? 200 : 160,
+                        childAspectRatio: 0.9,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
                       ),
-                    ],
+                      itemCount: users.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == users.length) {
+                          final card = _buildUserCard(
+                            context: context,
+                            label: 'Add user',
+                            icon: Symbols.person_add_rounded,
+                            onTap: baseUrl.isEmpty
+                                ? null
+                                : () async {
+                                    final added = await Navigator.push<bool>(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => JellyfinAddUserScreen(
+                                          baseUrl: baseUrl,
+                                          existingUserIds: users.map((u) => u.userId).toSet(),
+                                        ),
+                                      ),
+                                    );
+                                    if (context.mounted && added == true) {
+                                      await provider.refresh();
+                                    }
+                                  },
+                          );
+                          return isTV && baseUrl.isNotEmpty
+                              ? FocusableWrapper(
+                                  autofocus: users.isEmpty,
+                                  onSelect: () async {
+                                    final added = await Navigator.push<bool>(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => JellyfinAddUserScreen(
+                                          baseUrl: baseUrl,
+                                          existingUserIds: users.map((u) => u.userId).toSet(),
+                                        ),
+                                      ),
+                                    );
+                                    if (context.mounted && added == true) {
+                                      await provider.refresh();
+                                    }
+                                  },
+                                  child: card,
+                                )
+                              : card;
+                        }
+                        final user = users[index];
+                        final isCurrent = provider.currentUser?.userId == user.userId;
+                        final imageUrl = provider.imageUrlFor(user);
+                        final card = _buildUserCard(
+                          context: context,
+                          label: user.userName,
+                          imageUrl: imageUrl.isNotEmpty ? imageUrl : null,
+                          icon: Symbols.person_rounded,
+                          isCurrent: isCurrent,
+                          onTap: isCurrent
+                              ? () => Navigator.of(context).pop()
+                              : () => _switchToUser(context, provider, user),
+                        );
+                        return isTV
+                            ? FocusableWrapper(
+                                autofocus: index == 0,
+                                onSelect: isCurrent
+                                    ? () => Navigator.of(context).pop()
+                                    : () => _switchToUser(context, provider, user),
+                                child: card,
+                              )
+                            : card;
+                      },
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -202,8 +202,7 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => '설정';
-	@override String get supportDevelopment => '개발 지원';
-	@override String get supportDevelopmentDescription => '앱을 즐기시고 지속적인 개발을 지원하고 싶다면 아래에서 팁을 남겨 주세요. 완전히 선택 사항이며 앱은 계속 무료입니다.';
+	@override String get supportOptionalCaption => '선택 사항 — 앱은 계속 무료입니다';
 	@override String get supportTierCoffee => '커피 한 잔 사주기';
 	@override String get supportTierLunch => '점심 한 끼 사주기';
 	@override String get supportTierSupport => '개발 지원하기';
@@ -1348,8 +1347,7 @@ extension on TranslationsKo {
 			'update.latestVersion' => '최신 버전을 사용 중입니다',
 			'update.checkFailed' => '업데이트 확인 실패',
 			'settings.title' => '설정',
-			'settings.supportDevelopment' => '개발 지원',
-			'settings.supportDevelopmentDescription' => '앱을 즐기시고 지속적인 개발을 지원하고 싶다면 아래에서 팁을 남겨 주세요. 완전히 선택 사항이며 앱은 계속 무료입니다.',
+			'settings.supportOptionalCaption' => '선택 사항 — 앱은 계속 무료입니다',
 			'settings.supportTierCoffee' => '커피 한 잔 사주기',
 			'settings.supportTierLunch' => '점심 한 끼 사주기',
 			'settings.supportTierSupport' => '개발 지원하기',
@@ -1785,9 +1783,9 @@ extension on TranslationsKo {
 			'libraries.tabs.suggestions' => '추천',
 			'libraries.tabs.browse' => '찾아보기',
 			'libraries.tabs.genres' => '장르',
+			'libraries.tabs.favorites' => '즐겨찾기',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.tabs.favorites' => '즐겨찾기',
 			'libraries.tabs.collections' => '컬렉션',
 			'libraries.tabs.playlists' => '재생 목록',
 			'libraries.groupings.all' => '전체',

@@ -6,6 +6,34 @@ import '../i18n/strings.g.dart';
 const _buttonPadding = EdgeInsets.symmetric(horizontal: 18, vertical: 14);
 const _buttonShape = StadiumBorder();
 
+ButtonStyle get _dialogButtonStyle => TextButton.styleFrom(padding: _buttonPadding, shape: _buttonShape);
+
+/// A row of dialog buttons that supports arrow-key navigation.
+class _DialogActions extends StatelessWidget {
+  final List<Widget> children;
+  const _DialogActions({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          for (int i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            FocusTraversalOrder(
+              order: NumericFocusOrder(i.toDouble()),
+              child: children[i],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// Shows a confirmation dialog with consistent button sizing and autofocus.
 /// Returns true if user confirmed, false if cancelled.
 Future<bool> showConfirmDialog(
@@ -19,23 +47,24 @@ Future<bool> showConfirmDialog(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) {
-      final colorScheme = Theme.of(dialogContext).colorScheme;
       return AlertDialog(
         title: Text(title),
         content: Text(message),
         actions: [
-          TextButton(
-            autofocus: true,
-            onPressed: () => Navigator.pop(dialogContext, false),
-            style: TextButton.styleFrom(padding: _buttonPadding, shape: _buttonShape),
-            child: Text(cancelText ?? t.common.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: isDestructive
-                ? FilledButton.styleFrom(backgroundColor: colorScheme.error, foregroundColor: colorScheme.onError)
-                : null,
-            child: Text(confirmText),
+          _DialogActions(
+            children: [
+              TextButton(
+                autofocus: true,
+                onPressed: () => Navigator.pop(dialogContext, false),
+                style: _dialogButtonStyle,
+                child: Text(cancelText ?? t.common.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: _dialogButtonStyle,
+                child: Text(confirmText),
+              ),
+            ],
           ),
         ],
       );
@@ -80,15 +109,20 @@ Future<({bool confirmed, bool checked})> showConfirmDialogWithCheckbox(
               ],
             ),
             actions: [
-              TextButton(
-                autofocus: true,
-                onPressed: () => Navigator.pop(dialogContext, false),
-                style: TextButton.styleFrom(padding: _buttonPadding, shape: _buttonShape),
-                child: Text(cancelText ?? t.common.cancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: Text(confirmText),
+              _DialogActions(
+                children: [
+                  TextButton(
+                    autofocus: true,
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    style: _dialogButtonStyle,
+                    child: Text(cancelText ?? t.common.cancel),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    style: _dialogButtonStyle,
+                    child: Text(confirmText),
+                  ),
+                ],
               ),
             ],
           );

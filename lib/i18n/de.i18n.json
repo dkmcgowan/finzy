@@ -85,8 +85,7 @@
   },
   "settings": {
     "title": "Einstellungen",
-    "supportDevelopment": "Entwicklung unterstützen",
-    "supportDevelopmentDescription": "Wenn dir die App gefällt und du die Weiterentwicklung unterstützen möchtest, kannst du unten einen Betrag hinterlassen. Völlig optional — die App bleibt kostenlos.",
+    "supportOptionalCaption": "Optional — App bleibt kostenlos",
     "supportTierCoffee": "Spendiere mir einen Kaffee",
     "supportTierLunch": "Spendiere mir ein Mittagessen",
     "supportTierSupport": "Entwicklung unterstützen",

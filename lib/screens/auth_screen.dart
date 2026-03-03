@@ -92,10 +92,13 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
+      final storage = await StorageService.getInstance();
+      final deviceId = await storage.getOrCreateDeviceId();
       final result = await JellyfinAuthService.authenticateByName(
         baseUrl: baseUrl,
         username: username,
         password: password,
+        deviceId: deviceId,
       );
       final userName = _jellyfinSelectedUser?.name ?? username;
       final primaryImageTag = _jellyfinSelectedUser?.primaryImageTag;
@@ -119,12 +122,14 @@ class _AuthScreenState extends State<AuthScreen> {
   }) async {
     String serverId = result.serverId ?? baseUrl.hashCode.abs().toString();
     String serverName = result.serverName ?? 'Jellyfin';
+    final storage = await StorageService.getInstance();
+    final deviceId = await storage.getOrCreateDeviceId();
     try {
       final dio = Dio(
         BaseOptions(
           baseUrl: baseUrl,
           headers: {
-            'Authorization': 'MediaBrowser Client="Finzy", Device="Finzy", DeviceId="finzy-jellyfin", Version="1.0.0", Token="${result.accessToken}"',
+            'Authorization': JellyfinAuthService.authHeaderWithToken(result.accessToken, deviceId: deviceId),
           },
         ),
       );
@@ -146,7 +151,6 @@ class _AuthScreenState extends State<AuthScreen> {
       primaryImageTag: primaryImageTag,
     );
 
-    final storage = await StorageService.getInstance();
     final registry = ServerRegistry(storage);
     final servers = await registry.getServers();
     final existing = servers.toList();
@@ -172,6 +176,7 @@ class _AuthScreenState extends State<AuthScreen> {
       librariesProvider: context.read<LibrariesProvider>(),
       syncService: context.read<OfflineWatchSyncService>(),
       clientIdentifier: storage.getClientIdentifier(),
+      deviceId: deviceId,
     );
 
     if (!mounted) return;
@@ -238,7 +243,9 @@ class _AuthScreenState extends State<AuthScreen> {
       _jellyfinSelectedUser = user;
     });
     try {
-      final state = await JellyfinAuthService.quickConnectInitiate(baseUrl);
+      final storage = await StorageService.getInstance();
+      final deviceId = await storage.getOrCreateDeviceId();
+      final state = await JellyfinAuthService.quickConnectInitiate(baseUrl, deviceId: deviceId);
       if (!mounted) return;
       setState(() {
         _quickConnectCode = state.code;
@@ -266,7 +273,9 @@ class _AuthScreenState extends State<AuthScreen> {
         if (!mounted) return;
         if (state.authenticated) {
           _quickConnectPollTimer?.cancel();
-          final result = await JellyfinAuthService.authenticateWithQuickConnect(baseUrl, secret);
+          final storage = await StorageService.getInstance();
+          final deviceId = await storage.getOrCreateDeviceId();
+          final result = await JellyfinAuthService.authenticateWithQuickConnect(baseUrl, secret, deviceId: deviceId);
           if (!mounted) return;
           final userName = _jellyfinSelectedUser?.name ?? result.userId;
           final primaryImageTag = _jellyfinSelectedUser?.primaryImageTag;

@@ -100,13 +100,14 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
     String? primaryImageTag,
   }) async {
     String serverName = result.serverName ?? 'Jellyfin';
+    final storage = await StorageService.getInstance();
+    final deviceId = await storage.getOrCreateDeviceId();
     try {
       final dio = Dio(
         BaseOptions(
           baseUrl: _baseUrl,
           headers: {
-            'Authorization':
-                'MediaBrowser Client="Finzy", Device="Finzy", DeviceId="finzy-jellyfin", Version="1.0.0", Token="${result.accessToken}"',
+            'Authorization': JellyfinAuthService.authHeaderWithToken(result.accessToken, deviceId: deviceId),
           },
         ),
       );
@@ -126,7 +127,6 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
       primaryImageTag: primaryImageTag,
     );
 
-    final storage = await StorageService.getInstance();
     final registry = ServerRegistry(storage);
     final added = await registry.addOrUpdateJellyfinUserAndSetCurrent(storedUser);
     if (!added || !mounted) return;
@@ -139,6 +139,7 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
       librariesProvider: context.read<LibrariesProvider>(),
       syncService: context.read<OfflineWatchSyncService>(),
       clientIdentifier: storage.getClientIdentifier(),
+      deviceId: deviceId,
     );
     if (!connResult.hasConnections || !mounted) return;
 

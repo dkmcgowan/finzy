@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/shader_preset.dart';
+import '../../../theme/mono_tokens.dart';
 import '../../../mpv/mpv.dart';
 import '../../../providers/shader_provider.dart';
 import '../../../services/settings_service.dart';
@@ -45,12 +46,12 @@ class _SettingsMenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final valueWidget = Text(
       valueText,
-      style: TextStyle(color: isHighlighted ? Colors.amber : Colors.white70, fontSize: 14),
+      style: TextStyle(color: isHighlighted ? kBrandAccent : Colors.white70, fontSize: 14),
       overflow: allowValueOverflow ? TextOverflow.ellipsis : null,
     );
 
     return FocusableListTile(
-      leading: AppIcon(icon, fill: 1, color: isHighlighted ? Colors.amber : Colors.white70),
+      leading: AppIcon(icon, fill: 1, color: isHighlighted ? kBrandAccent : Colors.white70),
       title: Text(title, style: const TextStyle(color: Colors.white)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -286,9 +287,9 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
         // HDR Toggle (iOS, macOS, and Windows)
         if (Platform.isIOS || Platform.isMacOS || Platform.isWindows)
           ListTile(
-            leading: AppIcon(Symbols.hdr_strong_rounded, fill: 1, color: _enableHDR ? Colors.amber : Colors.white70),
+            leading: AppIcon(Symbols.hdr_strong_rounded, fill: 1, color: _enableHDR ? kBrandAccent : Colors.white70),
             title: Text(t.videoSettings.hdr, style: const TextStyle(color: Colors.white)),
-            trailing: Switch(value: _enableHDR, onChanged: (_) => _toggleHDR(), activeThumbColor: Colors.amber),
+            trailing: Switch(value: _enableHDR, onChanged: (_) => _toggleHDR(), activeThumbColor: kBrandAccent),
             onTap: _toggleHDR,
           ),
 
@@ -297,13 +298,13 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
           leading: AppIcon(
             Symbols.skip_next_rounded,
             fill: 1,
-            color: _autoPlayNextEpisode ? Colors.amber : Colors.white70,
+            color: _autoPlayNextEpisode ? kBrandAccent : Colors.white70,
           ),
           title: Text(t.videoControls.autoPlayNext, style: const TextStyle(color: Colors.white)),
           trailing: Switch(
             value: _autoPlayNextEpisode,
             onChanged: (_) => _toggleAutoPlayNextEpisode(),
-            activeThumbColor: Colors.amber,
+            activeThumbColor: kBrandAccent,
           ),
           onTap: _toggleAutoPlayNextEpisode,
         ),
@@ -345,7 +346,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             leading: AppIcon(
               Symbols.blur_on,
               fill: 1,
-              color: widget.isAmbientLightingEnabled ? Colors.amber : Colors.white70,
+              color: widget.isAmbientLightingEnabled ? kBrandAccent : Colors.white70,
             ),
             title: Text(t.videoControls.ambientLighting, style: const TextStyle(color: Colors.white)),
             trailing: Switch(
@@ -354,7 +355,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
                 widget.onToggleAmbientLighting?.call();
                 OverlaySheetController.of(context).close();
               },
-              activeThumbColor: Colors.amber,
+              activeThumbColor: kBrandAccent,
             ),
             onTap: () {
               widget.onToggleAmbientLighting?.call();
@@ -367,13 +368,13 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
           leading: AppIcon(
             Symbols.analytics_rounded,
             fill: 1,
-            color: _showPerformanceOverlay ? Colors.amber : Colors.white70,
+            color: _showPerformanceOverlay ? kBrandAccent : Colors.white70,
           ),
           title: Text(t.videoSettings.performanceOverlay, style: const TextStyle(color: Colors.white)),
           trailing: Switch(
             value: _showPerformanceOverlay,
             onChanged: (_) => _togglePerformanceOverlay(),
-            activeThumbColor: Colors.amber,
+            activeThumbColor: kBrandAccent,
           ),
           onTap: _togglePerformanceOverlay,
         ),
@@ -570,11 +571,11 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             final isSelected = preset.id == currentPreset.id;
 
             return FocusableListTile(
-              title: Text(preset.name, style: TextStyle(color: isSelected ? Colors.amber : Colors.white)),
+              title: Text(preset.name, style: TextStyle(color: isSelected ? kBrandAccent : Colors.white)),
               subtitle: _getShaderSubtitle(preset) != null
                   ? Text(_getShaderSubtitle(preset)!, style: const TextStyle(color: Colors.white54, fontSize: 12))
                   : null,
-              trailing: isSelected ? const AppIcon(Symbols.check_rounded, fill: 1, color: Colors.amber) : null,
+              trailing: isSelected ? const AppIcon(Symbols.check_rounded, fill: 1, color: kBrandAccent) : null,
               onTap: () async {
                 await widget.shaderService!.applyPreset(preset);
                 await shaderProvider.setPreset(preset);
@@ -618,8 +619,8 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
       title: _getTitle(),
       icon: _getIcon(),
       iconColor: () {
-        if (isIconActive) return Colors.amber;
-        if (_currentView == _SettingsView.shader && isShaderActive) return Colors.amber;
+        if (isIconActive) return kBrandAccent;
+        if (_currentView == _SettingsView.shader && isShaderActive) return kBrandAccent;
         return Colors.white;
       }(),
       onBack: _currentView != _SettingsView.menu ? _navigateBack : null,

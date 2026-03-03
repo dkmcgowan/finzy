@@ -356,11 +356,8 @@ class TranslationsSettingsEn {
 	/// en: 'Settings'
 	String get title => 'Settings';
 
-	/// en: 'Support Development'
-	String get supportDevelopment => 'Support Development';
-
-	/// en: 'If you enjoy the app and would like to support ongoing development, you can leave a tip below. Totally optional — the app will remain free.'
-	String get supportDevelopmentDescription => 'If you enjoy the app and would like to support ongoing development, you can leave a tip below. Totally optional — the app will remain free.';
+	/// en: 'Optional — app stays free'
+	String get supportOptionalCaption => 'Optional — app stays free';
 
 	/// en: 'Buy me a coffee'
 	String get supportTierCoffee => 'Buy me a coffee';
@@ -2947,8 +2944,7 @@ extension on Translations {
 			'update.latestVersion' => 'You are on the latest version',
 			'update.checkFailed' => 'Failed to check for updates',
 			'settings.title' => 'Settings',
-			'settings.supportDevelopment' => 'Support Development',
-			'settings.supportDevelopmentDescription' => 'If you enjoy the app and would like to support ongoing development, you can leave a tip below. Totally optional — the app will remain free.',
+			'settings.supportOptionalCaption' => 'Optional — app stays free',
 			'settings.supportTierCoffee' => 'Buy me a coffee',
 			'settings.supportTierLunch' => 'Buy me lunch',
 			'settings.supportTierSupport' => 'Support development',
@@ -3384,9 +3380,9 @@ extension on Translations {
 			'libraries.tabs.suggestions' => 'Suggestions',
 			'libraries.tabs.browse' => 'Browse',
 			'libraries.tabs.genres' => 'Genres',
+			'libraries.tabs.favorites' => 'Favorites',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.tabs.favorites' => 'Favorites',
 			'libraries.tabs.collections' => 'Collections',
 			'libraries.tabs.playlists' => 'Playlists',
 			'libraries.groupings.all' => 'All',

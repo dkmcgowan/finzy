@@ -74,16 +74,27 @@ class JellyfinClient {
 
   /// Fetch and cache the current user's policy permissions.
   /// Call once after login / server connection.
+  /// Fetch and cache the current user's policy permissions.
+  /// Call once after login / server connection.
+  /// Throws on 401 so the caller can treat it as a failed connection.
   Future<void> loadUserPolicy() async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>('/Users/${config.userId}');
-      final policy = response.data?['Policy'] as Map<String, dynamic>?;
-      if (policy != null) {
-        _isAdministrator = policy['IsAdministrator'] as bool? ?? false;
-        _canDeleteContent = policy['EnableContentDeletion'] as bool? ?? false;
-      }
-    } catch (e) {
-      appLogger.w('Failed to load user policy', error: e);
+    final response = await _dio.get<Map<String, dynamic>>('/Users/${config.userId}');
+
+    if (response.statusCode == 401) {
+      appLogger.w('loadUserPolicy: 401 Unauthorized — token rejected by server '
+          '(server=$serverName, deviceId=${config.deviceId})');
+      throw DioException(
+        requestOptions: response.requestOptions,
+        response: response,
+        type: DioExceptionType.badResponse,
+        message: 'Authentication failed (401)',
+      );
+    }
+
+    final policy = response.data?['Policy'] as Map<String, dynamic>?;
+    if (policy != null) {
+      _isAdministrator = policy['IsAdministrator'] as bool? ?? false;
+      _canDeleteContent = policy['EnableContentDeletion'] as bool? ?? false;
     }
   }
 

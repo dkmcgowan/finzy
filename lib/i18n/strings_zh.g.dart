@@ -202,8 +202,7 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => '设置';
-	@override String get supportDevelopment => '支持开发';
-	@override String get supportDevelopmentDescription => '如果你喜欢本应用并想支持持续开发，可以在下方打赏。完全自愿——应用将保持免费。';
+	@override String get supportOptionalCaption => '可选——应用保持免费';
 	@override String get supportTierCoffee => '请我喝杯咖啡';
 	@override String get supportTierLunch => '请我吃顿午餐';
 	@override String get supportTierSupport => '支持开发';
@@ -1348,8 +1347,7 @@ extension on TranslationsZh {
 			'update.latestVersion' => '已安装的版本是可用的最新版本',
 			'update.checkFailed' => '无法检查更新',
 			'settings.title' => '设置',
-			'settings.supportDevelopment' => '支持开发',
-			'settings.supportDevelopmentDescription' => '如果你喜欢本应用并想支持持续开发，可以在下方打赏。完全自愿——应用将保持免费。',
+			'settings.supportOptionalCaption' => '可选——应用保持免费',
 			'settings.supportTierCoffee' => '请我喝杯咖啡',
 			'settings.supportTierLunch' => '请我吃顿午餐',
 			'settings.supportTierSupport' => '支持开发',
@@ -1785,9 +1783,9 @@ extension on TranslationsZh {
 			'libraries.tabs.suggestions' => '推荐',
 			'libraries.tabs.browse' => '浏览',
 			'libraries.tabs.genres' => '类型',
+			'libraries.tabs.favorites' => '收藏',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.tabs.favorites' => '收藏',
 			'libraries.tabs.collections' => '合集',
 			'libraries.tabs.playlists' => '播放列表',
 			'libraries.groupings.all' => '全部',

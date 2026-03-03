@@ -202,8 +202,7 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Configuración';
-	@override String get supportDevelopment => 'Apoyar el desarrollo';
-	@override String get supportDevelopmentDescription => 'Si disfrutas la app y quieres apoyar su desarrollo, puedes dejar una propina abajo. Totalmente opcional — la app seguirá siendo gratuita.';
+	@override String get supportOptionalCaption => 'Opcional — la app sigue siendo gratis';
 	@override String get supportTierCoffee => 'Invítame un café';
 	@override String get supportTierLunch => 'Invítame a comer';
 	@override String get supportTierSupport => 'Apoyar el desarrollo';
@@ -1348,8 +1347,7 @@ extension on TranslationsEs {
 			'update.latestVersion' => 'Ya estás en la última versión',
 			'update.checkFailed' => 'Error al buscar actualizaciones',
 			'settings.title' => 'Configuración',
-			'settings.supportDevelopment' => 'Apoyar el desarrollo',
-			'settings.supportDevelopmentDescription' => 'Si disfrutas la app y quieres apoyar su desarrollo, puedes dejar una propina abajo. Totalmente opcional — la app seguirá siendo gratuita.',
+			'settings.supportOptionalCaption' => 'Opcional — la app sigue siendo gratis',
 			'settings.supportTierCoffee' => 'Invítame un café',
 			'settings.supportTierLunch' => 'Invítame a comer',
 			'settings.supportTierSupport' => 'Apoyar el desarrollo',
@@ -1785,9 +1783,9 @@ extension on TranslationsEs {
 			'libraries.tabs.suggestions' => 'Sugerencias',
 			'libraries.tabs.browse' => 'Explorar',
 			'libraries.tabs.genres' => 'Géneros',
+			'libraries.tabs.favorites' => 'Favoritos',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.tabs.favorites' => 'Favoritos',
 			'libraries.tabs.collections' => 'Colecciones',
 			'libraries.tabs.playlists' => 'Listas',
 			'libraries.groupings.all' => 'Todo',

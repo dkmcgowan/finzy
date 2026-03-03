@@ -85,8 +85,7 @@
   },
   "settings": {
     "title": "Settings",
-    "supportDevelopment": "Support Development",
-    "supportDevelopmentDescription": "If you enjoy the app and would like to support ongoing development, you can leave a tip below. Totally optional — the app will remain free.",
+    "supportOptionalCaption": "Optional — app stays free",
     "supportTierCoffee": "Buy me a coffee",
     "supportTierLunch": "Buy me lunch",
     "supportTierSupport": "Support development",
