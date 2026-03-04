@@ -51,6 +51,9 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
   /// Whether to enable sidebar navigation for first-column items.
   final bool enableSidebarNavigation;
 
+  /// Optional scroll controller for programmatic scrolling (e.g. focus restore).
+  final ScrollController? scrollController;
+
   const AdaptiveMediaGrid({
     super.key,
     required this.items,
@@ -61,6 +64,7 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
     this.firstItemFocusNode,
     this.onBack,
     this.enableSidebarNavigation = false,
+    this.scrollController,
   });
 
   @override
@@ -91,6 +95,7 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
     if (viewMode == ViewMode.list) {
       // In list view, all items are in a single column (first column)
       return ListView.builder(
+        controller: scrollController,
         padding: effectivePadding,
         // ignore: deprecated_member_use
         cacheExtent: cacheExtent,
@@ -118,6 +123,7 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
           final columnCount = GridSizeCalculator.getColumnCount(availableWidth, maxCrossAxisExtent);
 
           return GridView.builder(
+            controller: scrollController,
             padding: effectivePadding,
             // ignore: deprecated_member_use
             cacheExtent: cacheExtent,

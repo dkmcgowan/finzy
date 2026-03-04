@@ -61,6 +61,10 @@ class FocusBuilders {
   /// - [onTap]: Callback for tap/click events
   /// - [onLongPress]: Callback for long press events
   /// - [borderRadius]: Border radius for the focus decoration
+  /// - [scaleOnFocus]: When true (default), scales up when focused. Set false for lists to avoid text shifting.
+  /// - [useListTileStyle]: When true, uses ListTile-style focus (subtle background) instead of border.
+  /// - [alwaysShowFocus]: When true, show focus decoration whenever [isFocused] is true, regardless of
+  ///   input mode. Use for modal overlays (e.g. sort/filter dialogs) so focus is visible when opened via pointer.
   /// - [child]: The content to display inside the card
   static Widget buildFocusableCard({
     required BuildContext context,
@@ -70,20 +74,27 @@ class FocusBuilders {
     VoidCallback? onTap,
     VoidCallback? onLongPress,
     double borderRadius = FocusTheme.defaultBorderRadius,
+    bool scaleOnFocus = true,
+    bool useListTileStyle = false,
+    bool alwaysShowFocus = false,
     required Widget child,
   }) {
     final duration = FocusTheme.getAnimationDuration(context);
-    // Only show focus effects during keyboard/d-pad navigation
-    final showFocus = isFocused && InputModeTracker.isKeyboardMode(context);
+    final showFocus = alwaysShowFocus ? isFocused : (isFocused && InputModeTracker.isKeyboardMode(context));
+    final scale = (scaleOnFocus && showFocus) ? FocusTheme.focusScale : 1.0;
+
+    final decoration = useListTileStyle
+        ? FocusTheme.focusListTileDecoration(context, isFocused: showFocus, borderRadius: borderRadius)
+        : FocusTheme.focusDecoration(context, isFocused: showFocus, borderRadius: borderRadius);
 
     final focusedWidget = AnimatedScale(
-      scale: showFocus ? FocusTheme.focusScale : 1.0,
+      scale: scale,
       duration: duration,
       curve: Curves.easeOutCubic,
       child: AnimatedContainer(
         duration: duration,
         curve: Curves.easeOutCubic,
-        decoration: FocusTheme.focusDecoration(context, isFocused: showFocus, borderRadius: borderRadius),
+        decoration: decoration,
         child: child,
       ),
     );
@@ -111,6 +122,10 @@ class FocusBuilders {
   /// - [onTap]: Callback for tap/click events
   /// - [onLongPress]: Callback for long press events
   /// - [borderRadius]: Border radius for the focus decoration
+  /// - [scaleOnFocus]: When true (default), scales up when focused. Set false for lists to avoid text shifting.
+  /// - [useListTileStyle]: When true, uses ListTile-style focus (subtle background) to match main filter dialog.
+  /// - [circular]: When true, uses a circular focus shape (for icon buttons). Matches main dialog close button.
+  /// - [alwaysShowFocus]: When true, show focus decoration whenever focused, regardless of input mode.
   /// - [child]: The content to display inside the wrapper
   static Widget buildLockedFocusWrapper({
     required BuildContext context,
@@ -118,8 +133,13 @@ class FocusBuilders {
     VoidCallback? onTap,
     VoidCallback? onLongPress,
     double borderRadius = FocusTheme.defaultBorderRadius,
+    bool scaleOnFocus = true,
+    bool useListTileStyle = false,
+    bool circular = false,
+    bool alwaysShowFocus = false,
     required Widget child,
   }) {
+    final effectiveRadius = circular ? 999.0 : borderRadius;
     return buildFocusableCard(
       context: context,
       focusNode: null,
@@ -127,7 +147,10 @@ class FocusBuilders {
       onKeyEvent: null,
       onTap: onTap,
       onLongPress: onLongPress,
-      borderRadius: borderRadius,
+      borderRadius: effectiveRadius,
+      scaleOnFocus: scaleOnFocus,
+      useListTileStyle: useListTileStyle,
+      alwaysShowFocus: alwaysShowFocus,
       child: child,
     );
   }

@@ -120,13 +120,16 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
     final key = event.logicalKey;
     final maxButton = appBarButtonCount - 1;
 
-    // Left from leftmost button (or Back) = pop; Left from other buttons = move to previous
-    if (key.isLeftKey && appBarFocusedButton > 0) {
-      if (event is KeyDownEvent) {
-        setState(() => appBarFocusedButton--);
-        _focusAppBarButton(appBarFocusedButton);
+    // Left from other buttons = move to previous; Left from leftmost = no-op (Back key only for back)
+    if (key.isLeftKey) {
+      if (appBarFocusedButton > 0) {
+        if (event is KeyDownEvent) {
+          setState(() => appBarFocusedButton--);
+          _focusAppBarButton(appBarFocusedButton);
+        }
+        return KeyEventResult.handled;
       }
-      return KeyEventResult.handled;
+      return KeyEventResult.handled; // Consume Left on leftmost button, don't pop
     }
     final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
     if (backResult != KeyEventResult.ignored) {
@@ -255,7 +258,6 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                     collectionId: collectionId,
                     onListRefresh: onListRefresh,
                     onNavigateUp: inFirstRow ? navigateToAppBar : null,
-                    onNavigateLeft: inFirstColumn ? handleBackFromContent : null,
                     onBack: handleBackFromContent,
                     onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
                   );

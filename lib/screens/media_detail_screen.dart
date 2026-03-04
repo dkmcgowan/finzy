@@ -38,6 +38,7 @@ import '../utils/snackbar_helper.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/video_player_navigation.dart';
+import 'trailer_player_overlay.dart';
 import '../widgets/app_bar_back_button.dart';
 import 'person_detail_screen.dart';
 import '../widgets/horizontal_scroll_with_arrows.dart';
@@ -416,12 +417,45 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
             IconButton.filledTonal(
               onPressed: () async {
                 final key = primaryTrailer.itemId;
+                appLogger.d('Trailer pressed: itemId="$key" (length=${key.length})');
                 if (key.startsWith('http://') || key.startsWith('https://')) {
-                  final uri = Uri.parse(key);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  final isYouTube = isYouTubeUrl(key);
+                  appLogger.d('Trailer URL detected as YouTube: $isYouTube');
+                  // YouTube: play in-app overlay when supported; else external browser
+                  if (isYouTube) {
+                    final shown = await showTrailerOverlayIfYouTube(
+                      context,
+                      url: key,
+                      title: primaryTrailer.title,
+                    );
+                    appLogger.d('Trailer overlay shown: $shown');
+                    if (!shown) {
+                      final uri = Uri.parse(key);
+                      if (await canLaunchUrl(uri)) {
+                        // On Windows/Linux, try in-app WebView first so user stays in app
+                        if (Platform.isWindows || Platform.isLinux) {
+                          try {
+                            appLogger.d('Trailer fallback: trying in-app WebView');
+                            await launchUrl(uri, mode: LaunchMode.inAppWebView);
+                          } catch (e) {
+                            appLogger.d('Trailer fallback: in-app WebView failed, using external browser', error: e);
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          }
+                        } else {
+                          appLogger.d('Trailer fallback: opening in external browser');
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
+                      }
+                    }
+                  } else {
+                    appLogger.d('Trailer: non-YouTube URL, opening in external browser');
+                    final uri = Uri.parse(key);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
                   }
                 } else {
+                  appLogger.d('Trailer: local item, navigating to video player');
                   await navigateToVideoPlayer(context, metadata: primaryTrailer);
                 }
               },

@@ -141,7 +141,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       }
     }
 
-    if (!event.logicalKey.isBackKey && !event.logicalKey.isLeftKey) return KeyEventResult.ignored;
+    if (!event.logicalKey.isBackKey) return KeyEventResult.ignored;
 
     final route = ModalRoute.of(context);
     if (route != null && !route.isCurrent) return KeyEventResult.ignored;

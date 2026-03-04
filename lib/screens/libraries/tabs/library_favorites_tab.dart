@@ -55,6 +55,7 @@ class _LibraryFavoritesTabState extends LibraryGridTabState<MediaMetadata, Libra
       onBack: widget.onBack,
       onNavigateUp: gridContext?.isFirstRow == true ? widget.onBack : null,
       onNavigateLeft: gridContext?.isFirstColumn == true ? gridContext?.navigateToSidebar : null,
+      scrollTopOffset: gridContext?.isFirstRow == true ? 8 : null,
     );
   }
 }

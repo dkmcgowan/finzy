@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import '../models/media_metadata.dart';
 import '../widgets/desktop_app_bar.dart';
 import '../i18n/strings.g.dart';
-import '../utils/dialogs.dart';
 import '../utils/app_logger.dart';
 import '../utils/snackbar_helper.dart';
 import 'base_media_list_detail_screen.dart';
@@ -38,7 +36,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
   bool get hasItems => items.isNotEmpty;
 
   @override
-  int get appBarButtonCount => items.isNotEmpty ? 3 : 1; // play, shuffle, delete (or just delete if empty)
+  int get appBarButtonCount => 0; // Simple layout: back + title + grid (matches former inline view)
 
   @override
   void dispose() {
@@ -68,53 +66,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
   }
 
   @override
-  List<AppBarButtonConfig> getAppBarButtons() {
-    final buttons = <AppBarButtonConfig>[];
-    if (items.isNotEmpty) {
-      buttons.add(AppBarButtonConfig(icon: Symbols.play_arrow_rounded, tooltip: t.common.play, onPressed: playItems));
-      buttons.add(
-        AppBarButtonConfig(icon: Symbols.shuffle_rounded, tooltip: t.common.shuffle, onPressed: shufflePlayItems),
-      );
-    }
-    buttons.add(
-      AppBarButtonConfig(
-        icon: Symbols.delete_rounded,
-        tooltip: t.common.delete,
-        onPressed: _deleteCollection,
-        color: Colors.red,
-      ),
-    );
-    return buttons;
-  }
-
-  Future<void> _deleteCollection() async {
-    final confirmed = await showDeleteConfirmation(
-      context,
-      title: t.collections.deleteCollection,
-      message: t.collections.deleteConfirm(title: widget.collection.title),
-    );
-
-    if (!confirmed) return;
-    if (!mounted) return;
-
-    try {
-      final success = await client.deleteCollection(widget.collection.itemId);
-
-      if (!mounted) return;
-
-      if (success) {
-        showSuccessSnackBar(context, t.collections.deleted);
-        Navigator.pop(context, true);
-      } else {
-        showErrorSnackBar(context, t.collections.deleteFailed);
-      }
-    } catch (e) {
-      appLogger.e('Failed to delete collection', error: e);
-      if (mounted) {
-        showErrorSnackBar(context, t.collections.deleteFailedWithError(error: e.toString()));
-      }
-    }
-  }
+  List<AppBarButtonConfig> getAppBarButtons() => [];
 
   @override
   Widget build(BuildContext context) {

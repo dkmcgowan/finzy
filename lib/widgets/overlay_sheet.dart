@@ -378,6 +378,19 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     );
   }
 
+  /// Build a consistent theme for overlay content so sort/filter dialogs look
+  /// identical whether opened from library or hub (different host = different
+  /// inherited theme otherwise).
+  ThemeData _buildOverlayTheme(BuildContext context) {
+    final base = Theme.of(context);
+    return base.copyWith(
+      colorScheme: base.colorScheme.copyWith(
+        surface: _backgroundColor,
+        onSurface: Colors.white.withValues(alpha: 0.9),
+      ),
+    );
+  }
+
   Widget _buildSheet(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 600;
@@ -406,11 +419,14 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
                 color: _backgroundColor,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 clipBehavior: Clip.antiAlias,
-                child: SafeArea(
-                  top: false,
-                  child: ConstrainedBox(
-                    constraints: effectiveConstraints,
-                    child: _pageStack.isNotEmpty ? _pageStack.last.builder(context) : const SizedBox.shrink(),
+                child: Theme(
+                  data: _buildOverlayTheme(context),
+                  child: SafeArea(
+                    top: false,
+                    child: ConstrainedBox(
+                      constraints: effectiveConstraints,
+                      child: _pageStack.isNotEmpty ? _pageStack.last.builder(context) : const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),

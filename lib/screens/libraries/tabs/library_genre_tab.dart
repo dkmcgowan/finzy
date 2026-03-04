@@ -9,10 +9,8 @@ import 'base_library_tab.dart';
 
 /// Genre tab for library screen.
 /// Shows library content grouped by genre — one section per genre with items.
+/// View All / header tap pushes HubDetailScreen (full-screen, like home hub).
 class LibraryGenreTab extends BaseLibraryTab<Hub> {
-  /// When set, tapping a genre header shows that genre's grid inline (Browse style) instead of pushing a route.
-  final void Function(Hub hub)? onGenreHeaderTap;
-
   const LibraryGenreTab({
     super.key,
     required super.library,
@@ -20,7 +18,6 @@ class LibraryGenreTab extends BaseLibraryTab<Hub> {
     super.isActive,
     super.suppressAutoFocus,
     super.onBack,
-    this.onGenreHeaderTap,
   });
 
   @override
@@ -29,6 +26,10 @@ class LibraryGenreTab extends BaseLibraryTab<Hub> {
 
 class _LibraryGenreTabState extends BaseLibraryTabState<Hub, LibraryGenreTab> {
   final List<GlobalKey<HubSectionState>> _hubKeys = [];
+
+  /// Last hub index that had focus when user navigated to tab bar (BACK from content).
+  /// Used to restore focus when pressing DOWN from tab bar.
+  int? _lastFocusedHubIndex;
 
   static const int _itemsPerGenre = 20;
 
@@ -104,9 +105,13 @@ class _LibraryGenreTabState extends BaseLibraryTabState<Hub, LibraryGenreTab> {
 
   @override
   void focusFirstItem() {
-    if (_hubKeys.isNotEmpty && items.isNotEmpty) {
-      _hubKeys.first.currentState?.requestFocusAt(0);
-    }
+    if (_hubKeys.isEmpty || items.isEmpty) return;
+
+    // Restore to last focused hub if known, otherwise first hub
+    final index = _lastFocusedHubIndex != null && _lastFocusedHubIndex! < _hubKeys.length
+        ? _lastFocusedHubIndex!
+        : 0;
+    _hubKeys[index].currentState?.requestFocusFromMemory();
   }
 
   static const double _focusDecorationPadding = 8.0;
@@ -127,10 +132,13 @@ class _LibraryGenreTabState extends BaseLibraryTabState<Hub, LibraryGenreTab> {
           icon: Symbols.category_rounded,
           onRefresh: null,
           onVerticalNavigation: (isUp) => _handleVerticalNavigation(index, isUp),
-          onBack: widget.onBack,
-          onNavigateUp: index == 0 ? widget.onBack : null,
+          onBack: () {
+            _lastFocusedHubIndex = index;
+            widget.onBack?.call();
+          },
+          onNavigateUp: index == 0 ? () { _lastFocusedHubIndex = 0; widget.onBack?.call(); } : null,
           onNavigateToSidebar: _navigateToSidebar,
-          onHeaderTap: widget.onGenreHeaderTap != null ? () => widget.onGenreHeaderTap!(hub) : null,
+          // No onHeaderTap: uses default HubSection behavior → push HubDetailScreen (full-screen, like home)
         );
       },
     );

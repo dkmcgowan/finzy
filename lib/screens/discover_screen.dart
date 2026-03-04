@@ -505,11 +505,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   @override
-  void onTabShown() {
+  void onTabShown({bool scrollToTop = true}) {
     if (!_isAutoScrollPaused) {
       _startAutoScroll();
     }
-    _focusTopBoundary();
+    if (scrollToTop) {
+      _focusTopBoundary();
+    }
     // If Use Home Layout was changed while on another tab, force refresh so user sees the right hubs
     if (_settingsProviderForHubs != null &&
         _lastUseGlobalHubs != null &&

@@ -42,6 +42,10 @@ class FocusableMediaCard extends StatefulWidget {
   /// Used to navigate from the last column to the alpha jump bar.
   final VoidCallback? onNavigateRight;
 
+  /// Called when the user presses DOWN and there's no focusable item below.
+  /// Used to navigate from the last row to the next section.
+  final VoidCallback? onNavigateDown;
+
   /// Called when the user presses BACK.
   /// Used to navigate from tab content to tab bar.
   final VoidCallback? onBack;
@@ -52,6 +56,13 @@ class FocusableMediaCard extends StatefulWidget {
 
   /// When set, tap/select uses this instead of opening detail (e.g. show inline in library).
   final VoidCallback? onTapOverride;
+
+  /// When set, scroll-into-view keeps the item below this Y offset (e.g. chips bar height).
+  final double? scrollTopOffset;
+
+  /// Whether to scroll the item into view when focused. Defaults to true.
+  /// Set to false for grid items where scroll-on-focus causes jank (e.g. when navigating between rows).
+  final bool autoScroll;
 
   const FocusableMediaCard({
     super.key,
@@ -69,9 +80,12 @@ class FocusableMediaCard extends StatefulWidget {
     this.onNavigateUp,
     this.onNavigateLeft,
     this.onNavigateRight,
+    this.onNavigateDown,
     this.onBack,
     this.onFocusChange,
     this.onTapOverride,
+    this.scrollTopOffset,
+    this.autoScroll = true,
   });
 
   @override
@@ -97,11 +111,14 @@ class _FocusableMediaCardState extends State<FocusableMediaCard> {
       onNavigateUp: widget.onNavigateUp,
       onNavigateLeft: widget.onNavigateLeft,
       onNavigateRight: widget.onNavigateRight,
+      onNavigateDown: widget.onNavigateDown,
       onBack: widget.onBack,
       onFocusChange: widget.onFocusChange,
       enableLongPress: true,
       useComfortableZone: !PlatformDetector.isTV(), // Always center on TV
       scrollAlignment: 0.5,
+      scrollTopOffset: widget.scrollTopOffset,
+      autoScroll: widget.autoScroll,
       child: MediaCard(
         key: _mediaCardKey,
         item: widget.item,

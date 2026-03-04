@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../adaptive_media_grid.dart';
 import '../../../mixins/grid_focus_node_mixin.dart';
 import '../../../mixins/library_tab_focus_mixin.dart';
+import '../../../providers/settings_provider.dart';
+import '../../../utils/grid_size_calculator.dart';
+import '../../../utils/layout_constants.dart';
 import 'base_library_tab.dart';
 
 /// Shared state implementation for simple grid-based library tabs.
@@ -19,10 +23,27 @@ abstract class LibraryGridTabState<T, W extends BaseLibraryTab<T>> extends BaseL
   @override
   int get itemCount => items.length;
 
+  late final ScrollController _gridScrollController = ScrollController();
+
   @override
   void dispose() {
+    _gridScrollController.dispose();
     disposeGridFocusNodes();
     super.dispose();
+  }
+
+  /// Estimate scroll offset to bring item at [index] into view (for off-screen items).
+  double _estimateScrollOffsetForIndex(int index) {
+    if (!mounted) return 0;
+    final density = context.read<SettingsProvider>().libraryDensity;
+    final maxExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, density);
+    final availableWidth = MediaQuery.of(context).size.width - 16;
+    final columnCount = GridSizeCalculator.getColumnCount(availableWidth, maxExtent);
+    final cellWidth = availableWidth / columnCount;
+    final cellHeight = cellWidth / GridLayoutConstants.posterAspectRatio;
+    final rowHeight = cellHeight + GridLayoutConstants.mainAxisSpacing;
+    final row = index ~/ columnCount;
+    return (row * rowHeight).clamp(0.0, double.infinity);
   }
 
   /// Focus the grid item at [index] (for restoring focus after closing inline view).
@@ -31,15 +52,30 @@ abstract class LibraryGridTabState<T, W extends BaseLibraryTab<T>> extends BaseL
       focusFirstItem();
       return;
     }
-    void request() {
+    void request({int retryCount = 0}) {
       if (!mounted) return;
       final node = index == 0 ? firstItemFocusNode : getGridItemFocusNode(index, prefix: focusNodeDebugLabel.replaceAll('_first_item', '_grid_item'));
-      if (!node.hasFocus) node.requestFocus();
       final ctx = node.context;
-      if (ctx != null) Scrollable.ensureVisible(ctx, alignment: 0.5);
+      if (ctx == null && retryCount < 3 && _gridScrollController.hasClients) {
+        // Item not built yet (off-screen); scroll to bring it into view, then retry
+        final targetOffset = _estimateScrollOffsetForIndex(index);
+        final maxExtent = _gridScrollController.position.maxScrollExtent;
+        final clamped = targetOffset.clamp(0.0, maxExtent);
+        _gridScrollController.jumpTo(clamped);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) request(retryCount: retryCount + 1);
+        });
+        return;
+      }
+      if (!node.hasFocus) node.requestFocus();
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx, alignment: 0.5);
+      } else {
+        focusFirstItem();
+      }
     }
     request();
-    WidgetsBinding.instance.addPostFrameCallback((_) => request());
+    WidgetsBinding.instance.addPostFrameCallback((_) => request(retryCount: 1));
   }
 
   @override
@@ -52,6 +88,7 @@ abstract class LibraryGridTabState<T, W extends BaseLibraryTab<T>> extends BaseL
       firstItemFocusNode: firstItemFocusNode,
       onBack: widget.onBack,
       enableSidebarNavigation: true,
+      scrollController: _gridScrollController,
     );
   }
 }

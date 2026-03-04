@@ -673,6 +673,17 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     _alphaJumpBarFocusNode.requestFocus();
   }
 
+  /// Focus the grid item at [index]. Used for explicit left/right navigation
+  /// when default traversal would go to chips bar instead of adjacent item.
+  void _focusGridItem(int index) {
+    if (index < 0 || index >= items.length) return;
+    if (index == 0) {
+      firstItemFocusNode.requestFocus();
+    } else {
+      getGridItemFocusNode(index, prefix: 'browse_grid_item').requestFocus();
+    }
+  }
+
   /// Whether the device is a phone (not tablet/desktop/TV).
   bool _isPhone(BuildContext context) => PlatformDetector.isPhone(context);
 
@@ -1146,9 +1157,9 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
 
   // Top padding for grid content = chips bar height + extra space for focus decoration.
   // Chips bar is ~48px, focus ring extends ~8px beyond item bounds, scale adds ~2%.
-  // Use generous clearance on TV/desktop so the top row is never covered by the chips bar.
+  // Use generous clearance on TV/desktop so the top row is never covered when scrolling back up.
   // On phone there's no D-pad focus decoration so extra clearance is unnecessary.
-  static const double _gridTopPadding = _chipsBarHeight + 24.0;
+  static const double _gridTopPadding = _chipsBarHeight + 36.0;
   static const double _gridTopPaddingPhone = _chipsBarHeight;
 
   /// Width of the alpha jump bar widget (desktop/tablet/TV)
@@ -1245,11 +1256,12 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
       focusNode: focusNode,
       onRefresh: updateItem,
       onNavigateUp: isFirstRow ? _navigateToChips : null,
-      onNavigateLeft: isFirstColumn ? _navigateToSidebar : null,
+      onNavigateLeft: isFirstColumn ? _navigateToSidebar : () => _focusGridItem(index - 1),
       onNavigateRight: isLastColumn && _shouldShowAlphaJumpBar && !_isPhone(context) ? _navigateToAlphaJumpBar : null,
       onBack: widget.onBack,
       onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
       onListRefresh: _loadItems,
+      scrollTopOffset: isFirstRow ? _measuredChipsBarHeight : null,
     );
   }
 }

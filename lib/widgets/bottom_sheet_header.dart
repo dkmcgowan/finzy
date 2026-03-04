@@ -48,6 +48,9 @@ class BottomSheetHeader extends StatelessWidget {
   /// Optional focus node for the close button
   final FocusNode? closeFocusNode;
 
+  /// Optional key event handler for the close button (e.g. Down to focus content below)
+  final KeyEventResult Function(FocusNode, KeyEvent)? onCloseKeyEvent;
+
   const BottomSheetHeader({
     super.key,
     required this.title,
@@ -61,6 +64,7 @@ class BottomSheetHeader extends StatelessWidget {
     this.titleColor,
     this.showBorder = true,
     this.closeFocusNode,
+    this.onCloseKeyEvent,
   });
 
   @override
@@ -95,18 +99,34 @@ class BottomSheetHeader extends StatelessWidget {
           if (resolvedLeading != null) ...[resolvedLeading, const SizedBox(width: 8)],
           Expanded(child: Text(title, style: effectiveTitleStyle)),
           if (action != null) action!,
-          IconButton(
-            focusNode: closeFocusNode,
-            icon: AppIcon(Symbols.close_rounded, fill: 1, color: iconColor),
-            onPressed: onClose ?? () {
-              final sheetController = OverlaySheetController.maybeOf(context);
-              if (sheetController != null) {
-                sheetController.close();
-              } else {
-                Navigator.pop(context);
-              }
-            },
-          ),
+          onCloseKeyEvent != null
+              ? Focus(
+                  focusNode: closeFocusNode,
+                  onKeyEvent: onCloseKeyEvent!,
+                  child: IconButton(
+                    icon: AppIcon(Symbols.close_rounded, fill: 1, color: iconColor),
+                    onPressed: onClose ?? () {
+                      final sheetController = OverlaySheetController.maybeOf(context);
+                      if (sheetController != null) {
+                        sheetController.close();
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                )
+              : IconButton(
+                  focusNode: closeFocusNode,
+                  icon: AppIcon(Symbols.close_rounded, fill: 1, color: iconColor),
+                  onPressed: onClose ?? () {
+                    final sheetController = OverlaySheetController.maybeOf(context);
+                    if (sheetController != null) {
+                      sheetController.close();
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
         ],
       ),
     );

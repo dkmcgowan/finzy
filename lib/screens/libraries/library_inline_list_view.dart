@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/media_library.dart';
 import '../../models/media_metadata.dart';
 import '../../models/playlist.dart';
+import '../../mixins/grid_focus_node_mixin.dart';
 import '../../providers/settings_provider.dart';
 import '../../screens/main_screen.dart';
 import '../../services/api_cache.dart';
@@ -36,7 +37,8 @@ class LibraryInlineListView extends StatefulWidget {
   State<LibraryInlineListView> createState() => _LibraryInlineListViewState();
 }
 
-class _LibraryInlineListViewState extends State<LibraryInlineListView> {
+class _LibraryInlineListViewState extends State<LibraryInlineListView>
+    with GridFocusNodeMixin<LibraryInlineListView> {
   List<MediaMetadata> _items = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -64,9 +66,13 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
     _loadItems();
   }
 
+  FocusNode _focusNodeForIndex(int index) =>
+      index == 0 ? _firstItemFocusNode : getGridItemFocusNode(index, prefix: 'inline_list');
+
   @override
   void dispose() {
     _firstItemFocusNode.dispose();
+    disposeGridFocusNodes();
     super.dispose();
   }
 
@@ -198,13 +204,15 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Back + title row (same idea as "Browse" header)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Back + title row (same idea as "Browse" header)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
             children: [
               IconButton(
                 icon: const Icon(Symbols.arrow_back_rounded),
@@ -251,6 +259,7 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
                                 final availableWidth = constraints.maxWidth - 32; // horizontal padding
                                 final columnCount = GridSizeCalculator.getColumnCount(availableWidth, maxCrossAxisExtent);
                                 final displayItems = _displayItems;
+                                cleanupGridFocusNodes(displayItems.length);
                                 return GridView.builder(
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
@@ -264,14 +273,25 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
                                     final item = displayItems[index];
                                     final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
                                     final isFirstColumn = index % columnCount == 0;
+                                    final isLastColumn = index % columnCount == columnCount - 1;
+                                    final aboveIndex = index - columnCount;
+                                    final belowIndex = index + columnCount;
+                                    final isLastRow = belowIndex >= displayItems.length;
                                     return FocusableMediaCard(
                                       key: Key(item.itemId),
                                       item: item,
-                                      focusNode: index == 0 ? _firstItemFocusNode : null,
+                                      focusNode: _focusNodeForIndex(index),
                                       onListRefresh: _loadItems,
                                       onBack: widget.onBack,
-                                      onNavigateUp: isFirstRow ? widget.onNavigateUp : null,
-                                      onNavigateLeft: isFirstColumn ? () => MainScreenFocusScope.of(context)?.focusSidebar() : null,
+                                      onNavigateUp: isFirstRow
+                                          ? widget.onNavigateUp
+                                          : () => _focusNodeForIndex(aboveIndex).requestFocus(),
+                                      onNavigateDown: isLastRow ? null : () => _focusNodeForIndex(belowIndex).requestFocus(),
+                                      onNavigateLeft: isFirstColumn
+                                          ? () => MainScreenFocusScope.of(context)?.focusSidebar()
+                                          : () => _focusNodeForIndex(index - 1).requestFocus(),
+                                      onNavigateRight: isLastColumn ? null : () => _focusNodeForIndex(index + 1).requestFocus(),
+                                      scrollTopOffset: isFirstRow ? 8 : null,
                                     );
                                   },
                                 );
@@ -280,7 +300,9 @@ class _LibraryInlineListViewState extends State<LibraryInlineListView> {
                           },
                         ),
         ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

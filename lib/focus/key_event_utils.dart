@@ -83,14 +83,10 @@ KeyEventResult handleBackKeyNavigation<T>(BuildContext context, KeyEvent event, 
   return handleBackKeyAction(event, () => Navigator.pop(context, result));
 }
 
-/// Handle BACK or LEFT arrow key press by running [onBack] on key up.
-///
-/// Use on detail screens (movie/show/actor/season/collection/playlist) where Left
-/// at the edge should act like Back—a common TV remote convention.
-/// Same semantics as [handleBackKeyAction] but also treats Left arrow as back.
+/// Handle BACK key press by running [onBack] on key up.
+/// (Left-as-back was reverted: it broke navigation on controls like play/watched/favorites.)
 KeyEventResult handleBackOrLeftKeyAction(KeyEvent event, VoidCallback onBack) {
-  final isBackOrLeft = event.logicalKey.isBackKey || event.logicalKey.isLeftKey;
-  if (!isBackOrLeft) return KeyEventResult.ignored;
+  if (!event.logicalKey.isBackKey) return KeyEventResult.ignored;
 
   // Check if this BACK event should be suppressed (e.g., after modal closed)
   if (BackKeyUpSuppressor.consumeIfSuppressed(event)) {

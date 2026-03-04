@@ -46,4 +46,19 @@ class FocusTheme {
       color: isFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
     );
   }
+
+  /// Build focus decoration matching ListTile's native focus (subtle background).
+  /// Use for list items to match the main filter dialog's appearance.
+  static BoxDecoration focusListTileDecoration(
+    BuildContext context, {
+    required bool isFocused,
+    double borderRadius = defaultBorderRadius,
+  }) {
+    final theme = Theme.of(context);
+    final focusColor = theme.focusColor;
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(borderRadius),
+      color: isFocused ? focusColor : Colors.transparent,
+    );
+  }
 }

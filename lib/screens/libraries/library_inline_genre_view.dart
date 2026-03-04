@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
+import '../../focus/input_mode_tracker.dart';
 import '../../models/hub.dart';
 import '../../models/media_library.dart';
 import '../../models/media_metadata.dart';
+import '../../mixins/grid_focus_node_mixin.dart';
 import '../../providers/settings_provider.dart';
 import '../../screens/main_screen.dart';
 import '../../utils/grid_size_calculator.dart';
@@ -34,7 +36,8 @@ class LibraryInlineGenreView extends StatefulWidget {
   State<LibraryInlineGenreView> createState() => _LibraryInlineGenreViewState();
 }
 
-class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
+class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView>
+    with GridFocusNodeMixin<LibraryInlineGenreView> {
   List<MediaMetadata> _items = [];
   bool _isLoadingMore = false;
   bool _hasMore = true;
@@ -47,6 +50,9 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
       _firstItemFocusNode.requestFocus();
     }
   }
+
+  FocusNode _focusNodeForIndex(int index) =>
+      index == 0 ? _firstItemFocusNode : getGridItemFocusNode(index, prefix: 'inline_genre');
 
   /// Parse hubKey "genre_sectionId_genreKey" into (sectionId, genreKey). GenreKey may contain underscores.
   static (String sectionId, String genreKey)? _parseGenreHubKey(String hubKey) {
@@ -63,14 +69,19 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
     super.initState();
     _items = List.from(widget.hub.items);
     _scrollController.addListener(_onScroll);
-    // No auto-focus: back button gets focus. Down from app bar (via focusFirstItem) goes to grid.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _items.isNotEmpty && InputModeTracker.isKeyboardMode(context)) {
+        _firstItemFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
-    _firstItemFocusNode.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _firstItemFocusNode.dispose();
+    disposeGridFocusNodes();
     super.dispose();
   }
 
@@ -168,98 +179,129 @@ class _LibraryInlineGenreViewState extends State<LibraryInlineGenreView> {
                             ),
                       ),
                     )
-                  : Consumer<SettingsProvider>(
-                      builder: (context, settingsProvider, _) {
-                        final density = settingsProvider.libraryDensity;
-                        final episodePosterMode = settingsProvider.episodePosterMode;
-                        final useWideLayout = _items.any((item) =>
-                            item.usesWideAspectRatio(episodePosterMode));
-                        final maxCrossAxisExtent =
-                            GridSizeCalculator.getMaxCrossAxisExtent(context, density);
-                        final availableWidth = MediaQuery.of(context).size.width - 32;
-                        if (useWideLayout) {
-                          final wideExtent = GridSizeCalculator.getMaxCrossAxisExtentWithPadding(
-                                context, density, 16) * 1.8;
-                          final columnCount = GridSizeCalculator.getColumnCount(availableWidth, wideExtent);
-                          return GridView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: wideExtent,
-                              childAspectRatio: 16 / 9,
-                              mainAxisSpacing: GridLayoutConstants.mainAxisSpacing,
-                              crossAxisSpacing: GridLayoutConstants.crossAxisSpacing,
-                            ),
-                            itemCount: _items.length + (_hasMore && _isLoadingMore ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == _items.length) {
-                                return const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    ),
-                                  ),
-                                );
-                              }
-                              final item = _items[index];
-                              final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
-                              final isFirstColumn = index % columnCount == 0;
-                              return FocusableMediaCard(
-                                key: Key(item.itemId),
-                                item: item,
-                                focusNode: index == 0 ? _firstItemFocusNode : null,
-                                onListRefresh: () async {
-                                  _items = List.from(widget.hub.items);
-                                  await _loadMore();
-                                },
-                                onBack: widget.onBack,
-                                onNavigateUp: isFirstRow ? widget.onNavigateUp : null,
-                                onNavigateLeft: isFirstColumn ? () => MainScreenFocusScope.of(context)?.focusSidebar() : null,
-                              );
-                            },
-                          );
-                        }
-                        final columnCount = GridSizeCalculator.getColumnCount(availableWidth, maxCrossAxisExtent);
-                        return GridView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: maxCrossAxisExtent,
-                            childAspectRatio: GridLayoutConstants.posterAspectRatio,
-                            mainAxisSpacing: GridLayoutConstants.mainAxisSpacing,
-                            crossAxisSpacing: GridLayoutConstants.crossAxisSpacing,
-                          ),
-                          itemCount: _items.length + (_hasMore && _isLoadingMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == _items.length) {
-                              return const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ),
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Consumer<SettingsProvider>(
+                          builder: (context, settingsProvider, _) {
+                            final density = settingsProvider.libraryDensity;
+                            final episodePosterMode = settingsProvider.episodePosterMode;
+                            final useWideLayout = _items.any((item) =>
+                                item.usesWideAspectRatio(episodePosterMode));
+                            final maxCrossAxisExtent =
+                                GridSizeCalculator.getMaxCrossAxisExtent(context, density);
+                            final availableWidth = constraints.maxWidth - 32;
+                            if (useWideLayout) {
+                              final wideExtent = GridSizeCalculator.getMaxCrossAxisExtentWithPadding(
+                                    context, density, 16) *
+                                1.8;
+                              final columnCount = GridSizeCalculator.getColumnCount(availableWidth, wideExtent);
+                              final itemCount = _items.length + (_hasMore && _isLoadingMore ? 1 : 0);
+                              cleanupGridFocusNodes(itemCount);
+                              return GridView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: wideExtent,
+                                  childAspectRatio: 16 / 9,
+                                  mainAxisSpacing: GridLayoutConstants.mainAxisSpacing,
+                                  crossAxisSpacing: GridLayoutConstants.crossAxisSpacing,
                                 ),
+                                itemCount: itemCount,
+                                itemBuilder: (context, index) {
+                                  if (index == _items.length) {
+                                    return const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16),
+                                        child: SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  final item = _items[index];
+                                  final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
+                                  final isFirstColumn = index % columnCount == 0;
+                                  final isLastColumn = index % columnCount == columnCount - 1;
+                                  final aboveIndex = index - columnCount;
+                                  final belowIndex = index + columnCount;
+                                  final isLastRow = belowIndex >= _items.length;
+                                  return FocusableMediaCard(
+                                    key: Key(item.itemId),
+                                    item: item,
+                                    focusNode: _focusNodeForIndex(index),
+                                    onListRefresh: () async {
+                                      _items = List.from(widget.hub.items);
+                                      await _loadMore();
+                                    },
+                                    onBack: widget.onBack,
+                                    onNavigateUp: isFirstRow
+                                        ? widget.onNavigateUp
+                                        : () => _focusNodeForIndex(aboveIndex).requestFocus(),
+                                    onNavigateDown: isLastRow ? null : () => _focusNodeForIndex(belowIndex).requestFocus(),
+                                    onNavigateLeft: isFirstColumn
+                                        ? () => MainScreenFocusScope.of(context)?.focusSidebar()
+                                        : () => _focusNodeForIndex(index - 1).requestFocus(),
+                                    onNavigateRight: isLastColumn ? null : () => _focusNodeForIndex(index + 1).requestFocus(),
+                                    scrollTopOffset: isFirstRow ? 8 : null,
+                                  );
+                                },
                               );
                             }
-                            final item = _items[index];
-                            final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
-                            final isFirstColumn = index % columnCount == 0;
-                            return FocusableMediaCard(
-                              key: Key(item.itemId),
-                              item: item,
-                              focusNode: index == 0 ? _firstItemFocusNode : null,
-                              onListRefresh: () async {
-                                _items = List.from(widget.hub.items);
-                                await _loadMore();
+                            final columnCount = GridSizeCalculator.getColumnCount(availableWidth, maxCrossAxisExtent);
+                            final itemCount = _items.length + (_hasMore && _isLoadingMore ? 1 : 0);
+                            cleanupGridFocusNodes(itemCount);
+                            return GridView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: maxCrossAxisExtent,
+                                childAspectRatio: GridLayoutConstants.posterAspectRatio,
+                                mainAxisSpacing: GridLayoutConstants.mainAxisSpacing,
+                                crossAxisSpacing: GridLayoutConstants.crossAxisSpacing,
+                              ),
+                              itemCount: itemCount,
+                              itemBuilder: (context, index) {
+                                if (index == _items.length) {
+                                  return const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                final item = _items[index];
+                                final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
+                                final isFirstColumn = index % columnCount == 0;
+                                final isLastColumn = index % columnCount == columnCount - 1;
+                                final aboveIndex = index - columnCount;
+                                final belowIndex = index + columnCount;
+                                final isLastRow = belowIndex >= _items.length;
+                                return FocusableMediaCard(
+                                  key: Key(item.itemId),
+                                  item: item,
+                                  focusNode: _focusNodeForIndex(index),
+                                  onListRefresh: () async {
+                                    _items = List.from(widget.hub.items);
+                                    await _loadMore();
+                                  },
+                                  onBack: widget.onBack,
+                                  onNavigateUp: isFirstRow
+                                      ? widget.onNavigateUp
+                                      : () => _focusNodeForIndex(aboveIndex).requestFocus(),
+                                  onNavigateDown: isLastRow ? null : () => _focusNodeForIndex(belowIndex).requestFocus(),
+                                  onNavigateLeft: isFirstColumn
+                                      ? () => MainScreenFocusScope.of(context)?.focusSidebar()
+                                      : () => _focusNodeForIndex(index - 1).requestFocus(),
+                                  onNavigateRight: isLastColumn ? null : () => _focusNodeForIndex(index + 1).requestFocus(),
+                                  scrollTopOffset: isFirstRow ? 8 : null,
+                                );
                               },
-                              onBack: widget.onBack,
-                              onNavigateUp: isFirstRow ? widget.onNavigateUp : null,
-                              onNavigateLeft: isFirstColumn ? () => MainScreenFocusScope.of(context)?.focusSidebar() : null,
                             );
                           },
                         );

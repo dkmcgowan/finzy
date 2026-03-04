@@ -53,7 +53,7 @@ class HubSection extends StatefulWidget {
   final VoidCallback? onNavigateToSidebar;
 
   /// When set, header tap and "View All" tap call this instead of navigating to [HubDetailScreen].
-  /// Used by Genre tab to show genre grid inline (Browse style) instead of pushing a route.
+  /// When null (default), taps push [HubDetailScreen] full-screen (like home hub).
   final VoidCallback? onHeaderTap;
 
   const HubSection({
@@ -134,7 +134,7 @@ class HubSectionState extends State<HubSection> {
   }
 
   /// Request focus on this hub at a specific item index
-  void requestFocusAt(int index) {
+  void requestFocusAt(int index, {bool scrollIntoView = true}) {
     if (_totalItemCount == 0) return;
 
     final clamped = index.clamp(0, _totalItemCount - 1);
@@ -146,14 +146,17 @@ class HubSectionState extends State<HubSection> {
     // ignore: no-empty-block - setState triggers rebuild to update focus styling
     if (mounted) setState(() {});
 
-    // Scroll the hub into view in the parent scroll view
-    _scrollHubIntoView();
+    if (scrollIntoView) {
+      _scrollHubIntoView();
+    }
   }
 
   /// Request focus using the stored memory for this hub
-  void requestFocusFromMemory() {
+  /// [scrollIntoView] - when false, only restores focus without scrolling the parent
+  /// (e.g. when returning from View All - scroll position is already correct)
+  void requestFocusFromMemory({bool scrollIntoView = true}) {
     final index = HubFocusMemory.getForHub(widget.hub.hubKey, _totalItemCount);
-    requestFocusAt(index);
+    requestFocusAt(index, scrollIntoView: scrollIntoView);
   }
 
   /// Scroll this hub into view in the parent scroll view
@@ -318,7 +321,12 @@ class HubSectionState extends State<HubSection> {
   }
 
   void _navigateToHubDetail(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => HubDetailScreen(hub: widget.hub)));
+    Navigator.push(context, MaterialPageRoute(builder: (context) => HubDetailScreen(hub: widget.hub)))
+        .then((_) {
+      if (mounted) {
+        requestFocusFromMemory(scrollIntoView: false);
+      }
+    });
   }
 
   @override
@@ -456,8 +464,8 @@ class HubSectionState extends State<HubSection> {
                       scrollDirection: Axis.horizontal,
                       // ignore: deprecated_member_use
                       cacheExtent: context.read<SettingsProvider>().gridPreloadCacheExtent,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      itemCount: isKeyboardMode ? _totalItemCount : widget.hub.items.length,
+                      padding: const EdgeInsets.only(left: 12, right: 24, top: 5, bottom: 5),
+                      itemCount: _totalItemCount,
                       itemBuilder: (context, index) {
                         final isItemFocused = hasFocus && index == _focusedIndex;
 

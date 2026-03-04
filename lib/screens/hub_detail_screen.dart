@@ -11,13 +11,13 @@ import '../services/settings_service.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/app_logger.dart';
 import '../utils/grid_size_calculator.dart';
+import '../utils/layout_constants.dart';
+import '../widgets/focusable_filter_chip.dart';
 import '../widgets/focusable_media_card.dart';
 import '../widgets/media_grid_delegate.dart';
 import '../widgets/desktop_app_bar.dart';
 import '../widgets/overlay_sheet.dart';
-import 'package:flutter/services.dart';
 import '../focus/dpad_navigator.dart';
-import '../focus/focus_theme.dart';
 import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 import '../mixins/grid_focus_node_mixin.dart';
@@ -52,6 +52,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   late final FocusNode _sortButtonFocusNode = FocusNode(debugLabel: 'hub_detail_sort');
   late final FocusNode _screenFocusNode = FocusNode(debugLabel: 'hub_detail_screen');
   bool _isAppBarFocused = false;
+  final ScrollController _scrollController = ScrollController();
 
   /// Key for getting a context below OverlaySheetHost
   final GlobalKey _overlayChildKey = GlobalKey();
@@ -75,11 +76,18 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     }
     // Load sorts based on the library type
     _loadSorts();
-    // No auto-focus: start with app bar (back button) focused. Down from app bar goes to grid.
+    // Focus back button when screen opens (keyboard nav: Down goes to grid)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (InputModeTracker.isKeyboardMode(context)) {
+        _backButtonFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _backButtonFocusNode.removeListener(_onAppBarFocusChange);
     _sortButtonFocusNode.removeListener(_onAppBarFocusChange);
     _firstItemFocusNode.dispose();
@@ -104,17 +112,72 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     if (_filteredItems.isEmpty) return;
     final targetIndex =
         shouldRestoreGridFocus && lastFocusedGridIndex! < _filteredItems.length ? lastFocusedGridIndex! : 0;
-    if (targetIndex == 0) {
-      _firstItemFocusNode.requestFocus();
-    } else {
-      getGridItemFocusNode(targetIndex, prefix: 'hub_detail_item').requestFocus();
+    _focusGridItem(targetIndex);
+  }
+
+  /// Estimate scroll offset to bring the grid item at [index] into view.
+  double _estimateScrollOffsetForIndex(int index) {
+    if (!mounted) return 0;
+    final settings = context.read<SettingsProvider>();
+    final density = settings.libraryDensity;
+    final episodePosterMode = settings.episodePosterMode;
+    final hasEpisodes = _filteredItems.any((item) => item.usesWideAspectRatio(episodePosterMode));
+    final hasNonEpisodes = _filteredItems.any((item) => !item.usesWideAspectRatio(episodePosterMode));
+    final isMixedHub = hasEpisodes && hasNonEpisodes;
+    final isEpisodeOnlyHub = hasEpisodes && !hasNonEpisodes;
+    final useWideLayout =
+        episodePosterMode == EpisodePosterMode.episodeThumbnail && (isEpisodeOnlyHub || isMixedHub);
+
+    final availableWidth = MediaQuery.of(context).size.width - 16;
+    final maxExtent = GridSizeCalculator.getMaxCrossAxisExtentWithPadding(context, density, 16);
+    final effectiveMaxExtent = useWideLayout ? maxExtent * 1.8 : maxExtent;
+    final columnCount = GridSizeCalculator.getColumnCount(availableWidth, effectiveMaxExtent);
+    final cellWidth = availableWidth / columnCount;
+    final aspectRatio = useWideLayout ? GridLayoutConstants.episodeGridCellAspectRatio : GridLayoutConstants.posterAspectRatio;
+    final cellHeight = cellWidth / aspectRatio;
+    final rowHeight = cellHeight + GridLayoutConstants.mainAxisSpacing;
+    final row = index ~/ columnCount;
+    // Account for pinned app bar + top padding (grid starts below app bar)
+    const topOffset = 72.0; // kToolbarHeight + SliverPadding top
+    return (topOffset + row * rowHeight).clamp(0.0, double.infinity);
+  }
+
+  void _focusGridItem(int index) {
+    if (index < 0 || index >= _filteredItems.length) return;
+
+    void doFocus({int retryCount = 0}) {
+      if (!mounted) return;
+      final node = index == 0 ? _firstItemFocusNode : getGridItemFocusNode(index, prefix: 'hub_detail_item');
+      final ctx = node.context;
+
+      if (ctx == null && retryCount < 3 && _scrollController.hasClients) {
+        final targetOffset = _estimateScrollOffsetForIndex(index);
+        final maxExtent = _scrollController.position.maxScrollExtent;
+        final clamped = targetOffset.clamp(0.0, maxExtent);
+        appLogger.d('HubDetailScreen: _focusGridItem index=$index ctx=null retry=$retryCount scrollTo=$clamped maxExtent=$maxExtent');
+        _scrollController.jumpTo(clamped);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) doFocus(retryCount: retryCount + 1);
+        });
+        return;
+      }
+
+      if (!node.hasFocus) node.requestFocus();
+      if (ctx != null) {
+        appLogger.d('HubDetailScreen: _focusGridItem index=$index ensureVisible');
+        Scrollable.ensureVisible(ctx, alignment: 0.5, duration: const Duration(milliseconds: 150), curve: Curves.easeOut);
+      }
     }
+
+    appLogger.d('HubDetailScreen: _focusGridItem index=$index');
+    doFocus();
   }
 
   void _navigateToAppBar() {
+    appLogger.d('HubDetailScreen: _navigateToAppBar (Up from first row)');
     setState(() => _isAppBarFocused = true);
-    // Focus back button first; Right from back goes to sort
-    _backButtonFocusNode.requestFocus();
+    // Focus sort button (top right) directly; Left from sort goes to back
+    _sortButtonFocusNode.requestFocus();
   }
 
   void _handleBackFromContent() {
@@ -124,10 +187,11 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   KeyEventResult _handleBackButtonKeyEvent(FocusNode _, KeyEvent event) {
     final key = event.logicalKey;
 
+    // Back key only (not Left) - fullscreen page, Left should not exit
     final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
     if (backResult != KeyEventResult.ignored) return backResult;
 
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (!event.isActionable) return KeyEventResult.ignored;
 
     if (key.isDownKey && _filteredItems.isNotEmpty) {
       _focusGrid();
@@ -143,10 +207,11 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   KeyEventResult _handleSortButtonKeyEvent(FocusNode _, KeyEvent event) {
     final key = event.logicalKey;
 
+    // Back key only (not Left) - fullscreen page
     final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
     if (backResult != KeyEventResult.ignored) return backResult;
 
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (!event.isActionable) return KeyEventResult.ignored;
 
     if (key.isDownKey) {
       _focusGrid();
@@ -174,6 +239,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
       setState(() {
         _sortOptions = sorts.isNotEmpty ? sorts : _getDefaultSortOptions();
       });
+      appLogger.d('HubDetailScreen: loaded sorts=${_sortOptions.map((s) => s.key).join(', ')}');
     } catch (e) {
       appLogger.e('Failed to load sorts', error: e);
       if (!mounted) return;
@@ -193,10 +259,11 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   }
 
   void _applySort() {
+    appLogger.d('HubDetailScreen: _applySort called sort=${_selectedSort?.key} desc=$_isSortDescending itemCount=${_items.length}');
     setState(() {
       _filteredItems = List.from(_items);
 
-      // Apply sorting
+      // Apply sorting - support both legacy keys and Jellyfin API keys
       if (_selectedSort != null) {
         final sortKey = _selectedSort!.key;
         _filteredItems.sort((a, b) {
@@ -205,17 +272,34 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
           switch (sortKey) {
             case 'titleSort':
             case 'title':
-              comparison = a.title.compareTo(b.title);
+            case 'SortName':
+              comparison = (a.titleSort ?? a.title).compareTo(b.titleSort ?? b.title);
               break;
             case 'addedAt':
+            case 'DateCreated':
               comparison = (a.addedAt ?? 0).compareTo(b.addedAt ?? 0);
               break;
             case 'originallyAvailableAt':
             case 'year':
+            case 'PremiereDate':
               comparison = (a.year ?? 0).compareTo(b.year ?? 0);
               break;
             case 'rating':
+            case 'CommunityRating':
+            case 'CriticRating':
               comparison = (a.rating ?? 0).compareTo(b.rating ?? 0);
+              break;
+            case 'DatePlayed':
+              comparison = (a.lastPlayedAt ?? 0).compareTo(b.lastPlayedAt ?? 0);
+              break;
+            case 'PlayCount':
+              comparison = (a.playCount ?? 0).compareTo(b.playCount ?? 0);
+              break;
+            case 'Runtime':
+              comparison = (a.duration ?? 0).compareTo(b.duration ?? 0);
+              break;
+            case 'Random':
+              comparison = 0; // Keep order, or use Random().nextDouble().sign
               break;
             default:
               comparison = a.title.compareTo(b.title);
@@ -223,18 +307,24 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
 
           return _isSortDescending ? -comparison : comparison;
         });
+        appLogger.d('HubDetailScreen: sort applied, filteredCount=${_filteredItems.length}');
+      } else {
+        appLogger.d('HubDetailScreen: no sort selected, keeping original order');
       }
     });
   }
 
   void _showSortBottomSheet() {
     final overlayContext = _overlayChildKey.currentContext ?? context;
+    final clearFocusNode = FocusNode(debugLabel: 'SortSheetClear');
     OverlaySheetController.of(overlayContext).show(
+      initialFocusNode: clearFocusNode,
       builder: (context) => SortBottomSheet(
         sortOptions: _sortOptions,
         selectedSort: _selectedSort,
         isSortDescending: _isSortDescending,
         onSortChanged: (sort, descending) {
+          appLogger.d('HubDetailScreen: onSortChanged sort=${sort.key} desc=$descending');
           setState(() {
             _selectedSort = sort;
             _isSortDescending = descending;
@@ -249,8 +339,9 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
           });
           _applySort();
         },
+        clearFocusNode: clearFocusNode,
       ),
-    );
+    ).whenComplete(() => clearFocusNode.dispose());
   }
 
   Future<void> _loadMoreItems() async {
@@ -309,9 +400,6 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
 
   @override
   Widget build(BuildContext context) {
-    final isKeyboardMode = InputModeTracker.isKeyboardMode(context);
-    final sortButtonFocused = isKeyboardMode && _sortButtonFocusNode.hasFocus;
-
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, _) {
@@ -324,7 +412,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
           autofocus: true,
           onKeyEvent: (node, event) {
             if (!event.isActionable) return KeyEventResult.ignored;
-            if (event.logicalKey.isBackKey || event.logicalKey.isLeftKey) {
+            if (event.logicalKey.isBackKey) {
               return handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
             }
             if (event.logicalKey.isDownKey && _filteredItems.isNotEmpty) {
@@ -340,6 +428,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
           child: Scaffold(
           key: _overlayChildKey,
           body: CustomScrollView(
+            controller: _scrollController,
             clipBehavior: Clip.none,
             slivers: [
               CustomAppBar(
@@ -355,17 +444,17 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                 ),
                 pinned: true,
                 actions: [
-                  Focus(
+                  const SizedBox(width: 8),
+                  FocusableFilterChip(
                     focusNode: _sortButtonFocusNode,
-                    onKeyEvent: _handleSortButtonKeyEvent,
-                    child: Container(
-                      decoration: FocusTheme.focusBackgroundDecoration(isFocused: sortButtonFocused, borderRadius: 20),
-                      child: IconButton(
-                        icon: AppIcon(Symbols.swap_vert_rounded, fill: 1, semanticLabel: t.libraries.sort),
-                        onPressed: _showSortBottomSheet,
-                      ),
-                    ),
+                    icon: Symbols.sort_rounded,
+                    label: _selectedSort?.title ?? t.libraries.sort,
+                    onPressed: _showSortBottomSheet,
+                    onNavigateDown: _filteredItems.isNotEmpty ? _focusGrid : null,
+                    onNavigateLeft: () => _backButtonFocusNode.requestFocus(),
+                    onBack: () => Navigator.pop(context),
                   ),
+                  const SizedBox(width: 16),
                 ],
               ),
               if (_errorMessage != null)
@@ -429,17 +518,25 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                                     ? _firstItemFocusNode
                                     : getGridItemFocusNode(index, prefix: 'hub_detail_item');
                                 final isFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
-                                final isFirstColumn = GridSizeCalculator.isFirstColumn(index, columnCount);
+                                final belowIndex = index + columnCount;
+                                final isLastRow = belowIndex >= _filteredItems.length;
+                                final isFirstColumn = index % columnCount == 0;
+                                final isLastColumn = index % columnCount == columnCount - 1;
 
                                 return FocusableMediaCard(
                                   focusNode: focusNode,
                                   item: item,
                                   onRefresh: _handleItemRefresh,
-                                  onNavigateUp: isFirstRow ? _navigateToAppBar : null,
-                                  onNavigateLeft: isFirstColumn ? _handleBackFromContent : null,
+                                  onNavigateUp: isFirstRow ? _navigateToAppBar : () => _focusGridItem(index - columnCount),
+                                  onNavigateDown: isLastRow ? null : () => _focusGridItem(belowIndex),
+                                  onNavigateLeft: isFirstColumn ? null : () => _focusGridItem(index - 1),
+                                  onNavigateRight: isLastColumn ? null : () => _focusGridItem(index + 1),
                                   onBack: _handleBackFromContent,
                                   onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
                                   mixedHubContext: isMixedHub,
+                                  // Only top row scrolls when focused (avoids jank when navigating between rows)
+                                  autoScroll: isFirstRow,
+                                  scrollTopOffset: isFirstRow ? 72 : null,
                                 );
                               },
                               childCount: _filteredItems.length,

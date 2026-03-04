@@ -28,9 +28,12 @@ class JellyfinClient {
   /// Minimal Fields for list/grid views (thumbnails, title, watch state, duration).
   /// ItemCounts ensures Series/Season get UnplayedItemCount and episode counts for unwatched badge.
   /// EndDate,Status for series year range (e.g. 2025 - 2026 or 2025 - Present).
-  static const String _listFields = 'Genres,UserData,RunTimeTicks,ItemCounts,EndDate,Status';
+  /// DateCreated,DateLastMediaAdded for sort; CommunityRating,CriticRating,PremiereDate,SortName for sort/display.
+  static const String _listFields =
+      'Genres,UserData,RunTimeTicks,ItemCounts,EndDate,Status,DateCreated,DateLastMediaAdded,CommunityRating,CriticRating,PremiereDate,SortName';
   /// Like _listFields plus ImageTags; use for BoxSet/collection lists so we only request thumb when server has an image (avoids 404s).
-  static const String _collectionListFields = 'Genres,UserData,RunTimeTicks,ItemCounts,EndDate,Status,ImageTags';
+  static const String _collectionListFields =
+      'Genres,UserData,RunTimeTicks,ItemCounts,EndDate,Status,DateCreated,DateLastMediaAdded,CommunityRating,CriticRating,PremiereDate,SortName,ImageTags';
 
   final JellyfinConfig config;
   late final Dio _dio;

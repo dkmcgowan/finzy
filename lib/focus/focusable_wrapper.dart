@@ -39,6 +39,9 @@ class FocusableWrapper extends StatefulWidget {
   /// Called when the user presses RIGHT and there's no focusable item to the right.
   final VoidCallback? onNavigateRight;
 
+  /// Called when the user presses DOWN and there's no focusable item below.
+  final VoidCallback? onNavigateDown;
+
   /// Called when the user presses BACK.
   final VoidCallback? onBack;
 
@@ -56,6 +59,10 @@ class FocusableWrapper extends StatefulWidget {
 
   /// Alignment for auto-scroll (0.0 = start, 0.5 = center, 1.0 = end).
   final double scrollAlignment;
+
+  /// When scrolling to show an item at "top" (alignment 0), use this Y offset instead of 0.
+  /// Use when a header/chips bar overlays the top of the scroll view (e.g. library browse).
+  final double? scrollTopOffset;
 
   /// Whether to use comfortable zone scrolling (only scroll if item is outside middle 60%).
   /// If false, always scrolls to [scrollAlignment].
@@ -96,12 +103,14 @@ class FocusableWrapper extends StatefulWidget {
     this.onNavigateUp,
     this.onNavigateLeft,
     this.onNavigateRight,
+    this.onNavigateDown,
     this.onBack,
     this.autofocus = false,
     this.focusNode,
     this.borderRadius = FocusTheme.defaultBorderRadius,
     this.autoScroll = true,
     this.scrollAlignment = 0.5,
+    this.scrollTopOffset,
     this.useComfortableZone = false,
     this.semanticLabel,
     this.canRequestFocus = true,
@@ -278,17 +287,24 @@ class _FocusableWrapperState extends State<FocusableWrapper> with SingleTickerPr
           : widget.scrollAlignment;
 
       // Target: item top at effectiveAlignment (top) or item center (center alignment)
-      final targetViewportY = viewportHeight * effectiveAlignment;
+      // When scrollTopOffset is set (e.g. chips bar overlays top), keep item below it
+      final targetViewportY = effectiveAlignment == 0.0 && widget.scrollTopOffset != null
+          ? widget.scrollTopOffset!
+          : viewportHeight * effectiveAlignment;
       final referenceY = effectiveAlignment == 0.0 ? itemTop : itemVerticalCenter;
       var scrollDelta = referenceY - targetViewportY;
 
-      // Ensure focus decoration stays visible: item top must be at least _focusDecorationPadding from viewport top
+      // Ensure focus decoration stays visible: item top must be at least minTop from viewport top
+      final minTop = widget.scrollTopOffset != null
+          ? widget.scrollTopOffset!.clamp(_focusDecorationPadding, double.infinity)
+          : _focusDecorationPadding;
       final projectedItemTop = itemTop - scrollDelta;
-      if (projectedItemTop < _focusDecorationPadding) {
-        scrollDelta -= (_focusDecorationPadding - projectedItemTop);
+      if (projectedItemTop < minTop) {
+        scrollDelta -= (minTop - projectedItemTop);
       }
 
       final targetOffset = (currentOffset + scrollDelta).clamp(position.minScrollExtent, position.maxScrollExtent);
+
 
       position.animateTo(targetOffset, duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
     });
@@ -385,6 +401,13 @@ class _FocusableWrapperState extends State<FocusableWrapper> with SingleTickerPr
     // for only providing this callback when the item is at the right edge)
     if (key == LogicalKeyboardKey.arrowRight && widget.onNavigateRight != null) {
       widget.onNavigateRight!();
+      return KeyEventResult.handled;
+    }
+
+    // DOWN arrow - if callback provided, navigate down (caller is responsible
+    // for only providing this callback when the item is at the bottom edge)
+    if (key == LogicalKeyboardKey.arrowDown && widget.onNavigateDown != null) {
+      widget.onNavigateDown!();
       return KeyEventResult.handled;
     }
 

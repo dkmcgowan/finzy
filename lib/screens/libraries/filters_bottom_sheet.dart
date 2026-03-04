@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import '../../focus/dpad_navigator.dart';
 import '../../models/library_filter.dart';
+import '../../utils/scroll_utils.dart';
 import '../../widgets/app_bar_back_button.dart';
 import '../../widgets/bottom_sheet_header.dart';
+import '../../widgets/focus_builders.dart';
 import '../../widgets/focusable_list_tile.dart';
 import '../../widgets/overlay_sheet.dart';
 import '../../utils/provider_extensions.dart';
@@ -44,6 +48,15 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
   /// True when filters use groups (Jellyfin). Main view then shows only category names; no toggles.
   late bool _useGroupedMainView;
 
+  /// For filter/group detail view: single Focus, manual zone tracking.
+  late final FocusNode _detailFocusNode;
+  bool _detailFocusZoneHeader = true; // true = header (back/close), false = list
+  int _detailHeaderIndex = 0; // 0 = back, 1 = close
+  /// -1 = in list but no item highlighted yet (Down will highlight first). 0+ = list index.
+  int _detailFocusedIndex = -1;
+  final ScrollController _detailListScrollController = ScrollController();
+  static const double _detailItemExtent = 56.0;
+
   String _cacheKey(String filter, String value) => '${widget.serverId}:${widget.libraryKey}:$filter:$value';
 
   @override
@@ -52,12 +65,125 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     _tempSelectedFilters.addAll(widget.selectedFilters);
     _sortFilters();
     _initialFocusNode = FocusNode(debugLabel: 'FiltersBottomSheetInitialFocus');
+    _detailFocusNode = FocusNode(debugLabel: 'FiltersBottomSheetDetail');
   }
 
   @override
   void dispose() {
     _initialFocusNode.dispose();
+    _detailFocusNode.dispose();
+    _detailListScrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollDetailToIndex(int index) {
+    scrollListToIndex(
+      _detailListScrollController,
+      index,
+      itemExtent: _detailItemExtent,
+      leadingPadding: 8.0,
+      animate: true,
+    );
+  }
+
+  KeyEventResult _handleDetailKeyEvent(FocusNode node, KeyEvent event) {
+    if (!event.isActionable) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    final itemCount = _currentFilter != null ? _filterValues.length : _currentGroup!.filters.length;
+
+    if (key.isBackKey) {
+      _dismiss();
+      return KeyEventResult.handled;
+    }
+
+    if (key.isSelectKey) {
+      if (_detailFocusZoneHeader) {
+        if (_detailHeaderIndex == 0) {
+          if (_currentFilter != null) {
+            _goBack();
+          } else {
+            _goBackFromGroup();
+          }
+        } else {
+          _applyFilters();
+        }
+        return KeyEventResult.handled;
+      }
+      if (_currentFilter != null && _detailFocusedIndex >= 0 && _detailFocusedIndex < _filterValues.length) {
+        final value = _filterValues[_detailFocusedIndex];
+        final filterValue = _extractFilterValue(value.key, _currentFilter!.filter);
+        setState(() {
+          _tempSelectedFilters[_currentFilter!.filter] = filterValue;
+          if (_filterDisplayNames.length > _maxCachedDisplayNames) _filterDisplayNames.clear();
+          _filterDisplayNames[_cacheKey(_currentFilter!.filter, filterValue)] = value.title;
+        });
+        _applyFilters();
+      } else if (_currentGroup != null && _detailFocusedIndex >= 0 && _detailFocusedIndex < _currentGroup!.filters.length) {
+        final filter = _currentGroup!.filters[_detailFocusedIndex];
+        final isActive = _tempSelectedFilters.containsKey(filter.filter) && _tempSelectedFilters[filter.filter] == '1';
+        setState(() {
+          if (isActive) {
+            _tempSelectedFilters.remove(filter.filter);
+          } else {
+            _tempSelectedFilters[filter.filter] = '1';
+          }
+        });
+        _applyFilters();
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (key.isUpKey) {
+      if (!_detailFocusZoneHeader) {
+        if (_detailFocusedIndex <= 0) {
+          setState(() {
+            _detailFocusZoneHeader = true;
+            _detailHeaderIndex = 0;
+          });
+        } else {
+          setState(() {
+            _detailFocusedIndex--;
+            _scrollDetailToIndex(_detailFocusedIndex);
+          });
+        }
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (key.isDownKey) {
+      if (_detailFocusZoneHeader) {
+        setState(() {
+          _detailFocusZoneHeader = false;
+          _detailFocusedIndex = 0;
+          _scrollDetailToIndex(0);
+        });
+        return KeyEventResult.handled;
+      }
+      if (_detailFocusedIndex < 0) {
+        setState(() {
+          _detailFocusedIndex = 0;
+          _scrollDetailToIndex(0);
+        });
+        return KeyEventResult.handled;
+      }
+      if (_detailFocusedIndex < itemCount - 1) {
+        setState(() {
+          _detailFocusedIndex++;
+          _scrollDetailToIndex(_detailFocusedIndex);
+        });
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (key.isLeftKey || key.isRightKey) {
+      if (_detailFocusZoneHeader) {
+        setState(() => _detailHeaderIndex = key.isRightKey ? 1 : 0);
+        return KeyEventResult.handled;
+      }
+    }
+
+    return KeyEventResult.ignored;
   }
 
   void _sortFilters() {
@@ -87,6 +213,9 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     setState(() {
       _currentFilter = filter;
       _isLoadingValues = true;
+      _detailFocusZoneHeader = false;
+      _detailHeaderIndex = 0;
+      _detailFocusedIndex = -1;
     });
 
     try {
@@ -97,6 +226,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
       setState(() {
         _filterValues = values;
         _isLoadingValues = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _detailFocusNode.requestFocus();
       });
     } catch (e) {
       if (!mounted) return;
@@ -128,12 +261,58 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     }
     setState(() {
       _currentGroup = entry;
+      _detailFocusZoneHeader = false;
+      _detailHeaderIndex = 0;
+      _detailFocusedIndex = -1;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _detailFocusNode.requestFocus();
     });
   }
 
   void _applyFilters() {
     widget.onFiltersChanged(_tempSelectedFilters);
     OverlaySheetController.of(context).close();
+  }
+
+  /// Close without applying (Back/ESC = cancel).
+  void _dismiss() {
+    OverlaySheetController.of(context).close();
+  }
+
+  Widget _buildDetailHeader(String title, {required VoidCallback onBack}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+      ),
+      child: Row(
+        children: [
+          FocusBuilders.buildLockedFocusWrapper(
+            context: context,
+            isFocused: _detailFocusZoneHeader && _detailHeaderIndex == 0,
+            useListTileStyle: true,
+            circular: true,
+            onTap: onBack,
+            child: AppBarBackButton(style: BackButtonStyle.plain, onPressed: onBack),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+          FocusBuilders.buildLockedFocusWrapper(
+            context: context,
+            isFocused: _detailFocusZoneHeader && _detailHeaderIndex == 1,
+            useListTileStyle: true,
+            circular: true,
+            onTap: _dismiss,
+            child: IconButton(
+              icon: AppIcon(Symbols.close_rounded, fill: 1),
+              onPressed: _dismiss,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _extractFilterValue(String key, String filterName) {
@@ -150,87 +329,141 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    if (_currentFilter != null) {
-      // Show filter options view
-      return Column(
-        children: [
-          // Header with back button
-          BottomSheetHeader(
-            title: _currentFilter!.title,
-            leading: AppBarBackButton(style: BackButtonStyle.plain, onPressed: _goBack),
-          ),
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): _dismiss,
+        const SingleActivator(LogicalKeyboardKey.goBack): _dismiss,
+      },
+      child: _buildContent(context),
+    );
+  }
 
-          // Filter options list (no "All" row; clear filter via main view Clear all)
-          if (_isLoadingValues)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
-          else
+  Widget _buildContent(BuildContext context) {
+    if (_currentFilter != null) {
+      // Show filter options view - single Focus, Up from first row goes to back
+      return Focus(
+        focusNode: _detailFocusNode,
+        autofocus: true,
+        onKeyEvent: _handleDetailKeyEvent,
+        child: Column(
+          children: [
+            _buildDetailHeader(_currentFilter!.title, onBack: _goBack),
+            if (_isLoadingValues)
+              const Expanded(child: Center(child: CircularProgressIndicator()))
+            else
+              Expanded(
+                child: ListView.builder(
+                  controller: _detailListScrollController,
+                  primary: false,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: _filterValues.length,
+                  itemBuilder: (context, index) {
+                    final value = _filterValues[index];
+                    final filterValue = _extractFilterValue(value.key, _currentFilter!.filter);
+                    final isSelected = _tempSelectedFilters[_currentFilter!.filter] == filterValue;
+                    final isFocused = !_detailFocusZoneHeader && _detailFocusedIndex >= 0 && index == _detailFocusedIndex;
+
+                    return FocusBuilders.buildLockedFocusWrapper(
+                      context: context,
+                      isFocused: isFocused,
+                      scaleOnFocus: false,
+                      useListTileStyle: true,
+                      onTap: () {
+                        setState(() {
+                          _tempSelectedFilters[_currentFilter!.filter] = filterValue;
+                          if (_filterDisplayNames.length > _maxCachedDisplayNames) {
+                            _filterDisplayNames.clear();
+                          }
+                          _filterDisplayNames[_cacheKey(_currentFilter!.filter, filterValue)] = value.title;
+                        });
+                        _applyFilters();
+                      },
+                      child: ExcludeFocusTraversal(
+                        child: FocusableListTile(
+                          focusNode: null,
+                          title: Text(value.title),
+                          selected: isSelected,
+                          onTap: () {
+                            setState(() {
+                              _tempSelectedFilters[_currentFilter!.filter] = filterValue;
+                              if (_filterDisplayNames.length > _maxCachedDisplayNames) {
+                                _filterDisplayNames.clear();
+                              }
+                              _filterDisplayNames[_cacheKey(_currentFilter!.filter, filterValue)] = value.title;
+                            });
+                            _applyFilters();
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    // Group detail view (toggles for Filters / Features) - single Focus, Up from first row goes to back
+    if (_currentGroup != null) {
+      final entry = _currentGroup!;
+      return Focus(
+        focusNode: _detailFocusNode,
+        autofocus: true,
+        onKeyEvent: _handleDetailKeyEvent,
+        child: Column(
+          children: [
+            _buildDetailHeader(entry.group, onBack: _goBackFromGroup),
             Expanded(
               child: ListView.builder(
+                controller: _detailListScrollController,
+                primary: false,
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: _filterValues.length,
+                itemCount: entry.filters.length,
                 itemBuilder: (context, index) {
-                  final value = _filterValues[index];
-                  final filterValue = _extractFilterValue(value.key, _currentFilter!.filter);
-                  final isSelected = _tempSelectedFilters[_currentFilter!.filter] == filterValue;
+                  final filter = entry.filters[index];
+                  final isActive =
+                      _tempSelectedFilters.containsKey(filter.filter) && _tempSelectedFilters[filter.filter] == '1';
+                  final isFocused = !_detailFocusZoneHeader && _detailFocusedIndex >= 0 && index == _detailFocusedIndex;
 
-                  return FocusableListTile(
-                    focusNode: index == 0 ? _initialFocusNode : null,
-                    title: Text(value.title),
-                    selected: isSelected,
+                  return FocusBuilders.buildLockedFocusWrapper(
+                    context: context,
+                    isFocused: isFocused,
+                    scaleOnFocus: false,
+                    useListTileStyle: true,
                     onTap: () {
                       setState(() {
-                        _tempSelectedFilters[_currentFilter!.filter] = filterValue;
-                        if (_filterDisplayNames.length > _maxCachedDisplayNames) {
-                          _filterDisplayNames.clear();
+                        if (isActive) {
+                          _tempSelectedFilters.remove(filter.filter);
+                        } else {
+                          _tempSelectedFilters[filter.filter] = '1';
                         }
-                        _filterDisplayNames[_cacheKey(_currentFilter!.filter, filterValue)] = value.title;
                       });
                       _applyFilters();
                     },
+                    child: ExcludeFocusTraversal(
+                      child: FocusableSwitchListTile(
+                        focusNode: null,
+                        value: isActive,
+                        onChanged: (value) {
+                          setState(() {
+                            if (value) {
+                              _tempSelectedFilters[filter.filter] = '1';
+                            } else {
+                              _tempSelectedFilters.remove(filter.filter);
+                            }
+                          });
+                          _applyFilters();
+                        },
+                        title: Text(filter.title),
+                      ),
+                    ),
                   );
                 },
               ),
             ),
-        ],
-      );
-    }
-
-    // Group detail view (toggles for Filters / Features)
-    if (_currentGroup != null) {
-      final entry = _currentGroup!;
-      return Column(
-        children: [
-          BottomSheetHeader(
-            title: entry.group,
-            leading: AppBarBackButton(style: BackButtonStyle.plain, onPressed: _goBackFromGroup),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: entry.filters.length,
-              itemBuilder: (context, index) {
-                final filter = entry.filters[index];
-                final isActive =
-                    _tempSelectedFilters.containsKey(filter.filter) && _tempSelectedFilters[filter.filter] == '1';
-                return FocusableSwitchListTile(
-                  focusNode: index == 0 ? _initialFocusNode : null,
-                  value: isActive,
-                  onChanged: (value) {
-                    setState(() {
-                      if (value) {
-                        _tempSelectedFilters[filter.filter] = '1';
-                      } else {
-                        _tempSelectedFilters.remove(filter.filter);
-                      }
-                    });
-                    _applyFilters();
-                  },
-                  title: Text(filter.title),
-                );
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       );
     }
 
