@@ -1168,7 +1168,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   // Use generous clearance on TV/desktop so the top row is never covered when scrolling back up.
   // On phone there's no D-pad focus decoration so extra clearance is unnecessary.
   static const double _gridTopPadding = _chipsBarHeight + 12.0;
-  static const double _gridTopPaddingPhone = _chipsBarHeight;
 
   /// Width of the alpha jump bar widget (desktop/tablet/TV)
   static const double _alphaJumpBarWidth = 28.0;

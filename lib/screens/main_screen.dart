@@ -89,9 +89,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
   /// Whether the app is in offline mode (no server connection)
   bool _isOffline = false;
 
-  /// Whether we auto-switched to Downloads because the previous tab was unavailable offline
-  bool _autoSwitchedToDownloads = false;
-
   OfflineModeProvider? _offlineModeProvider;
   MultiServerProvider? _multiServerProvider;
   bool _lastHasLiveTv = false;
@@ -132,7 +129,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     // In offline mode: visual index 0 = Downloads (screen 3), 1 = Settings (screen 4)
     // In online mode: indices match directly
     _currentIndex = 0;
-    _autoSwitchedToDownloads = _isOffline;
 
     _screens = _buildScreens(_isOffline);
 
@@ -464,7 +460,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
     if (newOffline == _isOffline) return;
 
-    final previousTabId = _tabIdForIndex(_isOffline, _currentIndex);
     final wasOffline = _isOffline;
 
     // When coming back online, refresh Live TV availability before rebuilding.
@@ -483,16 +478,10 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
       if (_isOffline) {
         _currentIndex = _normalizeIndexForMode(_currentIndex, wasOffline, _isOffline);
-
-        // Track if we auto-switched to Downloads because the previous tab was unavailable.
-        _autoSwitchedToDownloads =
-            previousTabId != NavigationTabId.downloads &&
-            _tabIdForIndex(true, _currentIndex) == NavigationTabId.downloads;
       } else {
         // Coming back online: start at Home (consistent with cold start)
         _lastHasLiveTv = _multiServerProvider?.hasLiveTv ?? false;
         _currentIndex = 0;
-        _autoSwitchedToDownloads = false;
       }
     });
 
@@ -701,10 +690,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     final previousIndex = _currentIndex;
     setState(() {
       _currentIndex = index;
-      if (_isOffline && previousIndex != index) {
-        // User made an explicit offline selection, so don't auto-restore later.
-        _autoSwitchedToDownloads = false;
-      }
     });
 
     // Handle screen-specific logic
