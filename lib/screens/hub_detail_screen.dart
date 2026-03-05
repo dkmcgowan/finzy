@@ -204,30 +204,6 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     return KeyEventResult.ignored;
   }
 
-  KeyEventResult _handleSortButtonKeyEvent(FocusNode _, KeyEvent event) {
-    final key = event.logicalKey;
-
-    // Back key only (not Left) - fullscreen page
-    final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
-    if (backResult != KeyEventResult.ignored) return backResult;
-
-    if (!event.isActionable) return KeyEventResult.ignored;
-
-    if (key.isDownKey) {
-      _focusGrid();
-      return KeyEventResult.handled;
-    }
-    if (key.isLeftKey) {
-      _backButtonFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-    if (key.isSelectKey) {
-      _showSortBottomSheet();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
-
   Future<void> _loadSorts() async {
     try {
       final client = _getClientForHub();

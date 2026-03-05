@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/media_metadata.dart';
 import '../widgets/desktop_app_bar.dart';
 import '../i18n/strings.g.dart';
-import '../utils/app_logger.dart';
-import '../utils/snackbar_helper.dart';
 import 'base_media_list_detail_screen.dart';
 import 'focusable_detail_screen_mixin.dart';
 import '../mixins/grid_focus_node_mixin.dart';

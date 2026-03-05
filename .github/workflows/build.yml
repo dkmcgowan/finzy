@@ -64,36 +64,26 @@ jobs:
           EOF
           fi
 
-      - name: Build APKs
-        run: flutter build apk --release --split-per-abi --dart-define=ENABLE_UPDATE_CHECK=true
+      - name: Build APK
+        run: flutter build apk --release --dart-define=ENABLE_UPDATE_CHECK=true
 
       - name: Clean up keystore
         if: always()
         run: rm -f android/app/upload-keystore.jks android/key.properties
 
-      - name: Copy APKs for upload
-        run: |
-          APK_DIR=build/app/outputs/flutter-apk
-          cp $APK_DIR/app-arm64-v8a-release.apk finzy-android-arm64-v8a.apk
-          cp $APK_DIR/app-armeabi-v7a-release.apk finzy-android-armeabi-v7a.apk
-          cp $APK_DIR/app-x86_64-release.apk finzy-android-x86_64.apk
+      - name: Copy APK for upload
+        run: cp build/app/outputs/flutter-apk/app-release.apk finzy-android.apk
 
-      - name: Attest APKs
+      - name: Attest APK
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: |
-            finzy-android-arm64-v8a.apk
-            finzy-android-armeabi-v7a.apk
-            finzy-android-x86_64.apk
+          subject-path: finzy-android.apk
 
-      - name: Upload APKs
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: |
-            finzy-android-arm64-v8a.apk
-            finzy-android-armeabi-v7a.apk
-            finzy-android-x86_64.apk
+          path: finzy-android.apk
 
   build-ios:
     runs-on: macos-26
@@ -816,9 +806,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/android-apk/finzy-android-arm64-v8a.apk
-            artifacts/android-apk/finzy-android-armeabi-v7a.apk
-            artifacts/android-apk/finzy-android-x86_64.apk
+            artifacts/android-apk/finzy-android.apk
             artifacts/ios-ipa/finzy-ios.ipa
             artifacts/macos-dmg/finzy-macos.dmg
             artifacts/windows-x64-portable/finzy-windows-x64-portable.zip

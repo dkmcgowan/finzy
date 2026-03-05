@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show KeyEvent, KeyEventResult;
 import 'package:finzy/utils/desktop_window_padding.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';

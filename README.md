@@ -20,7 +20,7 @@ Finzy runs on:
 | Platform    | Variants                                                    |
 | ----------- | ----------------------------------------------------------- |
 | **iOS**     | iPhone, iPad                                                |
-| **Android** | Phone, Tablet, TV (arm64-v8a, armeabi-v7a, x86_64)          |
+| **Android** | Phone, Tablet, TV (universal APK)                            |
 | **Windows** | x64, arm64 — installer and portable (.zip)                 |
 | **macOS**   | x64, arm64 (universal .dmg)                                 |
 | **Linux**   | x64, arm64 — .deb, .rpm, and portable .tar.gz               |

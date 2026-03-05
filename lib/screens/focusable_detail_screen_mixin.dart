@@ -245,7 +245,6 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                 itemBuilder: (context, index) {
                   final item = items[index];
                   final inFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
-                  final inFirstColumn = GridSizeCalculator.isFirstColumn(index, columnCount);
                   final focusNode = index == 0
                       ? firstItemFocusNode
                       : getGridItemFocusNode(index, prefix: 'detail_grid_item');
