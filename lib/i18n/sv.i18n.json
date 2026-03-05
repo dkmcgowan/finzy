@@ -242,8 +242,8 @@
     "performanceImageQualityDescription": "Lägre kvalitet laddar snabbare. Liten = snabbast, Stor = bäst kvalitet.",
     "performancePosterSize": "Affischstorlek",
     "performancePosterSizeDescription": "Storlek på affischkort i rutnät. Liten = fler objekt, Stor = större kort.",
-    "performanceReduceAnimations": "Minska animationer",
-    "performanceReduceAnimationsDescription": "Kortare övergångar för snabbare känsla",
+    "performanceDisableAnimations": "Inaktivera animationer",
+    "performanceDisableAnimationsDescription": "Stänger av alla övergångar för snabbare navigering",
     "performanceGridPreload": "Rutnätsförladdning",
     "performanceGridPreloadDescription": "Hur många objekt utanför skärmen som laddas. Låg = snabbare, Hög = mjukare scrollning.",
     "performanceSmall": "Liten",
@@ -258,7 +258,16 @@
     "hint": "Sök filmer, serier, musik...",
     "tryDifferentTerm": "Prova en annan sökterm",
     "searchYourMedia": "Sök i dina media",
-    "enterTitleActorOrKeyword": "Ange en titel, skådespelare eller nyckelord"
+    "enterTitleActorOrKeyword": "Ange en titel, skådespelare eller nyckelord",
+    "categories": {
+      "movies": "Movies",
+      "shows": "Shows",
+      "episodes": "Episodes",
+      "people": "People",
+      "collections": "Collections",
+      "programs": "Programs",
+      "channels": "Channels"
+    }
   },
   "hotkeys": {
     "setShortcutFor": "Sätt genväg för ${actionName}",

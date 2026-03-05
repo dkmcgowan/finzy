@@ -242,8 +242,8 @@
     "performanceImageQualityDescription": "Une qualité inférieure charge plus rapidement. Petit = plus rapide, Grand = meilleure qualité.",
     "performancePosterSize": "Taille des affiches",
     "performancePosterSizeDescription": "Taille des cartes d'affiches dans les grilles. Petit = plus d'éléments, Grand = cartes plus grandes.",
-    "performanceReduceAnimations": "Réduire les animations",
-    "performanceReduceAnimationsDescription": "Transitions plus courtes pour une sensation plus réactive",
+    "performanceDisableAnimations": "Désactiver les animations",
+    "performanceDisableAnimationsDescription": "Désactive toutes les transitions pour une navigation plus réactive",
     "performanceGridPreload": "Préchargement de la grille",
     "performanceGridPreloadDescription": "Nombre d'éléments hors écran à charger. Faible = plus rapide, Élevé = défilement plus fluide.",
     "performanceSmall": "Petit",
@@ -258,7 +258,16 @@
     "hint": "Rechercher des films, des séries, de la musique...",
     "tryDifferentTerm": "Essayez un autre terme de recherche",
     "searchYourMedia": "Rechercher dans vos médias",
-    "enterTitleActorOrKeyword": "Entrez un titre, un acteur ou un mot-clé"
+    "enterTitleActorOrKeyword": "Entrez un titre, un acteur ou un mot-clé",
+    "categories": {
+      "movies": "Movies",
+      "shows": "Shows",
+      "episodes": "Episodes",
+      "people": "People",
+      "collections": "Collections",
+      "programs": "Programs",
+      "channels": "Channels"
+    }
   },
   "hotkeys": {
     "setShortcutFor": "Définir un raccourci pour ${actionName}",

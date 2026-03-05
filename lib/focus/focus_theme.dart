@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/mono_tokens.dart';
 
 /// Focus styling constants for D-pad navigation.
@@ -20,7 +22,11 @@ class FocusTheme {
   }
 
   /// Get the animation duration from MonoTokens.
+  /// Returns [Duration.zero] when the user has disabled animations.
   static Duration getAnimationDuration(BuildContext context) {
+    if (context.read<SettingsProvider>().disableAnimations) {
+      return Duration.zero;
+    }
     return Theme.of(context).extension<MonoTokens>()?.fast ?? const Duration(milliseconds: 150);
   }
 

@@ -359,8 +359,8 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get performanceImageQualityDescription => 'Menor calidad carga más rápido. Pequeño = más rápido, Grande = mejor calidad.';
 	@override String get performancePosterSize => 'Tamaño de póster';
 	@override String get performancePosterSizeDescription => 'Tamaño de las tarjetas de póster en las cuadrículas. Pequeño = más elementos, Grande = tarjetas más grandes.';
-	@override String get performanceReduceAnimations => 'Reducir animaciones';
-	@override String get performanceReduceAnimationsDescription => 'Transiciones más cortas para una sensación más ágil';
+	@override String get performanceDisableAnimations => 'Desactivar animaciones';
+	@override String get performanceDisableAnimationsDescription => 'Desactiva todas las transiciones para una navegación más ágil';
 	@override String get performanceGridPreload => 'Precarga de cuadrícula';
 	@override String get performanceGridPreloadDescription => 'Cuántos elementos fuera de pantalla cargar. Bajo = más rápido, Alto = desplazamiento más fluido.';
 	@override String get performanceSmall => 'Pequeño';
@@ -383,6 +383,7 @@ class _TranslationsSearchEs implements TranslationsSearchEn {
 	@override String get tryDifferentTerm => 'Prueba con un término de búsqueda diferente';
 	@override String get searchYourMedia => 'Busca en tu contenido';
 	@override String get enterTitleActorOrKeyword => 'Introduce un título, actor o palabra clave';
+	@override late final _TranslationsSearchCategoriesEs categories = _TranslationsSearchCategoriesEs._(_root);
 }
 
 // Path: hotkeys
@@ -1086,6 +1087,22 @@ class _TranslationsExternalPlayerEs implements TranslationsExternalPlayerEn {
 	@override String get playInExternalPlayer => 'Reproducir en reproductor externo';
 }
 
+// Path: search.categories
+class _TranslationsSearchCategoriesEs implements TranslationsSearchCategoriesEn {
+	_TranslationsSearchCategoriesEs._(this._root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get movies => 'Movies';
+	@override String get shows => 'Shows';
+	@override String get episodes => 'Episodes';
+	@override String get people => 'People';
+	@override String get collections => 'Collections';
+	@override String get programs => 'Programs';
+	@override String get channels => 'Channels';
+}
+
 // Path: hotkeys.actions
 class _TranslationsHotkeysActionsEs implements TranslationsHotkeysActionsEn {
 	_TranslationsHotkeysActionsEs._(this._root);
@@ -1504,8 +1521,8 @@ extension on TranslationsEs {
 			'settings.performanceImageQualityDescription' => 'Menor calidad carga más rápido. Pequeño = más rápido, Grande = mejor calidad.',
 			'settings.performancePosterSize' => 'Tamaño de póster',
 			'settings.performancePosterSizeDescription' => 'Tamaño de las tarjetas de póster en las cuadrículas. Pequeño = más elementos, Grande = tarjetas más grandes.',
-			'settings.performanceReduceAnimations' => 'Reducir animaciones',
-			'settings.performanceReduceAnimationsDescription' => 'Transiciones más cortas para una sensación más ágil',
+			'settings.performanceDisableAnimations' => 'Desactivar animaciones',
+			'settings.performanceDisableAnimationsDescription' => 'Desactiva todas las transiciones para una navegación más ágil',
 			'settings.performanceGridPreload' => 'Precarga de cuadrícula',
 			'settings.performanceGridPreloadDescription' => 'Cuántos elementos fuera de pantalla cargar. Bajo = más rápido, Alto = desplazamiento más fluido.',
 			'settings.performanceSmall' => 'Pequeño',
@@ -1519,6 +1536,13 @@ extension on TranslationsEs {
 			'search.tryDifferentTerm' => 'Prueba con un término de búsqueda diferente',
 			'search.searchYourMedia' => 'Busca en tu contenido',
 			'search.enterTitleActorOrKeyword' => 'Introduce un título, actor o palabra clave',
+			'search.categories.movies' => 'Movies',
+			'search.categories.shows' => 'Shows',
+			'search.categories.episodes' => 'Episodes',
+			'search.categories.people' => 'People',
+			'search.categories.collections' => 'Collections',
+			'search.categories.programs' => 'Programs',
+			'search.categories.channels' => 'Channels',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => 'Establecer atajo para ${actionName}',
 			'hotkeys.clearShortcut' => 'Borrar atajo',
 			'hotkeys.actions.playPause' => 'Reproducir/Pausar',
@@ -1777,6 +1801,8 @@ extension on TranslationsEs {
 			'libraries.noFavorites' => 'No hay favoritos en esta biblioteca',
 			'libraries.noGenres' => 'No hay géneros en esta biblioteca',
 			'libraries.noFoldersFound' => 'No se encontraron carpetas',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.folders' => 'carpetas',
 			'libraries.tabs.movies' => 'Películas',
 			'libraries.tabs.shows' => 'Series',
@@ -1784,8 +1810,6 @@ extension on TranslationsEs {
 			'libraries.tabs.browse' => 'Explorar',
 			'libraries.tabs.genres' => 'Géneros',
 			'libraries.tabs.favorites' => 'Favoritos',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.tabs.collections' => 'Colecciones',
 			'libraries.tabs.playlists' => 'Listas',
 			'libraries.groupings.all' => 'Todo',

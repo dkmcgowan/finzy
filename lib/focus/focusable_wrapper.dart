@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 import 'dpad_navigator.dart';
 import 'focus_theme.dart';
 import 'input_mode_tracker.dart';
@@ -228,6 +230,13 @@ class _FocusableWrapperState extends State<FocusableWrapper> with SingleTickerPr
   static const double _focusDecorationPadding = 8.0;
 
   void _scrollIntoView() {
+    bool disableAnimations;
+    try {
+      disableAnimations = context.read<SettingsProvider>().disableAnimations;
+    } catch (_) {
+      disableAnimations = false;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_isFocused) return;
 
@@ -262,12 +271,12 @@ class _FocusableWrapperState extends State<FocusableWrapper> with SingleTickerPr
           return;
         }
       } else {
-        // When not using comfortable zone, still skip scroll if item is already
-        // close to target position (prevents jitter when navigating horizontally)
+        // Skip scroll if item is already very close to target (prevents jitter
+        // during horizontal navigation where vertical position barely changes).
+        // Use a small fixed threshold so row-to-row navigation always scrolls.
         final targetY = viewportHeight * widget.scrollAlignment;
         final distance = (itemVerticalCenter - targetY).abs();
-        // Skip scroll if within half the item height of target
-        if (distance < itemHeight / 2) {
+        if (distance < 20) {
           return;
         }
       }
@@ -279,20 +288,11 @@ class _FocusableWrapperState extends State<FocusableWrapper> with SingleTickerPr
       final position = scrollable.position;
       final currentOffset = position.pixels;
 
-      // When item is near the top of the viewport, use alignment 0.0 so we keep it
-      // at the top with padding—never scroll it off-screen by trying to center it.
-      // This fixes the top row being partially covered by the header on TV.
-      final effectiveAlignment = itemPosition.dy < viewportHeight * 0.25
-          ? 0.0
-          : widget.scrollAlignment;
-
-      // Target: item top at effectiveAlignment (top) or item center (center alignment)
-      // When scrollTopOffset is set (e.g. chips bar overlays top), keep item below it
-      final targetViewportY = effectiveAlignment == 0.0 && widget.scrollTopOffset != null
-          ? widget.scrollTopOffset!
-          : viewportHeight * effectiveAlignment;
-      final referenceY = effectiveAlignment == 0.0 ? itemTop : itemVerticalCenter;
-      var scrollDelta = referenceY - targetViewportY;
+      // Always use the configured scrollAlignment (e.g. 0.5 = center on TV).
+      // The clamp below handles the case where centering would scroll past bounds
+      // (e.g. first row can't be centered, so it stays at the top naturally).
+      final targetViewportY = viewportHeight * widget.scrollAlignment;
+      var scrollDelta = itemVerticalCenter - targetViewportY;
 
       // Ensure focus decoration stays visible: item top must be at least minTop from viewport top
       final minTop = widget.scrollTopOffset != null
@@ -305,8 +305,11 @@ class _FocusableWrapperState extends State<FocusableWrapper> with SingleTickerPr
 
       final targetOffset = (currentOffset + scrollDelta).clamp(position.minScrollExtent, position.maxScrollExtent);
 
-
-      position.animateTo(targetOffset, duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+      if (disableAnimations) {
+        position.jumpTo(targetOffset);
+      } else {
+        position.animateTo(targetOffset, duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+      }
     });
   }
 

@@ -930,11 +930,19 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     final gen = _jumpScrollGeneration;
     final clampedOffset = offset.clamp(0.0, _scrollController.position.maxScrollExtent);
 
-    _scrollController.animateTo(clampedOffset, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut).then((_) {
+    final disableAnimations = context.read<SettingsProvider>().disableAnimations;
+    if (disableAnimations) {
+      _scrollController.jumpTo(clampedOffset);
       if (mounted && gen == _jumpScrollGeneration) {
         _isJumpScrolling = false;
       }
-    });
+    } else {
+      _scrollController.animateTo(clampedOffset, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut).then((_) {
+        if (mounted && gen == _jumpScrollGeneration) {
+          _isJumpScrolling = false;
+        }
+      });
+    }
   }
 
   /// Load pages until [targetIndex] is loaded, then scroll to it
@@ -1159,7 +1167,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   // Chips bar is ~48px, focus ring extends ~8px beyond item bounds, scale adds ~2%.
   // Use generous clearance on TV/desktop so the top row is never covered when scrolling back up.
   // On phone there's no D-pad focus decoration so extra clearance is unnecessary.
-  static const double _gridTopPadding = _chipsBarHeight + 36.0;
+  static const double _gridTopPadding = _chipsBarHeight + 12.0;
   static const double _gridTopPaddingPhone = _chipsBarHeight;
 
   /// Width of the alpha jump bar widget (desktop/tablet/TV)
@@ -1172,7 +1180,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
   Widget _buildItemsSliver(BuildContext context, SettingsProvider settingsProvider) {
     final itemCount = items.length + (_hasMoreItems && isLoading ? 1 : 0);
     final isPhone = _isPhone(context);
-    final topPadding = isPhone ? _gridTopPaddingPhone : _gridTopPadding;
+    final topPadding = isPhone ? _measuredChipsBarHeight : _measuredChipsBarHeight + 12.0;
     _effectiveTopPadding = topPadding;
     final rightPadding = _shouldShowAlphaBarOnThisDevice(context)
         ? (isPhone ? _alphaScrollHandleWidth : _alphaJumpBarWidth)
@@ -1188,6 +1196,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
           itemCount: itemCount,
           itemBuilder: (context, index) => _buildMediaCardItem(
             index,
+            columnCount: 1,
             isFirstRow: index == 0,
             isFirstColumn: true, // List view = single column
           ),
@@ -1221,6 +1230,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
               itemCount: itemCount,
               itemBuilder: (context, index) => _buildMediaCardItem(
                 index,
+                columnCount: columnCount,
                 isFirstRow: GridSizeCalculator.isFirstRow(index, columnCount),
                 isFirstColumn: GridSizeCalculator.isFirstColumn(index, columnCount),
                 isLastColumn: (index % columnCount) == (columnCount - 1),
@@ -1234,6 +1244,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
 
   Widget _buildMediaCardItem(
     int index, {
+    required int columnCount,
     required bool isFirstRow,
     required bool isFirstColumn,
     bool isLastColumn = false,
@@ -1250,12 +1261,17 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     // All other items get managed focus nodes for restoration
     final focusNode = index == 0 ? firstItemFocusNode : getGridItemFocusNode(index, prefix: 'browse_grid_item');
 
+    final aboveIndex = index - columnCount;
+    final belowIndex = index + columnCount;
+    final isLastRow = belowIndex >= items.length;
+
     return FocusableMediaCard(
       key: Key(item.itemId),
       item: item,
       focusNode: focusNode,
       onRefresh: updateItem,
-      onNavigateUp: isFirstRow ? _navigateToChips : null,
+      onNavigateUp: isFirstRow ? _navigateToChips : () => _focusGridItem(aboveIndex),
+      onNavigateDown: isLastRow ? null : () => _focusGridItem(belowIndex),
       onNavigateLeft: isFirstColumn ? _navigateToSidebar : () => _focusGridItem(index - 1),
       onNavigateRight: isLastColumn && _shouldShowAlphaJumpBar && !_isPhone(context) ? _navigateToAlphaJumpBar : null,
       onBack: widget.onBack,

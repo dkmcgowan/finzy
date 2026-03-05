@@ -38,8 +38,12 @@ abstract class BaseLibraryTab<T> extends StatefulWidget {
   final bool suppressAutoFocus;
 
   /// Called when the user presses BACK in the tab content.
-  /// Used to navigate focus back to the tab bar.
+  /// Used to navigate focus back to the tab bar (or refresh for single-tab).
   final VoidCallback? onBack;
+
+  /// Called when the user presses BACK key (vs UP arrow). Typically focuses sidebar.
+  /// When null, [onBack] is used for both.
+  final VoidCallback? onBackToNavigation;
 
   const BaseLibraryTab({
     super.key,
@@ -50,6 +54,7 @@ abstract class BaseLibraryTab<T> extends StatefulWidget {
     this.isActive = false,
     this.suppressAutoFocus = false,
     this.onBack,
+    this.onBackToNavigation,
   });
 }
 

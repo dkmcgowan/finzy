@@ -649,11 +649,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       SwitchListTile(
         focusNode: _focusTracker.get(_kReduceAnimations),
         secondary: const AppIcon(Symbols.animation_rounded, fill: 1),
-        title: Text(t.settings.performanceReduceAnimations),
-        subtitle: Text(t.settings.performanceReduceAnimationsDescription),
-        value: settingsProvider.reduceAnimations,
+        title: Text(t.settings.performanceDisableAnimations),
+        subtitle: Text(t.settings.performanceDisableAnimationsDescription),
+        value: settingsProvider.disableAnimations,
         onChanged: (value) async {
-          await settingsProvider.setReduceAnimations(value);
+          await settingsProvider.setDisableAnimations(value);
         },
       ),
       ListTile(
@@ -2519,7 +2519,8 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
         if (ctx != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            Scrollable.ensureVisible(ctx, alignment: 0.5, duration: const Duration(milliseconds: 200));
+            final disableAnimations = context.read<SettingsProvider>().disableAnimations;
+            Scrollable.ensureVisible(ctx, alignment: 0.5, duration: disableAnimations ? Duration.zero : const Duration(milliseconds: 200));
           });
         }
         break;
@@ -2670,16 +2671,18 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
       return KeyEventResult.handled;
     }
     if (key.isRightKey) {
-      _centerFocusNodes[index].requestFocus();
+      _reorderDownFocusNodes[index].requestFocus();
       return KeyEventResult.handled;
     }
     if (key.isDownKey) {
-      _reorderDownFocusNodes[index].requestFocus();
+      if (index < widget.libraries.length - 1) {
+        _reorderUpFocusNodes[index + 1].requestFocus();
+      }
       return KeyEventResult.handled;
     }
     if (key.isUpKey) {
       if (index > 0) {
-        _centerFocusNodes[index - 1].requestFocus();
+        _reorderUpFocusNodes[index - 1].requestFocus();
       } else if (widget.sectionHeaderFocusNode != null) {
         widget.sectionHeaderFocusNode!.requestFocus();
       }
@@ -2705,7 +2708,11 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
       return KeyEventResult.handled;
     }
     if (key.isUpKey) {
-      _reorderUpFocusNodes[index].requestFocus();
+      if (index > 0) {
+        _reorderDownFocusNodes[index - 1].requestFocus();
+      } else {
+        _reorderUpFocusNodes[index].requestFocus();
+      }
       return KeyEventResult.handled;
     }
     if (key.isDownKey) {
@@ -2736,7 +2743,8 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
     }
     if (key.isUpKey) {
       if (index > 0) {
-        _centerFocusNodes[index - 1].requestFocus();
+        final prevIsFavorites = widget.libraries[index - 1].globalKey == kJellyfinFavoritesKey;
+        (prevIsFavorites ? _visibilityFocusNodes[index - 1] : _scanFocusNodes[index - 1]).requestFocus();
       } else if (widget.sectionHeaderFocusNode != null) {
         widget.sectionHeaderFocusNode!.requestFocus();
       }
@@ -2768,7 +2776,8 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
     }
     if (key.isUpKey) {
       if (index > 0) {
-        _centerFocusNodes[index - 1].requestFocus();
+        final prevIsFavorites = widget.libraries[index - 1].globalKey == kJellyfinFavoritesKey;
+        (prevIsFavorites ? _visibilityFocusNodes[index - 1] : _refreshFocusNodes[index - 1]).requestFocus();
       } else if (widget.sectionHeaderFocusNode != null) {
         widget.sectionHeaderFocusNode!.requestFocus();
       }
@@ -2801,7 +2810,7 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
     }
     if (key.isUpKey) {
       if (index > 0) {
-        _centerFocusNodes[index - 1].requestFocus();
+        _visibilityFocusNodes[index - 1].requestFocus();
       } else if (widget.sectionHeaderFocusNode != null) {
         widget.sectionHeaderFocusNode!.requestFocus();
       }

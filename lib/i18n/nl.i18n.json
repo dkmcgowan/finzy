@@ -242,8 +242,8 @@
     "performanceImageQualityDescription": "Lagere kwaliteit laadt sneller. Klein = snelst, Groot = beste kwaliteit.",
     "performancePosterSize": "Postergrootte",
     "performancePosterSizeDescription": "Grootte van posterkarten in rasters. Klein = meer items, Groot = grotere kaarten.",
-    "performanceReduceAnimations": "Animaties verminderen",
-    "performanceReduceAnimationsDescription": "Kortere overgangen voor snellere respons",
+    "performanceDisableAnimations": "Animaties uitschakelen",
+    "performanceDisableAnimationsDescription": "Schakelt alle overgangen uit voor snellere navigatie",
     "performanceGridPreload": "Raster voorladen",
     "performanceGridPreloadDescription": "Hoeveel items buiten het scherm te laden. Laag = sneller, Hoog = vloeiender scrollen.",
     "performanceSmall": "Klein",
@@ -258,7 +258,16 @@
     "hint": "Zoek films, series, muziek...",
     "tryDifferentTerm": "Probeer een andere zoekterm",
     "searchYourMedia": "Zoek in je media",
-    "enterTitleActorOrKeyword": "Voer een titel, acteur of trefwoord in"
+    "enterTitleActorOrKeyword": "Voer een titel, acteur of trefwoord in",
+    "categories": {
+      "movies": "Movies",
+      "shows": "Shows",
+      "episodes": "Episodes",
+      "people": "People",
+      "collections": "Collections",
+      "programs": "Programs",
+      "channels": "Channels"
+    }
   },
   "hotkeys": {
     "setShortcutFor": "Stel sneltoets in voor ${actionName}",

@@ -283,6 +283,51 @@ class DataAggregationService {
     return result;
   }
 
+  /// Search across all servers, returning results grouped by item type.
+  /// Each key is the Jellyfin IncludeItemTypes value (e.g. 'Movie', 'Series').
+  /// Only types with results are included in the map.
+  Future<Map<String, List<MediaMetadata>>> searchCategorizedAcrossServers(
+    String query, {
+    int limitPerType = 20,
+    bool includeLiveTv = false,
+  }) async {
+    if (query.trim().isEmpty) return {};
+
+    final types = [
+      'Movie',
+      'Series',
+      'Episode',
+      'Person',
+      'BoxSet',
+      if (includeLiveTv) 'LiveTvProgram',
+      if (includeLiveTv) 'LiveTvChannel',
+    ];
+
+    final results = <String, List<MediaMetadata>>{};
+
+    await Future.wait(types.map((itemType) async {
+      try {
+        final items = await _perServer<MediaMetadata>(
+          operationName: 'searching $itemType for "$query"',
+          operation: (serverId, client, server) async {
+            if (itemType == 'Person') {
+              return await client.searchPersons(query, limit: limitPerType);
+            }
+            return await client.search(query, includeItemTypes: itemType, limit: limitPerType);
+          },
+        );
+        if (items.isNotEmpty) {
+          results[itemType] = items;
+        }
+      } catch (e) {
+        appLogger.w('Categorized search failed for type $itemType: $e');
+      }
+    }));
+
+    appLogger.i('Categorized search: ${results.entries.map((e) => '${e.key}=${e.value.length}').join(', ')}');
+    return results;
+  }
+
   /// Get libraries for a specific server
   Future<List<MediaLibrary>> getLibrariesForServer(String serverId) async {
     final client = _serverManager.getClient(serverId);

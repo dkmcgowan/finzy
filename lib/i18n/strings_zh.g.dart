@@ -359,8 +359,8 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get performanceImageQualityDescription => '较低质量加载更快。小 = 最快，大 = 最佳质量。';
 	@override String get performancePosterSize => '海报大小';
 	@override String get performancePosterSizeDescription => '网格中海报卡片的大小。小 = 更多项目，大 = 更大卡片。';
-	@override String get performanceReduceAnimations => '减少动画';
-	@override String get performanceReduceAnimationsDescription => '更短的过渡以获得更灵敏的感觉';
+	@override String get performanceDisableAnimations => '禁用动画';
+	@override String get performanceDisableAnimationsDescription => '关闭所有过渡以获得更灵敏的导航';
 	@override String get performanceGridPreload => '网格预加载';
 	@override String get performanceGridPreloadDescription => '加载多少屏幕外项目。低 = 更快，高 = 更流畅的滚动。';
 	@override String get performanceSmall => '小';
@@ -383,6 +383,7 @@ class _TranslationsSearchZh implements TranslationsSearchEn {
 	@override String get tryDifferentTerm => '尝试不同的搜索词';
 	@override String get searchYourMedia => '搜索媒体';
 	@override String get enterTitleActorOrKeyword => '输入标题、演员或关键词';
+	@override late final _TranslationsSearchCategoriesZh categories = _TranslationsSearchCategoriesZh._(_root);
 }
 
 // Path: hotkeys
@@ -1086,6 +1087,22 @@ class _TranslationsExternalPlayerZh implements TranslationsExternalPlayerEn {
 	@override String get playInExternalPlayer => '在外部播放器中播放';
 }
 
+// Path: search.categories
+class _TranslationsSearchCategoriesZh implements TranslationsSearchCategoriesEn {
+	_TranslationsSearchCategoriesZh._(this._root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get movies => 'Movies';
+	@override String get shows => 'Shows';
+	@override String get episodes => 'Episodes';
+	@override String get people => 'People';
+	@override String get collections => 'Collections';
+	@override String get programs => 'Programs';
+	@override String get channels => 'Channels';
+}
+
 // Path: hotkeys.actions
 class _TranslationsHotkeysActionsZh implements TranslationsHotkeysActionsEn {
 	_TranslationsHotkeysActionsZh._(this._root);
@@ -1504,8 +1521,8 @@ extension on TranslationsZh {
 			'settings.performanceImageQualityDescription' => '较低质量加载更快。小 = 最快，大 = 最佳质量。',
 			'settings.performancePosterSize' => '海报大小',
 			'settings.performancePosterSizeDescription' => '网格中海报卡片的大小。小 = 更多项目，大 = 更大卡片。',
-			'settings.performanceReduceAnimations' => '减少动画',
-			'settings.performanceReduceAnimationsDescription' => '更短的过渡以获得更灵敏的感觉',
+			'settings.performanceDisableAnimations' => '禁用动画',
+			'settings.performanceDisableAnimationsDescription' => '关闭所有过渡以获得更灵敏的导航',
 			'settings.performanceGridPreload' => '网格预加载',
 			'settings.performanceGridPreloadDescription' => '加载多少屏幕外项目。低 = 更快，高 = 更流畅的滚动。',
 			'settings.performanceSmall' => '小',
@@ -1519,6 +1536,13 @@ extension on TranslationsZh {
 			'search.tryDifferentTerm' => '尝试不同的搜索词',
 			'search.searchYourMedia' => '搜索媒体',
 			'search.enterTitleActorOrKeyword' => '输入标题、演员或关键词',
+			'search.categories.movies' => 'Movies',
+			'search.categories.shows' => 'Shows',
+			'search.categories.episodes' => 'Episodes',
+			'search.categories.people' => 'People',
+			'search.categories.collections' => 'Collections',
+			'search.categories.programs' => 'Programs',
+			'search.categories.channels' => 'Channels',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => '为 ${actionName} 设置快捷键',
 			'hotkeys.clearShortcut' => '清除快捷键',
 			'hotkeys.actions.playPause' => '播放/暂停',
@@ -1777,6 +1801,8 @@ extension on TranslationsZh {
 			'libraries.noFavorites' => '此媒体库中无收藏',
 			'libraries.noGenres' => '此媒体库中无类型',
 			'libraries.noFoldersFound' => '未找到文件夹',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.folders' => '文件夹',
 			'libraries.tabs.movies' => '电影',
 			'libraries.tabs.shows' => '剧集',
@@ -1784,8 +1810,6 @@ extension on TranslationsZh {
 			'libraries.tabs.browse' => '浏览',
 			'libraries.tabs.genres' => '类型',
 			'libraries.tabs.favorites' => '收藏',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.tabs.collections' => '合集',
 			'libraries.tabs.playlists' => '播放列表',
 			'libraries.groupings.all' => '全部',

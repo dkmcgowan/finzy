@@ -14,6 +14,7 @@ import '../../models/library_sort.dart';
 import '../../providers/hidden_libraries_provider.dart';
 import '../../providers/libraries_provider.dart';
 import '../../providers/multi_server_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/user_profile_provider.dart';
 import '../../providers/server_state_provider.dart';
 import '../../providers/playback_state_provider.dart';
@@ -233,14 +234,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
   @override
   void onTabChanged() {
-    // Save tab index when changed (but not when restoring from storage)
     if (_selectedLibraryGlobalKey != null && !tabController.indexIsChanging) {
-      // Only save if this was a user-initiated tab change, not a restore
       if (!_isRestoringTab) {
-        StorageService.getInstance().then((storage) {
-          storage.saveLibraryTab(_selectedLibraryGlobalKey!, tabController.index);
-        });
-
         // Focus first item in the current tab (only for user-initiated changes)
         // But not when navigating via tab bar (suppressAutoFocus is true)
         if (!suppressAutoFocus) {
@@ -285,11 +280,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
       final tabState = _getTabState(tabController.index);
       if (tabState != null) {
-        if (tabController.index == 0 && _effectiveTabCount > 1) {
-          (tabState as dynamic).focusChipsBar();
-        } else {
-          (tabState as dynamic).focusFirstItem();
-        }
+        (tabState as dynamic).focusFirstItem();
       } else {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -326,21 +317,24 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     }
   }
 
-  /// UP from content: focus tab bar when there are focusable tab chips,
-  /// otherwise focus refresh button (e.g. Favorites or single-tab libraries).
+  /// UP from first row: focus tab bar when there are focusable tab chips,
+  /// otherwise focus refresh button (for Favorites or single-tab libraries).
   void _onContentNavigateUp() {
     if (_effectiveTabCount > 1 && _selectedLibraryGlobalKey != kJellyfinFavoritesKey) {
       focusTabBar();
     } else {
-      // Scroll to top so header (back arrow, title) stays visible when focus moves to app bar
       _scrollOuterToTopIfNeeded();
       _refreshButtonFocusNode.requestFocus();
     }
   }
 
+  /// BACK key from content: focus sidebar (navigation). Most users want this.
+  void _onContentBack() {
+    MainScreenFocusScope.of(context)?.focusSidebar();
+  }
+
   /// Focus tab content when navigating DOWN from the tab bar.
-  /// For browse tab, this focuses the chips bar first so DOWN navigates to grid.
-  /// For other tabs, focuses the first item directly.
+  /// Focuses the first item in the tab (grid, hub, etc.) for consistent keyboard/dpad UX.
   void _focusCurrentTabFromTabBar() {
     if (tabController.indexIsChanging) {
       return;
@@ -355,7 +349,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     // Unfocus the tab chip first so the content can receive focus (avoids focus "stuck" on tab bar)
     getTabChipFocusNode(tabController.index).unfocus();
 
-    // Scroll outer view to top to ensure tab content (including chips bar) is visible
+    // Scroll outer view to top to ensure tab content is visible
     if (_outerScrollController.hasClients && _outerScrollController.offset > 0) {
       _outerScrollController.jumpTo(0);
     }
@@ -365,12 +359,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
       final tabState = _getTabState(tabController.index);
       if (tabState != null) {
-        // Browse tab has a chips bar - focus that first so DOWN navigates to grid
-        if (tabController.index == 0) {
-          (tabState as dynamic).focusChipsBar();
-        } else {
-          (tabState as dynamic).focusFirstItem();
-        }
+        (tabState as dynamic).focusFirstItem();
       }
     });
   }
@@ -378,11 +367,16 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   /// Scroll the outer CustomScrollView to top when opening an inline view.
   /// Ensures header and content are visible (avoids cut-off from prior scroll offset).
   void _scrollOuterToTopIfNeeded() {
+    final disableAnimations = context.read<SettingsProvider>().disableAnimations;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (!_outerScrollController.hasClients) return;
       if (_outerScrollController.offset > 0) {
-        _outerScrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        if (disableAnimations) {
+          _outerScrollController.jumpTo(0);
+        } else {
+          _outerScrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        }
       }
     });
   }
@@ -676,13 +670,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final storage = await StorageService.getInstance();
     await storage.saveSelectedLibraryKey(libraryGlobalKey);
 
-    final savedTabIndex = storage.getLibraryTab(libraryGlobalKey);
-    final tabToSelect = (savedTabIndex != null && savedTabIndex >= 0 && savedTabIndex < newTabCount)
-        ? savedTabIndex
-        : 0; // No saved tab for this library (e.g. first visit) — start on first tab
-    if (tabController.index != tabToSelect) {
+    // Always start at first tab (Browse/Suggestions)
+    if (tabController.index != 0) {
       _isRestoringTab = true;
-      tabController.animateTo(tabToSelect, duration: Duration.zero);
+      tabController.animateTo(0, duration: Duration.zero);
       _isRestoringTab = false;
     }
 
@@ -1030,6 +1021,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
               _refreshButtonFocusNode.requestFocus();
             },
       onNavigateDown: _focusCurrentTabFromTabBar,
+      onNavigateUp: () {
+        _scrollOuterToTopIfNeeded();
+        _refreshButtonFocusNode.requestFocus();
+      },
       onBack: onTabBarBack,
     );
   }
@@ -1110,6 +1105,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           suppressAutoFocus: suppressAutoFocus,
           onDataLoaded: () => _handleTabDataLoaded(2),
           onBack: _onContentNavigateUp,
+          onBackToNavigation: _onContentBack,
         ),
         LibraryGenreTab(
           key: _genreTabKey,
@@ -1146,6 +1142,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           suppressAutoFocus: suppressAutoFocus,
           onDataLoaded: () => _handleTabDataLoaded(2),
           onBack: _onContentNavigateUp,
+          onBackToNavigation: _onContentBack,
         ),
       ];
     }
@@ -1160,6 +1157,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             suppressAutoFocus: suppressAutoFocus,
             onDataLoaded: () => _handleTabDataLoaded(0),
             onBack: _onContentNavigateUp,
+            onBackToNavigation: _onContentBack,
           )
         else
           LibraryPlaylistsTab(
@@ -1169,6 +1167,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
             suppressAutoFocus: suppressAutoFocus,
             onDataLoaded: () => _handleTabDataLoaded(0),
             onBack: _onContentNavigateUp,
+            onBackToNavigation: _onContentBack,
           ),
       ];
     }
@@ -1196,6 +1195,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(2),
         onBack: _onContentNavigateUp,
+        onBackToNavigation: _onContentBack,
       ),
       LibraryCollectionsTab(
         key: _collectionsTabKey,
@@ -1204,6 +1204,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(3),
         onBack: _onContentNavigateUp,
+        onBackToNavigation: _onContentBack,
       ),
       LibraryPlaylistsTab(
         key: _playlistsTabKey,
@@ -1212,6 +1213,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         suppressAutoFocus: suppressAutoFocus,
         onDataLoaded: () => _handleTabDataLoaded(4),
         onBack: _onContentNavigateUp,
+        onBackToNavigation: _onContentBack,
       ),
     ];
   }
@@ -1508,7 +1510,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                     child: TabBarView(
                       key: ValueKey(_selectedLibraryGlobalKey),
                       controller: tabController,
-                      physics: PlatformDetector.isDesktop(context) ? const NeverScrollableScrollPhysics() : null,
+                      physics: (PlatformDetector.isDesktop(context) || PlatformDetector.isTV()) ? const NeverScrollableScrollPhysics() : null,
                       children: _buildTabViewChildren(selectedLibrary),
                     ),
                   ),

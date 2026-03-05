@@ -15,6 +15,7 @@ import '../navigation/navigation_tabs.dart';
 import '../providers/hidden_libraries_provider.dart';
 import '../providers/libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/fullscreen_state_manager.dart';
 import '../services/settings_service.dart';
 import '../theme/mono_tokens.dart';
@@ -380,12 +381,13 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     if (nextNode == null) return KeyEventResult.ignored;
 
     nextNode.requestFocus();
+    final disableAnimations = context.read<SettingsProvider>().disableAnimations;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final ctx = nextNode.context;
       if (ctx != null) {
         Scrollable.ensureVisible(ctx,
-            alignment: 0.5, duration: const Duration(milliseconds: 200));
+            alignment: 0.5, duration: disableAnimations ? Duration.zero : const Duration(milliseconds: 200));
       }
     });
     return KeyEventResult.handled;

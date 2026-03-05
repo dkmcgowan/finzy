@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/cast_role.dart';
 import '../models/media_metadata.dart';
 import '../models/playlist.dart';
+import '../providers/multi_server_provider.dart';
 import '../screens/collection_detail_screen.dart';
 import '../screens/media_detail_screen.dart';
+import '../screens/person_detail_screen.dart';
 import '../screens/season_detail_screen.dart';
 import '../screens/playlist/playlist_detail_screen.dart';
 import 'video_player_navigation.dart';
@@ -65,6 +69,28 @@ Future<MediaNavigationResult> navigateToMediaItem(
       // If collection was deleted, signal that list refresh is needed
       if (result == true) {
         return MediaNavigationResult.listRefreshNeeded;
+      }
+      return MediaNavigationResult.navigated;
+
+    case MediaType.person:
+      final multiServerProvider = Provider.of<MultiServerProvider>(context, listen: false);
+      final client = multiServerProvider.getClientForServer(metadata.serverId ?? '');
+      if (client != null) {
+        final actor = CastRole(
+          tag: metadata.title,
+          tagKey: metadata.itemId,
+          thumb: metadata.thumb,
+        );
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PersonDetailScreen(
+              actor: actor,
+              client: client,
+              serverId: metadata.serverId ?? '',
+            ),
+          ),
+        );
       }
       return MediaNavigationResult.navigated;
 

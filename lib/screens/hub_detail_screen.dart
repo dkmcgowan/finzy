@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -59,7 +60,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
 
   /// Get the correct JellyfinClient for this hub's server
   JellyfinClient _getClientForHub() {
-    return context.getClientForServer(widget.hub.serverId!);
+    return context.getClientWithFallback(widget.hub.serverId);
   }
 
   @override
@@ -76,11 +77,11 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     }
     // Load sorts based on the library type
     _loadSorts();
-    // Focus back button when screen opens (keyboard nav: Down goes to grid)
+    // Focus first grid item when screen opens (consistent with browse, favorites, etc.)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (InputModeTracker.isKeyboardMode(context)) {
-        _backButtonFocusNode.requestFocus();
+      if (InputModeTracker.isKeyboardMode(context) && _filteredItems.isNotEmpty) {
+        _focusGridItem(0);
       }
     });
   }
@@ -129,7 +130,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
         episodePosterMode == EpisodePosterMode.episodeThumbnail && (isEpisodeOnlyHub || isMixedHub);
 
     final availableWidth = MediaQuery.of(context).size.width - 16;
-    final maxExtent = GridSizeCalculator.getMaxCrossAxisExtentWithPadding(context, density, 16);
+    final maxExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, density);
     final effectiveMaxExtent = useWideLayout ? maxExtent * 1.8 : maxExtent;
     final columnCount = GridSizeCalculator.getColumnCount(availableWidth, effectiveMaxExtent);
     final cellWidth = availableWidth / columnCount;
@@ -163,10 +164,6 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
       }
 
       if (!node.hasFocus) node.requestFocus();
-      if (ctx != null) {
-        appLogger.d('HubDetailScreen: _focusGridItem index=$index ensureVisible');
-        Scrollable.ensureVisible(ctx, alignment: 0.5, duration: const Duration(milliseconds: 150), curve: Curves.easeOut);
-      }
     }
 
     appLogger.d('HubDetailScreen: _focusGridItem index=$index');
@@ -176,8 +173,13 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
   void _navigateToAppBar() {
     appLogger.d('HubDetailScreen: _navigateToAppBar (Up from first row)');
     setState(() => _isAppBarFocused = true);
-    // Focus sort button (top right) directly; Left from sort goes to back
-    _sortButtonFocusNode.requestFocus();
+    _backButtonFocusNode.requestFocus();
+    final disableAnimations = context.read<SettingsProvider>().disableAnimations;
+    if (disableAnimations) {
+      _scrollController.jumpTo(0);
+    } else {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    }
   }
 
   void _handleBackFromContent() {
@@ -193,6 +195,10 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
 
     if (!event.isActionable) return KeyEventResult.ignored;
 
+    if (event is KeyDownEvent && key.isSelectKey) {
+      Navigator.pop(context);
+      return KeyEventResult.handled;
+    }
     if (key.isDownKey && _filteredItems.isNotEmpty) {
       _focusGrid();
       return KeyEventResult.handled;
@@ -405,6 +411,8 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
           key: _overlayChildKey,
           body: CustomScrollView(
             controller: _scrollController,
+            // ignore: deprecated_member_use
+            cacheExtent: context.read<SettingsProvider>().gridPreloadCacheExtent,
             clipBehavior: Clip.none,
             slivers: [
               CustomAppBar(
@@ -412,10 +420,24 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                 leading: Focus(
                   focusNode: _backButtonFocusNode,
                   onKeyEvent: _handleBackButtonKeyEvent,
-                  child: IconButton(
-                    icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
-                    onPressed: () => Navigator.pop(context),
-                    tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  child: ListenableBuilder(
+                    listenable: _backButtonFocusNode,
+                    builder: (context, _) {
+                      final isFocused = InputModeTracker.isKeyboardMode(context) && _backButtonFocusNode.hasFocus;
+                      return Container(
+                        decoration: isFocused
+                            ? BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              )
+                            : null,
+                        child: IconButton(
+                          icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+                          onPressed: () => Navigator.pop(context),
+                          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                        ),
+                      );
+                    },
                   ),
                 ),
                 pinned: true,
@@ -469,22 +491,18 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                       padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
                       sliver: SliverLayoutBuilder(
                         builder: (context, constraints) {
-                          final maxExtent = GridSizeCalculator.getMaxCrossAxisExtentWithPadding(
-                            context,
-                            settings.libraryDensity,
-                            16,
-                          );
+                          // Match library browse: use getMaxCrossAxisExtent (not getMaxCrossAxisExtentWithPadding)
+                          final maxExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, settings.libraryDensity);
+                          final effectiveMaxExtent = useWideLayout ? maxExtent * 1.8 : maxExtent;
                           final columnCount = GridSizeCalculator.getColumnCount(
                             constraints.crossAxisExtent,
-                            useWideLayout ? maxExtent * 1.8 : maxExtent,
+                            effectiveMaxExtent,
                           );
 
                           return SliverGrid(
                             gridDelegate: MediaGridDelegate.createDelegate(
                               context: context,
                               density: settings.libraryDensity,
-                              usePaddingAware: true,
-                              horizontalPadding: 16,
                               useWideAspectRatio: useWideLayout,
                             ),
                             delegate: SliverChildBuilderDelegate(
@@ -510,8 +528,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                                   onBack: _handleBackFromContent,
                                   onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
                                   mixedHubContext: isMixedHub,
-                                  // Only top row scrolls when focused (avoids jank when navigating between rows)
-                                  autoScroll: isFirstRow,
+                                  autoScroll: true,
                                   scrollTopOffset: isFirstRow ? 72 : null,
                                 );
                               },

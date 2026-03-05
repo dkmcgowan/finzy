@@ -242,8 +242,8 @@
     "performanceImageQualityDescription": "Qualità inferiore carica più velocemente. Piccolo = più veloce, Grande = migliore qualità.",
     "performancePosterSize": "Dimensione poster",
     "performancePosterSizeDescription": "Dimensione delle card poster nelle griglie. Piccolo = più elementi, Grande = card più grandi.",
-    "performanceReduceAnimations": "Riduci animazioni",
-    "performanceReduceAnimationsDescription": "Transizioni più brevi per una sensazione più reattiva",
+    "performanceDisableAnimations": "Disattiva animazioni",
+    "performanceDisableAnimationsDescription": "Disattiva tutte le transizioni per una navigazione più reattiva",
     "performanceGridPreload": "Precaricamento griglia",
     "performanceGridPreloadDescription": "Quanti elementi fuori schermo caricare. Basso = più veloce, Alto = scorrimento più fluido.",
     "performanceSmall": "Piccolo",
@@ -258,7 +258,16 @@
     "hint": "Cerca film. spettacoli, musica...",
     "tryDifferentTerm": "Prova altri termini di ricerca",
     "searchYourMedia": "Cerca nei tuoi media",
-    "enterTitleActorOrKeyword": "Inserisci un titolo, attore o parola chiave"
+    "enterTitleActorOrKeyword": "Inserisci un titolo, attore o parola chiave",
+    "categories": {
+      "movies": "Movies",
+      "shows": "Shows",
+      "episodes": "Episodes",
+      "people": "People",
+      "collections": "Collections",
+      "programs": "Programs",
+      "channels": "Channels"
+    }
   },
   "hotkeys": {
     "setShortcutFor": "Imposta scorciatoia per ${actionName}",

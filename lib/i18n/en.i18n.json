@@ -242,8 +242,8 @@
     "performanceImageQualityDescription": "Lower quality loads faster. Small = fastest, Large = best quality.",
     "performancePosterSize": "Poster Size",
     "performancePosterSizeDescription": "Size of poster cards in grids. Small = more items, Large = bigger cards.",
-    "performanceReduceAnimations": "Reduce Animations",
-    "performanceReduceAnimationsDescription": "Shorter transitions for snappier feel",
+    "performanceDisableAnimations": "Disable Animations",
+    "performanceDisableAnimationsDescription": "Turns off all transitions for snappier navigation",
     "performanceGridPreload": "Grid Preload",
     "performanceGridPreloadDescription": "How many off-screen items to load. Low = faster, High = smoother scrolling.",
     "performanceSmall": "Small",
@@ -258,7 +258,16 @@
     "hint": "Search movies, shows, music...",
     "tryDifferentTerm": "Try a different search term",
     "searchYourMedia": "Search your media",
-    "enterTitleActorOrKeyword": "Enter a title, actor, or keyword"
+    "enterTitleActorOrKeyword": "Enter a title, actor, or keyword",
+    "categories": {
+      "movies": "Movies",
+      "shows": "Shows",
+      "episodes": "Episodes",
+      "people": "People",
+      "collections": "Collections",
+      "programs": "Programs",
+      "channels": "Channels"
+    }
   },
   "hotkeys": {
     "setShortcutFor": "Set Shortcut for ${actionName}",

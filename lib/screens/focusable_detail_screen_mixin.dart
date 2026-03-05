@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../focus/dpad_navigator.dart';
 import '../focus/input_mode_tracker.dart';
@@ -30,6 +31,7 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
   final ScrollController scrollController = ScrollController();
 
   // App bar focus nodes
+  final FocusNode backButtonFocusNode = FocusNode(debugLabel: 'detail_back');
   final FocusNode playButtonFocusNode = FocusNode(debugLabel: 'detail_play');
   final FocusNode shuffleButtonFocusNode = FocusNode(debugLabel: 'detail_shuffle');
   final FocusNode deleteButtonFocusNode = FocusNode(debugLabel: 'detail_delete');
@@ -39,7 +41,8 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
 
   // App bar focus state
   bool isAppBarFocused = false;
-  int appBarFocusedButton = 0; // 0=play, 1=shuffle, 2=delete (or less if fewer buttons)
+  // -1=back, 0=play, 1=shuffle, 2=delete (when appBarButtonCount>0); 0=back only when appBarButtonCount==0)
+  int appBarFocusedButton = 0;
 
   
 
@@ -55,6 +58,7 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
   /// Dispose focus-related resources. Call this from your dispose() method.
   void disposeFocusResources() {
     scrollController.dispose();
+    backButtonFocusNode.dispose();
     playButtonFocusNode.dispose();
     shuffleButtonFocusNode.dispose();
     deleteButtonFocusNode.dispose();
@@ -66,11 +70,15 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
   void navigateToAppBar() {
     setState(() {
       isAppBarFocused = true;
-      appBarFocusedButton = 0;
+      // Start with back button when we have action buttons; otherwise back is the only button (index 0)
+      appBarFocusedButton = appBarButtonCount > 0 ? -1 : 0;
     });
-    _focusAppBarButton(0);
-    // Scroll to top to show the app bar
-    scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    _focusAppBarButton(appBarButtonCount > 0 ? -1 : 0);
+    if (context.read<SettingsProvider>().disableAnimations) {
+      scrollController.jumpTo(0);
+    } else {
+      scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    }
   }
 
   /// Handle BACK key from content - pop the screen directly
@@ -100,9 +108,12 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
     return true;
   }
 
-  /// Focus a specific app bar button by index
+  /// Focus a specific app bar button by index (-1=back, 0=play, 1=shuffle, 2=delete)
   void _focusAppBarButton(int index) {
     switch (index) {
+      case -1:
+        backButtonFocusNode.requestFocus();
+        break;
       case 0:
         playButtonFocusNode.requestFocus();
         break;
@@ -120,23 +131,32 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
     final key = event.logicalKey;
     final maxButton = appBarButtonCount - 1;
 
-    // Left from other buttons = move to previous; Left from leftmost = no-op (Back key only for back)
+    // When only back button (no action buttons), Select = pop
+    if (appBarButtonCount == 0 && event is KeyDownEvent && key.isSelectKey) {
+      Navigator.pop(context);
+      return KeyEventResult.handled;
+    }
+
+    // Back key or Left from back button: pop
+    final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
+    if (backResult != KeyEventResult.ignored) {
+      return backResult;
+    }
+
+    // Left from other buttons = move to previous (play->back, shuffle->play, delete->shuffle)
     if (key.isLeftKey) {
-      if (appBarFocusedButton > 0) {
+      if (appBarFocusedButton > -1) {
         if (event is KeyDownEvent) {
           setState(() => appBarFocusedButton--);
           _focusAppBarButton(appBarFocusedButton);
         }
         return KeyEventResult.handled;
       }
-      return KeyEventResult.handled; // Consume Left on leftmost button, don't pop
-    }
-    final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context));
-    if (backResult != KeyEventResult.ignored) {
-      return backResult;
+      return KeyEventResult.handled; // Consume Left on back button
     }
 
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    // Right from back/play/shuffle = move to next
     if (key.isRightKey && appBarFocusedButton < maxButton) {
       setState(() => appBarFocusedButton++);
       _focusAppBarButton(appBarFocusedButton);
@@ -148,13 +168,49 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
       return KeyEventResult.handled;
     }
     if (key.isSelectKey) {
+      if (appBarFocusedButton == -1) {
+        Navigator.pop(context);
+        return KeyEventResult.handled;
+      }
       final buttons = getAppBarButtons();
-      if (appBarFocusedButton < buttons.length) {
+      if (appBarFocusedButton >= 0 && appBarFocusedButton < buttons.length) {
         buttons[appBarFocusedButton].onPressed();
       }
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
+  }
+
+  /// Builds a focusable back button for the app bar leading.
+  /// When [appBarButtonCount] is 0, uses playButtonFocusNode (back is the only button).
+  /// When [appBarButtonCount] > 0, uses backButtonFocusNode (back is first, then play/shuffle/delete).
+  Widget? buildFocusableLeading(BuildContext context) {
+    final parentRoute = ModalRoute.of(context);
+    final canPop = parentRoute?.canPop ?? false;
+    if (!canPop) return null;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isKeyboardMode = InputModeTracker.isKeyboardMode(context);
+    final backIndex = appBarButtonCount > 0 ? -1 : 0;
+    final isFocused = isKeyboardMode && isAppBarFocused && appBarFocusedButton == backIndex;
+    final focusNode = appBarButtonCount > 0 ? backButtonFocusNode : playButtonFocusNode;
+
+    return Focus(
+      focusNode: focusNode,
+      onKeyEvent: handleAppBarKeyEvent,
+      child: Container(
+        decoration: isFocused
+            ? BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              )
+            : null,
+        child: IconButton(
+          icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        ),
+      ),
+    );
   }
 
   /// Build focusable app bar action widgets
@@ -220,6 +276,14 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
     }
   }
 
+  void _focusDetailGridItem(int index) {
+    if (index == 0) {
+      firstItemFocusNode.requestFocus();
+    } else {
+      getGridItemFocusNode(index, prefix: 'detail_grid_item').requestFocus();
+    }
+  }
+
   /// Build a standard focusable grid sliver for media items.
   /// Used by collection and smart playlist detail screens.
   Widget buildFocusableGrid({
@@ -249,6 +313,12 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                       ? firstItemFocusNode
                       : getGridItemFocusNode(index, prefix: 'detail_grid_item');
 
+                  final aboveIndex = index - columnCount;
+                  final belowIndex = index + columnCount;
+                  final isLastRow = belowIndex >= items.length;
+                  final isFirstColumn = index % columnCount == 0;
+                  final isLastColumn = index % columnCount == columnCount - 1;
+
                   return FocusableMediaCard(
                     key: Key(item.itemId),
                     item: item,
@@ -256,9 +326,13 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                     onRefresh: onRefresh,
                     collectionId: collectionId,
                     onListRefresh: onListRefresh,
-                    onNavigateUp: inFirstRow ? navigateToAppBar : null,
+                    onNavigateUp: inFirstRow ? navigateToAppBar : () => _focusDetailGridItem(aboveIndex),
+                    onNavigateDown: isLastRow ? null : () => _focusDetailGridItem(belowIndex),
+                    onNavigateLeft: isFirstColumn ? null : () => _focusDetailGridItem(index - 1),
+                    onNavigateRight: isLastColumn ? null : () => _focusDetailGridItem(index + 1),
                     onBack: handleBackFromContent,
                     onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
+                    scrollTopOffset: inFirstRow ? kToolbarHeight + 16 : null,
                   );
                 },
               );

@@ -159,6 +159,7 @@ class ScheduledTabState extends State<ScheduledTab> {
           autofocus: index == 0,
           autoScroll: true,
           useComfortableZone: true,
+          disableScale: true,
           onSelect: timer.key != null ? () => _cancelTimer(timer) : null,
           enableLongPress: isTV && timer.key != null,
           onLongPress: isTV && timer.key != null ? () => _cancelTimer(timer) : null,

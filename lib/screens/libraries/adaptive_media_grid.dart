@@ -14,10 +14,34 @@ class GridItemContext {
   /// Whether this item is in the first column of the grid.
   final bool isFirstColumn;
 
+  /// Whether this item is in the last column of the grid.
+  final bool isLastColumn;
+
+  /// Whether this item is in the last row of the grid.
+  final bool isLastRow;
+
+  /// Number of columns in the grid.
+  final int columnCount;
+
+  /// Index of this item in the grid.
+  final int index;
+
+  /// Total number of items in the grid.
+  final int itemCount;
+
   /// Callback to navigate to the sidebar (for first-column items).
   final VoidCallback? navigateToSidebar;
 
-  const GridItemContext({required this.isFirstRow, required this.isFirstColumn, this.navigateToSidebar});
+  const GridItemContext({
+    required this.isFirstRow,
+    required this.isFirstColumn,
+    required this.isLastColumn,
+    required this.isLastRow,
+    required this.columnCount,
+    required this.index,
+    required this.itemCount,
+    this.navigateToSidebar,
+  });
 }
 
 /// A widget that automatically switches between grid and list view
@@ -105,7 +129,12 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
           final gridContext = enableSidebarNavigation
               ? GridItemContext(
                   isFirstRow: index == 0,
-                  isFirstColumn: true, // List view = single column
+                  isFirstColumn: true,
+                  isLastColumn: true,
+                  isLastRow: index == items.length - 1,
+                  columnCount: 1,
+                  index: index,
+                  itemCount: items.length,
                   navigateToSidebar: () => _navigateToSidebar(context),
                 )
               : null;
@@ -140,6 +169,11 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
                   ? GridItemContext(
                       isFirstRow: GridSizeCalculator.isFirstRow(index, columnCount),
                       isFirstColumn: GridSizeCalculator.isFirstColumn(index, columnCount),
+                      isLastColumn: index % columnCount == columnCount - 1,
+                      isLastRow: index + columnCount >= items.length,
+                      columnCount: columnCount,
+                      index: index,
+                      itemCount: items.length,
                       navigateToSidebar: () => _navigateToSidebar(context),
                     )
                   : null;

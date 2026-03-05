@@ -20,6 +20,9 @@ enum MediaType {
   playlist,
   clip,
   photo,
+  person,
+  program,
+  channel,
   unknown;
 
   /// Whether this type represents video content
@@ -128,6 +131,10 @@ class MediaMetadata with MultiServerFields {
       'playlist' => MediaType.playlist,
       'clip' => MediaType.clip,
       'photo' => MediaType.photo,
+      'person' => MediaType.person,
+      'program' => MediaType.program,
+      'channel' => MediaType.channel,
+      'tvchannel' => MediaType.channel,
       _ => MediaType.unknown,
     };
   }

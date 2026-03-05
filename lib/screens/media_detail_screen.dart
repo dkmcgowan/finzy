@@ -22,12 +22,14 @@ import '../widgets/optimized_image.dart';
 import '../utils/media_image_helper.dart';
 import '../../services/jellyfin_client.dart';
 import '../services/api_cache.dart';
+import '../services/storage_service.dart';
 import '../models/media_metadata.dart';
 import '../utils/content_utils.dart';
 import '../utils/rating_utils.dart';
 import '../models/download_models.dart';
 import '../providers/download_provider.dart';
 import '../providers/offline_watch_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/app_logger.dart';
 import '../utils/formatters.dart';
@@ -38,7 +40,6 @@ import '../utils/snackbar_helper.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/video_player_navigation.dart';
-import 'trailer_player_overlay.dart';
 import '../widgets/app_bar_back_button.dart';
 import 'person_detail_screen.dart';
 import '../widgets/horizontal_scroll_with_arrows.dart';
@@ -417,45 +418,20 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
             IconButton.filledTonal(
               onPressed: () async {
                 final key = primaryTrailer.itemId;
-                appLogger.d('Trailer pressed: itemId="$key" (length=${key.length})');
                 if (key.startsWith('http://') || key.startsWith('https://')) {
-                  final isYouTube = isYouTubeUrl(key);
-                  appLogger.d('Trailer URL detected as YouTube: $isYouTube');
-                  // YouTube: play in-app overlay when supported; else external browser
-                  if (isYouTube) {
-                    final shown = await showTrailerOverlayIfYouTube(
-                      context,
-                      url: key,
-                      title: primaryTrailer.title,
+                  final uri = Uri.parse(key);
+                  if (await canLaunchUrl(uri)) {
+                    // Save return context before launching external app (Android TV may kill process)
+                    final storage = await StorageService.getInstance();
+                    await storage.savePendingExternalReturn(
+                      itemId: widget.metadata.itemId,
+                      serverId: widget.metadata.serverId,
                     );
-                    appLogger.d('Trailer overlay shown: $shown');
-                    if (!shown) {
-                      final uri = Uri.parse(key);
-                      if (await canLaunchUrl(uri)) {
-                        // On Windows/Linux, try in-app WebView first so user stays in app
-                        if (Platform.isWindows || Platform.isLinux) {
-                          try {
-                            appLogger.d('Trailer fallback: trying in-app WebView');
-                            await launchUrl(uri, mode: LaunchMode.inAppWebView);
-                          } catch (e) {
-                            appLogger.d('Trailer fallback: in-app WebView failed, using external browser', error: e);
-                            await launchUrl(uri, mode: LaunchMode.externalApplication);
-                          }
-                        } else {
-                          appLogger.d('Trailer fallback: opening in external browser');
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
-                        }
-                      }
-                    }
-                  } else {
-                    appLogger.d('Trailer: non-YouTube URL, opening in external browser');
-                    final uri = Uri.parse(key);
-                    if (await canLaunchUrl(uri)) {
+                    if (mounted) {
                       await launchUrl(uri, mode: LaunchMode.externalApplication);
                     }
                   }
                 } else {
-                  appLogger.d('Trailer: local item, navigating to video player');
                   await navigateToVideoPlayer(context, metadata: primaryTrailer);
                 }
               },
@@ -1164,10 +1140,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
   /// Scroll the main CustomScrollView so the section with the given key is visible
   void _scrollSectionIntoView(GlobalKey key) {
+    final disableAnimations = context.read<SettingsProvider>().disableAnimations;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = key.currentContext;
       if (ctx != null) {
-        Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        Scrollable.ensureVisible(ctx, duration: disableAnimations ? Duration.zero : const Duration(milliseconds: 200), curve: Curves.easeOut);
       }
     });
   }
@@ -1206,7 +1183,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (!event.isActionable) return KeyEventResult.ignored;
 
     if (key.isUpKey) {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      if (context.read<SettingsProvider>().disableAnimations) {
+        _scrollController.jumpTo(0);
+      } else {
+        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      }
       _backButtonFocusNode.requestFocus();
       return KeyEventResult.handled;
     }
@@ -1243,7 +1224,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (!event.isActionable) return KeyEventResult.ignored;
 
     if (key.isUpKey) {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      if (context.read<SettingsProvider>().disableAnimations) {
+        _scrollController.jumpTo(0);
+      } else {
+        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      }
       _playButtonFocusNode.requestFocus();
       return KeyEventResult.handled;
     }
@@ -1322,13 +1307,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (!event.isActionable) return KeyEventResult.ignored;
     if (_seasons.isEmpty) return KeyEventResult.ignored;
 
+    final disableAnims = context.read<SettingsProvider>().disableAnimations;
+
     // LEFT: previous season
     if (key.isLeftKey) {
       if (_focusedSeasonIndex > 0) {
         setState(() {
           _focusedSeasonIndex--;
         });
-        scrollListToIndex(_seasonsScrollController, _focusedSeasonIndex, itemExtent: _getResponsiveCardWidth() + 4);
+        scrollListToIndex(_seasonsScrollController, _focusedSeasonIndex, itemExtent: _getResponsiveCardWidth() + 4, disableAnimations: disableAnims);
       }
       return KeyEventResult.handled;
     }
@@ -1339,7 +1326,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         setState(() {
           _focusedSeasonIndex++;
         });
-        scrollListToIndex(_seasonsScrollController, _focusedSeasonIndex, itemExtent: _getResponsiveCardWidth() + 4);
+        scrollListToIndex(_seasonsScrollController, _focusedSeasonIndex, itemExtent: _getResponsiveCardWidth() + 4, disableAnimations: disableAnims);
       }
       return KeyEventResult.handled;
     }
@@ -1351,7 +1338,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         _overviewFocusNode.requestFocus();
         _scrollSectionIntoView(_overviewSectionKey);
       } else {
-        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        if (disableAnims) {
+          _scrollController.jumpTo(0);
+        } else {
+          _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        }
         _playButtonFocusNode.requestFocus();
       }
       return KeyEventResult.handled;
@@ -1440,12 +1431,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
 
     final metadata = _fullMetadata ?? widget.metadata;
     final roleCount = metadata.role?.length ?? 0;
+    final disableAnims = context.read<SettingsProvider>().disableAnimations;
 
     // LEFT: previous cast member
     if (key.isLeftKey) {
       if (_focusedCastIndex > 0) {
         setState(() => _focusedCastIndex--);
-        scrollListToIndex(_castScrollController, _focusedCastIndex, itemExtent: 120.0 + 4);
+        scrollListToIndex(_castScrollController, _focusedCastIndex, itemExtent: 120.0 + 4, disableAnimations: disableAnims);
       }
       return KeyEventResult.handled;
     }
@@ -1454,7 +1446,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (key.isRightKey) {
       if (_focusedCastIndex < roleCount - 1) {
         setState(() => _focusedCastIndex++);
-        scrollListToIndex(_castScrollController, _focusedCastIndex, itemExtent: 120.0 + 4);
+        scrollListToIndex(_castScrollController, _focusedCastIndex, itemExtent: 120.0 + 4, disableAnimations: disableAnims);
       }
       return KeyEventResult.handled;
     }
@@ -1468,7 +1460,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         _overviewFocusNode.requestFocus();
         _scrollSectionIntoView(_overviewSectionKey);
       } else {
-        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        if (disableAnims) {
+          _scrollController.jumpTo(0);
+        } else {
+          _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        }
         _playButtonFocusNode.requestFocus();
       }
       return KeyEventResult.handled;
@@ -1514,11 +1510,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (!event.isActionable) return KeyEventResult.ignored;
     if (_similarItems == null || _similarItems!.isEmpty) return KeyEventResult.ignored;
 
+    final disableAnims = context.read<SettingsProvider>().disableAnimations;
+
     // LEFT
     if (key.isLeftKey) {
       if (_focusedSimilarIndex > 0) {
         setState(() => _focusedSimilarIndex--);
-        scrollListToIndex(_similarItemsScrollController, _focusedSimilarIndex, itemExtent: _getResponsiveCardWidth() + 4);
+        scrollListToIndex(_similarItemsScrollController, _focusedSimilarIndex, itemExtent: _getResponsiveCardWidth() + 4, disableAnimations: disableAnims);
       }
       return KeyEventResult.handled;
     }
@@ -1527,7 +1525,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     if (key.isRightKey) {
       if (_focusedSimilarIndex < _similarItems!.length - 1) {
         setState(() => _focusedSimilarIndex++);
-        scrollListToIndex(_similarItemsScrollController, _focusedSimilarIndex, itemExtent: _getResponsiveCardWidth() + 4);
+        scrollListToIndex(_similarItemsScrollController, _focusedSimilarIndex, itemExtent: _getResponsiveCardWidth() + 4, disableAnimations: disableAnims);
       }
       return KeyEventResult.handled;
     }
@@ -1545,7 +1543,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
         _overviewFocusNode.requestFocus();
         _scrollSectionIntoView(_overviewSectionKey);
       } else {
-        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        if (disableAnims) {
+          _scrollController.jumpTo(0);
+        } else {
+          _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        }
         _playButtonFocusNode.requestFocus();
       }
       return KeyEventResult.handled;

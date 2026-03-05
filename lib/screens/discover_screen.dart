@@ -174,7 +174,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _scrollToTop() {
     if (!_scrollController.hasClients) return;
-    _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    if (context.read<SettingsProvider>().disableAnimations) {
+      _scrollController.jumpTo(0);
+    } else {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    }
   }
 
   void _focusTopBoundary() {

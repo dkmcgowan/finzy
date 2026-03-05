@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -106,20 +107,22 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
               ),
 
-              const SizedBox(height: 8),
+              if (!Platform.isAndroid && !Platform.isIOS) ...[
+                const SizedBox(height: 8),
 
-              Card(
-                child: SwitchListTile(
-                  secondary: const AppIcon(Symbols.volunteer_activism_rounded, fill: 1),
-                  title: Text(t.settings.hideSupportDevelopment),
-                  subtitle: Text(t.settings.hideSupportDevelopmentDescription),
-                  value: _hideSupportDevelopment,
-                  onChanged: (value) async {
-                    setState(() => _hideSupportDevelopment = value);
-                    await _settingsService?.setHideSupportDevelopment(value);
-                  },
+                Card(
+                  child: SwitchListTile(
+                    secondary: const AppIcon(Symbols.volunteer_activism_rounded, fill: 1),
+                    title: Text(t.settings.hideSupportDevelopment),
+                    subtitle: Text(t.settings.hideSupportDevelopmentDescription),
+                    value: _hideSupportDevelopment,
+                    onChanged: (value) async {
+                      setState(() => _hideSupportDevelopment = value);
+                      await _settingsService?.setHideSupportDevelopment(value);
+                    },
+                  ),
                 ),
-              ),
+              ],
 
               const SizedBox(height: 24),
             ]),

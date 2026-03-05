@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 import '../models/hotkey_model.dart';
 import 'package:finzy/utils/app_logger.dart';
@@ -256,12 +257,12 @@ class SettingsService extends BaseSharedPreferencesService {
     return _getEnumValue(_keyPosterSize, PerformanceProfile.values, PerformanceProfile.medium);
   }
 
-  // Performance: Reduce Animations (TV default: on, else: off)
-  Future<void> setReduceAnimations(bool enabled) async {
+  // Performance: Disable Animations (TV default: on, else: off)
+  Future<void> setDisableAnimations(bool enabled) async {
     await prefs.setBool(_keyReduceAnimations, enabled);
   }
 
-  bool getReduceAnimations() {
+  bool getDisableAnimations() {
     return prefs.getBool(_keyReduceAnimations) ?? false;
   }
 
@@ -280,7 +281,7 @@ class SettingsService extends BaseSharedPreferencesService {
   }
 
   bool getHideSupportDevelopment() {
-    return prefs.getBool(_keyHideSupportDevelopment) ?? false;
+    return prefs.getBool(_keyHideSupportDevelopment) ?? (Platform.isAndroid || Platform.isIOS);
   }
 
   // Show Hero Section

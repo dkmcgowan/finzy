@@ -346,10 +346,11 @@ class _LiveTvHubSectionState extends State<_LiveTvHubSection> {
   void _scrollHubIntoView() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final disableAnimations = context.read<SettingsProvider>().disableAnimations;
       Scrollable.ensureVisible(
         context,
         alignment: 0.3,
-        duration: const Duration(milliseconds: 200),
+        duration: disableAnimations ? Duration.zero : const Duration(milliseconds: 200),
         curve: Curves.easeOut,
       );
     });
@@ -362,6 +363,7 @@ class _LiveTvHubSectionState extends State<_LiveTvHubSection> {
       itemExtent: _itemExtent,
       leadingPadding: _leadingPadding,
       animate: animate,
+      disableAnimations: context.read<SettingsProvider>().disableAnimations,
     );
   }
 

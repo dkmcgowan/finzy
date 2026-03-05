@@ -107,6 +107,8 @@ class JellyfinClient {
     final t = type.toLowerCase();
     if (t == 'series') return 'show';
     if (t == 'boxset' || t == 'boxsets') return 'collection';
+    if (t == 'livetvprogram') return 'program';
+    if (t == 'livetvchannel' || t == 'tvchannel') return 'channel';
     return t;
   }
 
@@ -1213,15 +1215,32 @@ class JellyfinClient {
     }
   }
 
-  Future<List<MediaMetadata>> search(String query, {int limit = 10}) async {
+  Future<List<MediaMetadata>> search(String query, {int limit = 10, String? includeItemTypes}) async {
     if (_offlineMode) return [];
     final response = await _dio.get<Map<String, dynamic>>(
       '/Users/${config.userId}/Items',
       queryParameters: {
         'SearchTerm': query,
         'Limit': limit,
-        'IncludeItemTypes': 'Movie,Series',
+        'IncludeItemTypes': includeItemTypes ?? 'Movie,Series',
         'Recursive': true,
+        'Fields': _listFields,
+      },
+    );
+    final list = response.data?['Items'] as List?;
+    if (list == null) return [];
+    return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Search for persons using the dedicated /Persons endpoint.
+  Future<List<MediaMetadata>> searchPersons(String query, {int limit = 20}) async {
+    if (_offlineMode) return [];
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/Persons',
+      queryParameters: {
+        'SearchTerm': query,
+        'Limit': limit,
+        'UserId': config.userId,
         'Fields': _listFields,
       },
     );
@@ -2026,6 +2045,17 @@ class JellyfinClient {
         );
         final list = response.data?['Items'] as List? ?? [];
         return list.map((e) => _itemToMetadata(e as Map<String, dynamic>)).toList();
+      }
+
+      // search_{itemType}_{encodedQuery} — categorized search "View All"
+      final searchMatch = RegExp(r'^search_([^_]+)_(.+)$').firstMatch(hubKey);
+      if (searchMatch != null) {
+        final itemType = searchMatch.group(1)!;
+        final query = Uri.decodeComponent(searchMatch.group(2)!);
+        if (itemType == 'Person') {
+          return searchPersons(query, limit: expandedLimit);
+        }
+        return search(query, includeItemTypes: itemType, limit: expandedLimit);
       }
 
       appLogger.d('getHubContent: unrecognized hub key pattern: $hubKey');

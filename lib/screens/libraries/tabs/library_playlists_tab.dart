@@ -21,6 +21,7 @@ class LibraryPlaylistsTab extends BaseLibraryTab<Playlist> {
     super.isActive,
     super.suppressAutoFocus,
     super.onBack,
+    super.onBackToNavigation,
   });
 
   @override
@@ -55,15 +56,19 @@ class _LibraryPlaylistsTabState extends LibraryGridTabState<Playlist, LibraryPla
   @override
   Widget buildGridItem(BuildContext context, Playlist playlist, int index, [GridItemContext? gridContext]) {
     final focusNode = index == 0 ? firstItemFocusNode : getGridItemFocusNode(index, prefix: 'playlists_grid_item');
+    final gc = gridContext;
     return FocusableMediaCard(
       key: Key(playlist.itemId),
       item: playlist,
       focusNode: focusNode,
       onListRefresh: loadItems,
-      onBack: widget.onBack,
-      onNavigateUp: gridContext?.isFirstRow == true ? widget.onBack : null,
-      onNavigateLeft: gridContext?.isFirstColumn == true ? gridContext?.navigateToSidebar : null,
-      scrollTopOffset: gridContext?.isFirstRow == true ? 8 : null,
+      onBack: widget.onBackToNavigation ?? widget.onBack,
+      onNavigateUp: gc?.isFirstRow == true ? widget.onBack : gc != null ? () => focusGridItemByIndex(gc.index - gc.columnCount, 'playlists_grid_item') : null,
+      onNavigateDown: gc != null && !gc.isLastRow ? () => focusGridItemByIndex(gc.index + gc.columnCount, 'playlists_grid_item') : null,
+      onNavigateLeft: gc?.isFirstColumn == true ? gc?.navigateToSidebar : gc != null ? () => focusGridItemByIndex(gc.index - 1, 'playlists_grid_item') : null,
+      onNavigateRight: gc != null && !gc.isLastColumn ? () => focusGridItemByIndex(gc.index + 1, 'playlists_grid_item') : null,
+      onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
+      scrollTopOffset: gc?.isFirstRow == true ? 8 : null,
     );
   }
 }

@@ -359,8 +359,8 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get performanceImageQualityDescription => 'Lägre kvalitet laddar snabbare. Liten = snabbast, Stor = bäst kvalitet.';
 	@override String get performancePosterSize => 'Affischstorlek';
 	@override String get performancePosterSizeDescription => 'Storlek på affischkort i rutnät. Liten = fler objekt, Stor = större kort.';
-	@override String get performanceReduceAnimations => 'Minska animationer';
-	@override String get performanceReduceAnimationsDescription => 'Kortare övergångar för snabbare känsla';
+	@override String get performanceDisableAnimations => 'Inaktivera animationer';
+	@override String get performanceDisableAnimationsDescription => 'Stänger av alla övergångar för snabbare navigering';
 	@override String get performanceGridPreload => 'Rutnätsförladdning';
 	@override String get performanceGridPreloadDescription => 'Hur många objekt utanför skärmen som laddas. Låg = snabbare, Hög = mjukare scrollning.';
 	@override String get performanceSmall => 'Liten';
@@ -383,6 +383,7 @@ class _TranslationsSearchSv implements TranslationsSearchEn {
 	@override String get tryDifferentTerm => 'Prova en annan sökterm';
 	@override String get searchYourMedia => 'Sök i dina media';
 	@override String get enterTitleActorOrKeyword => 'Ange en titel, skådespelare eller nyckelord';
+	@override late final _TranslationsSearchCategoriesSv categories = _TranslationsSearchCategoriesSv._(_root);
 }
 
 // Path: hotkeys
@@ -1086,6 +1087,22 @@ class _TranslationsExternalPlayerSv implements TranslationsExternalPlayerEn {
 	@override String get playInExternalPlayer => 'Spela i extern spelare';
 }
 
+// Path: search.categories
+class _TranslationsSearchCategoriesSv implements TranslationsSearchCategoriesEn {
+	_TranslationsSearchCategoriesSv._(this._root);
+
+	final TranslationsSv _root; // ignore: unused_field
+
+	// Translations
+	@override String get movies => 'Movies';
+	@override String get shows => 'Shows';
+	@override String get episodes => 'Episodes';
+	@override String get people => 'People';
+	@override String get collections => 'Collections';
+	@override String get programs => 'Programs';
+	@override String get channels => 'Channels';
+}
+
 // Path: hotkeys.actions
 class _TranslationsHotkeysActionsSv implements TranslationsHotkeysActionsEn {
 	_TranslationsHotkeysActionsSv._(this._root);
@@ -1504,8 +1521,8 @@ extension on TranslationsSv {
 			'settings.performanceImageQualityDescription' => 'Lägre kvalitet laddar snabbare. Liten = snabbast, Stor = bäst kvalitet.',
 			'settings.performancePosterSize' => 'Affischstorlek',
 			'settings.performancePosterSizeDescription' => 'Storlek på affischkort i rutnät. Liten = fler objekt, Stor = större kort.',
-			'settings.performanceReduceAnimations' => 'Minska animationer',
-			'settings.performanceReduceAnimationsDescription' => 'Kortare övergångar för snabbare känsla',
+			'settings.performanceDisableAnimations' => 'Inaktivera animationer',
+			'settings.performanceDisableAnimationsDescription' => 'Stänger av alla övergångar för snabbare navigering',
 			'settings.performanceGridPreload' => 'Rutnätsförladdning',
 			'settings.performanceGridPreloadDescription' => 'Hur många objekt utanför skärmen som laddas. Låg = snabbare, Hög = mjukare scrollning.',
 			'settings.performanceSmall' => 'Liten',
@@ -1519,6 +1536,13 @@ extension on TranslationsSv {
 			'search.tryDifferentTerm' => 'Prova en annan sökterm',
 			'search.searchYourMedia' => 'Sök i dina media',
 			'search.enterTitleActorOrKeyword' => 'Ange en titel, skådespelare eller nyckelord',
+			'search.categories.movies' => 'Movies',
+			'search.categories.shows' => 'Shows',
+			'search.categories.episodes' => 'Episodes',
+			'search.categories.people' => 'People',
+			'search.categories.collections' => 'Collections',
+			'search.categories.programs' => 'Programs',
+			'search.categories.channels' => 'Channels',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => 'Sätt genväg för ${actionName}',
 			'hotkeys.clearShortcut' => 'Rensa genväg',
 			'hotkeys.actions.playPause' => 'Spela/Pausa',
@@ -1777,6 +1801,8 @@ extension on TranslationsSv {
 			'libraries.noFavorites' => 'Inga favoriter i detta bibliotek',
 			'libraries.noGenres' => 'Inga genrer i detta bibliotek',
 			'libraries.noFoldersFound' => 'Inga mappar hittades',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.folders' => 'mappar',
 			'libraries.tabs.movies' => 'Filmer',
 			'libraries.tabs.shows' => 'Serier',
@@ -1784,8 +1810,6 @@ extension on TranslationsSv {
 			'libraries.tabs.browse' => 'Bläddra',
 			'libraries.tabs.genres' => 'Genrer',
 			'libraries.tabs.favorites' => 'Favoriter',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.tabs.collections' => 'Samlingar',
 			'libraries.tabs.playlists' => 'Spellistor',
 			'libraries.groupings.all' => 'Alla',

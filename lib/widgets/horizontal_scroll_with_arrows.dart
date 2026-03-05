@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/platform_detector.dart';
 
@@ -65,7 +67,11 @@ class _HorizontalScrollWithArrowsState extends State<HorizontalScrollWithArrows>
     final position = _scrollController.position;
     final delta = direction * position.viewportDimension * widget.scrollAmount;
     final targetScroll = (position.pixels + delta).clamp(0.0, position.maxScrollExtent);
-    _scrollController.animateTo(targetScroll, duration: tokens(context).slow, curve: Curves.easeInOut);
+    if (context.read<SettingsProvider>().disableAnimations) {
+      _scrollController.jumpTo(targetScroll);
+    } else {
+      _scrollController.animateTo(targetScroll, duration: tokens(context).slow, curve: Curves.easeInOut);
+    }
   }
 
   void _scrollLeft() => _animateScroll(-1);

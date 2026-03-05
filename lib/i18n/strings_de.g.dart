@@ -359,8 +359,8 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get performanceImageQualityDescription => 'Niedrigere Qualität lädt schneller. Klein = am schnellsten, Groß = beste Qualität.';
 	@override String get performancePosterSize => 'Postergröße';
 	@override String get performancePosterSizeDescription => 'Größe der Poster-Karten in Rastern. Klein = mehr Elemente, Groß = größere Karten.';
-	@override String get performanceReduceAnimations => 'Animationen reduzieren';
-	@override String get performanceReduceAnimationsDescription => 'Kürzere Übergänge für flüssigeres Gefühl';
+	@override String get performanceDisableAnimations => 'Animationen deaktivieren';
+	@override String get performanceDisableAnimationsDescription => 'Deaktiviert alle Übergänge für schnellere Navigation';
 	@override String get performanceGridPreload => 'Raster-Vorladen';
 	@override String get performanceGridPreloadDescription => 'Wie viele Elemente außerhalb des Bildschirms geladen werden. Niedrig = schneller, Hoch = flüssigeres Scrollen.';
 	@override String get performanceSmall => 'Klein';
@@ -383,6 +383,7 @@ class _TranslationsSearchDe implements TranslationsSearchEn {
 	@override String get tryDifferentTerm => 'Anderen Suchbegriff versuchen';
 	@override String get searchYourMedia => 'In den eigenen Medien suchen';
 	@override String get enterTitleActorOrKeyword => 'Titel, Schauspieler oder Stichwort eingeben';
+	@override late final _TranslationsSearchCategoriesDe categories = _TranslationsSearchCategoriesDe._(_root);
 }
 
 // Path: hotkeys
@@ -1086,6 +1087,22 @@ class _TranslationsExternalPlayerDe implements TranslationsExternalPlayerEn {
 	@override String get playInExternalPlayer => 'In externem Player abspielen';
 }
 
+// Path: search.categories
+class _TranslationsSearchCategoriesDe implements TranslationsSearchCategoriesEn {
+	_TranslationsSearchCategoriesDe._(this._root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get movies => 'Movies';
+	@override String get shows => 'Shows';
+	@override String get episodes => 'Episodes';
+	@override String get people => 'People';
+	@override String get collections => 'Collections';
+	@override String get programs => 'Programs';
+	@override String get channels => 'Channels';
+}
+
 // Path: hotkeys.actions
 class _TranslationsHotkeysActionsDe implements TranslationsHotkeysActionsEn {
 	_TranslationsHotkeysActionsDe._(this._root);
@@ -1504,8 +1521,8 @@ extension on TranslationsDe {
 			'settings.performanceImageQualityDescription' => 'Niedrigere Qualität lädt schneller. Klein = am schnellsten, Groß = beste Qualität.',
 			'settings.performancePosterSize' => 'Postergröße',
 			'settings.performancePosterSizeDescription' => 'Größe der Poster-Karten in Rastern. Klein = mehr Elemente, Groß = größere Karten.',
-			'settings.performanceReduceAnimations' => 'Animationen reduzieren',
-			'settings.performanceReduceAnimationsDescription' => 'Kürzere Übergänge für flüssigeres Gefühl',
+			'settings.performanceDisableAnimations' => 'Animationen deaktivieren',
+			'settings.performanceDisableAnimationsDescription' => 'Deaktiviert alle Übergänge für schnellere Navigation',
 			'settings.performanceGridPreload' => 'Raster-Vorladen',
 			'settings.performanceGridPreloadDescription' => 'Wie viele Elemente außerhalb des Bildschirms geladen werden. Niedrig = schneller, Hoch = flüssigeres Scrollen.',
 			'settings.performanceSmall' => 'Klein',
@@ -1519,6 +1536,13 @@ extension on TranslationsDe {
 			'search.tryDifferentTerm' => 'Anderen Suchbegriff versuchen',
 			'search.searchYourMedia' => 'In den eigenen Medien suchen',
 			'search.enterTitleActorOrKeyword' => 'Titel, Schauspieler oder Stichwort eingeben',
+			'search.categories.movies' => 'Movies',
+			'search.categories.shows' => 'Shows',
+			'search.categories.episodes' => 'Episodes',
+			'search.categories.people' => 'People',
+			'search.categories.collections' => 'Collections',
+			'search.categories.programs' => 'Programs',
+			'search.categories.channels' => 'Channels',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => 'Tastenkürzel festlegen für ${actionName}',
 			'hotkeys.clearShortcut' => 'Kürzel löschen',
 			'hotkeys.actions.playPause' => 'Wiedergabe/Pause',
@@ -1777,6 +1801,8 @@ extension on TranslationsDe {
 			'libraries.noFavorites' => 'Keine Favoriten in dieser Mediathek',
 			'libraries.noGenres' => 'Keine Genres in dieser Mediathek',
 			'libraries.noFoldersFound' => 'Keine Ordner gefunden',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.folders' => 'Ordner',
 			'libraries.tabs.movies' => 'Filme',
 			'libraries.tabs.shows' => 'Serien',
@@ -1784,8 +1810,6 @@ extension on TranslationsDe {
 			'libraries.tabs.browse' => 'Durchsuchen',
 			'libraries.tabs.genres' => 'Genres',
 			'libraries.tabs.favorites' => 'Favoriten',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.tabs.collections' => 'Sammlungen',
 			'libraries.tabs.playlists' => 'Wiedergabelisten',
 			'libraries.groupings.all' => 'Alle',

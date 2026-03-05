@@ -108,6 +108,7 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
             }
           : null,
       onNavigateDown: _focusCurrentTab,
+      onNavigateUp: onTabBarBack,
       onBack: onTabBarBack,
     );
   }
@@ -328,7 +329,8 @@ class _DownloadsGridContentState extends State<_DownloadsGridContent> {
 
             return GridView.builder(
               padding: effectivePadding,
-              // Allow focus decoration to render outside scroll bounds
+              // ignore: deprecated_member_use
+              cacheExtent: settingsProvider.gridPreloadCacheExtent,
               clipBehavior: Clip.none,
               gridDelegate: MediaGridDelegate.createDelegate(
                 context: context,

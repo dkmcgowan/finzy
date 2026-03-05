@@ -78,6 +78,25 @@ abstract class LibraryGridTabState<T, W extends BaseLibraryTab<T>> extends BaseL
     WidgetsBinding.instance.addPostFrameCallback((_) => request(retryCount: 1));
   }
 
+  void focusGridItemByIndex(int index, String prefix) {
+    if (index < 0 || index >= items.length) return;
+    if (index == 0) {
+      firstItemFocusNode.requestFocus();
+    } else {
+      getGridItemFocusNode(index, prefix: prefix).requestFocus();
+    }
+  }
+
+  @override
+  void focusFirstItem() {
+    if (itemCount == 0) return;
+    if (shouldRestoreGridFocus && lastFocusedGridIndex! < items.length) {
+      focusItemAt(lastFocusedGridIndex!);
+    } else {
+      super.focusFirstItem();
+    }
+  }
+
   @override
   Widget buildContent(List<T> items) {
     cleanupGridFocusNodes(items.length);

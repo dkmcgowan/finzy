@@ -11,6 +11,7 @@ import '../../../services/settings_service.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../focus/focusable_wrapper.dart';
 import '../../../focus/input_mode_tracker.dart';
+import '../../../utils/platform_detector.dart';
 
 /// A volume control widget that displays a mute/unmute button and volume slider.
 ///
@@ -182,6 +183,8 @@ class _VolumeControlState extends State<VolumeControl> {
           ),
         );
 
+        final isTV = PlatformDetector.isTV();
+
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -205,8 +208,10 @@ class _VolumeControlState extends State<VolumeControl> {
               )
             else
               muteButton,
-            const SizedBox(width: 8),
-            _buildVolumeSlider(volume, isKeyboardMode),
+            if (!isTV) ...[
+              const SizedBox(width: 8),
+              _buildVolumeSlider(volume, isKeyboardMode),
+            ],
           ],
         );
       },

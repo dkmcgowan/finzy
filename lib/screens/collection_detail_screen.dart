@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/media_metadata.dart';
+import '../providers/settings_provider.dart';
 import '../widgets/desktop_app_bar.dart';
 import '../i18n/strings.g.dart';
 import 'base_media_list_detail_screen.dart';
@@ -77,8 +79,14 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
       child: Scaffold(
         body: CustomScrollView(
           controller: scrollController,
+          // ignore: deprecated_member_use
+          cacheExtent: context.read<SettingsProvider>().gridPreloadCacheExtent,
           slivers: [
-            CustomAppBar(title: Text(widget.collection.title), actions: buildFocusableAppBarActions()),
+            CustomAppBar(
+              title: Text(widget.collection.title),
+              leading: buildFocusableLeading(context),
+              actions: buildFocusableAppBarActions(),
+            ),
             ...buildStateSlivers(),
             if (items.isNotEmpty)
               buildFocusableGrid(

@@ -216,6 +216,7 @@ class SeriesTimersTabState extends State<SeriesTimersTab> {
           autofocus: index == 0,
           autoScroll: true,
           useComfortableZone: true,
+          disableScale: true,
           onSelect: () => _editSeriesTimer(sub),
           enableLongPress: isTV,
           onLongPress: isTV ? () => _showSeriesTimerContextMenu(sub) : null,

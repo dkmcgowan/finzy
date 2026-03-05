@@ -31,6 +31,7 @@ import '../providers/offline_mode_provider.dart';
 
 import '../services/server_registry.dart';
 import '../services/storage_service.dart';
+import '../screens/media_detail_screen.dart';
 import '../constants/library_constants.dart';
 import '../utils/desktop_window_padding.dart';
 import '../widgets/side_navigation_rail.dart';
@@ -88,9 +89,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
   /// Whether the app is in offline mode (no server connection)
   bool _isOffline = false;
 
-  /// Last selected online tab (restored when coming back online after an offline fallback)
-  NavigationTabId? _lastOnlineTabId;
-
   /// Whether we auto-switched to Downloads because the previous tab was unavailable offline
   bool _autoSwitchedToDownloads = false;
 
@@ -134,7 +132,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     // In offline mode: visual index 0 = Downloads (screen 3), 1 = Settings (screen 4)
     // In online mode: indices match directly
     _currentIndex = 0;
-    _lastOnlineTabId = _isOffline ? null : NavigationTabId.discover;
     _autoSwitchedToDownloads = _isOffline;
 
     _screens = _buildScreens(_isOffline);
@@ -161,6 +158,9 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
       // Check for updates on startup
       _checkForUpdatesOnStartup();
+
+      // Restore navigation after returning from external app (e.g. trailer on Android TV)
+      _tryRestorePendingExternalReturn();
     });
   }
 
@@ -178,6 +178,39 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       }
     } catch (e) {
       appLogger.e('Error checking for updates', error: e);
+    }
+  }
+
+  /// Restore to media detail screen when returning from external app (e.g. trailer).
+  /// Android TV often kills the process when opening YouTube; we save context before launch.
+  Future<void> _tryRestorePendingExternalReturn() async {
+    if (_isOffline || !mounted) return;
+    try {
+      final storage = await StorageService.getInstance();
+      final pending = await storage.getPendingExternalReturn();
+      if (pending == null || !mounted) return;
+      await storage.clearPendingExternalReturn();
+
+      final multiServer = context.read<MultiServerProvider>();
+      JellyfinClient? client;
+      if (pending.serverId != null && pending.serverId!.isNotEmpty) {
+        client = multiServer.getClientForServer(pending.serverId!);
+      }
+      client ??= multiServer.onlineServerIds.isNotEmpty
+          ? multiServer.getClientForServer(multiServer.onlineServerIds.first)
+          : null;
+      if (client == null || !mounted) return;
+
+      final metadata = await client.getMetadataWithImages(pending.itemId);
+      if (metadata == null || !mounted) return;
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => MediaDetailScreen(metadata: metadata, isOffline: false),
+        ),
+      );
+    } catch (e) {
+      appLogger.d('Pending external return restore failed: $e');
     }
   }
 
@@ -449,11 +482,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       _selectedLibraryGlobalKey = _isOffline ? null : _selectedLibraryGlobalKey;
 
       if (_isOffline) {
-        // Remember the online tab so we can restore it when reconnecting.
-        if (!wasOffline) {
-          _lastOnlineTabId = previousTabId;
-        }
-
         _currentIndex = _normalizeIndexForMode(_currentIndex, wasOffline, _isOffline);
 
         // Track if we auto-switched to Downloads because the previous tab was unavailable.
@@ -461,16 +489,9 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
             previousTabId != NavigationTabId.downloads &&
             _tabIdForIndex(true, _currentIndex) == NavigationTabId.downloads;
       } else {
-        // Coming back online: sync Live TV state (we awaited checkLiveTvAvailability above)
+        // Coming back online: start at Home (consistent with cold start)
         _lastHasLiveTv = _multiServerProvider?.hasLiveTv ?? false;
-        // Restore the last online tab if we forced a switch to Downloads.
-        if (_autoSwitchedToDownloads) {
-          final restoredTab = _lastOnlineTabId ?? NavigationTabId.discover;
-          final restoredIndex = NavigationTab.indexFor(restoredTab, isOffline: _isOffline, hasLiveTv: _hasLiveTv);
-          _currentIndex = restoredIndex >= 0 ? restoredIndex : 0;
-        } else {
-          _currentIndex = _normalizeIndexForMode(_currentIndex, wasOffline, _isOffline);
-        }
+        _currentIndex = 0;
         _autoSwitchedToDownloads = false;
       }
     });
@@ -680,9 +701,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     final previousIndex = _currentIndex;
     setState(() {
       _currentIndex = index;
-      if (!_isOffline) {
-        _lastOnlineTabId = _tabIdForIndex(false, index);
-      } else if (previousIndex != index) {
+      if (_isOffline && previousIndex != index) {
         // User made an explicit offline selection, so don't auto-restore later.
         _autoSwitchedToDownloads = false;
       }
@@ -746,9 +765,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     setState(() {
       _selectedLibraryGlobalKey = libraryGlobalKey;
       _currentIndex = 1; // Switch to Libraries tab
-      if (!_isOffline) {
-        _lastOnlineTabId = NavigationTabId.libraries;
-      }
     });
     // Tell LibrariesScreen to load this library
     if (_librariesKey.currentState case final LibraryLoadable loadable) {
@@ -821,7 +837,10 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
                             node: _contentFocusScope,
                             // No autofocus - we control focus programmatically to prevent
                             // autofocus from stealing focus back after setState() rebuilds
-                            child: IndexedStack(index: _currentIndex, children: _screens),
+                            child: IndexedStack(
+                              index: _screens.isEmpty ? 0 : _currentIndex.clamp(0, _screens.length - 1),
+                              children: _screens,
+                            ),
                           ),
                         ),
                       ),
@@ -867,7 +886,10 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     }
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(
+        index: _screens.isEmpty ? 0 : _currentIndex.clamp(0, _screens.length - 1),
+        children: _screens,
+      ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

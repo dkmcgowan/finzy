@@ -827,11 +827,11 @@ class TranslationsSettingsEn {
 	/// en: 'Size of poster cards in grids. Small = more items, Large = bigger cards.'
 	String get performancePosterSizeDescription => 'Size of poster cards in grids. Small = more items, Large = bigger cards.';
 
-	/// en: 'Reduce Animations'
-	String get performanceReduceAnimations => 'Reduce Animations';
+	/// en: 'Disable Animations'
+	String get performanceDisableAnimations => 'Disable Animations';
 
-	/// en: 'Shorter transitions for snappier feel'
-	String get performanceReduceAnimationsDescription => 'Shorter transitions for snappier feel';
+	/// en: 'Turns off all transitions for snappier navigation'
+	String get performanceDisableAnimationsDescription => 'Turns off all transitions for snappier navigation';
 
 	/// en: 'Grid Preload'
 	String get performanceGridPreload => 'Grid Preload';
@@ -880,6 +880,8 @@ class TranslationsSearchEn {
 
 	/// en: 'Enter a title, actor, or keyword'
 	String get enterTitleActorOrKeyword => 'Enter a title, actor, or keyword';
+
+	late final TranslationsSearchCategoriesEn categories = TranslationsSearchCategoriesEn._(_root);
 }
 
 // Path: hotkeys
@@ -2453,6 +2455,36 @@ class TranslationsExternalPlayerEn {
 	String get playInExternalPlayer => 'Play in External Player';
 }
 
+// Path: search.categories
+class TranslationsSearchCategoriesEn {
+	TranslationsSearchCategoriesEn._(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Movies'
+	String get movies => 'Movies';
+
+	/// en: 'Shows'
+	String get shows => 'Shows';
+
+	/// en: 'Episodes'
+	String get episodes => 'Episodes';
+
+	/// en: 'People'
+	String get people => 'People';
+
+	/// en: 'Collections'
+	String get collections => 'Collections';
+
+	/// en: 'Programs'
+	String get programs => 'Programs';
+
+	/// en: 'Channels'
+	String get channels => 'Channels';
+}
+
 // Path: hotkeys.actions
 class TranslationsHotkeysActionsEn {
 	TranslationsHotkeysActionsEn._(this._root);
@@ -3101,8 +3133,8 @@ extension on Translations {
 			'settings.performanceImageQualityDescription' => 'Lower quality loads faster. Small = fastest, Large = best quality.',
 			'settings.performancePosterSize' => 'Poster Size',
 			'settings.performancePosterSizeDescription' => 'Size of poster cards in grids. Small = more items, Large = bigger cards.',
-			'settings.performanceReduceAnimations' => 'Reduce Animations',
-			'settings.performanceReduceAnimationsDescription' => 'Shorter transitions for snappier feel',
+			'settings.performanceDisableAnimations' => 'Disable Animations',
+			'settings.performanceDisableAnimationsDescription' => 'Turns off all transitions for snappier navigation',
 			'settings.performanceGridPreload' => 'Grid Preload',
 			'settings.performanceGridPreloadDescription' => 'How many off-screen items to load. Low = faster, High = smoother scrolling.',
 			'settings.performanceSmall' => 'Small',
@@ -3116,6 +3148,13 @@ extension on Translations {
 			'search.tryDifferentTerm' => 'Try a different search term',
 			'search.searchYourMedia' => 'Search your media',
 			'search.enterTitleActorOrKeyword' => 'Enter a title, actor, or keyword',
+			'search.categories.movies' => 'Movies',
+			'search.categories.shows' => 'Shows',
+			'search.categories.episodes' => 'Episodes',
+			'search.categories.people' => 'People',
+			'search.categories.collections' => 'Collections',
+			'search.categories.programs' => 'Programs',
+			'search.categories.channels' => 'Channels',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => 'Set Shortcut for ${actionName}',
 			'hotkeys.clearShortcut' => 'Clear shortcut',
 			'hotkeys.actions.playPause' => 'Play/Pause',
@@ -3374,6 +3413,8 @@ extension on Translations {
 			'libraries.noFavorites' => 'No favorites in this library',
 			'libraries.noGenres' => 'No genres in this library',
 			'libraries.noFoldersFound' => 'No folders found',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.folders' => 'folders',
 			'libraries.tabs.movies' => 'Movies',
 			'libraries.tabs.shows' => 'Shows',
@@ -3381,8 +3422,6 @@ extension on Translations {
 			'libraries.tabs.browse' => 'Browse',
 			'libraries.tabs.genres' => 'Genres',
 			'libraries.tabs.favorites' => 'Favorites',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.tabs.collections' => 'Collections',
 			'libraries.tabs.playlists' => 'Playlists',
 			'libraries.groupings.all' => 'All',

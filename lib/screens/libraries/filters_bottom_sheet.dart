@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
 import '../../focus/dpad_navigator.dart';
 import '../../models/library_filter.dart';
+import '../../providers/settings_provider.dart';
 import '../../utils/scroll_utils.dart';
 import '../../widgets/app_bar_back_button.dart';
 import '../../widgets/bottom_sheet_header.dart';
@@ -83,6 +85,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
       itemExtent: _detailItemExtent,
       leadingPadding: 8.0,
       animate: true,
+      disableAnimations: context.read<SettingsProvider>().disableAnimations,
     );
   }
 

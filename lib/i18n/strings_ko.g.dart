@@ -359,8 +359,8 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get performanceImageQualityDescription => '낮은 품질은 더 빠르게 로드됩니다. 작음 = 가장 빠름, 큼 = 최고 품질.';
 	@override String get performancePosterSize => '포스터 크기';
 	@override String get performancePosterSizeDescription => '그리드의 포스터 카드 크기. 작음 = 더 많은 항목, 큼 = 더 큰 카드.';
-	@override String get performanceReduceAnimations => '애니메이션 줄이기';
-	@override String get performanceReduceAnimationsDescription => '더 빠른 느낌을 위한 짧은 전환';
+	@override String get performanceDisableAnimations => '애니메이션 비활성화';
+	@override String get performanceDisableAnimationsDescription => '더 빠른 탐색을 위해 모든 전환 비활성화';
 	@override String get performanceGridPreload => '그리드 사전 로드';
 	@override String get performanceGridPreloadDescription => '화면 밖 항목 로드 수. 낮음 = 더 빠름, 높음 = 더 부드러운 스크롤.';
 	@override String get performanceSmall => '작음';
@@ -383,6 +383,7 @@ class _TranslationsSearchKo implements TranslationsSearchEn {
 	@override String get tryDifferentTerm => '다른 검색어를 시도해 보세요';
 	@override String get searchYourMedia => '미디어 검색';
 	@override String get enterTitleActorOrKeyword => '제목, 배우 또는 키워드를 입력하세요';
+	@override late final _TranslationsSearchCategoriesKo categories = _TranslationsSearchCategoriesKo._(_root);
 }
 
 // Path: hotkeys
@@ -1086,6 +1087,22 @@ class _TranslationsExternalPlayerKo implements TranslationsExternalPlayerEn {
 	@override String get playInExternalPlayer => '외부 플레이어에서 재생';
 }
 
+// Path: search.categories
+class _TranslationsSearchCategoriesKo implements TranslationsSearchCategoriesEn {
+	_TranslationsSearchCategoriesKo._(this._root);
+
+	final TranslationsKo _root; // ignore: unused_field
+
+	// Translations
+	@override String get movies => 'Movies';
+	@override String get shows => 'Shows';
+	@override String get episodes => 'Episodes';
+	@override String get people => 'People';
+	@override String get collections => 'Collections';
+	@override String get programs => 'Programs';
+	@override String get channels => 'Channels';
+}
+
 // Path: hotkeys.actions
 class _TranslationsHotkeysActionsKo implements TranslationsHotkeysActionsEn {
 	_TranslationsHotkeysActionsKo._(this._root);
@@ -1504,8 +1521,8 @@ extension on TranslationsKo {
 			'settings.performanceImageQualityDescription' => '낮은 품질은 더 빠르게 로드됩니다. 작음 = 가장 빠름, 큼 = 최고 품질.',
 			'settings.performancePosterSize' => '포스터 크기',
 			'settings.performancePosterSizeDescription' => '그리드의 포스터 카드 크기. 작음 = 더 많은 항목, 큼 = 더 큰 카드.',
-			'settings.performanceReduceAnimations' => '애니메이션 줄이기',
-			'settings.performanceReduceAnimationsDescription' => '더 빠른 느낌을 위한 짧은 전환',
+			'settings.performanceDisableAnimations' => '애니메이션 비활성화',
+			'settings.performanceDisableAnimationsDescription' => '더 빠른 탐색을 위해 모든 전환 비활성화',
 			'settings.performanceGridPreload' => '그리드 사전 로드',
 			'settings.performanceGridPreloadDescription' => '화면 밖 항목 로드 수. 낮음 = 더 빠름, 높음 = 더 부드러운 스크롤.',
 			'settings.performanceSmall' => '작음',
@@ -1519,6 +1536,13 @@ extension on TranslationsKo {
 			'search.tryDifferentTerm' => '다른 검색어를 시도해 보세요',
 			'search.searchYourMedia' => '미디어 검색',
 			'search.enterTitleActorOrKeyword' => '제목, 배우 또는 키워드를 입력하세요',
+			'search.categories.movies' => 'Movies',
+			'search.categories.shows' => 'Shows',
+			'search.categories.episodes' => 'Episodes',
+			'search.categories.people' => 'People',
+			'search.categories.collections' => 'Collections',
+			'search.categories.programs' => 'Programs',
+			'search.categories.channels' => 'Channels',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => '${actionName}에 대한 단축키 설정',
 			'hotkeys.clearShortcut' => '단축키 삭제',
 			'hotkeys.actions.playPause' => '재생/일시정지',
@@ -1777,6 +1801,8 @@ extension on TranslationsKo {
 			'libraries.noFavorites' => '이 라이브러리에 즐겨찾기가 없습니다',
 			'libraries.noGenres' => '이 라이브러리에 장르가 없습니다',
 			'libraries.noFoldersFound' => '폴더를 찾을 수 없습니다',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.folders' => '폴더',
 			'libraries.tabs.movies' => '영화',
 			'libraries.tabs.shows' => '시리즈',
@@ -1784,8 +1810,6 @@ extension on TranslationsKo {
 			'libraries.tabs.browse' => '찾아보기',
 			'libraries.tabs.genres' => '장르',
 			'libraries.tabs.favorites' => '즐겨찾기',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.tabs.collections' => '컬렉션',
 			'libraries.tabs.playlists' => '재생 목록',
 			'libraries.groupings.all' => '전체',

@@ -242,8 +242,8 @@
     "performanceImageQualityDescription": "较低质量加载更快。小 = 最快，大 = 最佳质量。",
     "performancePosterSize": "海报大小",
     "performancePosterSizeDescription": "网格中海报卡片的大小。小 = 更多项目，大 = 更大卡片。",
-    "performanceReduceAnimations": "减少动画",
-    "performanceReduceAnimationsDescription": "更短的过渡以获得更灵敏的感觉",
+    "performanceDisableAnimations": "禁用动画",
+    "performanceDisableAnimationsDescription": "关闭所有过渡以获得更灵敏的导航",
     "performanceGridPreload": "网格预加载",
     "performanceGridPreloadDescription": "加载多少屏幕外项目。低 = 更快，高 = 更流畅的滚动。",
     "performanceSmall": "小",
@@ -258,7 +258,16 @@
     "hint": "搜索电影、系列、音乐...",
     "tryDifferentTerm": "尝试不同的搜索词",
     "searchYourMedia": "搜索媒体",
-    "enterTitleActorOrKeyword": "输入标题、演员或关键词"
+    "enterTitleActorOrKeyword": "输入标题、演员或关键词",
+    "categories": {
+      "movies": "Movies",
+      "shows": "Shows",
+      "episodes": "Episodes",
+      "people": "People",
+      "collections": "Collections",
+      "programs": "Programs",
+      "channels": "Channels"
+    }
   },
   "hotkeys": {
     "setShortcutFor": "为 ${actionName} 设置快捷键",

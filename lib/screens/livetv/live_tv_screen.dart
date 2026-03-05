@@ -312,6 +312,7 @@ class _LiveTvScreenState extends State<LiveTvScreen>
             }
           : () => _refreshButtonFocusNode.requestFocus(),
       onNavigateDown: _focusCurrentTab,
+      onNavigateUp: () => _refreshButtonFocusNode.requestFocus(),
       onBack: onTabBarBack,
     );
   }

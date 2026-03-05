@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
 import '../../focus/dpad_navigator.dart';
 import '../../models/library_sort.dart';
+import '../../providers/settings_provider.dart';
 import '../../utils/scroll_utils.dart';
 import '../../widgets/focus_builders.dart';
 import '../../widgets/focusable_list_tile.dart';
@@ -54,6 +56,7 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
       itemExtent: _itemExtent,
       leadingPadding: 8.0,
       animate: true,
+      disableAnimations: context.read<SettingsProvider>().disableAnimations,
     );
   }
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
 import '../../services/jellyfin_client.dart';
 import '../../models/playlist.dart';
 import '../../models/media_metadata.dart';
+import '../../providers/settings_provider.dart';
 import '../../utils/provider_extensions.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/desktop_app_bar.dart';
@@ -295,8 +297,11 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     // Grid uses its own focus nodes (firstItemFocusNode, getGridItemFocusNode)
     Widget scrollView = CustomScrollView(
       controller: scrollController,
+      // ignore: deprecated_member_use
+      cacheExtent: context.read<SettingsProvider>().gridPreloadCacheExtent,
       slivers: [
         CustomAppBar(
+          leading: buildFocusableLeading(context),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

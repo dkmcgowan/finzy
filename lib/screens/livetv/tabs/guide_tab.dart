@@ -469,13 +469,23 @@ class GuideTabState extends State<GuideTab> {
 
     if (newOffset != null) {
       final clamped = newOffset.clamp(0.0, _gridVerticalController.position.maxScrollExtent);
-      _gridVerticalController.animateTo(clamped, duration: const Duration(milliseconds: 150), curve: Curves.easeOut);
+      final disableAnimations = context.read<SettingsProvider>().disableAnimations;
+      if (disableAnimations) {
+        _gridVerticalController.jumpTo(clamped);
+      } else {
+        _gridVerticalController.animateTo(clamped, duration: const Duration(milliseconds: 150), curve: Curves.easeOut);
+      }
       if (_channelVerticalController.hasClients) {
-        _channelVerticalController.animateTo(
-          clamped.clamp(0.0, _channelVerticalController.position.maxScrollExtent),
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-        );
+        final channelClamped = clamped.clamp(0.0, _channelVerticalController.position.maxScrollExtent);
+        if (disableAnimations) {
+          _channelVerticalController.jumpTo(channelClamped);
+        } else {
+          _channelVerticalController.animateTo(
+            channelClamped,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut,
+          );
+        }
       }
     }
   }

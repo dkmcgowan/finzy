@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../focus/dpad_navigator.dart';
+import '../providers/settings_provider.dart';
 import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 import '../i18n/strings.g.dart';
@@ -199,7 +201,11 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     if (!event.isActionable) return KeyEventResult.ignored;
 
     if (key.isUpKey) {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      if (context.read<SettingsProvider>().disableAnimations) {
+        _scrollController.jumpTo(0);
+      } else {
+        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      }
       _backButtonFocusNode.requestFocus();
       return KeyEventResult.handled;
     }
@@ -228,10 +234,12 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
     if (!event.isActionable) return KeyEventResult.ignored;
 
+    final disableAnims = context.read<SettingsProvider>().disableAnimations;
+
     if (key.isLeftKey) {
       if (_focusedFilmographyIndex > 0) {
         setState(() => _focusedFilmographyIndex--);
-        scrollListToIndex(_filmographyScrollController, _focusedFilmographyIndex, itemExtent: _getResponsiveCardWidth() + 4);
+        scrollListToIndex(_filmographyScrollController, _focusedFilmographyIndex, itemExtent: _getResponsiveCardWidth() + 4, disableAnimations: disableAnims);
       }
       return KeyEventResult.handled;
     }
@@ -239,7 +247,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     if (key.isRightKey) {
       if (_focusedFilmographyIndex < _filmography.length - 1) {
         setState(() => _focusedFilmographyIndex++);
-        scrollListToIndex(_filmographyScrollController, _focusedFilmographyIndex, itemExtent: _getResponsiveCardWidth() + 4);
+        scrollListToIndex(_filmographyScrollController, _focusedFilmographyIndex, itemExtent: _getResponsiveCardWidth() + 4, disableAnimations: disableAnims);
       }
       return KeyEventResult.handled;
     }
@@ -249,7 +257,11 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         _bioFocusNode.requestFocus();
         _scrollSectionIntoView(_bioSectionKey);
       } else {
-        _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        if (disableAnims) {
+          _scrollController.jumpTo(0);
+        } else {
+          _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        }
         _backButtonFocusNode.requestFocus();
       }
       return KeyEventResult.handled;
@@ -273,10 +285,11 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
   }
 
   void _scrollSectionIntoView(GlobalKey key) {
+    final disableAnimations = context.read<SettingsProvider>().disableAnimations;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = key.currentContext;
       if (ctx != null) {
-        Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        Scrollable.ensureVisible(ctx, duration: disableAnimations ? Duration.zero : const Duration(milliseconds: 200), curve: Curves.easeOut);
       }
     });
   }

@@ -14,6 +14,7 @@ import '../theme/mono_tokens.dart';
 import '../utils/layout_constants.dart';
 import '../focus/locked_hub_controller.dart';
 import '../models/hub.dart';
+import '../models/media_metadata.dart';
 import '../screens/hub_detail_screen.dart';
 import '../utils/media_navigation_helper.dart';
 import 'focus_builders.dart';
@@ -163,10 +164,11 @@ class HubSectionState extends State<HubSection> {
   void _scrollHubIntoView() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final disableAnimations = context.read<SettingsProvider>().disableAnimations;
       Scrollable.ensureVisible(
         context,
-        alignment: 0.3, // Position hub near top third of viewport
-        duration: const Duration(milliseconds: 200),
+        alignment: 0.3,
+        duration: disableAnimations ? Duration.zero : const Duration(milliseconds: 200),
         curve: Curves.easeOut,
       );
     });
@@ -186,6 +188,7 @@ class HubSectionState extends State<HubSection> {
       itemExtent: _itemExtent,
       leadingPadding: _leadingPadding,
       animate: animate,
+      disableAnimations: context.read<SettingsProvider>().disableAnimations,
     );
   }
 
@@ -447,10 +450,14 @@ class HubSectionState extends State<HubSection> {
                 const wideCardMultiplier = 1.5;
                 final cardWidth = useWideLayout ? baseCardWidth * wideCardMultiplier : baseCardWidth;
                 final posterWidth = cardWidth - 16; // 8px padding on each side
+                final isChannelOnlyHub = widget.hub.items.isNotEmpty &&
+                    widget.hub.items.every((item) => item.mediaType == MediaType.channel);
                 final posterHeight = useWideLayout
                     ? posterWidth *
                           (9 / 16) // 16:9 for wide layout
-                    : posterWidth * 1.5; // 2:3 for poster layout
+                    : isChannelOnlyHub
+                        ? posterWidth / GridLayoutConstants.posterAspectRatio
+                        : posterWidth * 1.5; // 2:3 for poster layout
 
                 final containerHeight = posterHeight + 66;
                 _itemExtent = cardWidth + 4;

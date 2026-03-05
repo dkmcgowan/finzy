@@ -22,6 +22,12 @@ class StorageService extends BaseSharedPreferencesService {
   static const String _keyHiddenLibraries = 'hidden_libraries';
   static const String _keyServersList = 'servers_list';
   static const String _keyServerOrder = 'server_order';
+  static const String _keyMainTab = 'main_tab';
+  static const String _keyPendingExternalReturn = 'pending_external_return';
+
+  /// Expiry for pending external return (e.g. after trailer opens YouTube).
+  /// Cleared after restore or when expired.
+  static const Duration _pendingExternalReturnExpiry = Duration(hours: 1);
 
   // Key prefixes for per-id storage
   static const String _prefixServerEndpoint = 'server_endpoint_';
@@ -117,6 +123,15 @@ class StorageService extends BaseSharedPreferencesService {
 
   int? getSelectedLibraryIndex() {
     return prefs.getInt(_keySelectedLibraryIndex);
+  }
+
+  // Main navigation tab (persisted by tab ID string, e.g. "libraries")
+  Future<void> saveMainTab(String tabId) async {
+    await prefs.setString(_keyMainTab, tabId);
+  }
+
+  String? getMainTab() {
+    return prefs.getString(_keyMainTab);
   }
 
   // Selected Library Key (replaces index-based selection)
@@ -365,5 +380,47 @@ class StorageService extends BaseSharedPreferencesService {
   Future<void> _setStringList(String key, List<String> list) async {
     final jsonString = json.encode(list);
     await prefs.setString(key, jsonString);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pending external return (restore navigation after trailer/URL launch)
+  // ---------------------------------------------------------------------------
+
+  /// Save that we're launching an external URL; restore to this item on cold start.
+  /// Call before launchUrl(LaunchMode.externalApplication) for trailers etc.
+  Future<void> savePendingExternalReturn({required String itemId, required String? serverId}) async {
+    await _setJsonMap(_keyPendingExternalReturn, {
+      'itemId': itemId,
+      'serverId': serverId ?? '',
+      'savedAt': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// Get pending return if valid and not expired. Returns null and clears if expired.
+  Future<({String itemId, String? serverId})?> getPendingExternalReturn() async {
+    final jsonString = prefs.getString(_keyPendingExternalReturn);
+    if (jsonString == null) return null;
+    try {
+      final data = json.decode(jsonString) as Map<String, dynamic>;
+      final savedAt = data['savedAt'] as int?;
+      if (savedAt == null) return null;
+      final age = DateTime.now().millisecondsSinceEpoch - savedAt;
+      if (age > _pendingExternalReturnExpiry.inMilliseconds) {
+        await clearPendingExternalReturn();
+        return null;
+      }
+      final itemId = data['itemId'] as String?;
+      if (itemId == null || itemId.isEmpty) return null;
+      final serverId = data['serverId'] as String?;
+      return (itemId: itemId, serverId: serverId?.isEmpty == true ? null : serverId);
+    } catch (_) {
+      await clearPendingExternalReturn();
+      return null;
+    }
+  }
+
+  /// Clear pending return (call after successful restore).
+  Future<void> clearPendingExternalReturn() async {
+    await prefs.remove(_keyPendingExternalReturn);
   }
 }

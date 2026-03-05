@@ -30,6 +30,10 @@ class FocusableTabChip extends StatefulWidget {
   /// Called when the user presses DOWN from this chip.
   final VoidCallback? onNavigateDown;
 
+  /// Called when the user presses UP from this chip.
+  /// Used to navigate to refresh/profile when tab bar has no focusable above.
+  final VoidCallback? onNavigateUp;
+
   /// Called when the user presses BACK from this chip.
   final VoidCallback? onBack;
 
@@ -42,6 +46,7 @@ class FocusableTabChip extends StatefulWidget {
     this.onNavigateLeft,
     this.onNavigateRight,
     this.onNavigateDown,
+    this.onNavigateUp,
     this.onBack,
   });
 
@@ -83,7 +88,7 @@ class _FocusableTabChipState extends State<FocusableTabChip> with FocusableChipS
         onNavigateLeft: widget.onNavigateLeft,
         onNavigateRight: widget.onNavigateRight,
         onNavigateDown: widget.onNavigateDown,
-        onNavigateUp: () {},
+        onNavigateUp: widget.onNavigateUp,
         onBack: widget.onBack,
       ),
     );

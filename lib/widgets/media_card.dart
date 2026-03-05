@@ -632,6 +632,38 @@ Widget _buildPosterImage(
     final episodePosterMode = context.watch<SettingsProvider>().episodePosterMode;
     posterUrl = item.posterThumb(mode: episodePosterMode, mixedHubContext: mixedHubContext);
 
+    // Channel logos: center at 70% size with contain, matching Live TV channels tab.
+    // Check first so channels never fall through to BoxFit.cover.
+    final isChannel = item.mediaType == MediaType.channel || item.type.toLowerCase() == 'channel';
+    if (isChannel) {
+      return Container(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: posterUrl != null
+            ? Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.70,
+                  heightFactor: 0.70,
+                  child: OptimizedImage.poster(
+                    client: isOffline ? null : context.getClientWithFallback(item.serverId),
+                    imagePath: posterUrl,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.contain,
+                    localFilePath: localPosterPath,
+                  ),
+                ),
+              )
+            : Center(
+                child: AppIcon(
+                  Symbols.live_tv_rounded,
+                  fill: 1,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                ),
+              ),
+      );
+    }
+
     // Use wide image type for 16:9 content (episodes, or movies in mixed hubs)
     if (item.usesWideAspectRatio(episodePosterMode, mixedHubContext: mixedHubContext)) {
       final itemType = item.type.toLowerCase();

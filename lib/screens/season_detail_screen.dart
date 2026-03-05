@@ -50,10 +50,10 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
   List<MediaMetadata> _episodes = [];
   bool _isLoadingEpisodes = false;
   bool _watchStateChanged = false;
-  // Capture keyboard mode once at init to avoid rebuild dependency
   bool _initialKeyboardMode = false;
   bool _suppressNextBackKeyUp = false;
   bool _routeSubscribed = false;
+  final FocusNode _backButtonFocusNode = FocusNode(debugLabel: 'season_back_button');
 
   String _toGlobalKey(String itemId, {String? serverId}) => '${serverId ?? widget.season.serverId ?? ''}:$itemId';
 
@@ -210,6 +210,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
 
   @override
   void dispose() {
+    _backButtonFocusNode.dispose();
     if (_routeSubscribed) {
       routeObserver.unsubscribe(this);
       _routeSubscribed = false;
@@ -222,6 +223,24 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     // Returning from a child route (e.g., video player).
     // Suppress the first BACK KeyUp which can otherwise pop this route.
     _suppressNextBackKeyUp = true;
+  }
+
+  KeyEventResult _handleBackButtonKeyEvent(FocusNode _, KeyEvent event) {
+    final key = event.logicalKey;
+
+    final backResult = handleBackOrLeftKeyAction(event, () => Navigator.pop(context, _watchStateChanged));
+    if (backResult != KeyEventResult.ignored) return backResult;
+
+    if (!event.isActionable) return KeyEventResult.ignored;
+
+    if (event is KeyDownEvent && key.isSelectKey) {
+      Navigator.pop(context, _watchStateChanged);
+      return KeyEventResult.handled;
+    }
+    if (key.isDownKey && _episodes.isNotEmpty) {
+      return KeyEventResult.ignored;
+    }
+    return KeyEventResult.ignored;
   }
 
   KeyEventResult _handleBackKeyEvent(KeyEvent event) {
@@ -242,7 +261,29 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
             CustomAppBar(
               title: Text(widget.season.title),
               pinned: true,
-              onBackPressed: () => Navigator.pop(context, _watchStateChanged),
+              leading: Focus(
+                focusNode: _backButtonFocusNode,
+                onKeyEvent: _handleBackButtonKeyEvent,
+                child: ListenableBuilder(
+                  listenable: _backButtonFocusNode,
+                  builder: (context, _) {
+                    final isFocused = InputModeTracker.isKeyboardMode(context) && _backButtonFocusNode.hasFocus;
+                    return Container(
+                      decoration: isFocused
+                          ? BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              shape: BoxShape.circle,
+                            )
+                          : null,
+                      child: IconButton(
+                        icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+                        onPressed: () => Navigator.pop(context, _watchStateChanged),
+                        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
             if (_isLoadingEpisodes)
               const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
@@ -281,6 +322,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
                     isOffline: widget.isOffline,
                     localPosterPath: localPosterPath,
                     autofocus: index == 0 && _initialKeyboardMode,
+                    scrollTopOffset: index == 0 ? kToolbarHeight + 16 : null,
                     onTap: () async {
                       await navigateToVideoPlayerWithRefresh(
                         context,
@@ -324,6 +366,7 @@ class _EpisodeCard extends StatefulWidget {
   final bool autofocus;
   final bool isOffline;
   final String? localPosterPath;
+  final double? scrollTopOffset;
 
   const _EpisodeCard({
     required this.episode,
@@ -334,6 +377,7 @@ class _EpisodeCard extends StatefulWidget {
     this.autofocus = false,
     this.isOffline = false,
     this.localPosterPath,
+    this.scrollTopOffset,
   });
 
   @override
@@ -392,9 +436,10 @@ class _EpisodeCardState extends State<_EpisodeCard> {
       enableLongPress: true,
       onSelect: widget.onTap,
       onLongPress: _showContextMenu,
-      borderRadius: 0, // Episode cards have no border radius
-      useBackgroundFocus: true, // Use background color instead of outline
-      disableScale: true, // No scale animation for list items
+      borderRadius: 0,
+      useBackgroundFocus: true,
+      disableScale: true,
+      scrollTopOffset: widget.scrollTopOffset,
       child: MediaContextMenu(
         key: _contextMenuKey,
         item: widget.episode,
