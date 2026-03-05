@@ -3,31 +3,8 @@ import 'package:flutter/services.dart';
 
 import 'dpad_navigator.dart';
 
-/// Handles back key events by popping the current route.
-///
-/// Optionally pass a [result] to return to the previous route.
-///
-/// Use this as an `onKeyEvent` callback for Focus widgets that need
-/// simple back navigation behavior:
-///
-/// ```dart
-/// Focus(
-///   onKeyEvent: (node, event) => handleBackKeyNavigation(context, event),
-///   child: ...
-/// )
-/// ```
-///
-/// With a result value:
-/// ```dart
-/// Focus(
-///   onKeyEvent: (node, event) => handleBackKeyNavigation(
-///     context,
-///     event,
-///     result: _hasChanges,
-///   ),
-///   child: ...
-/// )
-/// ```
+/// Use [handleBackKeyAction] or [handleBackOrLeftKeyAction] as onKeyEvent callbacks
+/// for Focus widgets that need back navigation behavior.
 class BackKeyCoordinator {
   static bool _handledThisFrame = false;
   static bool _clearScheduled = false;
@@ -75,12 +52,6 @@ KeyEventResult handleBackKeyAction(KeyEvent event, VoidCallback onBack) {
     return KeyEventResult.handled;
   }
   return KeyEventResult.ignored;
-}
-
-KeyEventResult handleBackKeyNavigation<T>(BuildContext context, KeyEvent event, {T? result}) {
-  // Handle on KeyUpEvent to prevent double-pop when returning from child screens
-  // (KeyDownEvent can be received by both the popping screen and the returned-to screen)
-  return handleBackKeyAction(event, () => Navigator.pop(context, result));
 }
 
 /// Handle BACK key press by running [onBack] on key up.
