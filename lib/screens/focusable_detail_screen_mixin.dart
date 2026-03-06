@@ -204,10 +204,15 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                 shape: BoxShape.circle,
               )
             : null,
-        child: IconButton(
-          icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
-          onPressed: () => Navigator.of(context).pop(),
-          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        child: Semantics(
+          label: MaterialLocalizations.of(context).backButtonTooltip,
+          button: true,
+          excludeSemantics: true,
+          child: IconButton(
+            icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: null,
+          ),
         ),
       ),
     );

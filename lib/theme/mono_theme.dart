@@ -136,6 +136,9 @@ ThemeData monoTheme({required bool dark, bool oled = false}) {
         return IconThemeData(opacity: active ? 1 : 0.6, size: 22, color: c.text);
       }),
     ),
+    tooltipTheme: const TooltipThemeData(
+      triggerMode: TooltipTriggerMode.manual,
+    ),
   );
 
   return base.copyWith(
