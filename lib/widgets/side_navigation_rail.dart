@@ -17,7 +17,6 @@ import '../providers/libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/fullscreen_state_manager.dart';
-import '../services/settings_service.dart';
 import '../theme/mono_tokens.dart';
 import '../i18n/strings.g.dart';
 
@@ -28,6 +27,7 @@ class NavigationRailItem extends StatelessWidget {
   final Widget label;
   final bool isSelected;
   final bool isFocused;
+  final bool isSidebarFocused;
   final bool isCollapsed;
   final bool useSimpleLayout;
   final VoidCallback onTap;
@@ -46,6 +46,7 @@ class NavigationRailItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.isFocused,
+    this.isSidebarFocused = true,
     this.isCollapsed = false,
     this.useSimpleLayout = false,
     required this.onTap,
@@ -85,9 +86,9 @@ class NavigationRailItem extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: () {
-                if (isSelected && isFocused) return t.text.withValues(alpha: 0.15);
-                if (isSelected) return t.text.withValues(alpha: 0.1);
-                if (isFocused) return t.text.withValues(alpha: 0.12);
+                if (!isSidebarFocused) return null;
+                // Only highlight the focused item; selected-but-not-focused gets no background
+                if (isFocused) return isSelected ? t.text.withValues(alpha: 0.15) : t.text.withValues(alpha: 0.12);
                 return null;
               }(),
               borderRadius: borderRadius,
@@ -170,7 +171,6 @@ class SideNavigationRail extends StatefulWidget {
 
 class SideNavigationRailState extends State<SideNavigationRail> {
   bool _librariesExpanded = true;
-  bool _showDownloads = true;
 
   // Collapsed/expanded state
   bool _isHovered = false;
@@ -207,13 +207,6 @@ class SideNavigationRailState extends State<SideNavigationRail> {
       },
       debugLabelPrefix: 'nav',
     );
-    _loadShowDownloadsSetting();
-  }
-
-  Future<void> _loadShowDownloadsSetting() async {
-    final settings = await SettingsService.getInstance();
-    if (!mounted) return;
-    setState(() => _showDownloads = settings.getShowDownloads());
   }
 
   @override
@@ -316,12 +309,16 @@ class SideNavigationRailState extends State<SideNavigationRail> {
   }
 
   /// Build the set of valid focus keys (main nav + current libraries + Favorites when shown).
-  Set<String> _buildValidFocusKeys(List<MediaLibrary> orderedLibraries, int favoritesInsertIndex) {
+  Set<String> _buildValidFocusKeys(
+    List<MediaLibrary> orderedLibraries,
+    int favoritesInsertIndex, {
+    required bool showDownloads,
+  }) {
     final keys = <String>{
       _kHome,
       _kLibraries,
       _kSearch,
-      if (_showDownloads) _kDownloads,
+      if (showDownloads) _kDownloads,
       _kSettings,
       _kReconnect,
       'liveTv',
@@ -336,6 +333,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     List<MediaLibrary> orderedLibraries,
     int favoritesInsertIndex, {
     required bool hasLiveTv,
+    required bool showDownloads,
   }) {
     final libraryKeys = <String>[];
     var pos = 0;
@@ -355,7 +353,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
         if (hasLiveTv) 'liveTv',
         _kSearch,
       ],
-      if (_showDownloads) _kDownloads,
+      if (showDownloads) _kDownloads,
       _kSettings,
     ];
   }
@@ -440,6 +438,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
   @override
   Widget build(BuildContext context) {
     final t = tokens(context);
+    final showDownloads = context.watch<SettingsProvider>().showDownloads;
     final librariesProvider = context.watch<LibrariesProvider>();
     final hiddenLibrariesProvider = context.watch<HiddenLibrariesProvider>();
     final hiddenKeys = hiddenLibrariesProvider.hiddenLibraryKeys;
@@ -452,11 +451,16 @@ class SideNavigationRailState extends State<SideNavigationRail> {
         _buildOrderedDisplay(visibleLibraries, hiddenKeys, displayOrderKeys);
 
     // Prune stale focus nodes when libraries change
-    _focusTracker.pruneExcept(_buildValidFocusKeys(orderedLibraries, favoritesInsertIndex));
+    _focusTracker.pruneExcept(_buildValidFocusKeys(orderedLibraries, favoritesInsertIndex, showDownloads: showDownloads));
 
     final isCollapsed = !_shouldExpand;
     final hasLiveTv = context.watch<MultiServerProvider>().hasLiveTv;
-    final focusOrder = _buildFocusOrder(orderedLibraries, favoritesInsertIndex, hasLiveTv: hasLiveTv);
+    final focusOrder = _buildFocusOrder(
+      orderedLibraries,
+      favoritesInsertIndex,
+      hasLiveTv: hasLiveTv,
+      showDownloads: showDownloads,
+    );
 
     // Listen to fullscreen changes for macOS
     return ListenableBuilder(
@@ -579,7 +583,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
                             ],
 
                             // Downloads (visibility controlled by setting)
-                            if (_showDownloads)
+                            if (showDownloads)
                               Builder(
                                 builder: (context) {
                                   final hasLiveTv = context.read<MultiServerProvider>().hasLiveTv;
@@ -679,6 +683,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
       ),
       isSelected: isSelected,
       isFocused: isFocused,
+      isSidebarFocused: widget.isSidebarFocused,
       isCollapsed: isCollapsed,
       onTap: onTap,
       focusNode: focusNode,
@@ -703,6 +708,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
             ),
       isSelected: false,
       isFocused: isFocused,
+      isSidebarFocused: widget.isSidebarFocused,
       isCollapsed: isCollapsed,
       // ignore: no-empty-block - no-op tap handler while reconnecting
       onTap: widget.isReconnecting ? () {} : () => widget.onReconnect?.call(),
@@ -757,8 +763,9 @@ class SideNavigationRailState extends State<SideNavigationRail> {
               child: Container(
                 decoration: BoxDecoration(
                   color: () {
-                    if (isLibrariesSelected) return t.text.withValues(alpha: 0.1);
-                    if (isLibrariesFocused) return t.text.withValues(alpha: 0.08);
+                    if (!widget.isSidebarFocused) return null;
+                    // Only highlight when focused; selected-but-not-focused gets no background
+                    if (isLibrariesFocused) return isLibrariesSelected ? t.text.withValues(alpha: 0.1) : t.text.withValues(alpha: 0.08);
                     return null;
                   }(),
                   borderRadius: BorderRadius.circular(tokens(context).radiusMd),
@@ -900,6 +907,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
         ),
         isSelected: widget.selectedIndex == 1 && widget.selectedLibraryKey == widget.jellyfinFavoritesKey,
         isFocused: _focusTracker.isFocused(_kFavorites),
+        isSidebarFocused: widget.isSidebarFocused,
         useSimpleLayout: true,
         onTap: () => widget.onLibrarySelected(widget.jellyfinFavoritesKey!),
         focusNode: _focusTracker.get(_kFavorites),
@@ -960,6 +968,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
         ),
         isSelected: isSelected,
         isFocused: isFocused,
+        isSidebarFocused: widget.isSidebarFocused,
         useSimpleLayout: true,
         onTap: () => widget.onLibrarySelected(library.globalKey),
         focusNode: focusNode,

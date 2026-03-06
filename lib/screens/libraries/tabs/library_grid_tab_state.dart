@@ -87,9 +87,21 @@ abstract class LibraryGridTabState<T, W extends BaseLibraryTab<T>> extends BaseL
     }
   }
 
+  /// True if any grid item (including first) currently has focus.
+  /// Used to avoid stealing focus when user has already navigated.
+  bool get _hasAnyGridItemFocus {
+    if (firstItemFocusNode.hasFocus) return true;
+    for (final node in gridItemFocusNodes.values) {
+      if (node.hasFocus) return true;
+    }
+    return false;
+  }
+
   @override
   void focusFirstItem() {
     if (itemCount == 0) return;
+    // Don't steal focus if user has already moved to another item
+    if (_hasAnyGridItemFocus) return;
     if (shouldRestoreGridFocus && lastFocusedGridIndex! < items.length) {
       focusItemAt(lastFocusedGridIndex!);
     } else {

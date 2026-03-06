@@ -113,12 +113,19 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
   final FocusScopeNode _contentFocusScope = FocusScopeNode(debugLabel: 'Content');
   bool _isSidebarFocused = false;
 
+  /// When true, show loading overlay to avoid flashing home before restoring to media detail.
+  bool _isCheckingPendingReturn = false;
+
   @override
   void initState() {
     super.initState();
     _isOffline = widget.isOfflineMode;
 
     WidgetsBinding.instance.addObserver(this);
+
+    // Sync sidebar focus state when focus moves via Tab or other means (not just our handlers).
+    // On Windows, keyboard users can Tab from sidebar to content without triggering onNavigateRight.
+    FocusManager.instance.addListener(_syncSidebarFocusFromPrimaryFocus);
 
     if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
       windowManager.addListener(this);
@@ -132,6 +139,11 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
     _screens = _buildScreens(_isOffline);
 
+    // On TV when online: show loading until we check for pending external return
+    if (!_isOffline && PlatformDetector.isTV()) {
+      _isCheckingPendingReturn = true;
+    }
+
     // Set up Watch Next deep link handling
     if (!_isOffline) {
       _setupWatchNextDeepLink();
@@ -144,6 +156,17 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
         final jellyfinProfileProvider = context.read<JellyfinProfileProvider>();
         await jellyfinProfileProvider.refresh();
         jellyfinProfileProvider.onAfterSwitch = _invalidateAllScreensForJellyfinSwitch;
+
+        // On TV: check for pending external return while loading overlay is shown
+        if (PlatformDetector.isTV()) {
+          await _tryRestorePendingExternalReturn(
+            onRestored: () {
+              if (mounted) setState(() => _isCheckingPendingReturn = false);
+            },
+          );
+        } else {
+          _tryRestorePendingExternalReturn();
+        }
       }
 
       // Focus content initially (replaces autofocus which caused focus stealing issues)
@@ -154,9 +177,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
       // Check for updates on startup
       _checkForUpdatesOnStartup();
-
-      // Restore navigation after returning from external app (e.g. trailer on Android TV)
-      _tryRestorePendingExternalReturn();
     });
   }
 
@@ -179,12 +199,19 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
   /// Restore to media detail screen when returning from external app (e.g. trailer).
   /// Android TV often kills the process when opening YouTube; we save context before launch.
-  Future<void> _tryRestorePendingExternalReturn() async {
-    if (_isOffline || !mounted) return;
+  /// [onRestored] is called when the overlay can be cleared (either after push, or when no restore).
+  Future<void> _tryRestorePendingExternalReturn({VoidCallback? onRestored}) async {
+    if (_isOffline || !mounted) {
+      onRestored?.call();
+      return;
+    }
     try {
       final storage = await StorageService.getInstance();
       final pending = await storage.getPendingExternalReturn();
-      if (pending == null || !mounted) return;
+      if (pending == null || !mounted) {
+        onRestored?.call();
+        return;
+      }
       await storage.clearPendingExternalReturn();
 
       final multiServer = context.read<MultiServerProvider>();
@@ -195,18 +222,31 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       client ??= multiServer.onlineServerIds.isNotEmpty
           ? multiServer.getClientForServer(multiServer.onlineServerIds.first)
           : null;
-      if (client == null || !mounted) return;
+      if (client == null || !mounted) {
+        onRestored?.call();
+        return;
+      }
 
       final metadata = await client.getMetadataWithImages(pending.itemId);
-      if (metadata == null || !mounted) return;
+      if (metadata == null || !mounted) {
+        onRestored?.call();
+        return;
+      }
 
       Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => MediaDetailScreen(metadata: metadata, isOffline: false),
+        PageRouteBuilder(
+          pageBuilder: (context, _, __) => MediaDetailScreen(
+            metadata: metadata,
+            isOffline: false,
+            onFirstBuild: onRestored,
+          ),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
         ),
       );
     } catch (e) {
       appLogger.d('Pending external return restore failed: $e');
+      onRestored?.call();
     }
   }
 
@@ -350,6 +390,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
   @override
   void dispose() {
+    FocusManager.instance.removeListener(_syncSidebarFocusFromPrimaryFocus);
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
@@ -362,6 +403,20 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     _contentFocusScope.dispose();
 
     super.dispose();
+  }
+
+  /// Sync _isSidebarFocused with actual focus. Called when focus moves via Tab or other
+  /// means that don't go through _focusSidebar/_focusContent (e.g. Windows keyboard).
+  void _syncSidebarFocusFromPrimaryFocus() {
+    final primary = FocusManager.instance.primaryFocus;
+    if (primary == null || !mounted) return;
+
+    final scope = primary.enclosingScope;
+    if (scope == _contentFocusScope && _isSidebarFocused) {
+      setState(() => _isSidebarFocused = false);
+    } else if (scope == _sidebarFocusScope && !_isSidebarFocused) {
+      setState(() => _isSidebarFocused = true);
+    }
   }
 
   @override
@@ -488,21 +543,42 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     // Refresh sidebar focus after rebuilding navigation
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _sideNavKey.currentState?.focusActiveItem();
+        final activeKey = _getActiveSidebarKey();
+        _sideNavKey.currentState?.focusActiveItem(targetKey: activeKey);
       });
     }
   }
 
   void _focusSidebar() {
-    // Capture target before requestFocus() auto-focuses a sidebar descendant
-    // and overwrites lastFocusedKey (e.g. to the Libraries toggle button).
-    final targetKey = _sideNavKey.currentState?.lastFocusedKey;
+    // Focus the item that represents the current view, not where the cursor was.
+    // E.g. when viewing Collections, Back should land on Collections, not Movies.
+    final activeKey = _getActiveSidebarKey();
     setState(() => _isSidebarFocused = true);
     _sidebarFocusScope.requestFocus();
     // Focus the active item after the focus scope has focus
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _sideNavKey.currentState?.focusActiveItem(targetKey: targetKey);
+      _sideNavKey.currentState?.focusActiveItem(targetKey: activeKey);
     });
+  }
+
+  /// Key for the sidebar item that represents the current view (for focus when returning from content).
+  String? _getActiveSidebarKey() {
+    final tabId = _tabIdForIndex(_isOffline, _currentIndex);
+    switch (tabId) {
+      case NavigationTabId.discover:
+        return 'home';
+      case NavigationTabId.libraries:
+        if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) return 'favorites';
+        return _selectedLibraryGlobalKey ?? 'libraries';
+      case NavigationTabId.liveTv:
+        return 'liveTv';
+      case NavigationTabId.search:
+        return 'search';
+      case NavigationTabId.downloads:
+        return 'downloads';
+      case NavigationTabId.settings:
+        return 'settings';
+    }
   }
 
   void _focusContent() {
@@ -860,6 +936,18 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
                           ),
                         ),
                       ),
+                      // Loading overlay while checking for pending external return (TV)
+                      if (_isCheckingPendingReturn)
+                        Positioned.fill(
+                          child: ColoredBox(
+                            color: Theme.of(context).colorScheme.surface,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),

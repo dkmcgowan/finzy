@@ -8,6 +8,7 @@ import '../../models/livetv_channel.dart';
 import '../../models/livetv_dvr.dart';
 import '../../mixins/refreshable.dart';
 import '../../mixins/tab_navigation_mixin.dart';
+import '../../mixins/tab_visibility_aware.dart';
 import '../../providers/multi_server_provider.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/platform_detector.dart';
@@ -326,10 +327,14 @@ class _LiveTvScreenState extends State<LiveTvScreen>
     final theme = Theme.of(context);
     final useSideNav = PlatformDetector.shouldUseSideNavigation(context);
     final statusBarHeight = MediaQuery.of(context).padding.top;
+    final isPhone = PlatformDetector.isPhone(context);
+    final toolbarContentHeight = isPhone ? 56.0 : 72.0;
+    final barPadding = isPhone ? 4.0 : 8.0;
+    final titleStyle = theme.appBarTheme.titleTextStyle ?? theme.textTheme.titleLarge;
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: statusBarHeight + 72,
+        toolbarHeight: statusBarHeight + toolbarContentHeight,
         title: null,
         leading: null,
         leadingWidth: 0,
@@ -343,10 +348,10 @@ class _LiveTvScreenState extends State<LiveTvScreen>
             top: statusBarHeight,
             left: 16,
             right: 16,
-            bottom: 8,
+            bottom: barPadding,
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.symmetric(vertical: barPadding),
             child: Row(
               children: [
                 Expanded(
@@ -369,7 +374,7 @@ class _LiveTvScreenState extends State<LiveTvScreen>
                             ],
                           ),
                         )
-                      : Text(t.liveTv.title, style: theme.textTheme.titleLarge),
+                      : Text(t.liveTv.title, style: titleStyle),
                 ),
                 Focus(
                   focusNode: _refreshButtonFocusNode,
@@ -454,12 +459,12 @@ class _LiveTvScreenState extends State<LiveTvScreen>
           child: TabBarView(
             controller: tabController,
             children: [
-              GuideTab(key: _guideTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: onTabBarBack),
-              ProgramsTab(key: _programsTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: onTabBarBack),
-              ChannelsTab(key: _channelsTabKey, channels: _channels, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: onTabBarBack),
-              RecordingsTab(key: _recordingsTabKey, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: onTabBarBack),
-              ScheduledTab(key: _scheduledTabKey, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: onTabBarBack),
-              SeriesTimersTab(key: _seriesTimersTabKey, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: onTabBarBack),
+              GuideTab(key: _guideTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: focusTabBar),
+              ProgramsTab(key: _programsTabKey, channels: _channels, onNavigateUp: focusTabBar, onBack: focusTabBar),
+              ChannelsTab(key: _channelsTabKey, channels: _channels, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: focusTabBar),
+              RecordingsTab(key: _recordingsTabKey, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: focusTabBar),
+              ScheduledTab(key: _scheduledTabKey, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: focusTabBar),
+              SeriesTimersTab(key: _seriesTimersTabKey, onNavigateUp: focusTabBar, onNavigateLeft: onTabBarBack, onBack: focusTabBar),
             ],
           ),
         ),

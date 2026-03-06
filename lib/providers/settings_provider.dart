@@ -12,14 +12,15 @@ class SettingsProvider extends ChangeNotifier {
   bool _showHeroSection = true;
   bool _useGlobalHubs = true;
   bool _showServerNameOnHubs = false;
-  bool _showJellyfinRecommendations = true;
+  bool _showJellyfinRecommendations = false;
   bool _alwaysKeepSidebarOpen = false;
   bool _showUnwatchedCount = true;
   PerformanceProfile _imageQuality = PerformanceProfile.medium;
   PerformanceProfile _posterSize = PerformanceProfile.medium;
-  bool _animationsEnabled = false;
+  bool _animationsEnabled = true;
   GridPreloadLevel _gridPreload = GridPreloadLevel.medium;
   bool _hideSupportDevelopment = false;
+  bool _showDownloads = true;
   bool _isInitialized = false;
   Future<void>? _initFuture;
 
@@ -50,6 +51,7 @@ class SettingsProvider extends ChangeNotifier {
     _animationsEnabled = _settingsService!.getAnimationsEnabled();
     _gridPreload = _settingsService!.getGridPreload();
     _hideSupportDevelopment = _settingsService!.getHideSupportDevelopment();
+    _showDownloads = _settingsService!.getShowDownloads();
     _isInitialized = true;
     notifyListeners();
   }
@@ -96,6 +98,17 @@ class SettingsProvider extends ChangeNotifier {
   GridPreloadLevel get gridPreload => _gridPreload;
 
   bool get hideSupportDevelopment => _hideSupportDevelopment;
+
+  bool get showDownloads => _showDownloads;
+
+  Future<void> setShowDownloads(bool value) async {
+    if (!_isInitialized) await _initializeSettings();
+    if (_showDownloads != value) {
+      _showDownloads = value;
+      await _settingsService!.setShowDownloads(value);
+      notifyListeners();
+    }
+  }
 
   Future<void> setLibraryDensity(LibraryDensity density) async {
     if (!_isInitialized) await _initializeSettings();

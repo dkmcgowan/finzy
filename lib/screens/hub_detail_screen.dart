@@ -8,7 +8,7 @@ import '../models/hub.dart';
 import '../models/media_metadata.dart';
 import '../models/library_sort.dart';
 import '../providers/settings_provider.dart';
-import '../services/settings_service.dart';
+import '../services/settings_service.dart' show EpisodePosterMode, ViewMode;
 import '../utils/provider_extensions.dart';
 import '../utils/app_logger.dart';
 import '../utils/grid_size_calculator.dart';
@@ -116,10 +116,17 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     _focusGridItem(targetIndex);
   }
 
-  /// Estimate scroll offset to bring the grid item at [index] into view.
+  /// Estimate scroll offset to bring the grid/list item at [index] into view.
   double _estimateScrollOffsetForIndex(int index) {
     if (!mounted) return 0;
     final settings = context.read<SettingsProvider>();
+    const topOffset = 72.0; // kToolbarHeight + SliverPadding top
+
+    if (settings.viewMode == ViewMode.list) {
+      const listRowHeight = 100.0; // Approximate height of list item (poster + text)
+      return (topOffset + index * listRowHeight).clamp(0.0, double.infinity);
+    }
+
     final density = settings.libraryDensity;
     final episodePosterMode = settings.episodePosterMode;
     final hasEpisodes = _filteredItems.any((item) => item.usesWideAspectRatio(episodePosterMode));
@@ -138,8 +145,6 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
     final cellHeight = cellWidth / aspectRatio;
     final rowHeight = cellHeight + GridLayoutConstants.mainAxisSpacing;
     final row = index ~/ columnCount;
-    // Account for pinned app bar + top padding (grid starts below app bar)
-    const topOffset = 72.0; // kToolbarHeight + SliverPadding top
     return (topOffset + row * rowHeight).clamp(0.0, double.infinity);
   }
 
@@ -477,6 +482,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                   builder: (context) {
                     final settings = context.watch<SettingsProvider>();
                     final episodePosterMode = settings.episodePosterMode;
+                    final isListMode = settings.viewMode == ViewMode.list;
 
                     // Determine hub content type for layout decisions
                     final hasEpisodes = _filteredItems.any((item) => item.usesWideAspectRatio(episodePosterMode));
@@ -492,11 +498,37 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                     final useWideLayout =
                         episodePosterMode == EpisodePosterMode.episodeThumbnail && (isEpisodeOnlyHub || isMixedHub);
 
-                    return SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                      sliver: SliverLayoutBuilder(
+                    Widget sliver;
+                    if (isListMode) {
+                      sliver = SliverList.builder(
+                        itemCount: _filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = _filteredItems[index];
+                          final focusNode = index == 0
+                              ? _firstItemFocusNode
+                              : getGridItemFocusNode(index, prefix: 'hub_detail_item');
+                          final isFirstRow = index == 0;
+                          final isLastRow = index == _filteredItems.length - 1;
+
+                          return FocusableMediaCard(
+                            focusNode: focusNode,
+                            item: item,
+                            onRefresh: _handleItemRefresh,
+                            onNavigateUp: isFirstRow ? _navigateToAppBar : () => _focusGridItem(index - 1),
+                            onNavigateDown: isLastRow ? null : () => _focusGridItem(index + 1),
+                            onNavigateLeft: null,
+                            onNavigateRight: null,
+                            onBack: _handleBackFromContent,
+                            onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
+                            mixedHubContext: isMixedHub,
+                            autoScroll: true,
+                            scrollTopOffset: isFirstRow ? 72 : null,
+                          );
+                        },
+                      );
+                    } else {
+                      sliver = SliverLayoutBuilder(
                         builder: (context, constraints) {
-                          // Match library browse: use getMaxCrossAxisExtent (not getMaxCrossAxisExtentWithPadding)
                           final maxExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, settings.libraryDensity);
                           final effectiveMaxExtent = useWideLayout ? maxExtent * 1.8 : maxExtent;
                           final columnCount = GridSizeCalculator.getColumnCount(
@@ -541,7 +573,12 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                             ),
                           );
                         },
-                      ),
+                      );
+                    }
+
+                    return SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                      sliver: sliver,
                     );
                   },
                 ),

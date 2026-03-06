@@ -15,6 +15,7 @@ import '../../constants/library_constants.dart';
 import '../../focus/dpad_navigator.dart';
 import '../../focus/focus_memory_tracker.dart';
 import '../../focus/focus_theme.dart';
+import '../../focus/focus_utils.dart';
 import '../../focus/input_mode_tracker.dart';
 import '../../i18n/strings.g.dart';
 import '../../models/media_library.dart';
@@ -139,6 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   KeyboardShortcutsService? _keyboardService;
   late final bool _keyboardShortcutsSupported = KeyboardShortcutsService.isPlatformSupported();
   bool _isLoading = true;
+  bool _hasRequestedInitialFocus = false;
 
   bool _enableDebugLogging = false;
   bool _enableHardwareDecoding = true;
@@ -157,7 +159,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   bool _enableTrickplay = false;
   bool _enableChapterImages = false;
   int _autoSkipDelay = 5;
-  bool _showDownloads = true;
   bool _downloadOnWifiOnly = false;
   bool _videoPlayerNavigationEnabled = false;
   int _maxVolume = 100;
@@ -200,11 +201,19 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     super.dispose();
   }
 
+  bool get _showSupportDevelopment =>
+      SupportService.instance.isAvailable &&
+      !_hideSupportDevelopment &&
+      !Platform.isAndroid &&
+      !Platform.isIOS &&
+      !PlatformDetector.isTV();
+
   @override
   void focusActiveTabIfReady() {
-    if (InputModeTracker.isKeyboardMode(context)) {
-      _focusTracker.restoreFocus(fallbackKey: _kTheme);
-    }
+    if (!InputModeTracker.isKeyboardMode(context)) return;
+    // Always start at the top when returning to Settings (no focus memory)
+    final firstKey = _showSupportDevelopment ? _kSupportCoffee : _kAppearance;
+    _focusTracker.get(firstKey).requestFocus();
   }
 
   /// Navigate focus to the sidebar
@@ -246,7 +255,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       _enableTrickplay = _settingsService.getEnableTrickplay();
       _enableChapterImages = _settingsService.getEnableChapterImages();
       _autoSkipDelay = _settingsService.getAutoSkipDelay();
-      _showDownloads = _settingsService.getShowDownloads();
       _downloadOnWifiOnly = _settingsService.getDownloadOnWifiOnly();
       _videoPlayerNavigationEnabled = _settingsService.getVideoPlayerNavigationEnabled();
       _maxVolume = _settingsService.getMaxVolume();
@@ -319,6 +327,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // First-focus when main settings list first appears (keyboard/dpad only)
+    if (!_hasRequestedInitialFocus) {
+      _hasRequestedInitialFocus = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (!InputModeTracker.isKeyboardMode(context)) return;
+        final firstKey = _showSupportDevelopment ? _kSupportCoffee : _kAppearance;
+        _focusTracker.get(firstKey).requestFocus();
+      });
+    }
+
     return Scaffold(
       body: Focus(
         canRequestFocus: false,
@@ -334,16 +353,46 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  if (SupportService.instance.isAvailable && !_hideSupportDevelopment) ...[
+                  if (_showSupportDevelopment) ...[
                     _buildSupportDevelopmentSection(),
                   ],
-                  _buildSectionNavTile(_kAppearance, t.settings.appearance, Symbols.palette_rounded, _buildAppearanceContent, autofocus: true),
-                  _buildSectionNavTile(_kLibrariesSection, t.navigation.libraries, Symbols.video_library_rounded, _buildLibrariesContent),
-                  _buildSectionNavTile(_kVideoPlayback, t.settings.videoPlayback, Symbols.play_circle_rounded, _buildVideoPlaybackContent),
-                  _buildSectionNavTile(_kAdvanced, t.settings.advanced, Symbols.tune_rounded, _buildAdvancedContent),
+                  _buildSectionNavTile(
+                    _kAppearance,
+                    t.settings.appearance,
+                    Symbols.palette_rounded,
+                    _buildAppearanceContent,
+                    autofocus: !_showSupportDevelopment,
+                    firstFocusNode: _focusTracker.get(_kTheme),
+                  ),
+                  _buildSectionNavTile(
+                    _kLibrariesSection,
+                    t.navigation.libraries,
+                    Symbols.video_library_rounded,
+                    _buildLibrariesContent,
+                    firstFocusNode: _focusTracker.get(_kShowDownloads),
+                  ),
+                  _buildSectionNavTile(
+                    _kVideoPlayback,
+                    t.settings.videoPlayback,
+                    Symbols.play_circle_rounded,
+                    _buildVideoPlaybackContent,
+                    firstFocusNode: _focusTracker.get(Platform.isAndroid ? _kPlayerBackend : _kHardwareDecoding),
+                  ),
+                  _buildSectionNavTile(
+                    _kAdvanced,
+                    t.settings.advanced,
+                    Symbols.tune_rounded,
+                    _buildAdvancedContent,
+                    firstFocusNode: _focusTracker.get(_kImageQuality),
+                  ),
                   if (UpdateService.isUpdateCheckEnabled)
-                    _buildSectionNavTile(_kUpdates, t.settings.updates, Symbols.system_update_rounded, _buildUpdateContent),
-                  _buildSectionNavTile(_kAbout, t.settings.about, Symbols.info_rounded, null, directRoute: const AboutScreen()),
+                    _buildSectionNavTile(
+                      _kUpdates,
+                      t.settings.updates,
+                      Symbols.system_update_rounded,
+                      _buildUpdateContent,
+                      firstFocusNode: _focusTracker.get(_kCheckForUpdates),
+                    ),
                   ListTile(
                     focusNode: _focusTracker.get(_kSwitchProfile),
                     leading: const AppIcon(Symbols.switch_account_rounded, fill: 1),
@@ -363,6 +412,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                     title: Text(t.common.logout, style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
                     onTap: () => _handleLogout(),
                   ),
+                  _buildSectionNavTile(_kAbout, t.settings.about, Symbols.info_rounded, null, directRoute: const AboutScreen()),
                 ]),
               ),
             ),
@@ -372,7 +422,15 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     );
   }
 
-  Widget _buildSectionNavTile(String sectionKey, String title, IconData icon, Widget Function()? buildContent, {Widget? directRoute, bool autofocus = false}) {
+  Widget _buildSectionNavTile(
+    String sectionKey,
+    String title,
+    IconData icon,
+    Widget Function()? buildContent, {
+    Widget? directRoute,
+    bool autofocus = false,
+    FocusNode? firstFocusNode,
+  }) {
     return ListTile(
       autofocus: autofocus,
       focusNode: _focusTracker.get(sectionKey),
@@ -386,7 +444,12 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => _SettingsSectionPage(title: title, content: buildContent, rebuildNotifier: _sectionNotifier),
+              builder: (_) => _SettingsSectionPage(
+                title: title,
+                content: buildContent,
+                rebuildNotifier: _sectionNotifier,
+                firstFocusNode: firstFocusNode,
+              ),
             ),
           );
         }
@@ -749,15 +812,18 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     final isCustom = storageService.isUsingCustomPath();
 
     return [
-      SwitchListTile(
-        focusNode: _focusTracker.get(_kShowDownloads),
-        secondary: const AppIcon(Symbols.download_rounded, fill: 1),
-        title: Text(t.settings.showDownloads),
-        subtitle: Text(t.settings.showDownloadsDescription),
-        value: _showDownloads,
-        onChanged: (value) async {
-          setState(() => _showDownloads = value);
-          await _settingsService.setShowDownloads(value);
+      Consumer<SettingsProvider>(
+        builder: (context, settingsProvider, child) {
+          return SwitchListTile(
+            focusNode: _focusTracker.get(_kShowDownloads),
+            secondary: const AppIcon(Symbols.download_rounded, fill: 1),
+            title: Text(t.settings.showDownloads),
+            subtitle: Text(t.settings.showDownloadsDescription),
+            value: settingsProvider.showDownloads,
+            onChanged: (value) async {
+              await settingsProvider.setShowDownloads(value);
+            },
+          );
         },
       ),
       if (!Platform.isIOS)
@@ -3027,8 +3093,14 @@ class _SettingsSectionPage extends StatefulWidget {
   final String title;
   final Widget Function() content;
   final ValueNotifier<int>? rebuildNotifier;
+  final FocusNode? firstFocusNode;
 
-  const _SettingsSectionPage({required this.title, required this.content, this.rebuildNotifier});
+  const _SettingsSectionPage({
+    required this.title,
+    required this.content,
+    this.rebuildNotifier,
+    this.firstFocusNode,
+  });
 
   @override
   State<_SettingsSectionPage> createState() => _SettingsSectionPageState();
@@ -3043,14 +3115,17 @@ class _SettingsSectionPageState extends State<_SettingsSectionPage> {
     widget.rebuildNotifier?.addListener(_onParentStateChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final contentContext = _contentKey.currentContext;
-      if (contentContext == null) return;
-      final scope = FocusScope.of(contentContext);
-      final firstChild = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
-        (node) => node!.canRequestFocus && node.context != null,
-        orElse: () => null,
-      );
-      firstChild?.requestFocus();
+      // Only auto-focus first item when using keyboard/dpad (not touchscreen)
+      if (!InputModeTracker.isKeyboardMode(context)) return;
+      if (widget.firstFocusNode != null) {
+        widget.firstFocusNode!.requestFocus();
+      } else {
+        // Fallback: find first focusable within content (skip app bar back button)
+        final contentContext = _contentKey.currentContext;
+        if (contentContext != null) {
+          FocusUtils.focusFirstInSubtree(contentContext);
+        }
+      }
     });
   }
 

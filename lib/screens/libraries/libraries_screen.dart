@@ -1221,7 +1221,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   /// Build the app bar title - either dropdown on mobile or tab chips on desktop
   Widget _buildAppBarTitle(List<MediaLibrary> visibleLibraries, MediaLibrary? selectedLibrary) {
     if (visibleLibraries.isEmpty || _selectedLibraryGlobalKey == null) {
-      return Text(t.libraries.title);
+      return Text(
+        t.libraries.title,
+        style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
+      );
     }
 
     if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
@@ -1232,6 +1235,15 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     }
 
     if (PlatformDetector.shouldUseSideNavigation(context)) {
+      final titleStyle = Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge;
+      if (_effectiveTabCount == 1) {
+        final isCollection = selectedLibrary?.type.toLowerCase() == 'collection';
+        return Text(
+          isCollection ? t.libraries.tabs.collections : t.libraries.tabs.playlists,
+          style: titleStyle,
+        );
+      }
+      // Movies/Shows: tabs only (no library title)
       final chips = <Widget>[];
       if (_effectiveTabCount == 4) {
         chips.addAll([
@@ -1251,12 +1263,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           const SizedBox(width: 8),
           _buildTabChip(t.libraries.tabs.favorites, 2),
         ]);
-      } else if (_effectiveTabCount == 1) {
-        final isCollection = selectedLibrary?.type.toLowerCase() == 'collection';
-        chips.add(Text(
-          isCollection ? t.libraries.tabs.collections : t.libraries.tabs.playlists,
-          style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
-        ));
       } else {
         chips.addAll([
           _buildTabChip(_browseTabLabel(selectedLibrary!), 0),
@@ -1406,81 +1412,94 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           child: CustomScrollView(
             controller: _outerScrollController,
             slivers: [
-              // Match Home (Discover) app bar layout: statusBar + 8 top, 16 L/R, 8 bottom, 64px row (total = statusBar + 72)
-              SliverAppBar(
-                pinned: true,
-                toolbarHeight: MediaQuery.of(context).padding.top + 72,
-                title: null,
-                leading: null,
-                leadingWidth: 0,
-                automaticallyImplyLeading: false,
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                surfaceTintColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                scrolledUnderElevation: 0,
-                flexibleSpace: Padding(
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top,
-                    left: 16,
-                    right: 16,
-                    bottom: 8,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildAppBarTitle(visibleLibraries, selectedLibrary),
-                        ),
-                        Focus(
-                          focusNode: _refreshButtonFocusNode,
-                          onKeyEvent: _handleRefreshKeyEvent,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: _isRefreshFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
-                              borderRadius: const BorderRadius.all(Radius.circular(20)),
+              // Match Home (Discover) app bar layout on desktop/TV; tighter on mobile
+              Builder(
+                builder: (context) {
+                  final isPhone = PlatformDetector.isPhone(context);
+                  final useSideNav = PlatformDetector.shouldUseSideNavigation(context);
+                  // Header-only (Favorites, Collections, Playlists): use tighter height to reduce gap
+                  final hasHeaderOnly = useSideNav &&
+                      (selectedLibrary == null ||
+                          _selectedLibraryGlobalKey == kJellyfinFavoritesKey ||
+                          _effectiveTabCount == 1);
+                  final toolbarContentHeight = isPhone ? 56.0 : (hasHeaderOnly ? 56.0 : 72.0);
+                  final barPadding = isPhone ? 4.0 : (hasHeaderOnly ? 4.0 : 8.0);
+                  return SliverAppBar(
+                    pinned: true,
+                    toolbarHeight: MediaQuery.of(context).padding.top + toolbarContentHeight,
+                    title: null,
+                    leading: null,
+                    leadingWidth: 0,
+                    automaticallyImplyLeading: false,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    surfaceTintColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    scrolledUnderElevation: 0,
+                    flexibleSpace: Padding(
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).padding.top,
+                        left: 16,
+                        right: 16,
+                        bottom: barPadding,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: barPadding),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildAppBarTitle(visibleLibraries, selectedLibrary),
                             ),
-                            child: Semantics(
-                              label: t.common.refresh,
-                              button: true,
-                              excludeSemantics: true,
-                              child: IconButton(
-                                icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
-                                tooltip: null,
-                                onPressed: () {
-                                  if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
-                                    _loadGlobalFavorites();
-                                  } else {
-                                    _refreshCurrentTab();
-                                  }
+                            Focus(
+                              focusNode: _refreshButtonFocusNode,
+                              onKeyEvent: _handleRefreshKeyEvent,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: _isRefreshFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+                                  borderRadius: const BorderRadius.all(Radius.circular(20)),
+                                ),
+                                child: Semantics(
+                                  label: t.common.refresh,
+                                  button: true,
+                                  excludeSemantics: true,
+                                  child: IconButton(
+                                    icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
+                                    tooltip: null,
+                                    onPressed: () {
+                                      if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
+                                        _loadGlobalFavorites();
+                                      } else {
+                                        _refreshCurrentTab();
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Focus(
+                              focusNode: _profileButtonFocusNode,
+                              onKeyEvent: _handleProfileKeyEvent,
+                              child: Builder(
+                                builder: (context) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: _isProfileFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+                                      borderRadius: const BorderRadius.all(Radius.circular(20)),
+                                    ),
+                                    child: ProfileAppBarButton(
+                                      menuKey: _profileMenuKey,
+                                      onSwitchProfile: () => _handleJellyfinSwitchProfile(context),
+                                      onLogout: _handleLogout,
+                                    ),
+                                  );
                                 },
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                        Focus(
-                          focusNode: _profileButtonFocusNode,
-                          onKeyEvent: _handleProfileKeyEvent,
-                          child: Builder(
-                            builder: (context) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: _isProfileFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
-                                  borderRadius: const BorderRadius.all(Radius.circular(20)),
-                                ),
-                                child: ProfileAppBarButton(
-                                  menuKey: _profileMenuKey,
-                                  onSwitchProfile: () => _handleJellyfinSwitchProfile(context),
-                                  onLogout: _handleLogout,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
               if (isLoadingLibraries)
                 const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
@@ -1503,7 +1522,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                 if (_selectedLibraryGlobalKey != null && selectedLibrary != null && !PlatformDetector.shouldUseSideNavigation(context))
                   SliverToBoxAdapter(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: PlatformDetector.isPhone(context) ? 4 : 8,
+                      ),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(

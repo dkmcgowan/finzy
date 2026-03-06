@@ -7,6 +7,7 @@ import '../../providers/multi_server_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../utils/global_key_utils.dart';
 import '../../mixins/tab_navigation_mixin.dart';
+import '../../services/settings_service.dart' show ViewMode;
 import '../../utils/grid_size_calculator.dart';
 import '../../utils/platform_detector.dart';
 import '../../widgets/focusable_tab_chip.dart';
@@ -115,9 +116,12 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
 
   /// Build the app bar title - either tabs on desktop or simple title on mobile
   Widget _buildAppBarTitle() {
-    // On desktop/TV with side nav, show tabs in app bar
+    final titleStyle = Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge;
+
+    // On desktop/TV with side nav, show tabs only (like Movies/Shows)
     if (PlatformDetector.shouldUseSideNavigation(context)) {
       return Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _buildTabChip(t.downloads.manage, 0),
           const SizedBox(width: 8),
@@ -128,8 +132,8 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
       );
     }
 
-    // On mobile, show simple title
-    return Text(t.downloads.title);
+    // On mobile, show simple title (match Favorites, Search styling)
+    return Text(t.downloads.title, style: titleStyle);
   }
 
   @override
@@ -137,31 +141,38 @@ class DownloadsScreenState extends State<DownloadsScreen> with TickerProviderSta
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Match Home/Libraries app bar: statusBar + 8 top, 16 L/R, 8 bottom, 72px content row
-          SliverAppBar(
-            pinned: true,
-            toolbarHeight: MediaQuery.of(context).padding.top + 72,
-            title: null,
-            leading: null,
-            leadingWidth: 0,
-            automaticallyImplyLeading: false,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            surfaceTintColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            scrolledUnderElevation: 0,
-            flexibleSpace: Padding(
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top,
-                left: 16,
-                right: 16,
-                bottom: 8,
-              ),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: _buildAppBarTitle(),
-              ),
-            ),
-          ),
+          // Match Home/Libraries app bar: statusBar + 8 top, 16 L/R, 8 bottom; tighter on mobile
+          Builder(
+            builder: (context) {
+              final isPhone = PlatformDetector.isPhone(context);
+              final toolbarContentHeight = isPhone ? 56.0 : 72.0;
+              return SliverAppBar(
+                pinned: true,
+                floating: false,
+                toolbarHeight: MediaQuery.of(context).padding.top + toolbarContentHeight,
+                title: null,
+                leading: null,
+                leadingWidth: 0,
+                automaticallyImplyLeading: false,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                surfaceTintColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                scrolledUnderElevation: 0,
+                flexibleSpace: Padding(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top,
+                    left: 16,
+                    right: 16,
+                    bottom: isPhone ? 4 : 8,
+                  ),
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: _buildAppBarTitle(),
+                  ),
+                ),
+          );
+        },
+      ),
           SliverFillRemaining(
             child: Column(
               children: [
@@ -319,6 +330,31 @@ class _DownloadsGridContentState extends State<_DownloadsGridContent> {
 
         // Extra top padding for focus decoration (scale + border extends beyond item bounds)
         const effectivePadding = EdgeInsets.only(left: 8, right: 8, top: 8);
+        final isListMode = settingsProvider.viewMode == ViewMode.list;
+
+        if (isListMode) {
+          return ListView.builder(
+            padding: effectivePadding,
+            // ignore: deprecated_member_use
+            cacheExtent: settingsProvider.gridPreloadCacheExtent,
+            clipBehavior: Clip.none,
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final isFirst = index == 0;
+              final isFirstRow = index == 0;
+              return FocusableMediaCard(
+                item: item,
+                focusNode: isFirst ? _firstItemFocusNode : null,
+                onBack: widget.onBack,
+                isOffline: true,
+                onNavigateLeft: _navigateToSidebar,
+                onNavigateUp: isFirstRow ? widget.onNavigateUp : null,
+              );
+            },
+          );
+        }
+
         final maxCrossAxisExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, settingsProvider.libraryDensity);
 
         // Use LayoutBuilder to get actual available width (accounting for sidebar)

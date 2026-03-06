@@ -11,6 +11,7 @@ import '../models/hub.dart';
 import '../providers/multi_server_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/focus_utils.dart';
+import '../utils/platform_detector.dart';
 import '../utils/snackbar_helper.dart';
 import '../widgets/hub_section.dart';
 import 'libraries/state_messages.dart';
@@ -256,13 +257,84 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
     };
   }
 
+  Widget _buildSearchHeader() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+      child: Focus(
+        onKeyEvent: _handleSearchInputKeyEvent,
+        child: TextField(
+          controller: _searchController,
+          focusNode: _searchFocusNode,
+          decoration: InputDecoration(
+            hintText: t.search.hint,
+            prefixIcon: const AppIcon(Symbols.search_rounded, fill: 1),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const AppIcon(Symbols.clear_rounded, fill: 1),
+                    onPressed: () {
+                      _searchController.clear();
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(100)),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(100)),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(100)),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isPhone = PlatformDetector.isPhone(context);
+
+    // On mobile: search box scrolls with results to avoid it staying visible "in background"
+    if (isPhone) {
+      return Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 8,
+                left: 16,
+                right: 16,
+                bottom: 8,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  t.common.search,
+                  style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(child: _buildSearchHeader()),
+            SliverPadding(
+              padding: const EdgeInsets.only(bottom: 24),
+              sliver: _buildResultsSliver(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // TV/Desktop: search box fixed at top
     return Scaffold(
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // App bar area
           Padding(
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
@@ -272,52 +344,73 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
             ),
             child: Text(
               t.common.search,
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
             ),
           ),
-          // Search input
-          Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-            child: Focus(
-              onKeyEvent: _handleSearchInputKeyEvent,
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                decoration: InputDecoration(
-                  hintText: t.search.hint,
-                  prefixIcon: const AppIcon(Symbols.search_rounded, fill: 1),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const AppIcon(Symbols.clear_rounded, fill: 1),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  border: OutlineInputBorder(
-                    borderRadius: const BorderRadius.all(Radius.circular(100)),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: const BorderRadius.all(Radius.circular(100)),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: const BorderRadius.all(Radius.circular(100)),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-              ),
-            ),
-          ),
-          // Results area
-          Expanded(
-            child: _buildResultsArea(),
-          ),
+          _buildSearchHeader(),
+          Expanded(child: _buildResultsArea()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildResultsSliver() {
+    if (_isSearching) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!_hasSearched) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: StateMessageWidget(
+          message: t.search.searchYourMedia,
+          subtitle: t.search.enterTitleActorOrKeyword,
+          icon: Symbols.search_rounded,
+          iconSize: 80,
+        ),
+      );
+    }
+    if (_searchHubs.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: StateMessageWidget(
+          message: t.messages.noResultsFound,
+          subtitle: t.search.tryDifferentTerm,
+          icon: Symbols.search_off_rounded,
+          iconSize: 80,
+        ),
+      );
+    }
+    _ensureHubKeys(_searchHubs.length);
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final hub = _searchHubs[index];
+          return HubSection(
+            key: index < _hubKeys.length ? _hubKeys[index] : null,
+            hub: hub,
+            icon: _iconForItemType(hub.hubKey.split('_')[1]),
+            onRefresh: null,
+            onVerticalNavigation: (isUp) => _handleVerticalNavigation(index, isUp),
+            onBack: () {
+              _lastFocusedHubIndex = index;
+              _searchFocusNode.requestFocus();
+            },
+            onNavigateUp: index == 0
+                ? () {
+                    _lastFocusedHubIndex = 0;
+                    _searchFocusNode.requestFocus();
+                  }
+                : null,
+            onNavigateToSidebar: _navigateToSidebar,
+          );
+        },
+        childCount: _searchHubs.length,
+        ),
       ),
     );
   }

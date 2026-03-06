@@ -7,6 +7,7 @@ import '../../utils/snackbar_helper.dart';
 import '../../i18n/strings.g.dart';
 import '../../theme/mono_tokens.dart';
 import '../../utils/platform_detector.dart';
+import '../../focus/focus_utils.dart';
 import '../../focus/focusable_wrapper.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import 'jellyfin_add_user_screen.dart';
@@ -29,13 +30,9 @@ class _JellyfinProfileSwitchScreenState extends State<JellyfinProfileSwitchScree
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final contentContext = _contentKey.currentContext;
-      if (contentContext == null) return;
-      final scope = FocusScope.of(contentContext);
-      final firstChild = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
-        (node) => node!.canRequestFocus && node.context != null,
-        orElse: () => null,
-      );
-      firstChild?.requestFocus();
+      if (contentContext != null) {
+        FocusUtils.focusFirstInSubtree(contentContext);
+      }
     });
   }
 

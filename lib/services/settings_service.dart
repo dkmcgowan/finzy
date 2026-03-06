@@ -266,7 +266,7 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyReduceAnimations);
       return migrated;
     }
-    return prefs.getBool(_keyAnimationsEnabled) ?? false;
+    return prefs.getBool(_keyAnimationsEnabled) ?? true;
   }
 
   Future<void> setAnimationsEnabled(bool enabled) async {
@@ -324,7 +324,7 @@ class SettingsService extends BaseSharedPreferencesService {
   }
 
   bool getShowJellyfinRecommendations() {
-    return prefs.getBool(_keyShowJellyfinRecommendations) ?? true; // Default: on
+    return prefs.getBool(_keyShowJellyfinRecommendations) ?? false; // Default: off
   }
 
   // Seek Time Small (in seconds)

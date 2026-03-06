@@ -32,6 +32,13 @@ ThemeData monoTheme({required bool dark, bool oled = false}) {
 
   final isDark = dark || oled;
 
+  // surfaceContainerHighest: step above surface for focus/hover highlights (app bar, chips, placeholders)
+  final Color surfaceContainerHighest = oled
+      ? const Color(0xFF222222) // above surface 0x0A0A0A
+      : dark
+          ? const Color(0xFF35383E) // above surface 0x15171C
+          : const Color(0xFFB8B8B9); // darker gray on white surface
+
   final buttonStyle = ButtonStyle(
     padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 18, vertical: 14)),
     elevation: const WidgetStatePropertyAll(0),
@@ -59,7 +66,7 @@ ThemeData monoTheme({required bool dark, bool oled = false}) {
       onPrimaryContainer: c.text,
       secondaryContainer: c.surface,
       onSecondaryContainer: c.text,
-      surfaceContainerHighest: c.surface,
+      surfaceContainerHighest: surfaceContainerHighest,
       surfaceContainerLow: c.bg,
       surfaceDim: c.bg,
       surfaceBright: c.surface,

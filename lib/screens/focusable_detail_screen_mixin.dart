@@ -7,6 +7,7 @@ import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 import '../mixins/grid_focus_node_mixin.dart';
 import '../providers/settings_provider.dart';
+import '../services/settings_service.dart' show ViewMode;
 import '../utils/grid_size_calculator.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/focusable_media_card.dart';
@@ -294,6 +295,42 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
     }
   }
 
+  Widget _buildFocusableGridItem({
+    required List<dynamic> items,
+    required int index,
+    required int columnCount,
+    required bool inFirstRow,
+    required bool isLastRow,
+    required bool isFirstColumn,
+    required bool isLastColumn,
+    required void Function(String itemId) onRefresh,
+    String? collectionId,
+    VoidCallback? onListRefresh,
+  }) {
+    final item = items[index];
+    final focusNode = index == 0
+        ? firstItemFocusNode
+        : getGridItemFocusNode(index, prefix: 'detail_grid_item');
+    final aboveIndex = index - columnCount;
+    final belowIndex = index + columnCount;
+
+    return FocusableMediaCard(
+      key: Key(item.itemId),
+      item: item,
+      focusNode: focusNode,
+      onRefresh: onRefresh,
+      collectionId: collectionId,
+      onListRefresh: onListRefresh,
+      onNavigateUp: inFirstRow ? navigateToAppBar : () => _focusDetailGridItem(aboveIndex),
+      onNavigateDown: isLastRow ? null : () => _focusDetailGridItem(belowIndex),
+      onNavigateLeft: isFirstColumn ? null : () => _focusDetailGridItem(index - 1),
+      onNavigateRight: isLastColumn ? null : () => _focusDetailGridItem(index + 1),
+      onBack: handleBackFromContent,
+      onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
+      scrollTopOffset: inFirstRow ? kToolbarHeight + 16 : null,
+    );
+  }
+
   /// Build a standard focusable grid sliver for media items.
   /// Used by collection and smart playlist detail screens.
   Widget buildFocusableGrid({
@@ -304,10 +341,28 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
   }) {
     return Consumer<SettingsProvider>(
       builder: (context, settingsProvider, child) {
-        final maxExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, settingsProvider.libraryDensity);
-        return SliverPadding(
-          padding: const EdgeInsets.all(8),
-          sliver: SliverLayoutBuilder(
+        final isListMode = settingsProvider.viewMode == ViewMode.list;
+
+        Widget sliver;
+        if (isListMode) {
+          sliver = SliverList.builder(
+            itemCount: items.length,
+            itemBuilder: (context, index) => _buildFocusableGridItem(
+              items: items,
+              index: index,
+              columnCount: 1,
+              inFirstRow: index == 0,
+              isLastRow: index == items.length - 1,
+              isFirstColumn: true,
+              isLastColumn: true,
+              onRefresh: onRefresh,
+              collectionId: collectionId,
+              onListRefresh: onListRefresh,
+            ),
+          );
+        } else {
+          final maxExtent = GridSizeCalculator.getMaxCrossAxisExtent(context, settingsProvider.libraryDensity);
+          sliver = SliverLayoutBuilder(
             builder: (context, constraints) {
               final columnCount = GridSizeCalculator.getColumnCount(constraints.crossAxisExtent, maxExtent);
               return SliverGrid.builder(
@@ -316,38 +371,26 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                   density: settingsProvider.libraryDensity,
                 ),
                 itemCount: items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  final inFirstRow = GridSizeCalculator.isFirstRow(index, columnCount);
-                  final focusNode = index == 0
-                      ? firstItemFocusNode
-                      : getGridItemFocusNode(index, prefix: 'detail_grid_item');
-
-                  final aboveIndex = index - columnCount;
-                  final belowIndex = index + columnCount;
-                  final isLastRow = belowIndex >= items.length;
-                  final isFirstColumn = index % columnCount == 0;
-                  final isLastColumn = index % columnCount == columnCount - 1;
-
-                  return FocusableMediaCard(
-                    key: Key(item.itemId),
-                    item: item,
-                    focusNode: focusNode,
-                    onRefresh: onRefresh,
-                    collectionId: collectionId,
-                    onListRefresh: onListRefresh,
-                    onNavigateUp: inFirstRow ? navigateToAppBar : () => _focusDetailGridItem(aboveIndex),
-                    onNavigateDown: isLastRow ? null : () => _focusDetailGridItem(belowIndex),
-                    onNavigateLeft: isFirstColumn ? null : () => _focusDetailGridItem(index - 1),
-                    onNavigateRight: isLastColumn ? null : () => _focusDetailGridItem(index + 1),
-                    onBack: handleBackFromContent,
-                    onFocusChange: (hasFocus) => trackGridItemFocus(index, hasFocus),
-                    scrollTopOffset: inFirstRow ? kToolbarHeight + 16 : null,
-                  );
-                },
+                itemBuilder: (context, index) => _buildFocusableGridItem(
+                  items: items,
+                  index: index,
+                  columnCount: columnCount,
+                  inFirstRow: GridSizeCalculator.isFirstRow(index, columnCount),
+                  isLastRow: index + columnCount >= items.length,
+                  isFirstColumn: index % columnCount == 0,
+                  isLastColumn: index % columnCount == columnCount - 1,
+                  onRefresh: onRefresh,
+                  collectionId: collectionId,
+                  onListRefresh: onListRefresh,
+                ),
               );
             },
-          ),
+          );
+        }
+
+        return SliverPadding(
+          padding: const EdgeInsets.all(8),
+          sliver: sliver,
         );
       },
     );

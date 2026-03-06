@@ -12,6 +12,7 @@ import '../models/cast_role.dart';
 import '../models/media_metadata.dart';
 import '../services/jellyfin_client.dart';
 import '../utils/app_logger.dart';
+import '../utils/platform_detector.dart';
 import '../utils/scroll_utils.dart';
 import '../widgets/app_bar_back_button.dart';
 import '../widgets/collapsible_text.dart';
@@ -337,6 +338,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     final personId = widget.actor.tagKey ?? widget.actor.thumb ?? '';
     final imageUrl = personId.isNotEmpty ? widget.client.getPersonImageUrl(personId) : '';
     final isWide = screenWidth >= 600;
+    final isPhone = PlatformDetector.isPhone(context);
 
     return Focus(
       focusNode: _rootFocusNode,
@@ -359,16 +361,17 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                               : _buildNarrowHeader(imageUrl),
                         ),
                       ),
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        child: FocusableAppBarBackButton(
-                          focusNode: _backButtonFocusNode,
-                          onKeyEvent: _handleBackButtonKeyEvent,
-                          onPressed: () => Navigator.pop(context),
-                          useDarkBase: true,
+                      if (!isPhone)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          child: FocusableAppBarBackButton(
+                            focusNode: _backButtonFocusNode,
+                            onKeyEvent: _handleBackButtonKeyEvent,
+                            onPressed: () => Navigator.pop(context),
+                            useDarkBase: true,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -425,6 +428,21 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                 ],
               ],
             ),
+            // Floating back button on mobile: stays visible when scrolling
+            if (isPhone)
+              Positioned(
+                top: 0,
+                left: 0,
+                child: SafeArea(
+                  bottom: false,
+                  child: FocusableAppBarBackButton(
+                    focusNode: _backButtonFocusNode,
+                    onKeyEvent: _handleBackButtonKeyEvent,
+                    onPressed: () => Navigator.pop(context),
+                    useDarkBase: true,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

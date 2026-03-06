@@ -55,7 +55,15 @@ class MediaDetailScreen extends StatefulWidget {
   final MediaMetadata metadata;
   final bool isOffline;
 
-  const MediaDetailScreen({super.key, required this.metadata, this.isOffline = false});
+  /// Called once when the screen has been built (for external-restore flow).
+  final VoidCallback? onFirstBuild;
+
+  const MediaDetailScreen({
+    super.key,
+    required this.metadata,
+    this.isOffline = false,
+    this.onFirstBuild,
+  });
 
   @override
   State<MediaDetailScreen> createState() => _MediaDetailScreenState();
@@ -271,6 +279,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     _similarItemsFocusNode = FocusNode(debugLabel: 'similar_items_row');
     _overviewFocusNode = FocusNode(debugLabel: 'overview_section');
     _loadFullMetadata();
+    if (widget.onFirstBuild != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onFirstBuild?.call();
+      });
+    }
   }
 
   void _onScroll() {
@@ -1273,9 +1286,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    if (metadata.role != null && metadata.role!.isNotEmpty) {
+    if (!widget.isOffline && metadata.role != null && metadata.role!.isNotEmpty) {
       _castFocusNode.requestFocus();
       _scrollSectionIntoView(_castSectionKey);
+      return KeyEventResult.handled;
+    }
+
+    if (_similarItems != null && _similarItems!.isNotEmpty) {
+      _similarItemsFocusNode.requestFocus();
+      _scrollSectionIntoView(_similarSectionKey);
       return KeyEventResult.handled;
     }
 
@@ -1302,7 +1321,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       if (metadata.isShow && _seasons.isNotEmpty) {
         _seasonsFocusNode.requestFocus();
         _scrollSectionIntoView(_seasonsSectionKey);
-      } else if (metadata.role != null && metadata.role!.isNotEmpty) {
+      } else if (!widget.isOffline && metadata.role != null && metadata.role!.isNotEmpty) {
         _castFocusNode.requestFocus();
         _scrollSectionIntoView(_castSectionKey);
       } else if (_similarItems != null && _similarItems!.isNotEmpty) {
@@ -1412,12 +1431,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // DOWN: cast → (extras section removed)
+    // DOWN: cast → similar (skip cast when offline)
     if (key.isDownKey) {
       final metadata = _fullMetadata ?? widget.metadata;
-      if (metadata.role != null && metadata.role!.isNotEmpty) {
+      if (!widget.isOffline && metadata.role != null && metadata.role!.isNotEmpty) {
         _castFocusNode.requestFocus();
         _scrollSectionIntoView(_castSectionKey);
+      } else if (_similarItems != null && _similarItems!.isNotEmpty) {
+        _similarItemsFocusNode.requestFocus();
+        _scrollSectionIntoView(_similarSectionKey);
       }
       return KeyEventResult.handled;
     }
@@ -1594,10 +1616,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       return KeyEventResult.handled;
     }
 
-    // UP: cast → seasons → overview → play button
+    // UP: cast → seasons → overview → play button (skip cast when offline)
     if (key.isUpKey) {
       final metadata = _fullMetadata ?? widget.metadata;
-      if (metadata.role != null && metadata.role!.isNotEmpty) {
+      if (!widget.isOffline && metadata.role != null && metadata.role!.isNotEmpty) {
         _castFocusNode.requestFocus();
         _scrollSectionIntoView(_castSectionKey);
       } else if (metadata.isShow && _seasons.isNotEmpty) {
@@ -1840,6 +1862,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     final size = MediaQuery.of(context).size;
     final headerHeight = size.height * 0.6;
 
+    final isPhone = PlatformDetector.isPhone(context);
     final content = Focus(
       onKeyEvent: handleBack,
       child: Scaffold(
@@ -2044,17 +2067,18 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                         ),
                       ),
 
-                      // Back button last so it's always on top (hover + tap work)
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        child: FocusableAppBarBackButton(
-                          focusNode: _backButtonFocusNode,
-                          onKeyEvent: _handleBackButtonKeyEvent,
-                          onPressed: () => Navigator.pop(context, _watchStateChanged),
-                          useAdjustedLeading: true,
+                      // Back button: on TV/desktop stays in hero; on mobile, use floating button below
+                      if (!isPhone)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          child: FocusableAppBarBackButton(
+                            focusNode: _backButtonFocusNode,
+                            onKeyEvent: _handleBackButtonKeyEvent,
+                            onPressed: () => Navigator.pop(context, _watchStateChanged),
+                            useAdjustedLeading: true,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -2169,8 +2193,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                           const SizedBox(height: 24),
                         ],
 
-                        // Cast
-                        if (metadata.role != null && metadata.role!.isNotEmpty) ...[
+                        // Cast (hidden offline - person images not downloaded)
+                        if (!widget.isOffline && metadata.role != null && metadata.role!.isNotEmpty) ...[
                           Text(
                             key: _castSectionKey,
                             t.discover.cast,
@@ -2227,6 +2251,21 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                 ),
               ),
             ),
+            // Floating back button on mobile: stays visible when scrolling
+            if (isPhone)
+              Positioned(
+                top: 0,
+                left: 0,
+                child: SafeArea(
+                  bottom: false,
+                  child: FocusableAppBarBackButton(
+                    focusNode: _backButtonFocusNode,
+                    onKeyEvent: _handleBackButtonKeyEvent,
+                    onPressed: () => Navigator.pop(context, _watchStateChanged),
+                    useAdjustedLeading: true,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

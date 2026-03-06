@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../../focus/focus_utils.dart';
 import '../../services/settings_service.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import '../../i18n/strings.g.dart';
@@ -45,13 +46,9 @@ class _AboutScreenState extends State<AboutScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final contentContext = _contentKey.currentContext;
-      if (contentContext == null) return;
-      final scope = FocusScope.of(contentContext);
-      final firstChild = scope.traversalDescendants.cast<FocusNode?>().firstWhere(
-        (node) => node!.canRequestFocus && node.context != null,
-        orElse: () => null,
-      );
-      firstChild?.requestFocus();
+      if (contentContext != null) {
+        FocusUtils.focusFirstInSubtree(contentContext);
+      }
     });
   }
 
