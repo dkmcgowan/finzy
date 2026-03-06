@@ -68,16 +68,21 @@ class _HotKeyRecorderWidgetState extends State<HotKeyRecorderWidget> {
                       ),
                     ),
                     if (_recordedHotKey != null)
-                      IconButton(
-                        icon: const AppIcon(Symbols.backspace_rounded, fill: 1, size: 18),
-                        onPressed: () {
-                          setState(() {
-                            _recordedHotKey = null;
-                          });
-                        },
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                        tooltip: t.hotkeys.clearShortcut,
+                      Semantics(
+                        label: t.hotkeys.clearShortcut,
+                        button: true,
+                        excludeSemantics: true,
+                        child: IconButton(
+                          icon: const AppIcon(Symbols.backspace_rounded, fill: 1, size: 18),
+                          onPressed: () {
+                            setState(() {
+                              _recordedHotKey = null;
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                          tooltip: null,
+                        ),
                       ),
                   ],
                 ),

@@ -131,6 +131,8 @@
     "gridViewDescription": "Items weergeven in een rasterindeling",
     "listView": "Lijst",
     "listViewDescription": "Items weergeven in een lijstindeling",
+    "animations": "Animaties",
+    "animationsDescription": "Overgangen en scroll-animaties inschakelen",
     "showHeroSection": "Toon hoofdsectie",
     "useGlobalHubs": "Home-indeling gebruiken",
     "useGlobalHubsDescription": "Toon startpagina-hubs zoals de officiële Jellyfin-client. Indien uitgeschakeld, worden in plaats daarvan aanbevelingen per bibliotheek getoond.",

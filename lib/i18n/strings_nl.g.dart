@@ -248,6 +248,8 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get gridViewDescription => 'Items weergeven in een rasterindeling';
 	@override String get listView => 'Lijst';
 	@override String get listViewDescription => 'Items weergeven in een lijstindeling';
+	@override String get animations => 'Animaties';
+	@override String get animationsDescription => 'Overgangen en scroll-animaties inschakelen';
 	@override String get showHeroSection => 'Toon hoofdsectie';
 	@override String get useGlobalHubs => 'Home-indeling gebruiken';
 	@override String get useGlobalHubsDescription => 'Toon startpagina-hubs zoals de officiële Jellyfin-client. Indien uitgeschakeld, worden in plaats daarvan aanbevelingen per bibliotheek getoond.';
@@ -1410,6 +1412,8 @@ extension on TranslationsNl {
 			'settings.gridViewDescription' => 'Items weergeven in een rasterindeling',
 			'settings.listView' => 'Lijst',
 			'settings.listViewDescription' => 'Items weergeven in een lijstindeling',
+			'settings.animations' => 'Animaties',
+			'settings.animationsDescription' => 'Overgangen en scroll-animaties inschakelen',
 			'settings.showHeroSection' => 'Toon hoofdsectie',
 			'settings.useGlobalHubs' => 'Home-indeling gebruiken',
 			'settings.useGlobalHubsDescription' => 'Toon startpagina-hubs zoals de officiële Jellyfin-client. Indien uitgeschakeld, worden in plaats daarvan aanbevelingen per bibliotheek getoond.',
@@ -1799,10 +1803,10 @@ extension on TranslationsNl {
 			'libraries.noRecommendations' => 'Geen aanbevelingen beschikbaar',
 			'libraries.noCollections' => 'Geen collecties in deze bibliotheek',
 			'libraries.noFavorites' => 'Geen favorieten in deze bibliotheek',
-			'libraries.noGenres' => 'Geen genres in deze bibliotheek',
-			'libraries.noFoldersFound' => 'Geen mappen gevonden',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noGenres' => 'Geen genres in deze bibliotheek',
+			'libraries.noFoldersFound' => 'Geen mappen gevonden',
 			'libraries.folders' => 'mappen',
 			'libraries.tabs.movies' => 'Films',
 			'libraries.tabs.shows' => 'Series',

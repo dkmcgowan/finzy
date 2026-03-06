@@ -134,20 +134,35 @@ class _LogsScreenState extends State<LogsScreen> {
     return FocusedScrollScaffold(
       title: Text(t.screens.logs),
       actions: [
-        IconButton(
-          icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
-          onPressed: _loadLogs,
-          tooltip: t.common.refresh,
+        Semantics(
+          label: t.common.refresh,
+          button: true,
+          excludeSemantics: true,
+          child: IconButton(
+            icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
+            onPressed: _loadLogs,
+            tooltip: null,
+          ),
         ),
-        IconButton(
-          icon: const AppIcon(Symbols.content_copy_rounded, fill: 1),
-          onPressed: _logs.isNotEmpty ? _copyAllLogs : null,
-          tooltip: t.logs.copyLogs,
+        Semantics(
+          label: t.logs.copyLogs,
+          button: true,
+          excludeSemantics: true,
+          child: IconButton(
+            icon: const AppIcon(Symbols.content_copy_rounded, fill: 1),
+            onPressed: _logs.isNotEmpty ? _copyAllLogs : null,
+            tooltip: null,
+          ),
         ),
-        IconButton(
-          icon: const AppIcon(Symbols.delete_outline_rounded, fill: 1),
-          onPressed: _logs.isNotEmpty ? _clearLogs : null,
-          tooltip: t.logs.clearLogs,
+        Semantics(
+          label: t.logs.clearLogs,
+          button: true,
+          excludeSemantics: true,
+          child: IconButton(
+            icon: const AppIcon(Symbols.delete_outline_rounded, fill: 1),
+            onPressed: _logs.isNotEmpty ? _clearLogs : null,
+            tooltip: null,
+          ),
         ),
       ],
       slivers: [

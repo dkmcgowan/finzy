@@ -131,6 +131,8 @@
     "gridViewDescription": "Mostrar elementos en un diseño de cuadrícula",
     "listView": "Lista",
     "listViewDescription": "Mostrar elementos en un diseño de lista",
+    "animations": "Animaciones",
+    "animationsDescription": "Activar transiciones y animaciones de desplazamiento",
     "showHeroSection": "Mostrar Sección Destacada",
     "useGlobalHubs": "Usar diseño de inicio",
     "useGlobalHubsDescription": "Mostrar los hubs de la página de inicio como el cliente oficial de Jellyfin. Cuando está desactivado, muestra recomendaciones por biblioteca.",

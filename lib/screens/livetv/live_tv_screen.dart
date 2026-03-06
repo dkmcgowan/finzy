@@ -379,10 +379,15 @@ class _LiveTvScreenState extends State<LiveTvScreen>
                       color: _isRefreshFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
                       borderRadius: const BorderRadius.all(Radius.circular(20)),
                     ),
-                    child: IconButton(
-                      icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
-                      tooltip: t.liveTv.reloadGuide,
-                      onPressed: _loadChannels,
+                    child: Semantics(
+                      label: t.liveTv.reloadGuide,
+                      button: true,
+                      excludeSemantics: true,
+                      child: IconButton(
+                        icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
+                        tooltip: null,
+                        onPressed: _loadChannels,
+                      ),
                     ),
                   ),
                 ),

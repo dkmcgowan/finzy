@@ -195,10 +195,15 @@ class ScheduledTabState extends State<ScheduledTab> {
                 )
               : null,
           trailing: recording.key != null && !PlatformDetector.isTV()
-              ? IconButton(
-                  icon: AppIcon(Symbols.cancel_rounded, color: theme.colorScheme.error),
-                  tooltip: t.liveTv.cancelTimer,
-                  onPressed: () => _cancelTimer(recording),
+              ? Semantics(
+                  label: t.liveTv.cancelTimer,
+                  button: true,
+                  excludeSemantics: true,
+                  child: IconButton(
+                    icon: AppIcon(Symbols.cancel_rounded, color: theme.colorScheme.error),
+                    tooltip: null,
+                    onPressed: () => _cancelTimer(recording),
+                  ),
                 )
               : null,
         ),

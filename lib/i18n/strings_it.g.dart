@@ -248,6 +248,8 @@ class _TranslationsSettingsIt implements TranslationsSettingsEn {
 	@override String get gridViewDescription => 'Visualizza gli elementi in un layout a griglia';
 	@override String get listView => 'Elenco';
 	@override String get listViewDescription => 'Visualizza gli elementi in un layout a elenco';
+	@override String get animations => 'Animazioni';
+	@override String get animationsDescription => 'Abilita transizioni e animazioni di scorrimento';
 	@override String get showHeroSection => 'Mostra sezione principale';
 	@override String get useGlobalHubs => 'Usa layout Home';
 	@override String get useGlobalHubsDescription => 'Mostra gli hub della home page come il client Jellyfin ufficiale. Se disattivato, mostra invece i suggerimenti per libreria.';
@@ -1410,6 +1412,8 @@ extension on TranslationsIt {
 			'settings.gridViewDescription' => 'Visualizza gli elementi in un layout a griglia',
 			'settings.listView' => 'Elenco',
 			'settings.listViewDescription' => 'Visualizza gli elementi in un layout a elenco',
+			'settings.animations' => 'Animazioni',
+			'settings.animationsDescription' => 'Abilita transizioni e animazioni di scorrimento',
 			'settings.showHeroSection' => 'Mostra sezione principale',
 			'settings.useGlobalHubs' => 'Usa layout Home',
 			'settings.useGlobalHubsDescription' => 'Mostra gli hub della home page come il client Jellyfin ufficiale. Se disattivato, mostra invece i suggerimenti per libreria.',
@@ -1799,10 +1803,10 @@ extension on TranslationsIt {
 			'libraries.noRecommendations' => 'Nessun consiglio disponibile',
 			'libraries.noCollections' => 'Nessuna raccolta in questa libreria',
 			'libraries.noFavorites' => 'Nessun preferito in questa libreria',
-			'libraries.noGenres' => 'Nessun genere in questa libreria',
-			'libraries.noFoldersFound' => 'Nessuna cartella trovata',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noGenres' => 'Nessun genere in questa libreria',
+			'libraries.noFoldersFound' => 'Nessuna cartella trovata',
 			'libraries.folders' => 'cartelle',
 			'libraries.tabs.movies' => 'Film',
 			'libraries.tabs.shows' => 'Serie',

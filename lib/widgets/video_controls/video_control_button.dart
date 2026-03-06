@@ -65,12 +65,13 @@ class VideoControlButton extends StatelessWidget {
     final button = IconButton(
       icon: AppIcon(icon, fill: 1, color: effectiveColor),
       onPressed: onPressed,
-      tooltip: tooltip,
+      tooltip: null,
       constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
     );
 
-    Widget result = semanticLabel != null
-        ? Semantics(label: semanticLabel, button: true, excludeSemantics: true, child: button)
+    final label = semanticLabel ?? tooltip;
+    Widget result = label != null
+        ? Semantics(label: label, button: true, excludeSemantics: true, child: button)
         : button;
 
     // Wrap with FocusableWrapper when focusNode is provided
@@ -81,7 +82,7 @@ class VideoControlButton extends StatelessWidget {
         onKeyEvent: onKeyEvent,
         onFocusChange: onFocusChange,
         autofocus: autofocus,
-        semanticLabel: semanticLabel,
+        semanticLabel: semanticLabel ?? tooltip,
         borderRadius: 20, // Circular for icon buttons
         autoScroll: false, // Video controls don't scroll
         useBackgroundFocus: true, // Use background highlight for video controls

@@ -131,6 +131,8 @@
     "gridViewDescription": "以网格布局显示项目",
     "listView": "列表视图",
     "listViewDescription": "以列表布局显示项目",
+    "animations": "动画",
+    "animationsDescription": "启用过渡和滚动动画",
     "showHeroSection": "显示主要精选区",
     "useGlobalHubs": "使用主页布局",
     "useGlobalHubsDescription": "显示与官方 Jellyfin 客户端相同的主页推荐。关闭时将显示按媒体库分类的推荐。",

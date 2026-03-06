@@ -131,6 +131,8 @@
     "gridViewDescription": "Elemente im Raster anzeigen",
     "listView": "Liste",
     "listViewDescription": "Elemente in Listenansicht anzeigen",
+    "animations": "Animationen",
+    "animationsDescription": "Übergänge und Scroll-Animationen aktivieren",
     "showHeroSection": "Hero-Bereich anzeigen",
     "useGlobalHubs": "Startseiten-Layout verwenden",
     "useGlobalHubsDescription": "Zeigt Startseiten-Hubs wie der offizielle Jellyfin-Client. Wenn deaktiviert, werden stattdessen Empfehlungen pro Bibliothek angezeigt.",

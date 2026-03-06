@@ -248,6 +248,8 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get gridViewDescription => 'Visa objekt i rutnätslayout';
 	@override String get listView => 'Lista';
 	@override String get listViewDescription => 'Visa objekt i listlayout';
+	@override String get animations => 'Animationer';
+	@override String get animationsDescription => 'Aktivera övergångar och scroll-animationer';
 	@override String get showHeroSection => 'Visa hjältesektion';
 	@override String get useGlobalHubs => 'Använd hem-layout';
 	@override String get useGlobalHubsDescription => 'Visar startsidans hubbar som den officiella Jellyfin-klienten. När av visas rekommendationer per bibliotek istället.';
@@ -1410,6 +1412,8 @@ extension on TranslationsSv {
 			'settings.gridViewDescription' => 'Visa objekt i rutnätslayout',
 			'settings.listView' => 'Lista',
 			'settings.listViewDescription' => 'Visa objekt i listlayout',
+			'settings.animations' => 'Animationer',
+			'settings.animationsDescription' => 'Aktivera övergångar och scroll-animationer',
 			'settings.showHeroSection' => 'Visa hjältesektion',
 			'settings.useGlobalHubs' => 'Använd hem-layout',
 			'settings.useGlobalHubsDescription' => 'Visar startsidans hubbar som den officiella Jellyfin-klienten. När av visas rekommendationer per bibliotek istället.',
@@ -1799,10 +1803,10 @@ extension on TranslationsSv {
 			'libraries.noRecommendations' => 'Inga rekommendationer tillgängliga',
 			'libraries.noCollections' => 'Inga samlingar i det här biblioteket',
 			'libraries.noFavorites' => 'Inga favoriter i detta bibliotek',
-			'libraries.noGenres' => 'Inga genrer i detta bibliotek',
-			'libraries.noFoldersFound' => 'Inga mappar hittades',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noGenres' => 'Inga genrer i detta bibliotek',
+			'libraries.noFoldersFound' => 'Inga mappar hittades',
 			'libraries.folders' => 'mappar',
 			'libraries.tabs.movies' => 'Filmer',
 			'libraries.tabs.shows' => 'Serier',

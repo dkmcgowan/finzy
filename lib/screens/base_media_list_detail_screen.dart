@@ -159,25 +159,40 @@ abstract class BaseMediaListDetailScreen<T extends StatefulWidget> extends State
     return [
       // Play button
       if (items.isNotEmpty)
-        IconButton(
-          icon: const AppIcon(Symbols.play_arrow_rounded, fill: 1),
-          tooltip: t.common.play,
-          onPressed: playItems,
+        Semantics(
+          label: t.common.play,
+          button: true,
+          excludeSemantics: true,
+          child: IconButton(
+            icon: const AppIcon(Symbols.play_arrow_rounded, fill: 1),
+            tooltip: null,
+            onPressed: playItems,
+          ),
         ),
       // Shuffle button
       if (items.isNotEmpty)
-        IconButton(
-          icon: const AppIcon(Symbols.shuffle_rounded, fill: 1),
-          tooltip: t.common.shuffle,
-          onPressed: shufflePlayItems,
+        Semantics(
+          label: t.common.shuffle,
+          button: true,
+          excludeSemantics: true,
+          child: IconButton(
+            icon: const AppIcon(Symbols.shuffle_rounded, fill: 1),
+            tooltip: null,
+            onPressed: shufflePlayItems,
+          ),
         ),
       // Delete button
       if (showDelete && onDelete != null)
-        IconButton(
-          icon: const AppIcon(Symbols.delete_rounded, fill: 1),
-          tooltip: deleteTooltip ?? t.common.delete,
-          onPressed: onDelete,
-          color: deleteColor ?? Colors.red,
+        Semantics(
+          label: deleteTooltip ?? t.common.delete,
+          button: true,
+          excludeSemantics: true,
+          child: IconButton(
+            icon: const AppIcon(Symbols.delete_rounded, fill: 1),
+            tooltip: null,
+            onPressed: onDelete,
+            color: deleteColor ?? Colors.red,
+          ),
         ),
     ];
   }

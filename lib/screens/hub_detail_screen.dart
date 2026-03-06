@@ -431,10 +431,15 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                                 shape: BoxShape.circle,
                               )
                             : null,
-                        child: IconButton(
-                          icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
-                          onPressed: () => Navigator.pop(context),
-                          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                        child: Semantics(
+                          label: MaterialLocalizations.of(context).backButtonTooltip,
+                          button: true,
+                          excludeSemantics: true,
+                          child: IconButton(
+                            icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+                            onPressed: () => Navigator.pop(context),
+                            tooltip: null,
+                          ),
                         ),
                       );
                     },

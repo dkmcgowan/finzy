@@ -131,6 +131,8 @@
     "gridViewDescription": "항목을 그리드 레이아웃으로 표시합니다",
     "listView": "목록 보기",
     "listViewDescription": "항목을 목록 레이아웃으로 표시합니다",
+    "animations": "애니메이션",
+    "animationsDescription": "전환 및 스크롤 애니메이션 활성화",
     "showHeroSection": "주요 추천 영역 표시",
     "useGlobalHubs": "홈 레이아웃 사용",
     "useGlobalHubsDescription": "공식 Jellyfin 클라이언트처럼 홈 페이지 허브를 표시합니다. 끄면 라이브러리별 추천이 대신 표시됩니다.",

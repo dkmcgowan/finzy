@@ -131,6 +131,8 @@
     "gridViewDescription": "Visa objekt i rutnätslayout",
     "listView": "Lista",
     "listViewDescription": "Visa objekt i listlayout",
+    "animations": "Animationer",
+    "animationsDescription": "Aktivera övergångar och scroll-animationer",
     "showHeroSection": "Visa hjältesektion",
     "useGlobalHubs": "Använd hem-layout",
     "useGlobalHubsDescription": "Visar startsidans hubbar som den officiella Jellyfin-klienten. När av visas rekommendationer per bibliotek istället.",

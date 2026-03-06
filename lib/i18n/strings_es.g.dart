@@ -248,6 +248,8 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get gridViewDescription => 'Mostrar elementos en un diseño de cuadrícula';
 	@override String get listView => 'Lista';
 	@override String get listViewDescription => 'Mostrar elementos en un diseño de lista';
+	@override String get animations => 'Animaciones';
+	@override String get animationsDescription => 'Activar transiciones y animaciones de desplazamiento';
 	@override String get showHeroSection => 'Mostrar Sección Destacada';
 	@override String get useGlobalHubs => 'Usar diseño de inicio';
 	@override String get useGlobalHubsDescription => 'Mostrar los hubs de la página de inicio como el cliente oficial de Jellyfin. Cuando está desactivado, muestra recomendaciones por biblioteca.';
@@ -1410,6 +1412,8 @@ extension on TranslationsEs {
 			'settings.gridViewDescription' => 'Mostrar elementos en un diseño de cuadrícula',
 			'settings.listView' => 'Lista',
 			'settings.listViewDescription' => 'Mostrar elementos en un diseño de lista',
+			'settings.animations' => 'Animaciones',
+			'settings.animationsDescription' => 'Activar transiciones y animaciones de desplazamiento',
 			'settings.showHeroSection' => 'Mostrar Sección Destacada',
 			'settings.useGlobalHubs' => 'Usar diseño de inicio',
 			'settings.useGlobalHubsDescription' => 'Mostrar los hubs de la página de inicio como el cliente oficial de Jellyfin. Cuando está desactivado, muestra recomendaciones por biblioteca.',
@@ -1799,10 +1803,10 @@ extension on TranslationsEs {
 			'libraries.noRecommendations' => 'No hay recomendaciones disponibles',
 			'libraries.noCollections' => 'No hay colecciones en esta biblioteca',
 			'libraries.noFavorites' => 'No hay favoritos en esta biblioteca',
-			'libraries.noGenres' => 'No hay géneros en esta biblioteca',
-			'libraries.noFoldersFound' => 'No se encontraron carpetas',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noGenres' => 'No hay géneros en esta biblioteca',
+			'libraries.noFoldersFound' => 'No se encontraron carpetas',
 			'libraries.folders' => 'carpetas',
 			'libraries.tabs.movies' => 'Películas',
 			'libraries.tabs.shows' => 'Series',

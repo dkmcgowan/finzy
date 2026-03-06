@@ -131,6 +131,8 @@
     "gridViewDescription": "Display items in a grid layout",
     "listView": "List",
     "listViewDescription": "Display items in a list layout",
+    "animations": "Animations",
+    "animationsDescription": "Enable transitions and scroll animations",
     "showHeroSection": "Show Hero Section",
     "useGlobalHubs": "Use Home Layout",
     "useGlobalHubsDescription": "Combined home rows (Next Up, Movies, Shows) or one row per library.",

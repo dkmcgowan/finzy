@@ -17,7 +17,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _showUnwatchedCount = true;
   PerformanceProfile _imageQuality = PerformanceProfile.medium;
   PerformanceProfile _posterSize = PerformanceProfile.medium;
-  bool _disableAnimations = false;
+  bool _animationsEnabled = false;
   GridPreloadLevel _gridPreload = GridPreloadLevel.medium;
   bool _hideSupportDevelopment = false;
   bool _isInitialized = false;
@@ -47,7 +47,7 @@ class SettingsProvider extends ChangeNotifier {
     _alwaysKeepSidebarOpen = _settingsService!.getAlwaysKeepSidebarOpen();
     _imageQuality = _settingsService!.getImageQuality();
     _posterSize = _settingsService!.getPosterSize();
-    _disableAnimations = _settingsService!.getDisableAnimations();
+    _animationsEnabled = _settingsService!.getAnimationsEnabled();
     _gridPreload = _settingsService!.getGridPreload();
     _hideSupportDevelopment = _settingsService!.getHideSupportDevelopment();
     _isInitialized = true;
@@ -89,7 +89,9 @@ class SettingsProvider extends ChangeNotifier {
 
   PerformanceProfile get posterSize => _posterSize;
 
-  bool get disableAnimations => _disableAnimations;
+  bool get animationsEnabled => _animationsEnabled;
+
+  bool get disableAnimations => !_animationsEnabled;
 
   GridPreloadLevel get gridPreload => _gridPreload;
 
@@ -204,11 +206,11 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> setDisableAnimations(bool value) async {
+  Future<void> setAnimationsEnabled(bool value) async {
     if (!_isInitialized) await _initializeSettings();
-    if (_disableAnimations != value) {
-      _disableAnimations = value;
-      await _settingsService!.setDisableAnimations(value);
+    if (_animationsEnabled != value) {
+      _animationsEnabled = value;
+      await _settingsService!.setAnimationsEnabled(value);
       notifyListeners();
     }
   }

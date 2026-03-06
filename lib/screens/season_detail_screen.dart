@@ -275,10 +275,15 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
                               shape: BoxShape.circle,
                             )
                           : null,
-                      child: IconButton(
-                        icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
-                        onPressed: () => Navigator.pop(context, _watchStateChanged),
-                        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                      child: Semantics(
+                        label: MaterialLocalizations.of(context).backButtonTooltip,
+                        button: true,
+                        excludeSemantics: true,
+                        child: IconButton(
+                          icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+                          onPressed: () => Navigator.pop(context, _watchStateChanged),
+                          tooltip: null,
+                        ),
                       ),
                     );
                   },

@@ -1282,15 +1282,19 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       orElse: () => visibleLibraries.first,
     );
 
-    return PopupMenuButton<String>(
-      key: _libraryDropdownKey,
-      offset: const Offset(0, 48),
-      tooltip: t.libraries.selectLibrary,
-      onSelected: (libraryGlobalKey) {
-        _loadLibraryContent(libraryGlobalKey);
-      },
-      itemBuilder: (context) => _buildGroupedLibraryMenuItems(visibleLibraries),
-      child: Container(
+    return Semantics(
+      label: t.libraries.selectLibrary,
+      button: true,
+      excludeSemantics: true,
+      child: PopupMenuButton<String>(
+        key: _libraryDropdownKey,
+        offset: const Offset(0, 48),
+        tooltip: null,
+        onSelected: (libraryGlobalKey) {
+          _loadLibraryContent(libraryGlobalKey);
+        },
+        itemBuilder: (context) => _buildGroupedLibraryMenuItems(visibleLibraries),
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1318,6 +1322,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -1435,16 +1440,21 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                               color: _isRefreshFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
                               borderRadius: const BorderRadius.all(Radius.circular(20)),
                             ),
-                            child: IconButton(
-                              icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
-                              tooltip: t.common.refresh,
-                              onPressed: () {
-                                if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
-                                  _loadGlobalFavorites();
-                                } else {
-                                  _refreshCurrentTab();
-                                }
-                              },
+                            child: Semantics(
+                              label: t.common.refresh,
+                              button: true,
+                              excludeSemantics: true,
+                              child: IconButton(
+                                icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
+                                tooltip: null,
+                                onPressed: () {
+                                  if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
+                                    _loadGlobalFavorites();
+                                  } else {
+                                    _refreshCurrentTab();
+                                  }
+                                },
+                              ),
                             ),
                           ),
                         ),

@@ -248,6 +248,8 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get gridViewDescription => '항목을 그리드 레이아웃으로 표시합니다';
 	@override String get listView => '목록 보기';
 	@override String get listViewDescription => '항목을 목록 레이아웃으로 표시합니다';
+	@override String get animations => '애니메이션';
+	@override String get animationsDescription => '전환 및 스크롤 애니메이션 활성화';
 	@override String get showHeroSection => '주요 추천 영역 표시';
 	@override String get useGlobalHubs => '홈 레이아웃 사용';
 	@override String get useGlobalHubsDescription => '공식 Jellyfin 클라이언트처럼 홈 페이지 허브를 표시합니다. 끄면 라이브러리별 추천이 대신 표시됩니다.';
@@ -1410,6 +1412,8 @@ extension on TranslationsKo {
 			'settings.gridViewDescription' => '항목을 그리드 레이아웃으로 표시합니다',
 			'settings.listView' => '목록 보기',
 			'settings.listViewDescription' => '항목을 목록 레이아웃으로 표시합니다',
+			'settings.animations' => '애니메이션',
+			'settings.animationsDescription' => '전환 및 스크롤 애니메이션 활성화',
 			'settings.showHeroSection' => '주요 추천 영역 표시',
 			'settings.useGlobalHubs' => '홈 레이아웃 사용',
 			'settings.useGlobalHubsDescription' => '공식 Jellyfin 클라이언트처럼 홈 페이지 허브를 표시합니다. 끄면 라이브러리별 추천이 대신 표시됩니다.',
@@ -1799,10 +1803,10 @@ extension on TranslationsKo {
 			'libraries.noRecommendations' => '추천 없음',
 			'libraries.noCollections' => '이 미디어 라이브러리에는 컬렉션이 없습니다',
 			'libraries.noFavorites' => '이 라이브러리에 즐겨찾기가 없습니다',
-			'libraries.noGenres' => '이 라이브러리에 장르가 없습니다',
-			'libraries.noFoldersFound' => '폴더를 찾을 수 없습니다',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noGenres' => '이 라이브러리에 장르가 없습니다',
+			'libraries.noFoldersFound' => '폴더를 찾을 수 없습니다',
 			'libraries.folders' => '폴더',
 			'libraries.tabs.movies' => '영화',
 			'libraries.tabs.shows' => '시리즈',

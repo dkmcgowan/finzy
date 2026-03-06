@@ -903,8 +903,10 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
       disableScale: true,
       useBackgroundFocus: true,
       autoScroll: false,
-      child: Tooltip(
-        message: tooltip,
+      child: Semantics(
+        label: tooltip,
+        button: true,
+        excludeSemantics: true,
         child: GestureDetector(
           onTap: onPressed,
           child: Padding(padding: const EdgeInsets.all(8.0), child: AppIcon(icon, fill: 1, size: 20)),

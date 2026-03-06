@@ -248,6 +248,8 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get gridViewDescription => '以网格布局显示项目';
 	@override String get listView => '列表视图';
 	@override String get listViewDescription => '以列表布局显示项目';
+	@override String get animations => '动画';
+	@override String get animationsDescription => '启用过渡和滚动动画';
 	@override String get showHeroSection => '显示主要精选区';
 	@override String get useGlobalHubs => '使用主页布局';
 	@override String get useGlobalHubsDescription => '显示与官方 Jellyfin 客户端相同的主页推荐。关闭时将显示按媒体库分类的推荐。';
@@ -1410,6 +1412,8 @@ extension on TranslationsZh {
 			'settings.gridViewDescription' => '以网格布局显示项目',
 			'settings.listView' => '列表视图',
 			'settings.listViewDescription' => '以列表布局显示项目',
+			'settings.animations' => '动画',
+			'settings.animationsDescription' => '启用过渡和滚动动画',
 			'settings.showHeroSection' => '显示主要精选区',
 			'settings.useGlobalHubs' => '使用主页布局',
 			'settings.useGlobalHubsDescription' => '显示与官方 Jellyfin 客户端相同的主页推荐。关闭时将显示按媒体库分类的推荐。',
@@ -1799,10 +1803,10 @@ extension on TranslationsZh {
 			'libraries.noRecommendations' => '暂无推荐',
 			'libraries.noCollections' => '此媒体库中没有合集',
 			'libraries.noFavorites' => '此媒体库中无收藏',
-			'libraries.noGenres' => '此媒体库中无类型',
-			'libraries.noFoldersFound' => '未找到文件夹',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noGenres' => '此媒体库中无类型',
+			'libraries.noFoldersFound' => '未找到文件夹',
 			'libraries.folders' => '文件夹',
 			'libraries.tabs.movies' => '电影',
 			'libraries.tabs.shows' => '剧集',

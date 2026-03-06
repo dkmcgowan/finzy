@@ -383,10 +383,15 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
-                IconButton(
-                  icon: const AppIcon(Symbols.add_rounded, fill: 1),
-                  onPressed: () => _showEntryDialog(),
-                  tooltip: t.mpvConfig.addProperty,
+                Semantics(
+                  label: t.mpvConfig.addProperty,
+                  button: true,
+                  excludeSemantics: true,
+                  child: IconButton(
+                    icon: const AppIcon(Symbols.add_rounded, fill: 1),
+                    onPressed: () => _showEntryDialog(),
+                    tooltip: null,
+                  ),
                 ),
               ],
             ),

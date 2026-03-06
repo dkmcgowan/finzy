@@ -106,7 +106,8 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyTimeFormat = 'time_format';
   static const String _keyImageQuality = 'performance_image_quality';
   static const String _keyPosterSize = 'performance_poster_size';
-  static const String _keyReduceAnimations = 'performance_reduce_animations';
+  static const String _keyReduceAnimations = 'performance_reduce_animations'; // Legacy, migrated to _keyAnimationsEnabled
+  static const String _keyAnimationsEnabled = 'appearance_animations_enabled';
   static const String _keyGridPreload = 'performance_grid_preload';
   static const String _keyHideSupportDevelopment = 'hide_support_development';
 
@@ -257,13 +258,19 @@ class SettingsService extends BaseSharedPreferencesService {
     return _getEnumValue(_keyPosterSize, PerformanceProfile.values, PerformanceProfile.medium);
   }
 
-  // Performance: Disable Animations (TV default: on, else: off)
-  Future<void> setDisableAnimations(bool enabled) async {
-    await prefs.setBool(_keyReduceAnimations, enabled);
+  // Appearance: Animations (true = enabled, false = disabled). Default: false (disabled).
+  bool getAnimationsEnabled() {
+    if (prefs.containsKey(_keyReduceAnimations)) {
+      final migrated = !(prefs.getBool(_keyReduceAnimations) ?? false);
+      prefs.setBool(_keyAnimationsEnabled, migrated);
+      prefs.remove(_keyReduceAnimations);
+      return migrated;
+    }
+    return prefs.getBool(_keyAnimationsEnabled) ?? false;
   }
 
-  bool getDisableAnimations() {
-    return prefs.getBool(_keyReduceAnimations) ?? false;
+  Future<void> setAnimationsEnabled(bool enabled) async {
+    await prefs.setBool(_keyAnimationsEnabled, enabled);
   }
 
   // Performance: Grid Preload (TV default: low, else: medium)
@@ -1339,6 +1346,7 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyImageQuality),
       prefs.remove(_keyPosterSize),
       prefs.remove(_keyReduceAnimations),
+      prefs.remove(_keyAnimationsEnabled),
       prefs.remove(_keyGridPreload),
       prefs.remove(_keyHideSupportDevelopment),
     ]);

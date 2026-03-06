@@ -87,6 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kViewMode = 'view_mode';
   static const _kEpisodePosterMode = 'episode_poster_mode';
   static const _kTimeFormat = 'time_format';
+  static const _kAnimations = 'animations';
   static const _kShowHeroSection = 'show_hero_section';
   static const _kUseGlobalHubs = 'use_global_hubs';
   static const _kShowServerNameOnHubs = 'show_server_name_on_hubs';
@@ -134,7 +135,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
 
   static const _kImageQuality = 'image_quality';
   static const _kPosterSize = 'poster_size';
-  static const _kReduceAnimations = 'reduce_animations';
   static const _kGridPreload = 'grid_preload';
   KeyboardShortcutsService? _keyboardService;
   late final bool _keyboardShortcutsSupported = KeyboardShortcutsService.isPlatformSupported();
@@ -529,6 +529,20 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           Consumer<SettingsProvider>(
             builder: (context, settingsProvider, child) {
               return SwitchListTile(
+                focusNode: _focusTracker.get(_kAnimations),
+                secondary: const AppIcon(Symbols.animation_rounded, fill: 1),
+                title: Text(t.settings.animations),
+                subtitle: Text(t.settings.animationsDescription),
+                value: settingsProvider.animationsEnabled,
+                onChanged: (value) async {
+                  await settingsProvider.setAnimationsEnabled(value);
+                },
+              );
+            },
+          ),
+          Consumer<SettingsProvider>(
+            builder: (context, settingsProvider, child) {
+              return SwitchListTile(
                 focusNode: _focusTracker.get(_kShowHeroSection),
                 secondary: const AppIcon(Symbols.featured_play_list_rounded, fill: 1),
                 title: Text(t.settings.showHeroSection),
@@ -645,16 +659,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
         subtitle: Text(settingsProvider.posterSizeDisplayName),
         trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
         onTap: () => _showPosterSizeDialog(settingsProvider),
-      ),
-      SwitchListTile(
-        focusNode: _focusTracker.get(_kReduceAnimations),
-        secondary: const AppIcon(Symbols.animation_rounded, fill: 1),
-        title: Text(t.settings.performanceDisableAnimations),
-        subtitle: Text(t.settings.performanceDisableAnimationsDescription),
-        value: settingsProvider.disableAnimations,
-        onChanged: (value) async {
-          await settingsProvider.setDisableAnimations(value);
-        },
       ),
       ListTile(
         focusNode: _focusTracker.get(_kGridPreload),
@@ -861,26 +865,41 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (!isFavorites) ...[
-                            IconButton(
-                              icon: const AppIcon(Symbols.refresh_rounded, fill: 1, size: 24),
-                              tooltip: t.libraries.scanLibraryFiles,
-                              onPressed: () => _scanLibrary(library),
+                            Semantics(
+                              label: t.libraries.scanLibraryFiles,
+                              button: true,
+                              excludeSemantics: true,
+                              child: IconButton(
+                                icon: const AppIcon(Symbols.refresh_rounded, fill: 1, size: 24),
+                                tooltip: null,
+                                onPressed: () => _scanLibrary(library),
+                              ),
                             ),
-                            IconButton(
-                              icon: const AppIcon(Symbols.sync_rounded, fill: 1, size: 24),
-                              tooltip: t.libraries.refreshMetadata,
-                              onPressed: () => _refreshLibraryMetadata(library),
+                            Semantics(
+                              label: t.libraries.refreshMetadata,
+                              button: true,
+                              excludeSemantics: true,
+                              child: IconButton(
+                                icon: const AppIcon(Symbols.sync_rounded, fill: 1, size: 24),
+                                tooltip: null,
+                                onPressed: () => _refreshLibraryMetadata(library),
+                              ),
                             ),
                           ] else
                             const SizedBox(width: 96),
-                          IconButton(
-                            icon: AppIcon(
-                              isHidden ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
-                              fill: 1,
-                              size: 24,
+                          Semantics(
+                            label: isHidden ? t.libraries.showLibrary : t.libraries.hideLibrary,
+                            button: true,
+                            excludeSemantics: true,
+                            child: IconButton(
+                              icon: AppIcon(
+                                isHidden ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
+                                fill: 1,
+                                size: 24,
+                              ),
+                              tooltip: null,
+                              onPressed: () => _toggleLibraryVisibility(library, hiddenProvider, librariesProvider),
                             ),
-                            tooltip: isHidden ? t.libraries.showLibrary : t.libraries.hideLibrary,
-                            onPressed: () => _toggleLibraryVisibility(library, hiddenProvider, librariesProvider),
                           ),
                         ],
                       ),

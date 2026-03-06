@@ -248,6 +248,8 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 	@override String get gridViewDescription => 'Afficher les éléments dans une disposition en grille';
 	@override String get listView => 'Liste';
 	@override String get listViewDescription => 'Afficher les éléments dans une liste';
+	@override String get animations => 'Animations';
+	@override String get animationsDescription => 'Activer les transitions et les animations de défilement';
 	@override String get showHeroSection => 'Afficher la section Hero';
 	@override String get useGlobalHubs => 'Utiliser la disposition d\'accueil';
 	@override String get useGlobalHubsDescription => 'Afficher les hubs de la page d\'accueil comme le client Jellyfin officiel. Lorsque cette option est désactivée, affiche à la place les recommandations par bibliothèque.';
@@ -1410,6 +1412,8 @@ extension on TranslationsFr {
 			'settings.gridViewDescription' => 'Afficher les éléments dans une disposition en grille',
 			'settings.listView' => 'Liste',
 			'settings.listViewDescription' => 'Afficher les éléments dans une liste',
+			'settings.animations' => 'Animations',
+			'settings.animationsDescription' => 'Activer les transitions et les animations de défilement',
 			'settings.showHeroSection' => 'Afficher la section Hero',
 			'settings.useGlobalHubs' => 'Utiliser la disposition d\'accueil',
 			'settings.useGlobalHubsDescription' => 'Afficher les hubs de la page d\'accueil comme le client Jellyfin officiel. Lorsque cette option est désactivée, affiche à la place les recommandations par bibliothèque.',
@@ -1799,10 +1803,10 @@ extension on TranslationsFr {
 			'libraries.noRecommendations' => 'Aucune recommandation disponible',
 			'libraries.noCollections' => 'Aucune collection dans cette bibliothèque',
 			'libraries.noFavorites' => 'Aucun favori dans cette bibliothèque',
-			'libraries.noGenres' => 'Aucun genre dans cette bibliothèque',
-			'libraries.noFoldersFound' => 'Aucun dossier trouvé',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noGenres' => 'Aucun genre dans cette bibliothèque',
+			'libraries.noFoldersFound' => 'Aucun dossier trouvé',
 			'libraries.folders' => 'dossiers',
 			'libraries.tabs.movies' => 'Films',
 			'libraries.tabs.shows' => 'Séries',

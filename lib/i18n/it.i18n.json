@@ -131,6 +131,8 @@
     "gridViewDescription": "Visualizza gli elementi in un layout a griglia",
     "listView": "Elenco",
     "listViewDescription": "Visualizza gli elementi in un layout a elenco",
+    "animations": "Animazioni",
+    "animationsDescription": "Abilita transizioni e animazioni di scorrimento",
     "showHeroSection": "Mostra sezione principale",
     "useGlobalHubs": "Usa layout Home",
     "useGlobalHubsDescription": "Mostra gli hub della home page come il client Jellyfin ufficiale. Se disattivato, mostra invece i suggerimenti per libreria.",

@@ -494,6 +494,12 @@ class TranslationsSettingsEn {
 	/// en: 'Display items in a list layout'
 	String get listViewDescription => 'Display items in a list layout';
 
+	/// en: 'Animations'
+	String get animations => 'Animations';
+
+	/// en: 'Enable transitions and scroll animations'
+	String get animationsDescription => 'Enable transitions and scroll animations';
+
 	/// en: 'Show Hero Section'
 	String get showHeroSection => 'Show Hero Section';
 
@@ -3022,6 +3028,8 @@ extension on Translations {
 			'settings.gridViewDescription' => 'Display items in a grid layout',
 			'settings.listView' => 'List',
 			'settings.listViewDescription' => 'Display items in a list layout',
+			'settings.animations' => 'Animations',
+			'settings.animationsDescription' => 'Enable transitions and scroll animations',
 			'settings.showHeroSection' => 'Show Hero Section',
 			'settings.useGlobalHubs' => 'Use Home Layout',
 			'settings.useGlobalHubsDescription' => 'Combined home rows (Next Up, Movies, Shows) or one row per library.',
@@ -3411,10 +3419,10 @@ extension on Translations {
 			'libraries.noRecommendations' => 'No recommendations available',
 			'libraries.noCollections' => 'No collections in this library',
 			'libraries.noFavorites' => 'No favorites in this library',
-			'libraries.noGenres' => 'No genres in this library',
-			'libraries.noFoldersFound' => 'No folders found',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noGenres' => 'No genres in this library',
+			'libraries.noFoldersFound' => 'No folders found',
 			'libraries.folders' => 'folders',
 			'libraries.tabs.movies' => 'Movies',
 			'libraries.tabs.shows' => 'Shows',

@@ -382,63 +382,78 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
       onKeyEvent: _handlePlayButtonKeyEvent,
       child: Row(
         children: [
-          IconButton.filledTonal(
-            focusNode: _playButtonFocusNode,
-            autofocus: InputModeTracker.isKeyboardMode(context),
-            onPressed: onPlayPressed,
-            icon: playButtonIcon,
-            tooltip: playButtonLabel.isNotEmpty ? playButtonLabel : null,
-            iconSize: 20,
-            style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+          Semantics(
+            label: playButtonLabel.isNotEmpty ? playButtonLabel : null,
+            button: true,
+            excludeSemantics: true,
+            child: IconButton.filledTonal(
+              focusNode: _playButtonFocusNode,
+              autofocus: InputModeTracker.isKeyboardMode(context),
+              onPressed: onPlayPressed,
+              icon: playButtonIcon,
+              tooltip: null,
+              iconSize: 20,
+              style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+            ),
           ),
           const SizedBox(width: 12),
           // Restart / Play from start (when play would resume — hide if play already starts from 0)
           if (!widget.isOffline &&
               (metadata.isMovie || metadata.isEpisode) &&
               metadata.hasActiveProgress) ...[
-            IconButton.filledTonal(
-              onPressed: () async {
-                final fromStart = metadata.copyWith(resumePositionMs: 0);
-                await navigateToVideoPlayerWithRefresh(
-                  context,
-                  metadata: fromStart,
-                  isOffline: widget.isOffline,
-                  onRefresh: _loadFullMetadata,
-                );
-              },
-              icon: const AppIcon(Symbols.replay_rounded, fill: 1),
-              tooltip: t.tooltips.playFromStart,
-              iconSize: 20,
-              style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+            Semantics(
+              label: t.tooltips.playFromStart,
+              button: true,
+              excludeSemantics: true,
+              child: IconButton.filledTonal(
+                onPressed: () async {
+                  final fromStart = metadata.copyWith(resumePositionMs: 0);
+                  await navigateToVideoPlayerWithRefresh(
+                    context,
+                    metadata: fromStart,
+                    isOffline: widget.isOffline,
+                    onRefresh: _loadFullMetadata,
+                  );
+                },
+                icon: const AppIcon(Symbols.replay_rounded, fill: 1),
+                tooltip: null,
+                iconSize: 20,
+                style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+              ),
             ),
             const SizedBox(width: 12),
           ],
           // Trailer button (only if trailer is available)
           if (primaryTrailer != null) ...[
-            IconButton.filledTonal(
-              onPressed: () async {
-                final key = primaryTrailer.itemId;
-                if (key.startsWith('http://') || key.startsWith('https://')) {
-                  final uri = Uri.parse(key);
-                  if (await canLaunchUrl(uri)) {
-                    // Save return context before launching external app (Android TV may kill process)
-                    final storage = await StorageService.getInstance();
-                    await storage.savePendingExternalReturn(
-                      itemId: widget.metadata.itemId,
-                      serverId: widget.metadata.serverId,
-                    );
-                    if (mounted) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+            Semantics(
+              label: t.tooltips.playTrailer,
+              button: true,
+              excludeSemantics: true,
+              child: IconButton.filledTonal(
+                onPressed: () async {
+                  final key = primaryTrailer.itemId;
+                  if (key.startsWith('http://') || key.startsWith('https://')) {
+                    final uri = Uri.parse(key);
+                    if (await canLaunchUrl(uri)) {
+                      // Save return context before launching external app (Android TV may kill process)
+                      final storage = await StorageService.getInstance();
+                      await storage.savePendingExternalReturn(
+                        itemId: widget.metadata.itemId,
+                        serverId: widget.metadata.serverId,
+                      );
+                      if (mounted) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
                     }
+                  } else {
+                    await navigateToVideoPlayer(context, metadata: primaryTrailer);
                   }
-                } else {
-                  await navigateToVideoPlayer(context, metadata: primaryTrailer);
-                }
-              },
-              icon: const AppIcon(Symbols.theaters_rounded, fill: 1),
-              tooltip: t.tooltips.playTrailer,
-              iconSize: 20,
-              style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+                },
+                icon: const AppIcon(Symbols.theaters_rounded, fill: 1),
+                tooltip: null,
+                iconSize: 20,
+                style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+              ),
             ),
             const SizedBox(width: 12),
           ],
@@ -470,114 +485,88 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                 // State 2: Queued (waiting to download)
                 if (progress?.status == DownloadStatus.queued) {
                   final currentFile = progress?.currentFile;
-                  final tooltip = currentFile != null && currentFile.contains('episodes')
+                  final label = currentFile != null && currentFile.contains('episodes')
                       ? 'Queued $currentFile'
                       : 'Queued';
 
-                  return IconButton.filledTonal(
-                    onPressed: null,
-                    tooltip: tooltip,
-                    icon: const AppIcon(Symbols.schedule_rounded, fill: 1),
-                    iconSize: 20,
-                    style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+                  return Semantics(
+                    label: label,
+                    button: true,
+                    excludeSemantics: true,
+                    child: IconButton.filledTonal(
+                      onPressed: null,
+                      tooltip: null,
+                      icon: const AppIcon(Symbols.schedule_rounded, fill: 1),
+                      iconSize: 20,
+                      style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+                    ),
                   );
                 }
 
                 // State 3: Downloading (active download)
                 if (progress?.status == DownloadStatus.downloading) {
-                  // Show episode count in tooltip for shows/seasons
                   final currentFile = progress?.currentFile;
-                  final tooltip = currentFile != null && currentFile.contains('episodes')
+                  final label = currentFile != null && currentFile.contains('episodes')
                       ? 'Downloading $currentFile'
                       : 'Downloading...';
 
-                  return IconButton.filledTonal(
-                    onPressed: null,
-                    tooltip: tooltip,
-                    icon: _buildRadialProgress(progress?.progressPercent),
-                    iconSize: 20,
-                    style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+                  return Semantics(
+                    label: label,
+                    button: true,
+                    excludeSemantics: true,
+                    child: IconButton.filledTonal(
+                      onPressed: null,
+                      tooltip: null,
+                      icon: _buildRadialProgress(progress?.progressPercent),
+                      iconSize: 20,
+                      style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+                    ),
                   );
                 }
 
                 // State 4: Paused (can resume)
                 if (progress?.status == DownloadStatus.paused) {
-                  return IconButton.filledTonal(
-                    onPressed: () async {
-                      final client = _getClientForMetadata(context);
-                      if (client == null) return;
-                      await downloadProvider.resumeDownload(globalKey, client);
-                      if (context.mounted) {
-                        showAppSnackBar(context, 'Download resumed');
-                      }
-                    },
-                    icon: const AppIcon(Symbols.pause_circle_outline_rounded, fill: 1),
-                    tooltip: 'Resume download',
-                    iconSize: 20,
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      maximumSize: const Size(48, 48),
-                      foregroundColor: Colors.amber,
+                  return Semantics(
+                    label: 'Resume download',
+                    button: true,
+                    excludeSemantics: true,
+                    child: IconButton.filledTonal(
+                      onPressed: () async {
+                        final client = _getClientForMetadata(context);
+                        if (client == null) return;
+                        await downloadProvider.resumeDownload(globalKey, client);
+                        if (context.mounted) {
+                          showAppSnackBar(context, 'Download resumed');
+                        }
+                      },
+                      icon: const AppIcon(Symbols.pause_circle_outline_rounded, fill: 1),
+                      tooltip: null,
+                      iconSize: 20,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        maximumSize: const Size(48, 48),
+                        foregroundColor: Colors.amber,
+                      ),
                     ),
                   );
                 }
 
                 // State 5: Failed (can retry)
                 if (progress?.status == DownloadStatus.failed) {
-                  return IconButton.filledTonal(
-                    onPressed: () async {
-                      final client = _getClientForMetadata(context);
-                      if (client == null) return;
-
-                      // Delete failed download and retry
-                      await downloadProvider.deleteDownload(globalKey);
-                      try {
-                        await downloadProvider.queueDownload(metadata, client);
-
-                        if (context.mounted) {
-                          showSuccessSnackBar(context, t.downloads.downloadQueued);
-                        }
-                      } on CellularDownloadBlockedException {
-                        if (context.mounted) {
-                          showErrorSnackBar(context, t.settings.cellularDownloadBlocked);
-                        }
-                      }
-                    },
-                    icon: const AppIcon(Symbols.error_outline_rounded, fill: 1),
-                    tooltip: 'Retry download',
-                    iconSize: 20,
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      maximumSize: const Size(48, 48),
-                      foregroundColor: Colors.red,
-                    ),
-                  );
-                }
-
-                // State 6: Cancelled (can delete or retry)
-                if (progress?.status == DownloadStatus.cancelled) {
-                  return IconButton.filledTonal(
-                    onPressed: () async {
-                      // Show options: Delete or Retry
-                      final retry = await showConfirmDialog(
-                        context,
-                        title: 'Cancelled Download',
-                        message: 'This download was cancelled. What would you like to do?',
-                        cancelText: t.common.delete,
-                        confirmText: 'Retry',
-                      );
-
-                      if (!retry && context.mounted) {
-                        await downloadProvider.deleteDownload(globalKey);
-                        if (context.mounted) {
-                          showSuccessSnackBar(context, t.downloads.downloadDeleted);
-                        }
-                      } else if (retry && context.mounted) {
+                  return Semantics(
+                    label: 'Retry download',
+                    button: true,
+                    excludeSemantics: true,
+                    child: IconButton.filledTonal(
+                      onPressed: () async {
                         final client = _getClientForMetadata(context);
                         if (client == null) return;
+
+                        // Delete failed download and retry
                         await downloadProvider.deleteDownload(globalKey);
                         try {
                           await downloadProvider.queueDownload(metadata, client);
+
                           if (context.mounted) {
                             showSuccessSnackBar(context, t.downloads.downloadQueued);
                           }
@@ -586,15 +575,65 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                             showErrorSnackBar(context, t.settings.cellularDownloadBlocked);
                           }
                         }
-                      }
-                    },
-                    icon: const AppIcon(Symbols.cancel_rounded, fill: 1),
-                    tooltip: 'Cancelled download',
-                    iconSize: 20,
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      maximumSize: const Size(48, 48),
-                      foregroundColor: Colors.grey,
+                      },
+                      icon: const AppIcon(Symbols.error_outline_rounded, fill: 1),
+                      tooltip: null,
+                      iconSize: 20,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        maximumSize: const Size(48, 48),
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
+                  );
+                }
+
+                // State 6: Cancelled (can delete or retry)
+                if (progress?.status == DownloadStatus.cancelled) {
+                  return Semantics(
+                    label: 'Cancelled download',
+                    button: true,
+                    excludeSemantics: true,
+                    child: IconButton.filledTonal(
+                      onPressed: () async {
+                        // Show options: Delete or Retry
+                        final retry = await showConfirmDialog(
+                          context,
+                          title: 'Cancelled Download',
+                          message: 'This download was cancelled. What would you like to do?',
+                          cancelText: t.common.delete,
+                          confirmText: 'Retry',
+                        );
+
+                        if (!retry && context.mounted) {
+                          await downloadProvider.deleteDownload(globalKey);
+                          if (context.mounted) {
+                            showSuccessSnackBar(context, t.downloads.downloadDeleted);
+                          }
+                        } else if (retry && context.mounted) {
+                          final client = _getClientForMetadata(context);
+                          if (client == null) return;
+                          await downloadProvider.deleteDownload(globalKey);
+                          try {
+                            await downloadProvider.queueDownload(metadata, client);
+                            if (context.mounted) {
+                              showSuccessSnackBar(context, t.downloads.downloadQueued);
+                            }
+                          } on CellularDownloadBlockedException {
+                            if (context.mounted) {
+                              showErrorSnackBar(context, t.settings.cellularDownloadBlocked);
+                            }
+                          }
+                        }
+                      },
+                      icon: const AppIcon(Symbols.cancel_rounded, fill: 1),
+                      tooltip: null,
+                      iconSize: 20,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        maximumSize: const Size(48, 48),
+                        foregroundColor: Colors.grey,
+                      ),
                     ),
                   );
                 }
@@ -602,88 +641,107 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                 // State 7: Partial Download (some episodes downloaded, not all)
                 if (progress?.status == DownloadStatus.partial) {
                   final currentFile = progress?.currentFile;
-                  final tooltip = currentFile != null
+                  final label = currentFile != null
                       ? 'Downloaded $currentFile - Click to complete'
                       : 'Partially downloaded - Click to complete';
 
-                  return IconButton.filledTonal(
-                    onPressed: () async {
-                      final client = _getClientForMetadata(context);
-                      if (client == null) return;
+                  return Semantics(
+                    label: label,
+                    button: true,
+                    excludeSemantics: true,
+                    child: IconButton.filledTonal(
+                      onPressed: () async {
+                        final client = _getClientForMetadata(context);
+                        if (client == null) return;
 
-                      // Queue only the missing episodes
-                      final count = await downloadProvider.queueMissingEpisodes(metadata, client);
+                        // Queue only the missing episodes
+                        final count = await downloadProvider.queueMissingEpisodes(metadata, client);
 
-                      if (context.mounted) {
-                        final message = count > 0
-                            ? t.downloads.episodesQueued(count: count)
-                            : 'All episodes already downloaded';
-                        showAppSnackBar(context, message);
-                      }
-                    },
-                    tooltip: tooltip,
-                    icon: const AppIcon(Symbols.downloading_rounded, fill: 1),
-                    iconSize: 20,
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      maximumSize: const Size(48, 48),
-                      foregroundColor: Colors.orange,
+                        if (context.mounted) {
+                          final message = count > 0
+                              ? t.downloads.episodesQueued(count: count)
+                              : 'All episodes already downloaded';
+                          showAppSnackBar(context, message);
+                        }
+                      },
+                      tooltip: null,
+                      icon: const AppIcon(Symbols.downloading_rounded, fill: 1),
+                      iconSize: 20,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        maximumSize: const Size(48, 48),
+                        foregroundColor: Colors.orange,
+                      ),
                     ),
                   );
                 }
 
                 // State 8: Downloaded/Completed (can delete)
                 if (downloadProvider.isDownloaded(globalKey)) {
-                  return IconButton.filledTonal(
-                    onPressed: () async {
-                      // Show delete download confirmation
-                      final confirmed = await showDeleteConfirmation(
-                        context,
-                        title: t.downloads.deleteDownload,
-                        message: t.downloads.deleteConfirm(title: metadata.title),
-                      );
+                  return Semantics(
+                    label: t.downloads.deleteDownload,
+                    button: true,
+                    excludeSemantics: true,
+                    child: IconButton.filledTonal(
+                      onPressed: () async {
+                        // Show delete download confirmation
+                        final confirmed = await showDeleteConfirmation(
+                          context,
+                          title: t.downloads.deleteDownload,
+                          message: t.downloads.deleteConfirm(title: metadata.title),
+                        );
 
-                      if (confirmed && context.mounted) {
-                        await downloadProvider.deleteDownload(globalKey);
-                        if (context.mounted) {
-                          showSuccessSnackBar(context, t.downloads.downloadDeleted);
+                        if (confirmed && context.mounted) {
+                          await downloadProvider.deleteDownload(globalKey);
+                          if (context.mounted) {
+                            showSuccessSnackBar(context, t.downloads.downloadDeleted);
+                          }
                         }
-                      }
-                    },
-                    icon: const AppIcon(Symbols.file_download_done_rounded, fill: 1),
-                    tooltip: t.downloads.deleteDownload,
-                    iconSize: 20,
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      maximumSize: const Size(48, 48),
-                      foregroundColor: Colors.green,
+                      },
+                      icon: const AppIcon(Symbols.file_download_done_rounded, fill: 1),
+                      tooltip: null,
+                      iconSize: 20,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        maximumSize: const Size(48, 48),
+                        foregroundColor: Colors.green,
+                      ),
                     ),
                   );
                 }
 
                 // State 9: Not downloaded (default - can download)
-                return IconButton.filledTonal(
-                  onPressed: () async {
-                    final client = _getClientForMetadata(context);
-                    if (client == null) return;
-                    final count = await downloadProvider.queueDownload(metadata, client);
-                    if (context.mounted) {
-                      final message = count > 1 ? t.downloads.episodesQueued(count: count) : t.downloads.downloadQueued;
-                      showSuccessSnackBar(context, message);
-                    }
-                  },
-                  icon: const AppIcon(Symbols.download_rounded, fill: 1),
-                  tooltip: t.downloads.downloadNow,
-                  iconSize: 20,
-                  style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+                return Semantics(
+                  label: t.downloads.downloadNow,
+                  button: true,
+                  excludeSemantics: true,
+                  child: IconButton.filledTonal(
+                    onPressed: () async {
+                      final client = _getClientForMetadata(context);
+                      if (client == null) return;
+                      final count = await downloadProvider.queueDownload(metadata, client);
+                      if (context.mounted) {
+                        final message = count > 1 ? t.downloads.episodesQueued(count: count) : t.downloads.downloadQueued;
+                        showSuccessSnackBar(context, message);
+                      }
+                    },
+                    icon: const AppIcon(Symbols.download_rounded, fill: 1),
+                    tooltip: null,
+                    iconSize: 20,
+                    style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+                  ),
                 );
               },
             ),
           const SizedBox(width: 12),
           // Mark as watched/unwatched toggle (works offline too)
-          IconButton.filledTonal(
-            onPressed: () async {
-              try {
+          Semantics(
+            label: metadata.isWatched ? t.tooltips.markAsUnwatched : t.tooltips.markAsWatched,
+            button: true,
+            excludeSemantics: true,
+            child: IconButton.filledTonal(
+              onPressed: () async {
+                try {
                 final isWatched = metadata.isWatched;
                 if (widget.isOffline) {
                   // Offline mode: queue action for later sync
@@ -718,24 +776,29 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                     _updateWatchState();
                   }
                 }
-              } catch (e) {
-                if (mounted) {
-                  showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+                } catch (e) {
+                  if (mounted) {
+                    showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+                  }
                 }
-              }
-            },
+              },
             icon: AppIcon(metadata.isWatched ? Symbols.remove_done_rounded : Symbols.check_rounded, fill: 1),
-            tooltip: metadata.isWatched ? t.tooltips.markAsUnwatched : t.tooltips.markAsWatched,
+            tooltip: null,
             iconSize: 20,
             style: IconButton.styleFrom(minimumSize: const Size(48, 48), maximumSize: const Size(48, 48)),
+            ),
           ),
           // Favorite button
           if (!widget.isOffline) ...[
             const SizedBox(width: 12),
-            IconButton.filledTonal(
-              onPressed: () async {
-                final client = _getClientForMetadata(context);
-                if (client == null) return;
+            Semantics(
+              label: metadata.isFavorite == true ? 'Remove from favorites' : 'Add to favorites',
+              button: true,
+              excludeSemantics: true,
+              child: IconButton.filledTonal(
+                onPressed: () async {
+                  final client = _getClientForMetadata(context);
+                  if (client == null) return;
                 final metadata = _fullMetadata ?? widget.metadata;
                 try {
                   final newState = await client.toggleFavorite(
@@ -759,12 +822,12 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                     showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
                   }
                 }
-              },
-              icon: AppIcon(
+                },
+                icon: AppIcon(
                 metadata.isFavorite == true ? Symbols.favorite_rounded : Symbols.favorite_border_rounded,
                 fill: metadata.isFavorite == true ? 1 : 0,
               ),
-              tooltip: metadata.isFavorite == true ? 'Remove from favorites' : 'Add to favorites',
+              tooltip: null,
               iconSize: 20,
               style: IconButton.styleFrom(
                 minimumSize: const Size(48, 48),
@@ -772,6 +835,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                 foregroundColor: metadata.isFavorite == true ? Colors.red : null,
               ),
             ),
+          ),
           ],
         ],
       ),

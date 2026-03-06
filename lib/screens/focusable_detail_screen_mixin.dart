@@ -15,11 +15,11 @@ import '../widgets/media_grid_delegate.dart';
 /// Configuration for app bar buttons
 class AppBarButtonConfig {
   final IconData icon;
-  final String tooltip;
+  final String semanticLabel;
   final VoidCallback onPressed;
   final Color? color;
 
-  const AppBarButtonConfig({required this.icon, required this.tooltip, required this.onPressed, this.color});
+  const AppBarButtonConfig({required this.icon, required this.semanticLabel, required this.onPressed, this.color});
 }
 
 /// Mixin that provides common focus navigation functionality for detail screens.
@@ -254,11 +254,16 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
                   borderRadius: const BorderRadius.all(Radius.circular(20)),
                 )
               : null,
-          child: IconButton(
-            icon: AppIcon(config.icon, fill: 1),
-            tooltip: config.tooltip,
-            onPressed: config.onPressed,
-            color: config.color,
+          child: Semantics(
+            label: config.semanticLabel,
+            button: true,
+            excludeSemantics: true,
+            child: IconButton(
+              icon: AppIcon(config.icon, fill: 1),
+              tooltip: null,
+              onPressed: config.onPressed,
+              color: config.color,
+            ),
           ),
         ),
       );

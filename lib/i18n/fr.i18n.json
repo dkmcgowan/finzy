@@ -131,6 +131,8 @@
     "gridViewDescription": "Afficher les éléments dans une disposition en grille",
     "listView": "Liste",
     "listViewDescription": "Afficher les éléments dans une liste",
+    "animations": "Animations",
+    "animationsDescription": "Activer les transitions et les animations de défilement",
     "showHeroSection": "Afficher la section Hero",
     "useGlobalHubs": "Utiliser la disposition d'accueil",
     "useGlobalHubsDescription": "Afficher les hubs de la page d'accueil comme le client Jellyfin officiel. Lorsque cette option est désactivée, affiche à la place les recommandations par bibliothèque.",
