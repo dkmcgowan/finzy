@@ -70,26 +70,26 @@ class VideoControlButton extends StatelessWidget {
     );
 
     final label = semanticLabel ?? tooltip;
-    Widget result = label != null
-        ? Semantics(label: label, button: true, excludeSemantics: true, child: button)
-        : button;
 
-    // Wrap with FocusableWrapper when focusNode is provided
+    // When focusNode provided: FocusableWrapper provides semantics (avoids duplicate Semantics)
+    // When no focusNode: use Semantics for a11y
     if (focusNode != null) {
-      result = FocusableWrapper(
+      return FocusableWrapper(
         focusNode: focusNode,
         onSelect: onPressed,
         onKeyEvent: onKeyEvent,
         onFocusChange: onFocusChange,
         autofocus: autofocus,
-        semanticLabel: semanticLabel ?? tooltip,
+        semanticLabel: label,
         borderRadius: 20, // Circular for icon buttons
         autoScroll: false, // Video controls don't scroll
         useBackgroundFocus: true, // Use background highlight for video controls
-        child: result,
+        child: Semantics(excludeSemantics: true, child: button),
       );
     }
 
-    return result;
+    return label != null
+        ? Semantics(label: label, button: true, excludeSemantics: true, child: button)
+        : button;
   }
 }
