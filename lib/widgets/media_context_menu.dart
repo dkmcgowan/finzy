@@ -14,13 +14,10 @@ import '../utils/app_logger.dart';
 import '../utils/library_refresh_notifier.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/dialogs.dart';
-import '../utils/focus_utils.dart';
-import '../focus/dpad_navigator.dart';
 import '../screens/media_detail_screen.dart';
 import '../screens/season_detail_screen.dart';
 import '../utils/smart_deletion_handler.dart';
 import '../utils/deletion_notifier.dart';
-import '../theme/mono_tokens.dart';
 import '../widgets/bottom_sheet_header.dart';
 import '../widgets/file_info_bottom_sheet.dart';
 import '../widgets/focusable_list_tile.dart';
@@ -66,12 +63,6 @@ class MediaContextMenu extends StatefulWidget {
 }
 
 class MediaContextMenuState extends State<MediaContextMenu> {
-  Offset? _tapPosition;
-
-  void _storeTapPosition(TapDownDetails details) {
-    _tapPosition = details.globalPosition;
-  }
-
   bool _openedFromKeyboard = false;
   bool _isContextMenuOpen = false;
 
@@ -82,17 +73,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
   /// If [position] is null, the menu will appear at the center of this widget.
   void showContextMenu(BuildContext menuContext, {Offset? position}) {
     _openedFromKeyboard = true;
-    if (position != null) {
-      _tapPosition = position;
-    } else {
-      // Calculate center of the widget for keyboard activation
-      final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
-      if (renderBox != null) {
-        final size = renderBox.size;
-        final topLeft = renderBox.localToGlobal(Offset.zero);
-        _tapPosition = Offset(topLeft.dx + size.width / 2, topLeft.dy + size.height / 2);
-      }
-    }
     _showContextMenu(menuContext);
   }
 
@@ -118,7 +98,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     // Use explicit focusNodeToRestore (from FocusableMediaCard) since primaryFocus
     // can be null when menu opens on Android TV.
     final previousFocus = widget.focusNodeToRestore ?? FocusManager.instance.primaryFocus;
-    bool didNavigate = false;
 
     final isPlaylist = widget.item is Playlist;
     final metadata = isPlaylist ? null : widget.item as MediaMetadata;
@@ -136,9 +115,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         mediaType != null &&
         (mediaType == MediaType.movie || mediaType == MediaType.episode) &&
         metadata?.hasActiveProgress == true;
-
-    // Use sheet on all platforms for consistent style, size, font, and spacing
-    const useBottomSheet = true;
 
     final client = _getClientForItem();
 
@@ -262,46 +238,25 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     final openedFromKeyboard = _openedFromKeyboard;
     _openedFromKeyboard = false;
 
-    if (useBottomSheet) {
-      // Show overlay sheet if available, otherwise fall back to modal bottom sheet
-      final overlayController = OverlaySheetController.maybeOf(context);
-      if (overlayController != null) {
-        selected = await overlayController.show<String>(
-          builder: (context) => _FocusableContextMenuSheet(
-            title: widget.item.title,
-            actions: menuActions,
-            focusFirstItem: openedFromKeyboard,
-          ),
-          restoreFocusOnClose: previousFocus,
-        );
-      } else {
-        selected = await showModalBottomSheet<String>(
-          context: context,
-          builder: (context) => _FocusableContextMenuSheet(
-            title: widget.item.title,
-            actions: menuActions,
-            focusFirstItem: openedFromKeyboard,
-          ),
-        );
-      }
+    // Show overlay sheet if available, otherwise fall back to modal bottom sheet
+    final overlayController = OverlaySheetController.maybeOf(context);
+    if (overlayController != null) {
+      selected = await overlayController.show<String>(
+        builder: (context) => _FocusableContextMenuSheet(
+          title: widget.item.title,
+          actions: menuActions,
+          focusFirstItem: openedFromKeyboard,
+        ),
+        restoreFocusOnClose: previousFocus,
+      );
     } else {
-      // Show custom focusable popup menu on larger screens
-      // Use stored tap position or fallback to widget position
-      final RenderBox? overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
-
-      Offset position;
-      if (_tapPosition != null) {
-        position = _tapPosition!;
-      } else {
-        final RenderBox renderBox = context.findRenderObject() as RenderBox;
-        position = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
-      }
-
-      selected = await showDialog<String>(
+      selected = await showModalBottomSheet<String>(
         context: context,
-        barrierColor: Colors.transparent,
-        builder: (dialogContext) =>
-            _FocusablePopupMenu(actions: menuActions, position: position, focusFirstItem: openedFromKeyboard),
+        builder: (context) => _FocusableContextMenuSheet(
+          title: widget.item.title,
+          actions: menuActions,
+          focusFirstItem: openedFromKeyboard,
+        ),
       );
     }
 
@@ -356,7 +311,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           break;
 
         case 'series':
-          didNavigate = true;
           await _navigateToRelated(
             context,
             metadata!.seriesId,
@@ -366,7 +320,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           break;
 
         case 'season':
-          didNavigate = true;
           await _navigateToRelated(
             context,
             metadata!.seasonId,
@@ -872,9 +825,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _handleTap,
-      onTapDown: _storeTapPosition,
       onLongPress: () => _showContextMenu(context),
-      onSecondaryTapDown: _storeTapPosition,
       onSecondaryTap: () => _showContextMenu(context),
       child: widget.child,
     );
@@ -1042,115 +993,6 @@ class _FocusableContextMenuSheetState extends State<_FocusableContextMenuSheet> 
             ),
           ),
         ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Focusable popup menu for keyboard/gamepad navigation (desktop)
-class _FocusablePopupMenu extends StatefulWidget {
-  final List<_MenuAction> actions;
-  final Offset position;
-  final bool focusFirstItem;
-
-  const _FocusablePopupMenu({required this.actions, required this.position, this.focusFirstItem = false});
-
-  @override
-  State<_FocusablePopupMenu> createState() => _FocusablePopupMenuState();
-}
-
-class _FocusablePopupMenuState extends State<_FocusablePopupMenu> {
-  late final FocusNode _initialFocusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _initialFocusNode = FocusNode(debugLabel: 'PopupMenuInitialFocus');
-    if (widget.focusFirstItem) {
-      FocusUtils.requestFocusAfterBuild(this, _initialFocusNode);
-    }
-  }
-
-  @override
-  void dispose() {
-    _initialFocusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    const menuWidth = 220.0;
-
-    // Calculate menu position, keeping it on screen
-    double left = widget.position.dx;
-    double top = widget.position.dy;
-
-    // Adjust if menu would go off right edge
-    if (left + menuWidth > screenSize.width) {
-      left = screenSize.width - menuWidth - 8;
-    }
-
-    // Estimate menu height and adjust if would go off bottom
-    final estimatedHeight = widget.actions.length * 40.0 + 16;
-    if (top + estimatedHeight > screenSize.height) {
-      top = screenSize.height - estimatedHeight - 8;
-    }
-
-    return Focus(
-      canRequestFocus: false,
-      skipTraversal: true,
-      onKeyEvent: (node, event) {
-        if (SelectKeyUpSuppressor.consumeIfSuppressed(event)) {
-          return KeyEventResult.handled;
-        }
-        if (BackKeyUpSuppressor.consumeIfSuppressed(event)) {
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Stack(
-        children: [
-          // Barrier to close menu when clicking outside
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              behavior: HitTestBehavior.opaque,
-              child: Container(color: Colors.transparent),
-            ),
-          ),
-          // Menu
-          Positioned(
-            left: left,
-            top: top,
-            child: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(tokens(context).radiusSm),
-              clipBehavior: Clip.antiAlias,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: menuWidth, maxWidth: menuWidth),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: widget.actions.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final action = entry.value;
-                    return FocusableListTile(
-                      focusNode: index == 0 ? _initialFocusNode : null,
-                      leading: AppIcon(action.icon, fill: 1, size: 20),
-                      title: Text(action.label),
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                      visualDensity: const VisualDensity(vertical: -3),
-                      onTap: () => Navigator.pop(context, action.value),
-                      hoverColor: action.hoverColor,
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
           ),
         ],
       ),

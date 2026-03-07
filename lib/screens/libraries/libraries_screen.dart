@@ -1461,7 +1461,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   Widget build(BuildContext context) {
     // Watch libraries provider for updates
     final librariesProvider = context.watch<LibrariesProvider>();
-    final allLibraries = librariesProvider.libraries;
     final isLoadingLibraries = librariesProvider.isLoading;
 
     // Watch for hidden libraries changes to trigger rebuild

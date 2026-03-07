@@ -8,7 +8,6 @@ import '../../models/livetv_channel.dart';
 import '../../models/livetv_dvr.dart';
 import '../../mixins/refreshable.dart';
 import '../../mixins/tab_navigation_mixin.dart';
-import '../../mixins/tab_visibility_aware.dart';
 import '../../providers/multi_server_provider.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/layout_constants.dart';
