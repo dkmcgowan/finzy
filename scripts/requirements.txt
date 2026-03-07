@@ -1,0 +1,4 @@
+# For scripts that need Python dependencies
+# pip install -r scripts/requirements.txt
+
+Pillow>=10.0.0

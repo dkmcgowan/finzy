@@ -1,4 +1,6 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+
+import 'platform_detector.dart';
 
 /// Layout and sizing constants used throughout the application
 /// Screen width breakpoints for responsive design
@@ -80,4 +82,41 @@ class GridLayoutConstants {
 
   /// Standard grid padding
   static EdgeInsets get gridPadding => const EdgeInsets.only(left: 8, right: 8, bottom: 8);
+}
+
+/// App bar layout constants and helpers.
+/// Centralizes toolbar height and padding for consistent mobile/desktop/TV layout.
+class AppBarLayout {
+  /// Compact toolbar (phone) - single-line header
+  static const double contentHeightCompact = 44.0;
+  static const double barPaddingCompact = 0.0;
+
+  /// Standard toolbar (desktop header-only, e.g. Favorites, Collections, Playlists)
+  static const double contentHeightStandard = 56.0;
+  static const double barPaddingStandard = 4.0;
+
+  /// Full toolbar (desktop with tabs)
+  static const double contentHeightFull = 72.0;
+  static const double barPaddingFull = 8.0;
+
+  /// Returns toolbar content height and vertical padding for the app bar.
+  ///
+  /// [hasHeaderOnly] - true when the screen has a header but no tab row
+  /// (e.g. Favorites, Collections, Playlists). Use false for screens with tabs.
+  static ({double contentHeight, double barPadding}) getDimensions(
+    BuildContext context, {
+    bool hasHeaderOnly = false,
+  }) {
+    final isPhone = PlatformDetector.isPhone(context);
+    final useSideNav = PlatformDetector.shouldUseSideNavigation(context);
+
+    if (isPhone) {
+      return (contentHeight: contentHeightCompact, barPadding: barPaddingCompact);
+    }
+    // Desktop/TV
+    if (hasHeaderOnly && useSideNav) {
+      return (contentHeight: contentHeightStandard, barPadding: barPaddingStandard);
+    }
+    return (contentHeight: contentHeightFull, barPadding: barPaddingFull);
+  }
 }

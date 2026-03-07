@@ -19,6 +19,7 @@ import '../../providers/user_profile_provider.dart';
 import '../../providers/server_state_provider.dart';
 import '../../providers/playback_state_provider.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/layout_constants.dart';
 import '../../utils/platform_detector.dart';
 import '../../utils/provider_extensions.dart';
 import '../../utils/content_utils.dart';
@@ -47,7 +48,10 @@ import 'tabs/library_playlists_tab.dart';
 class LibrariesScreen extends StatefulWidget {
   final VoidCallback? onLibraryOrderChanged;
 
-  const LibrariesScreen({super.key, this.onLibraryOrderChanged});
+  /// Notifies parent when selected library changes (for sidebar sync on desktop/TV).
+  final void Function(String? libraryGlobalKey)? onSelectedLibraryChanged;
+
+  const LibrariesScreen({super.key, this.onLibraryOrderChanged, this.onSelectedLibraryChanged});
 
   @override
   State<LibrariesScreen> createState() => _LibrariesScreenState();
@@ -163,6 +167,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   // Scroll controller for the outer CustomScrollView
   final ScrollController _outerScrollController = ScrollController();
 
+  /// Stored when a sheet opens - restore on scroll to prevent background scroll
+  /// when dialog ListView scrolls at extent (Android TV).
+  double? _scrollPositionWhenSheetOpened;
+
   /// Global Favorites view: one hub per library.
   List<Hub> _globalFavoritesHubs = [];
   bool _areGlobalFavoritesLoading = false;
@@ -176,6 +184,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     super.initState();
     initTabNavigation();
 
+    OverlaySheetHost.anySheetOpen.addListener(_onAnySheetOpenChanged);
+
     // Initialize action button focus nodes
     _refreshButtonFocusNode = FocusNode(debugLabel: 'RefreshButton');
     _profileButtonFocusNode = FocusNode(debugLabel: 'ProfileButton');
@@ -188,38 +198,77 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     });
   }
 
+  /// Build ordered visible libraries including Favorites when not hidden (matches sidebar/Settings).
+  List<MediaLibrary> _buildOrderedVisibleLibraries(
+    LibrariesProvider librariesProvider,
+    Set<String> hiddenKeys,
+    bool hasConnectedServers,
+  ) {
+    final allLibraries = librariesProvider.libraries
+        .where((lib) => !hiddenKeys.contains(lib.globalKey) && lib.type.toLowerCase() != 'livetv')
+        .toList();
+    final fakeFavorites = MediaLibrary(
+      key: kJellyfinFavoritesKey,
+      title: t.libraries.tabs.favorites,
+      type: 'favorites',
+    );
+
+    if (!hasConnectedServers || hiddenKeys.contains(kJellyfinFavoritesKey)) {
+      return allLibraries;
+    }
+
+    final orderKeys = librariesProvider.displayOrderKeys;
+    if (orderKeys != null && orderKeys.isNotEmpty) {
+      final libMap = {for (var l in allLibraries) l.globalKey: l};
+      final result = <MediaLibrary>[];
+      for (final key in orderKeys) {
+        if (key == kJellyfinFavoritesKey) {
+          result.add(fakeFavorites);
+        } else {
+          final lib = libMap.remove(key);
+          if (lib != null) result.add(lib);
+        }
+      }
+      result.addAll(libMap.values);
+      return result;
+    }
+
+    final primary = allLibraries
+        .where((l) => l.type.toLowerCase() == 'movie' || l.type.toLowerCase() == 'show')
+        .toList()
+      ..sort((a, b) => a.title.compareTo(b.title));
+    final secondary = allLibraries
+        .where((l) => l.type.toLowerCase() != 'movie' && l.type.toLowerCase() != 'show')
+        .toList()
+      ..sort((a, b) => a.title.compareTo(b.title));
+    return [...primary, fakeFavorites, ...secondary];
+  }
+
   /// Initialize the screen with libraries from the provider.
   /// This handles initial library selection and content loading.
   Future<void> _initializeWithLibraries() async {
     final librariesProvider = context.read<LibrariesProvider>();
     final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
+    final multiServerProvider = context.read<MultiServerProvider>();
     final allLibraries = librariesProvider.libraries;
 
-    if (allLibraries.isEmpty) {
+    if (allLibraries.isEmpty && !multiServerProvider.hasConnectedServers) {
       return;
     }
 
-    // Compute visible libraries for initial load
+    // Compute visible libraries for initial load (includes Favorites when not hidden)
     final hiddenKeys = hiddenLibrariesProvider.hiddenLibraryKeys;
-    final visibleLibraries = allLibraries.where((lib) => !hiddenKeys.contains(lib.globalKey)).toList();
+    final visibleLibraries = _buildOrderedVisibleLibraries(
+      librariesProvider,
+      hiddenKeys,
+      multiServerProvider.hasConnectedServers,
+    );
 
-    // Load saved preferences
+    // On fresh reload (cold start), always start with first library - don't restore saved.
+    // This applies to mobile and desktop/TV for a consistent fresh-start experience.
     final storage = await StorageService.getInstance();
-    final savedLibraryKey = storage.getSelectedLibraryKey();
-
-    // Find the library by key in visible libraries (or Favorites when visible)
     String? libraryGlobalKeyToLoad;
-    if (savedLibraryKey != null) {
-      final libraryExists = visibleLibraries.any((lib) => lib.globalKey == savedLibraryKey);
-      final isFavoritesAndVisible = savedLibraryKey == kJellyfinFavoritesKey &&
-          !hiddenKeys.contains(kJellyfinFavoritesKey);
-      if (libraryExists || isFavoritesAndVisible) {
-        libraryGlobalKeyToLoad = savedLibraryKey;
-      }
-    }
-
-    // Fallback to first visible library if saved key not found
-    if (libraryGlobalKeyToLoad == null && visibleLibraries.isNotEmpty) {
+    if (visibleLibraries.isNotEmpty) {
       libraryGlobalKeyToLoad = visibleLibraries.first.globalKey;
     }
 
@@ -290,11 +339,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     });
   }
 
-  /// Focus the first HubSection in the global Favorites view.
-  /// Uses memory to restore the user's last position within the hub.
+  /// Focus the first HubSection in the global Favorites view at the start.
   void _focusFirstGlobalFavoritesHub() {
     if (_globalFavoritesHubKeys.isEmpty || _globalFavoritesHubs.isEmpty) return;
-    _globalFavoritesHubKeys.first.currentState?.requestFocusFromMemory();
+    _globalFavoritesHubKeys.first.currentState?.requestFocusAt(0);
   }
 
   bool _handleGlobalFavoritesVerticalNav(int hubIndex, bool isUp) {
@@ -303,7 +351,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     if (targetIndex >= _globalFavoritesHubKeys.length) return true;
     final targetState = _globalFavoritesHubKeys[targetIndex].currentState;
     if (targetState != null) {
-      targetState.requestFocusFromMemory();
+      targetState.requestFocusAt(0);
       return true;
     }
     return false;
@@ -553,8 +601,17 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     }
   }
 
+  void _onAnySheetOpenChanged() {
+    if (OverlaySheetHost.anySheetOpen.value && _outerScrollController.hasClients) {
+      _scrollPositionWhenSheetOpened = _outerScrollController.offset;
+    } else {
+      _scrollPositionWhenSheetOpened = null;
+    }
+  }
+
   @override
   void dispose() {
+    OverlaySheetHost.anySheetOpen.removeListener(_onAnySheetOpenChanged);
     _cancelToken?.cancel();
     _outerScrollController.dispose();
     _recommendedTabChipFocusNode.dispose();
@@ -604,6 +661,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         _selectedLibraryGlobalKey = kJellyfinFavoritesKey;
         _errorMessage = null;
       });
+      widget.onSelectedLibraryChanged?.call(kJellyfinFavoritesKey);
       if (_isInitialLoad) _isInitialLoad = false;
       final storage = await StorageService.getInstance();
       await storage.saveSelectedLibraryKey(libraryGlobalKey);
@@ -613,14 +671,16 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
     // Get libraries from provider
     final librariesProvider = context.read<LibrariesProvider>();
-    final allLibraries = librariesProvider.libraries;
-
-    // Compute visible libraries based on current provider state
     final hiddenLibrariesProvider = Provider.of<HiddenLibrariesProvider>(context, listen: false);
+    final multiServerProvider = context.read<MultiServerProvider>();
     final hiddenKeys = hiddenLibrariesProvider.hiddenLibraryKeys;
-    final visibleLibraries = allLibraries.where((lib) => !hiddenKeys.contains(lib.globalKey)).toList();
+    final visibleLibraries = _buildOrderedVisibleLibraries(
+      librariesProvider,
+      hiddenKeys,
+      multiServerProvider.hasConnectedServers,
+    );
 
-    // Find the library by key
+    // Find the library by key (Favorites handled by early return above)
     final libraryIndex = visibleLibraries.indexWhere((lib) => lib.globalKey == libraryGlobalKey);
     if (libraryIndex == -1) return; // Library not found or hidden
 
@@ -654,6 +714,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       if (isChangingLibrary) _selectedFilters.clear();
       if (newTabCount != _effectiveTabCount) _effectiveTabCount = newTabCount;
     });
+    widget.onSelectedLibraryChanged?.call(libraryGlobalKey);
 
     // Dispose previous controller after the frame so TabBarView has switched to the new one
     if (oldController != null) {
@@ -768,9 +829,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         _areGlobalFavoritesLoading = false;
         _globalFavoritesError = null;
       });
-      // Focus the first hub after data loads and widgets are built
+      // Reset scroll and focus the first hub after data loads and widgets are built
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _selectedLibraryGlobalKey == kJellyfinFavoritesKey && !suppressAutoFocus && InputModeTracker.isKeyboardMode(context)) {
+        if (!mounted || _selectedLibraryGlobalKey != kJellyfinFavoritesKey) return;
+        if (_outerScrollController.hasClients && _outerScrollController.offset > 0) {
+          _outerScrollController.jumpTo(0);
+        }
+        if (!suppressAutoFocus && InputModeTracker.isKeyboardMode(context)) {
           _focusFirstGlobalFavoritesHub();
         }
       });
@@ -914,13 +979,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   // Public method to fully reload all content (for profile switches)
   @override
   void fullRefresh() {
-    appLogger.d('LibrariesScreen.fullRefresh() called - reloading all content');
     setState(() {
       _selectedLibraryGlobalKey = null;
       _selectedFilters.clear();
       _items.clear();
       _errorMessage = null;
     });
+    widget.onSelectedLibraryChanged?.call(null);
 
     // Reinitialize with current libraries from provider
     _initializeWithLibraries();
@@ -1228,10 +1293,14 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     }
 
     if (_selectedLibraryGlobalKey == kJellyfinFavoritesKey) {
-      return Text(
-        t.libraries.tabs.favorites,
-        style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
-      );
+      if (PlatformDetector.shouldUseSideNavigation(context)) {
+        return Text(
+          t.libraries.tabs.favorites,
+          style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
+        );
+      }
+      // Mobile: show dropdown so user can switch libraries
+      return _buildLibraryDropdownTitle(visibleLibraries);
     }
 
     if (PlatformDetector.shouldUseSideNavigation(context)) {
@@ -1374,6 +1443,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           child: HubSection(
             key: _globalFavoritesHubKeys[i],
             hub: _globalFavoritesHubs[i],
+            compactTopPadding: i == 0,
             icon: _globalFavoritesHubs[i].type.toLowerCase() == 'movie' ? Symbols.movie_rounded : Symbols.tv_rounded,
             onRefresh: (_) => _loadGlobalFavorites(),
             // No onHeaderTap: uses default HubSection behavior → push HubDetailScreen (full-screen, like home)
@@ -1398,35 +1468,60 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final hiddenLibrariesProvider = context.watch<HiddenLibrariesProvider>();
     final hiddenKeys = hiddenLibrariesProvider.hiddenLibraryKeys;
 
-    final visibleLibraries = allLibraries.where((lib) => !hiddenKeys.contains(lib.globalKey)).toList();
+    final multiServerProvider = context.watch<MultiServerProvider>();
+    final visibleLibraries = _buildOrderedVisibleLibraries(
+      librariesProvider,
+      hiddenKeys,
+      multiServerProvider.hasConnectedServers,
+    );
     MediaLibrary? selectedLibrary;
     if (_selectedLibraryGlobalKey != null) {
-      final list = allLibraries.where((l) => l.globalKey == _selectedLibraryGlobalKey).toList();
-      selectedLibrary = list.isNotEmpty ? list.first : null;
+      selectedLibrary = visibleLibraries.where((l) => l.globalKey == _selectedLibraryGlobalKey).firstOrNull;
     }
 
     return OverlaySheetHost(
       child: Scaffold(
-        body: ScrollConfiguration(
-          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        body: ValueListenableBuilder<bool>(
+          valueListenable: OverlaySheetHost.anySheetOpen,
+          builder: (context, anySheetOpen, child) {
+            return NotificationListener<ScrollNotification>(
+              onNotification: (n) {
+                if (anySheetOpen) {
+                  // Restore position - scroll already happened before we could block it
+                  if (_scrollPositionWhenSheetOpened != null &&
+                      _outerScrollController.hasClients &&
+                      (_outerScrollController.offset - _scrollPositionWhenSheetOpened!).abs() > 1) {
+                    _outerScrollController.jumpTo(_scrollPositionWhenSheetOpened!);
+                  }
+                  return true; // Consume - block propagation
+                }
+                return false;
+              },
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  scrollbars: false,
+                  physics: anySheetOpen ? const NeverScrollableScrollPhysics() : null,
+                ),
+                child: child!,
+              ),
+            );
+          },
           child: CustomScrollView(
             controller: _outerScrollController,
             slivers: [
               // Match Home (Discover) app bar layout on desktop/TV; tighter on mobile
               Builder(
                 builder: (context) {
-                  final isPhone = PlatformDetector.isPhone(context);
+                  final statusBarHeight = MediaQuery.of(context).padding.top;
                   final useSideNav = PlatformDetector.shouldUseSideNavigation(context);
-                  // Header-only (Favorites, Collections, Playlists): use tighter height to reduce gap
                   final hasHeaderOnly = useSideNav &&
                       (selectedLibrary == null ||
                           _selectedLibraryGlobalKey == kJellyfinFavoritesKey ||
                           _effectiveTabCount == 1);
-                  final toolbarContentHeight = isPhone ? 56.0 : (hasHeaderOnly ? 56.0 : 72.0);
-                  final barPadding = isPhone ? 4.0 : (hasHeaderOnly ? 4.0 : 8.0);
+                  final dims = AppBarLayout.getDimensions(context, hasHeaderOnly: hasHeaderOnly);
                   return SliverAppBar(
                     pinned: true,
-                    toolbarHeight: MediaQuery.of(context).padding.top + toolbarContentHeight,
+                    toolbarHeight: statusBarHeight + dims.contentHeight,
                     title: null,
                     leading: null,
                     leadingWidth: 0,
@@ -1437,13 +1532,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                     scrolledUnderElevation: 0,
                     flexibleSpace: Padding(
                       padding: EdgeInsets.only(
-                        top: MediaQuery.of(context).padding.top,
+                        top: statusBarHeight,
                         left: 16,
                         right: 16,
-                        bottom: barPadding,
+                        bottom: dims.barPadding,
                       ),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: barPadding),
+                        padding: EdgeInsets.symmetric(vertical: dims.barPadding),
                         child: Row(
                           children: [
                             Expanded(
@@ -1519,12 +1614,12 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                   child: EmptyStateWidget(message: t.libraries.noLibrariesFound, icon: Symbols.video_library_rounded),
                 )
               else ...[
-                if (_selectedLibraryGlobalKey != null && selectedLibrary != null && !PlatformDetector.shouldUseSideNavigation(context))
+                if (_selectedLibraryGlobalKey != null && selectedLibrary != null && _selectedLibraryGlobalKey != kJellyfinFavoritesKey && !PlatformDetector.shouldUseSideNavigation(context))
                   SliverToBoxAdapter(
                     child: Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: PlatformDetector.isPhone(context) ? 4 : 8,
+                        vertical: AppBarLayout.getDimensions(context).barPadding,
                       ),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,

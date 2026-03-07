@@ -338,11 +338,23 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       });
     }
 
+    final listTileTheme = ListTileTheme.of(context).copyWith(
+      titleTextStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+      subtitleTextStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        fontSize: 17,
+      ),
+    );
+
     return Scaffold(
-      body: Focus(
-        canRequestFocus: false,
-        onKeyEvent: _handleKeyEvent,
-        child: CustomScrollView(
+      body: ListTileTheme(
+        data: listTileTheme,
+        child: Focus(
+          canRequestFocus: false,
+          onKeyEvent: _handleKeyEvent,
+          child: CustomScrollView(
           slivers: [
             CustomAppBar(
               title: Text(t.settings.title),
@@ -350,7 +362,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
               toolbarHeight: 72,
             ),
             SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   if (_showSupportDevelopment) ...[
@@ -419,6 +431,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           ],
         ),
       ),
+    ),
     );
   }
 

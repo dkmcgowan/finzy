@@ -35,6 +35,9 @@ class MediaCard extends StatefulWidget {
   /// When set, tap uses this instead of navigating to detail (e.g. show inline in library).
   final VoidCallback? onTapOverride;
 
+  /// Focus node to restore when context menu is dismissed (Back). From FocusableMediaCard.
+  final FocusNode? focusNodeToRestore;
+
   const MediaCard({
     super.key,
     required this.item,
@@ -48,6 +51,7 @@ class MediaCard extends StatefulWidget {
     this.isOffline = false,
     this.mixedHubContext = false,
     this.onTapOverride,
+    this.focusNodeToRestore,
   });
 
   @override
@@ -202,6 +206,7 @@ class MediaCardState extends State<MediaCard> {
       onListRefresh: widget.onListRefresh,
       onTap: () => _handleTap(context),
       collectionId: widget.collectionId,
+      focusNodeToRestore: widget.focusNodeToRestore,
       child: cardWidget,
     );
   }

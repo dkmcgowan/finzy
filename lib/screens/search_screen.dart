@@ -258,8 +258,9 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
   }
 
   Widget _buildSearchHeader() {
+    final isPhone = PlatformDetector.isPhone(context);
     return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+      padding: EdgeInsets.only(left: 16, right: 16, bottom: isPhone ? 8 : 16),
       child: Focus(
         onKeyEvent: _handleSearchInputKeyEvent,
         child: TextField(
@@ -300,9 +301,10 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
   @override
   Widget build(BuildContext context) {
     final isPhone = PlatformDetector.isPhone(context);
+    final isTv = PlatformDetector.isTV();
 
-    // On mobile: search box scrolls with results to avoid it staying visible "in background"
-    if (isPhone) {
+    // On mobile and TV: search box scrolls with results to avoid overlap/z-order issues
+    if (isPhone || isTv) {
       return Scaffold(
         body: CustomScrollView(
           slivers: [
@@ -322,7 +324,7 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
             ),
             SliverToBoxAdapter(child: _buildSearchHeader()),
             SliverPadding(
-              padding: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.only(bottom: 8),
               sliver: _buildResultsSliver(),
             ),
           ],

@@ -116,8 +116,23 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     }
   }
 
+  /// Context from inside OverlaySheetHost, used to check if a sheet is open.
+  BuildContext? _overlayContext;
+
   @override
   String get focusNodeDebugLabel => 'browse_first_item';
+
+  @override
+  void tryFocus() {
+    // Don't steal focus from sort/filter sheets when they're open
+    final ctrl = OverlaySheetController.maybeOf(_overlayContext ?? context);
+    final sheetOpen = ctrl?.isOpen ?? false;
+    if (sheetOpen) {
+      appLogger.d('LibraryBrowseTab: tryFocus skipped (sheet open)');
+      return;
+    }
+    super.tryFocus();
+  }
 
   @override
   int get itemCount => items.length;
@@ -573,57 +588,61 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
           _loadItems();
         },
       ),
-    );
+    ).then((_) {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (items.isNotEmpty) {
+          _navigateToGrid();
+        } else {
+          _firstChipFocusNode.requestFocus();
+        }
+      });
+    });
   }
 
   void _showSortBottomSheet() {
     SelectKeyUpSuppressor.suppressSelectUntilKeyUp();
-    // Track pending state in local variables so the callbacks don't trigger
-    // setState/_loadItems while the sheet is open (which would steal focus).
-    LibrarySort? pendingSort = _selectedSort;
-    bool pendingDescending = _isSortDescending;
-    bool pendingCleared = false;
-    OverlaySheetController.of(context)
-        .show(
-          builder: (context) => SortBottomSheet(
-            sortOptions: _sortOptions,
-            selectedSort: _selectedSort,
-            isSortDescending: _isSortDescending,
-            onSortChanged: (sort, descending) {
-              pendingSort = sort;
-              pendingDescending = descending;
-              pendingCleared = false;
-            },
-            onClear: () {
-              pendingSort = null;
-              pendingDescending = false;
-              pendingCleared = true;
-            },
-          ),
-        )
-        .then((_) {
+    OverlaySheetController.of(context).show(
+      builder: (context) => SortBottomSheet(
+        sortOptions: _sortOptions,
+        selectedSort: _selectedSort,
+        isSortDescending: _isSortDescending,
+        onSortChanged: (sort, descending) {
           if (!mounted) return;
-          if (pendingCleared) {
-            setState(() {
-              _selectedSort = null;
-              _isSortDescending = false;
-            });
-            StorageService.getInstance().then((storage) {
-              storage.clearLibrarySort(widget.library.globalKey);
-            });
-            _loadItems();
-          } else if (pendingSort != null &&
-              (pendingSort!.key != _selectedSort?.key || pendingDescending != _isSortDescending)) {
-            setState(() {
-              _selectedSort = pendingSort;
-              _isSortDescending = pendingDescending;
-            });
-            StorageService.getInstance().then((storage) {
-              storage.saveLibrarySort(widget.library.globalKey, pendingSort!.key, descending: pendingDescending);
-            });
-            _loadItems();
-          }
-        });
+          if (sort.key == _selectedSort?.key && descending == _isSortDescending) return;
+          setState(() {
+            _selectedSort = sort;
+            _isSortDescending = descending;
+          });
+          StorageService.getInstance().then((storage) {
+            storage.saveLibrarySort(widget.library.globalKey, sort.key, descending: descending);
+          });
+          _loadItems();
+        },
+        onClear: () {
+          if (!mounted) return;
+          setState(() {
+            _selectedSort = null;
+            _isSortDescending = false;
+          });
+          StorageService.getInstance().then((storage) {
+            storage.clearLibrarySort(widget.library.globalKey);
+          });
+          _loadItems();
+        },
+      ),
+    ).then((_) {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (items.isNotEmpty) {
+          _navigateToGrid();
+        } else {
+          _firstChipFocusNode.requestFocus();
+        }
+      });
+    });
   }
 
   /// Navigate focus from chips down to the grid item.
@@ -960,8 +979,11 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
     return OverlaySheetHost(
-      child: Stack(
-        children: [
+      child: Builder(
+        builder: (ctx) {
+          _overlayContext = ctx;
+          return Stack(
+            children: [
           // Grid fills the entire area, with top padding for chips bar
           Positioned.fill(child: _buildScrollableContent()),
           // Chips bar on top with solid background (measure height for alpha jump scroll math)
@@ -1009,6 +1031,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
                     ),
             ),
         ],
+          );
+        },
       ),
     );
   }

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -22,6 +21,7 @@ import '../screens/season_detail_screen.dart';
 import '../utils/smart_deletion_handler.dart';
 import '../utils/deletion_notifier.dart';
 import '../theme/mono_tokens.dart';
+import '../widgets/bottom_sheet_header.dart';
 import '../widgets/file_info_bottom_sheet.dart';
 import '../widgets/focusable_list_tile.dart';
 import '../widgets/overlay_sheet.dart';
@@ -47,6 +47,9 @@ class MediaContextMenu extends StatefulWidget {
   final Widget child;
   final String? collectionId; // The collection ID if displaying within a collection
 
+  /// Focus node to restore when menu is dismissed (Back). Pass from FocusableMediaCard.
+  final FocusNode? focusNodeToRestore;
+
   const MediaContextMenu({
     super.key,
     required this.item,
@@ -55,6 +58,7 @@ class MediaContextMenu extends StatefulWidget {
     this.onTap,
     required this.child,
     this.collectionId,
+    this.focusNodeToRestore,
   });
 
   @override
@@ -111,8 +115,9 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     if (_isContextMenuOpen) return;
     _isContextMenuOpen = true;
 
-    // Capture the currently focused node for restoration after menu closes
-    final previousFocus = FocusManager.instance.primaryFocus;
+    // Use explicit focusNodeToRestore (from FocusableMediaCard) since primaryFocus
+    // can be null when menu opens on Android TV.
+    final previousFocus = widget.focusNodeToRestore ?? FocusManager.instance.primaryFocus;
     bool didNavigate = false;
 
     final isPlaylist = widget.item is Playlist;
@@ -132,8 +137,8 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         (mediaType == MediaType.movie || mediaType == MediaType.episode) &&
         metadata?.hasActiveProgress == true;
 
-    // Check if we should use bottom sheet (on iOS and Android)
-    final useBottomSheet = Platform.isIOS || Platform.isAndroid;
+    // Use sheet on all platforms for consistent style, size, font, and spacing
+    const useBottomSheet = true;
 
     final client = _getClientForItem();
 
@@ -267,6 +272,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
             actions: menuActions,
             focusFirstItem: openedFromKeyboard,
           ),
+          restoreFocusOnClose: previousFocus,
         );
       } else {
         selected = await showModalBottomSheet<String>(
@@ -407,16 +413,7 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       }
     } finally {
       _isContextMenuOpen = false;
-
-      // Restore focus to the previously focused item after the menu closes,
-      // but only if no navigation occurred and the focus node is still valid
-      if (!didNavigate && previousFocus != null && previousFocus.canRequestFocus) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (previousFocus.canRequestFocus) {
-            previousFocus.requestFocus();
-          }
-        });
-      }
+      // Focus restoration is handled by OverlaySheetController.restoreFocusOnClose
     }
   }
 
@@ -999,50 +996,52 @@ class _FocusableContextMenuSheetState extends State<_FocusableContextMenuSheet> 
     super.dispose();
   }
 
+  void _close(String? value) {
+    final controller = OverlaySheetController.maybeOf(context);
+    if (controller != null) {
+      controller.close(value);
+    } else {
+      Navigator.pop(context, value);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              widget.title,
-              style: Theme.of(context).textTheme.titleMedium,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+          BottomSheetHeader(
+            title: widget.title,
+            titleStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            onClose: () => _close(null),
           ),
           Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...widget.actions.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final action = entry.value;
-                    return FocusableListTile(
-                      focusNode: index == 0 ? _initialFocusNode : null,
-                      leading: AppIcon(action.icon, fill: 1),
-                      title: Text(action.label),
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                      visualDensity: const VisualDensity(vertical: -3),
-                      onTap: () {
-                        final controller = OverlaySheetController.maybeOf(context);
-                        if (controller != null) {
-                          controller.close(action.value);
-                        } else {
-                          Navigator.pop(context, action.value);
-                        }
-                      },
-                      hoverColor: action.hoverColor,
-                    );
-                  }),
-                ],
-              ),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (_) => true,
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  physics: const ClampingScrollPhysics(),
+                  scrollbars: false,
+                ),
+                child: ListView.builder(
+                  primary: false,
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: widget.actions.length,
+              itemBuilder: (context, index) {
+                final action = widget.actions[index];
+                return FocusableListTile(
+                  focusNode: index == 0 ? _initialFocusNode : null,
+                  leading: AppIcon(action.icon, fill: 1),
+                  title: Text(action.label),
+                  onTap: () => _close(action.value),
+                  hoverColor: action.hoverColor,
+                );
+              },
             ),
+          ),
+        ),
           ),
         ],
       ),
@@ -1143,7 +1142,7 @@ class _FocusablePopupMenuState extends State<_FocusablePopupMenu> {
                       leading: AppIcon(action.icon, fill: 1, size: 20),
                       title: Text(action.label),
                       dense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                       visualDensity: const VisualDensity(vertical: -3),
                       onTap: () => Navigator.pop(context, action.value),
                       hoverColor: action.hoverColor,

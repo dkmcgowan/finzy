@@ -328,7 +328,17 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
         },
         clearFocusNode: clearFocusNode,
       ),
-    ).whenComplete(() => clearFocusNode.dispose());
+    ).whenComplete(() {
+      clearFocusNode.dispose();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_filteredItems.isNotEmpty) {
+          _focusGrid();
+        } else {
+          _sortButtonFocusNode.requestFocus();
+        }
+      });
+    });
   }
 
   Future<void> _loadMoreItems() async {

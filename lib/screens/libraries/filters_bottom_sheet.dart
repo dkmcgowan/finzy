@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../utils/app_logger.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -107,8 +108,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
           } else {
             _goBackFromGroup();
           }
+        } else if (_detailHeaderIndex == _detailClearIndex && _hasDetailClear) {
+          _handleClear();
         } else {
-          _applyFilters();
+          _dismiss();
         }
         return KeyEventResult.handled;
       }
@@ -120,7 +123,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
           if (_filterDisplayNames.length > _maxCachedDisplayNames) _filterDisplayNames.clear();
           _filterDisplayNames[_cacheKey(_currentFilter!.filter, filterValue)] = value.title;
         });
-        _applyFilters();
+        _notifyFiltersChanged();
       } else if (_currentGroup != null && _detailFocusedIndex >= 0 && _detailFocusedIndex < _currentGroup!.filters.length) {
         final filter = _currentGroup!.filters[_detailFocusedIndex];
         final isActive = _tempSelectedFilters.containsKey(filter.filter) && _tempSelectedFilters[filter.filter] == '1';
@@ -131,7 +134,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
             _tempSelectedFilters[filter.filter] = '1';
           }
         });
-        _applyFilters();
+        _notifyFiltersChanged();
       }
       return KeyEventResult.handled;
     }
@@ -181,7 +184,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
 
     if (key.isLeftKey || key.isRightKey) {
       if (_detailFocusZoneHeader) {
-        setState(() => _detailHeaderIndex = key.isRightKey ? 1 : 0);
+        setState(() {
+          final next = key.isRightKey ? _detailHeaderIndex + 1 : _detailHeaderIndex - 1;
+          _detailHeaderIndex = next.clamp(0, _detailCloseIndex);
+        });
         return KeyEventResult.handled;
       }
     }
@@ -274,15 +280,73 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     });
   }
 
-  void _applyFilters() {
+  void _notifyFiltersChanged() {
     widget.onFiltersChanged(_tempSelectedFilters);
-    OverlaySheetController.of(context).close();
+    _refocusAfterChange();
+  }
+
+  void _refocusAfterChange() {
+    appLogger.d('FiltersBottomSheet: _refocusAfterChange');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ctrl = OverlaySheetController.maybeOf(context);
+      appLogger.d('FiltersBottomSheet: maybeOf=${ctrl != null}');
+      ctrl?.refocus();
+    });
   }
 
   /// Close without applying (Back/ESC = cancel).
   void _dismiss() {
     OverlaySheetController.of(context).close();
   }
+
+  void _handleClear() {
+    setState(() {
+      _tempSelectedFilters.clear();
+    });
+    _notifyFiltersChanged();
+    _dismiss();
+  }
+
+  /// Pill-styled Clear button matching sort dialog.
+  Widget _buildClearPillButton({required bool isFocused}) {
+    return FocusBuilders.buildLockedFocusWrapper(
+      context: context,
+      isFocused: isFocused,
+      useListTileStyle: true,
+      circular: true,
+      alwaysShowFocus: true,
+      onTap: _handleClear,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _handleClear,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              t.common.clear,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xE6FFFFFF),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool get _hasDetailClear => _tempSelectedFilters.isNotEmpty;
+
+  /// Header indices: 0=Back, 1=Clear (if _hasDetailClear), 2=Close (or 1=Close when no Clear)
+  int get _detailCloseIndex => _hasDetailClear ? 2 : 1;
+  int get _detailClearIndex => 1;
 
   Widget _buildDetailHeader(String title, {required VoidCallback onBack}) {
     return Container(
@@ -302,9 +366,13 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
           ),
           const SizedBox(width: 8),
           Expanded(child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+          if (_hasDetailClear) ...[
+            _buildClearPillButton(isFocused: _detailFocusZoneHeader && _detailHeaderIndex == _detailClearIndex),
+            const SizedBox(width: 8),
+          ],
           FocusBuilders.buildLockedFocusWrapper(
             context: context,
-            isFocused: _detailFocusZoneHeader && _detailHeaderIndex == 1,
+            isFocused: _detailFocusZoneHeader && _detailHeaderIndex == _detailCloseIndex,
             useListTileStyle: true,
             circular: true,
             onTap: _dismiss,
@@ -379,7 +447,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                           }
                           _filterDisplayNames[_cacheKey(_currentFilter!.filter, filterValue)] = value.title;
                         });
-                        _applyFilters();
+                        _notifyFiltersChanged();
                       },
                       child: ExcludeFocusTraversal(
                         child: FocusableListTile(
@@ -394,7 +462,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                               }
                               _filterDisplayNames[_cacheKey(_currentFilter!.filter, filterValue)] = value.title;
                             });
-                            _applyFilters();
+                            _notifyFiltersChanged();
                           },
                         ),
                       ),
@@ -442,7 +510,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                           _tempSelectedFilters[filter.filter] = '1';
                         }
                       });
-                      _applyFilters();
+                      _notifyFiltersChanged();
                     },
                     child: ExcludeFocusTraversal(
                       child: FocusableSwitchListTile(
@@ -456,7 +524,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                               _tempSelectedFilters.remove(filter.filter);
                             }
                           });
-                          _applyFilters();
+                          _notifyFiltersChanged();
                         },
                         title: Text(filter.title),
                       ),
@@ -476,18 +544,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
         BottomSheetHeader(
           title: t.libraries.filters,
           leading: const AppIcon(Symbols.filter_alt_rounded, fill: 1),
-          action: _tempSelectedFilters.isNotEmpty
-              ? TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _tempSelectedFilters.clear();
-                    });
-                    _applyFilters();
-                  },
-                  icon: const AppIcon(Symbols.clear_all_rounded, fill: 1),
-                  label: Text(t.libraries.clearAll),
-                )
-              : null,
+          action: _tempSelectedFilters.isNotEmpty ? _buildClearPillButton(isFocused: false) : null,
         ),
         Expanded(
           child: _useGroupedMainView ? _buildCategoryList() : _buildFlatFilterList(),
@@ -537,7 +594,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                   _tempSelectedFilters.remove(filter.filter);
                 }
               });
-              _applyFilters();
+              _notifyFiltersChanged();
             },
             title: Text(filter.title),
           );

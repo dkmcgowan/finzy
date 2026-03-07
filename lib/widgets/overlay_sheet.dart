@@ -13,8 +13,14 @@ class _OverlaySheetEntry {
   final WidgetBuilder builder;
   final Completer<dynamic> completer;
   final FocusNode? initialFocusNode;
+  final FocusNode? restoreFocusOnClose;
 
-  _OverlaySheetEntry({required this.builder, required this.completer, this.initialFocusNode});
+  _OverlaySheetEntry({
+    required this.builder,
+    required this.completer,
+    this.initialFocusNode,
+    this.restoreFocusOnClose,
+  });
 }
 
 /// Provides [OverlaySheetController] to descendants via [of] / [maybeOf].
@@ -50,12 +56,16 @@ class OverlaySheetController {
 
   /// Show a bottom sheet with [builder] content. Returns a Future that completes
   /// when the sheet is closed (with an optional result).
+  ///
+  /// If [restoreFocusOnClose] is set, focus will be restored to that node when
+  /// the sheet closes (e.g. for context menu to return to the item that opened it).
   Future<T?> show<T>({
     required WidgetBuilder builder,
     BoxConstraints? constraints,
     Color? backgroundColor,
     bool barrierDismissible = true,
     FocusNode? initialFocusNode,
+    FocusNode? restoreFocusOnClose,
   }) {
     return _state._show<T>(
       builder: builder,
@@ -63,6 +73,7 @@ class OverlaySheetController {
       backgroundColor: backgroundColor,
       barrierDismissible: barrierDismissible,
       initialFocusNode: initialFocusNode,
+      restoreFocusOnClose: restoreFocusOnClose,
     );
   }
 
@@ -98,7 +109,16 @@ class OverlaySheetController {
 ///
 /// Screens that contain a [PopScope] should check [OverlaySheetController.isOpen]
 /// and skip their own back handling when a sheet is open.
+///
+  /// [anySheetOpen] is true when any OverlaySheetHost has a sheet open. Use this
+  /// to consume scroll in ancestor scrollables (e.g. libraries_screen CustomScrollView)
+  /// so the background doesn't scroll when navigating inside a sheet.
 class OverlaySheetHost extends StatefulWidget {
+  /// True when any OverlaySheetHost has a sheet open. Ancestors can use this
+  /// to block scroll propagation (e.g. when D-pad nav in context menu scrolls
+  /// the outer list on Android TV).
+  static final ValueNotifier<bool> anySheetOpen = ValueNotifier(false);
+  static int _openCount = 0;
   final Widget child;
 
   const OverlaySheetHost({super.key, required this.child});
@@ -107,7 +127,8 @@ class OverlaySheetHost extends StatefulWidget {
   State<OverlaySheetHost> createState() => _OverlaySheetHostState();
 }
 
-class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerProviderStateMixin {
+class _OverlaySheetHostState extends State<OverlaySheetHost>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _animationController;
   late final Animation<Offset> _slideAnimation;
   late final Animation<double> _barrierAnimation;
@@ -129,6 +150,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = OverlaySheetController._(this);
 
     _animationController = AnimationController(duration: const Duration(milliseconds: 250), vsync: this);
@@ -144,7 +166,15 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (_isOpen && !_isClosing) _close();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (final entry in _pageStack) {
       if (!entry.completer.isCompleted) {
         entry.completer.complete(null);
@@ -161,6 +191,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     Color? backgroundColor,
     bool barrierDismissible = true,
     FocusNode? initialFocusNode,
+    FocusNode? restoreFocusOnClose,
   }) {
     // If already open, close first (instant)
     if (_isOpen) {
@@ -174,7 +205,17 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     }
 
     final completer = Completer<T?>();
-    final entry = _OverlaySheetEntry(builder: builder, completer: completer, initialFocusNode: initialFocusNode);
+    final entry = _OverlaySheetEntry(
+      builder: builder,
+      completer: completer,
+      initialFocusNode: initialFocusNode,
+      restoreFocusOnClose: restoreFocusOnClose,
+    );
+
+    // Set anySheetOpen BEFORE setState so ancestors (libraries_screen) rebuild with
+    // NeverScrollableScrollPhysics before the sheet is shown.
+    OverlaySheetHost._openCount++;
+    OverlaySheetHost.anySheetOpen.value = true;
 
     setState(() {
       _pageStack.add(entry);
@@ -233,6 +274,8 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
 
     _animationController.reverse().then((_) {
       if (!mounted) return;
+      final topEntry = _pageStack.isNotEmpty ? _pageStack.last : null;
+      final focusToRestore = topEntry?.restoreFocusOnClose;
       setState(() {
         for (final entry in _pageStack) {
           if (!entry.completer.isCompleted) {
@@ -241,6 +284,8 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
         }
         _pageStack.clear();
         _isOpen = false;
+        OverlaySheetHost._openCount = (OverlaySheetHost._openCount - 1).clamp(0, 0x7FFFFFFF);
+        OverlaySheetHost.anySheetOpen.value = OverlaySheetHost._openCount > 0;
         _isClosing = false;
         _dragOffset = 0;
         _isDragging = false;
@@ -251,6 +296,16 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
       // next real route pop and disables KeyUp suppression, causing a
       // double-pop on the underlying screen.
       BackKeyUpSuppressor.clearSuppression();
+      // Restore focus only when dismissed (Back) without selecting an action.
+      // Don't check canRequestFocus here - it can be false while ExcludeFocus still excludes.
+      // Check in post-frame callback after rebuild.
+      if (focusToRestore != null && result == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && focusToRestore.canRequestFocus) {
+            focusToRestore.requestFocus();
+          }
+        });
+      }
     });
   }
 
@@ -290,9 +345,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
   }
 
   void _refocus() {
-    if (!InputModeTracker.isKeyboardMode(context)) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    void doRefocus() {
       if (!mounted || !_isOpen) return;
       _sheetFocusScopeNode.requestFocus();
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -303,6 +356,18 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
           initialNode.requestFocus();
         } else {
           _focusFirstDescendant();
+        }
+      });
+    }
+
+    // Always refocus (TV/dpad and pointer) so sheet stays usable after filter/sort change
+    WidgetsBinding.instance.addPostFrameCallback((_) => doRefocus());
+    // Second pass after 2 frames to catch async focus stealers (e.g. _loadItems completion)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_isOpen) return;
+        if (!_sheetFocusScopeNode.hasFocus) {
+          doRefocus();
         }
       });
     });
@@ -358,7 +423,18 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
       controller: _controller,
       child: Stack(
         children: [
-          widget.child,
+          // When sheet is open, exclude content from focus and disable background
+          // scrolling so it doesn't scroll when user scrolls the sheet (Android TV).
+          ExcludeFocus(
+            excluding: _isOpen,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (n) {
+                if (_isOpen) return true; // consume when sheet open
+                return false;
+              },
+              child: widget.child,
+            ),
+          ),
           if (_isOpen) ...[
             // Barrier
             AnimatedBuilder(
@@ -403,7 +479,9 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
           minHeight: isDesktop ? 300 : size.height * 0.5,
         );
 
-    Widget sheet = FocusScope(
+    Widget sheet = NotificationListener<ScrollNotification>(
+      onNotification: (_) => true, // Consume - prevent propagation to background
+      child: FocusScope(
       node: _sheetFocusScopeNode,
       child: Focus(
         canRequestFocus: false,
@@ -434,6 +512,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
           ),
         ),
       ),
+    ),
     );
 
     // Swipe-down-to-dismiss (skip on TV where there's no touchscreen)

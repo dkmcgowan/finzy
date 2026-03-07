@@ -2,14 +2,20 @@
 
 | Home | Library | Media Card | Season |
 |------|---------|------------|--------|
-| ![Android Home - Content discovery and recommendations](android-home.png) | ![Android Library - Media collection view](android-library.png) | ![Android Media Card](android-media-card.png) | ![Android Season View](android-media-season.png) |
+| ![Mobile Home - Content discovery and recommendations](mobile-home.png) | ![Mobile Library - Media collection view](mobile-library.png) | ![Mobile Media Card](mobile-media-card.png) | ![Mobile Season View](mobile-season.png) |
 
-## Windows
+## Desktop
 
-![Windows Home - Content discovery and recommendations](windows-home.png)
+![Desktop Home - Content discovery and recommendations](desktop-home.png)
 
-![Windows Library - Media collection view](windows-library.png)
+![Desktop Library - Media collection view](desktop-library.png)
 
-![Windows Media Card](windows-media-card.png)
+![Desktop Media Card](desktop-media-card.png)
 
-![Windows Season View](windows-season.png)
+![Desktop Season View](desktop-season.png)
+
+## TV
+
+| Home | Library | Media Card | Season |
+|------|---------|------------|--------|
+| ![TV Home - Content discovery and recommendations](tv-home.png) | ![TV Library - Media collection view](tv-library.png) | ![TV Media Card](tv-media-card.png) | ![TV Season View](tv-media-season.png) |

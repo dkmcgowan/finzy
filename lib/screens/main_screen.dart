@@ -456,7 +456,13 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
     return [
       DiscoverScreen(key: _discoverKey, onBecameVisible: _onDiscoverBecameVisible),
-      LibrariesScreen(key: _librariesKey, onLibraryOrderChanged: _onLibraryOrderChanged),
+      LibrariesScreen(
+        key: _librariesKey,
+        onLibraryOrderChanged: _onLibraryOrderChanged,
+        onSelectedLibraryChanged: (key) {
+          setState(() => _selectedLibraryGlobalKey = key);
+        },
+      ),
       if (hasLiveTv) LiveTvScreen(key: _liveTvKey),
       SearchScreen(key: _searchKey),
       DownloadsScreen(key: _downloadsKey),

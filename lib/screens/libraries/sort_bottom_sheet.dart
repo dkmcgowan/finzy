@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:finzy/utils/app_logger.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +48,7 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
   int _focusedIndex = 0;
   static const double _itemExtent = 56.0;
 
-  bool get _hasClear => widget.onClear != null;
+  bool get _hasClear => widget.onClear != null && _currentSort != null;
 
   void _scrollToIndex(int index) {
     scrollListToIndex(
@@ -184,11 +185,23 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
       _currentDescending = descending;
     });
     widget.onSortChanged(sort, descending);
+    _refocusAfterChange();
   }
 
   void _handleDirectionChange(LibrarySort sort, bool descending) {
     setState(() => _currentDescending = descending);
     widget.onSortChanged(sort, descending);
+    _refocusAfterChange();
+  }
+
+  void _refocusAfterChange() {
+    appLogger.d('SortBottomSheet: _refocusAfterChange');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ctrl = OverlaySheetController.maybeOf(context);
+      appLogger.d('SortBottomSheet: maybeOf=${ctrl != null}');
+      ctrl?.refocus();
+    });
   }
 
   void _handleClear() {

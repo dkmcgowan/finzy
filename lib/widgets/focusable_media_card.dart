@@ -132,6 +132,7 @@ class _FocusableMediaCardState extends State<FocusableMediaCard> {
         isOffline: widget.isOffline,
         mixedHubContext: widget.mixedHubContext,
         onTapOverride: widget.onTapOverride,
+        focusNodeToRestore: widget.focusNode,
       ),
     );
   }

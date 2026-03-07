@@ -57,6 +57,9 @@ class HubSection extends StatefulWidget {
   /// When null (default), taps push [HubDetailScreen] full-screen (like home hub).
   final VoidCallback? onHeaderTap;
 
+  /// When true, reduces top padding (e.g. when first in a list right below app bar).
+  final bool compactTopPadding;
+
   const HubSection({
     super.key,
     required this.hub,
@@ -69,6 +72,7 @@ class HubSection extends StatefulWidget {
     this.onNavigateUp,
     this.onNavigateToSidebar,
     this.onHeaderTap,
+    this.compactTopPadding = false,
   });
 
   @override
@@ -343,7 +347,7 @@ class HubSectionState extends State<HubSection> {
       children: [
         // Hub header (NOT focusable - titles should not be focusable)
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          padding: EdgeInsets.fromLTRB(16, widget.compactTopPadding ? 8 : 24, 16, 8),
           child: ExcludeFocus(
             child: InkWell(
               onTap: (widget.hub.more || widget.onHeaderTap != null) ? () {

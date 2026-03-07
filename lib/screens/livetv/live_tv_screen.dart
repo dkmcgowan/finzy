@@ -11,6 +11,7 @@ import '../../mixins/tab_navigation_mixin.dart';
 import '../../mixins/tab_visibility_aware.dart';
 import '../../providers/multi_server_provider.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/layout_constants.dart';
 import '../../utils/platform_detector.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/focusable_tab_chip.dart';
@@ -327,14 +328,12 @@ class _LiveTvScreenState extends State<LiveTvScreen>
     final theme = Theme.of(context);
     final useSideNav = PlatformDetector.shouldUseSideNavigation(context);
     final statusBarHeight = MediaQuery.of(context).padding.top;
-    final isPhone = PlatformDetector.isPhone(context);
-    final toolbarContentHeight = isPhone ? 56.0 : 72.0;
-    final barPadding = isPhone ? 4.0 : 8.0;
+    final dims = AppBarLayout.getDimensions(context);
     final titleStyle = theme.appBarTheme.titleTextStyle ?? theme.textTheme.titleLarge;
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: statusBarHeight + toolbarContentHeight,
+        toolbarHeight: statusBarHeight + dims.contentHeight,
         title: null,
         leading: null,
         leadingWidth: 0,
@@ -348,54 +347,81 @@ class _LiveTvScreenState extends State<LiveTvScreen>
             top: statusBarHeight,
             left: 16,
             right: 16,
-            bottom: barPadding,
+            bottom: dims.barPadding,
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: barPadding),
+            padding: EdgeInsets.symmetric(vertical: dims.barPadding),
             child: Row(
               children: [
-                Expanded(
-                  child: useSideNav
-                      ? SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _buildTabChip(t.liveTv.guide, 0),
-                              const SizedBox(width: 8),
-                              _buildTabChip(t.liveTv.programs, 1),
-                              const SizedBox(width: 8),
-                              _buildTabChip(t.liveTv.channels, 2),
-                              const SizedBox(width: 8),
-                              _buildTabChip(t.liveTv.recordings, 3),
-                              const SizedBox(width: 8),
-                              _buildTabChip(t.liveTv.scheduled, 4),
-                              const SizedBox(width: 8),
-                              _buildTabChip(t.liveTv.seriesTimers, 5),
-                            ],
-                          ),
-                        )
-                      : Text(t.liveTv.title, style: titleStyle),
-                ),
-                Focus(
-                  focusNode: _refreshButtonFocusNode,
-                  onKeyEvent: _handleRefreshKeyEvent,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: _isRefreshFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
-                      borderRadius: const BorderRadius.all(Radius.circular(20)),
-                    ),
-                    child: Semantics(
-                      label: t.liveTv.reloadGuide,
-                      button: true,
-                      excludeSemantics: true,
-                      child: IconButton(
-                        icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
-                        tooltip: null,
-                        onPressed: _loadChannels,
+                if (useSideNav) ...[
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildTabChip(t.liveTv.guide, 0),
+                          const SizedBox(width: 8),
+                          _buildTabChip(t.liveTv.programs, 1),
+                          const SizedBox(width: 8),
+                          _buildTabChip(t.liveTv.channels, 2),
+                          const SizedBox(width: 8),
+                          _buildTabChip(t.liveTv.recordings, 3),
+                          const SizedBox(width: 8),
+                          _buildTabChip(t.liveTv.scheduled, 4),
+                          const SizedBox(width: 8),
+                          _buildTabChip(t.liveTv.seriesTimers, 5),
+                        ],
                       ),
                     ),
                   ),
-                ),
+                  Focus(
+                    focusNode: _refreshButtonFocusNode,
+                    onKeyEvent: _handleRefreshKeyEvent,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _isRefreshFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+                        borderRadius: const BorderRadius.all(Radius.circular(20)),
+                      ),
+                      child: Semantics(
+                        label: t.liveTv.reloadGuide,
+                        button: true,
+                        excludeSemantics: true,
+                        child: IconButton(
+                          icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
+                          tooltip: null,
+                          onPressed: _loadChannels,
+                        ),
+                      ),
+                    ),
+                  ),
+                ] else
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(t.liveTv.title, style: titleStyle),
+                      const SizedBox(width: 8),
+                      Focus(
+                        focusNode: _refreshButtonFocusNode,
+                        onKeyEvent: _handleRefreshKeyEvent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _isRefreshFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+                            borderRadius: const BorderRadius.all(Radius.circular(20)),
+                          ),
+                          child: Semantics(
+                            label: t.liveTv.reloadGuide,
+                            button: true,
+                            excludeSemantics: true,
+                            child: IconButton(
+                              icon: const AppIcon(Symbols.refresh_rounded, fill: 1),
+                              tooltip: null,
+                              onPressed: _loadChannels,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -434,7 +460,7 @@ class _LiveTvScreenState extends State<LiveTvScreen>
       children: [
         if (!useSideNav)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: PlatformDetector.isPhone(context) ? 0 : 8),
             alignment: Alignment.centerLeft,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,

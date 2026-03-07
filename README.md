@@ -7,7 +7,7 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 **Support development** — If you enjoy Finzy, you can leave a tip via [PayPal](https://paypal.me/dkmcgowan). Optional and much appreciated. You can also find this in Settings → Support Development.
 
 <p align="center">
-  <img src="assets/screenshots/windows-home.png" alt="Finzy Windows Home Screen" width="800" />
+  <img src="assets/screenshots/desktop-home.png" alt="Finzy Desktop Home Screen" width="800" />
 </p>
 
 *More screenshots in the [screenshots folder](assets/screenshots/#readme)*
