@@ -4,10 +4,11 @@ import 'dart:math';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 
-/// Service for detecting if the app is running on Android TV
+/// Service for detecting if the app is running on Android TV or Amazon Fire
 class TvDetectionService {
   static TvDetectionService? _instance;
   bool _isTV = false;
+  bool _isAmazon = false;
   bool _initialized = false;
 
   TvDetectionService._();
@@ -29,14 +30,20 @@ class TvDetectionService {
       final androidInfo = await deviceInfo.androidInfo;
       // Check for android.software.leanback feature (standard Android TV detection)
       _isTV = androidInfo.systemFeatures.contains('android.software.leanback');
+      // Check for Amazon Fire (manufacturer/brand is "Amazon" on Fire devices)
+      final manufacturer = androidInfo.manufacturer.toLowerCase();
+      final brand = androidInfo.brand.toLowerCase();
+      _isAmazon = manufacturer == 'amazon' || brand == 'amazon';
     }
     _initialized = true;
   }
 
   bool get isTV => _isTV;
+  bool get isAmazon => _isAmazon;
 
   /// Synchronous access after initialization (returns false if not initialized)
   static bool isTVSync() => _instance?._isTV ?? false;
+  static bool isAmazonSync() => _instance?._isAmazon ?? false;
 }
 
 /// Utility class for platform detection
@@ -44,6 +51,12 @@ class PlatformDetector {
   /// Detects if running on Android TV (requires TvDetectionService to be initialized)
   static bool isTV() {
     return TvDetectionService.isTVSync();
+  }
+
+  /// Detects if running on Amazon Fire (tablet or TV). Requires TvDetectionService
+  /// to be initialized on Android.
+  static bool isAmazon() {
+    return TvDetectionService.isAmazonSync();
   }
 
   /// Detects if the app should use side navigation (Desktop or TV)

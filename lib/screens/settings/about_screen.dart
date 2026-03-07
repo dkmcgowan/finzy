@@ -1,10 +1,11 @@
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../focus/focus_utils.dart';
 import '../../services/settings_service.dart';
+import '../../services/support_service.dart';
+import '../../utils/platform_detector.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import '../../i18n/strings.g.dart';
 import 'licenses_screen.dart';
@@ -104,7 +105,9 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
               ),
 
-              if (!Platform.isAndroid && !Platform.isIOS) ...[
+              if (SupportService.instance.isAvailable &&
+                  !PlatformDetector.isAmazon() &&
+                  !PlatformDetector.isTV()) ...[
                 const SizedBox(height: 8),
 
                 Card(

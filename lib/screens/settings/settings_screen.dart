@@ -206,7 +206,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       !_hideSupportDevelopment &&
       !Platform.isAndroid &&
       !Platform.isIOS &&
-      !PlatformDetector.isTV();
+      !PlatformDetector.isTV() &&
+      !PlatformDetector.isAmazon();
 
   @override
   void focusActiveTabIfReady() {

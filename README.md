@@ -30,6 +30,8 @@ Finzy runs on:
 
 All builds are available in the [releases](https://github.com/dkmcgowan/finzy/releases/latest) folder. Choose the build for your platform and architecture.
 
+**iOS / iPad** — Test the beta via [TestFlight](https://testflight.apple.com/join/XXXXXXXX). *(Replace `XXXXXXXX` with your public link code from App Store Connect → TestFlight → External Testing.)*
+
 ## Features
 
 ### 🔐 Authentication
