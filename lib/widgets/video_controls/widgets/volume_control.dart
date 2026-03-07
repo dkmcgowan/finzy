@@ -164,33 +164,27 @@ class _VolumeControlState extends State<VolumeControl> {
         final isMuted = volume == 0;
         final isKeyboardMode = InputModeTracker.isKeyboardMode(context);
 
-        final muteButton = Semantics(
-          label: isMuted ? t.videoControls.unmuteButton : t.videoControls.muteButton,
-          button: true,
-          excludeSemantics: true,
-          child: IconButton(
-            icon: AppIcon(
-              isMuted ? Symbols.volume_off_rounded : Symbols.volume_up_rounded,
-              fill: 1,
-              color: Colors.white,
-            ),
-            onPressed: () async {
-              final newVolume = isMuted ? 100.0 : 0.0;
-              widget.player.setVolume(newVolume);
-              final settings = await SettingsService.getInstance();
-              await settings.setVolume(newVolume);
-            },
+        final muteLabel = isMuted ? t.videoControls.unmuteButton : t.videoControls.muteButton;
+        final iconButton = IconButton(
+          icon: AppIcon(
+            isMuted ? Symbols.volume_off_rounded : Symbols.volume_up_rounded,
+            fill: 1,
+            color: Colors.white,
           ),
+          tooltip: null,
+          onPressed: () async {
+            final newVolume = isMuted ? 100.0 : 0.0;
+            widget.player.setVolume(newVolume);
+            final settings = await SettingsService.getInstance();
+            await settings.setVolume(newVolume);
+          },
         );
 
-        final isTV = PlatformDetector.isTV();
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.focusNode != null)
-              FocusableWrapper(
-                focusNode: widget.focusNode,
+        // When focusNode provided: FocusableWrapper provides semantics (avoids duplicate)
+        // When no focusNode: use Semantics for a11y
+        final muteButton = widget.focusNode != null
+            ? FocusableWrapper(
+                focusNode: widget.focusNode!,
                 onSelect: () => _toggleMute(isMuted),
                 enableLongPress: true,
                 onLongPress: _enterAdjustMode,
@@ -200,14 +194,22 @@ class _VolumeControlState extends State<VolumeControl> {
                 autoScroll: false,
                 useBackgroundFocus: true,
                 disableScale: true,
-                semanticLabel: () {
-                  if (_isAdjustMode) return t.videoControls.volumeSlider;
-                  return isMuted ? t.videoControls.unmuteButton : t.videoControls.muteButton;
-                }(),
-                child: muteButton,
+                semanticLabel: _isAdjustMode ? t.videoControls.volumeSlider : muteLabel,
+                child: Semantics(excludeSemantics: true, child: iconButton),
               )
-            else
-              muteButton,
+            : Semantics(
+                label: muteLabel,
+                button: true,
+                excludeSemantics: true,
+                child: iconButton,
+              );
+
+        final isTV = PlatformDetector.isTV();
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            muteButton,
             if (!isTV) ...[
               const SizedBox(width: 8),
               _buildVolumeSlider(volume, isKeyboardMode),

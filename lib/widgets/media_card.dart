@@ -243,6 +243,7 @@ class _MediaCardGrid extends StatelessWidget {
       child: Semantics(
         label: semanticLabel,
         button: true,
+        excludeSemantics: true,
         child: InkWell(
           canRequestFocus: false, // Keyboard handled by FocusableMediaCard
           onTap: onTap,
@@ -522,6 +523,7 @@ class _MediaCardList extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       button: true,
+      excludeSemantics: true,
       child: InkWell(
         canRequestFocus: false, // Keyboard handled by FocusableMediaCard
         onTap: onTap,
@@ -964,6 +966,7 @@ class _SkeletonLoaderState extends State<SkeletonLoader> with SingleTickerProvid
         return Semantics(
           label: "skeleton-loader",
           identifier: "skeleton-loader",
+          excludeSemantics: true,
           child: Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: _animation.value),

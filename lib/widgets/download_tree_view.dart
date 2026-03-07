@@ -903,9 +903,8 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
       disableScale: true,
       useBackgroundFocus: true,
       autoScroll: false,
+      semanticLabel: tooltip,
       child: Semantics(
-        label: tooltip,
-        button: true,
         excludeSemantics: true,
         child: GestureDetector(
           onTap: onPressed,

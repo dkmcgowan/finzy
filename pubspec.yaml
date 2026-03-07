@@ -87,7 +87,7 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/finzy.png"
-  adaptive_icon_background: "#ffffff"
+  adaptive_icon_background: "#1A1F2E"
   adaptive_icon_foreground: "assets/finzy_android_foreground.png"
   adaptive_icon_monochrome: "assets/finzy_monochrome.png"
   macos:

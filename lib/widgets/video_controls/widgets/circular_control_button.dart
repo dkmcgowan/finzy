@@ -36,6 +36,7 @@ class CircularControlButton extends StatelessWidget {
             size: iconSize,
           ),
           iconSize: iconSize,
+          tooltip: null,
           onPressed: onPressed,
         ),
       ),

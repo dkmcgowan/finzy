@@ -332,7 +332,9 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
         builder: (context, themeProvider, child) {
           return TranslationProvider(
             child: InputModeTracker(
-              child: MaterialApp(
+              child: TooltipVisibility(
+                visible: false,
+                child: MaterialApp(
                 title: t.app.title,
                 debugShowCheckedModeBanner: false,
                 theme: themeProvider.lightTheme,
@@ -341,6 +343,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
                 navigatorKey: navigatorKey,
                 navigatorObservers: [routeObserver, BackKeySuppressorObserver()],
                 home: const OrientationAwareSetup(),
+                ),
               ),
             ),
           );
