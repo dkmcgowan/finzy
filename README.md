@@ -36,6 +36,7 @@ All builds are available in the [releases](https://github.com/dkmcgowan/finzy/re
 
 - Sign in with Jellyfin (server URL + username/password or Quick Connect)
 - Multi-user support with profile switching
+- Quick Connect from Settings to add or re-authorize devices
 
 ### 📚 Media Browsing
 
@@ -44,6 +45,7 @@ All builds are available in the [releases](https://github.com/dkmcgowan/finzy/re
 - Collections and playlists
 - "More Like This" similar items on detail screens
 - Genre, favorites, and recommended tabs
+- Cast and crew — browse person detail pages and their filmography
 
 ### 🎬 Playback
 
@@ -53,6 +55,11 @@ All builds are available in the [releases](https://github.com/dkmcgowan/finzy/re
 - External subtitles (load on demand)
 - Trickplay timeline thumbnails
 - Chapter images and chapter navigation
+- Sleep timer
+- Picture-in-Picture (PIP)
+- External player option (VLC, PotPlayer, etc.)
+- Ambient lighting effect for letterbox bars
+- Player backends: MPV (desktop) or ExoPlayer (Android)
 
 ### ⏭️ Media Segments
 
@@ -64,6 +71,7 @@ All builds are available in the [releases](https://github.com/dkmcgowan/finzy/re
 ### 📥 Downloads
 
 - Download media for offline viewing
+- Offline mode — browse and play downloaded content when disconnected
 - Background downloads with queue management
 
 ### 📺 Live TV & DVR
@@ -71,6 +79,13 @@ All builds are available in the [releases](https://github.com/dkmcgowan/finzy/re
 - Watch live channels and browse the EPG
 - Schedule and manage recordings (timers, series timers)
 - Access recordings library
+
+### 📦 Content & Library
+
+- Rate items
+- Delete content (when you have permission)
+- Refresh library metadata
+- Trailers (local and remote) on detail screens
 
 ### 🔜 Coming Up
 
