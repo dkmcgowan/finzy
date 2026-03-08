@@ -46,7 +46,6 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 - Browse libraries with rich metadata
 - Advanced search across all media
 - Collections and playlists
-- "More Like This" similar items on detail screens
 - Genre, favorites, and recommended tabs
 - Cast and crew — browse person detail pages and their filmography
 
@@ -58,8 +57,6 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 - External subtitles (load on demand)
 - Trickplay timeline thumbnails
 - Chapter images and chapter navigation
-- Sleep timer
-- Picture-in-Picture (PIP)
 - External player option (VLC, PotPlayer, etc.)
 - Ambient lighting effect for letterbox bars
 - Player backends: MPV (desktop) or ExoPlayer (Android)
@@ -85,15 +82,9 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 
 ### 📦 Content & Library
 
-- Rate items
 - Delete content (when you have permission)
 - Refresh library metadata
 - Trailers (local and remote) on detail screens
-
-### 🔜 Coming Up
-
-- **SyncPlay** — Synchronized playback with friends (server-native, no relay)
-- **Remote control** — Cast to or control other Jellyfin sessions on your network
 
 *For a full feature list and roadmap, see [FEATURES.md](FEATURES.md).*
 
