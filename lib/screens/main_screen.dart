@@ -213,6 +213,10 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
         return;
       }
       await storage.clearPendingExternalReturn();
+      if (!mounted) {
+        onRestored?.call();
+        return;
+      }
 
       final multiServer = context.read<MultiServerProvider>();
       JellyfinClient? client;
@@ -235,7 +239,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
       Navigator.of(context).push(
         PageRouteBuilder(
-          pageBuilder: (context, _, __) => MediaDetailScreen(
+          pageBuilder: (context, _, _) => MediaDetailScreen(
             metadata: metadata,
             isOffline: false,
             onFirstBuild: onRestored,

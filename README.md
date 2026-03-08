@@ -14,9 +14,9 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 
 ## Download
 
-<a href='https://apps.apple.com/us/app/id6754315964'><img height='60' alt='Download on the App Store' src='./assets/app-store-badge.png'/></a>
-<a href='https://play.google.com/store/apps/details?id=com.dkmcgowan.finzy'><img height='60' alt='Get it on Google Play' src='./assets/play-store-badge.png'/></a>
-<a href='https://www.amazon.com/gp/product/B0GRRLSYDX'><img height='60' alt='Available at the Amazon App Store' src='./assets/amazon-badge.png'/></a>
+<a href='https://apps.apple.com/us/app/id6759632535' target='_blank' rel='noopener noreferrer'><img height='60' alt='Download on the App Store' src='./assets/app-store-badge.png'/></a>
+<a href='https://play.google.com/store/apps/details?id=com.dkmcgowan.finzy' target='_blank' rel='noopener noreferrer'><img height='60' alt='Get it on Google Play' src='./assets/play-store-badge.png'/></a>
+<a href='https://www.amazon.com/gp/product/B0GRRLSYDX' target='_blank' rel='noopener noreferrer'><img height='60' alt='Available at the Amazon App Store' src='./assets/amazon-badge.png'/></a>
 
 - [Windows (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest/download/finzy-windows-installer.exe)
 - [macOS (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest/download/finzy-macos.dmg)

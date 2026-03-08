@@ -409,15 +409,23 @@ class _SetupScreenState extends State<SetupScreen> {
 
     if (!mounted) return;
 
+    final multiServerProvider = context.read<MultiServerProvider>();
+    final librariesProvider = context.read<LibrariesProvider>();
+    final syncService = context.read<OfflineWatchSyncService>();
+    final downloadProvider = context.read<DownloadProvider>();
+    if (!mounted) return;
+
     try {
+
       final deviceId = await storage.getOrCreateDeviceId();
+      if (!mounted) return;
 
       // Retry connection on cold start — TV/phone network may not be ready immediately
       var result = await ServerConnectionOrchestrator.connectAndInitialize(
         servers: servers,
-        multiServerProvider: context.read<MultiServerProvider>(),
-        librariesProvider: context.read<LibrariesProvider>(),
-        syncService: context.read<OfflineWatchSyncService>(),
+        multiServerProvider: multiServerProvider,
+        librariesProvider: librariesProvider,
+        syncService: syncService,
         clientIdentifier: storage.getClientIdentifier(),
         deviceId: deviceId,
       );
@@ -425,12 +433,12 @@ class _SetupScreenState extends State<SetupScreen> {
       if (!result.hasConnections) {
         await Future<void>.delayed(const Duration(seconds: 2));
         if (!mounted) return;
-        context.read<MultiServerProvider>().clearAllConnections();
+        multiServerProvider.clearAllConnections();
         result = await ServerConnectionOrchestrator.connectAndInitialize(
           servers: servers,
-          multiServerProvider: context.read<MultiServerProvider>(),
-          librariesProvider: context.read<LibrariesProvider>(),
-          syncService: context.read<OfflineWatchSyncService>(),
+          multiServerProvider: multiServerProvider,
+          librariesProvider: librariesProvider,
+          syncService: syncService,
           clientIdentifier: storage.getClientIdentifier(),
           deviceId: deviceId,
         );
@@ -440,7 +448,6 @@ class _SetupScreenState extends State<SetupScreen> {
 
       if (result.hasConnections) {
         // Resume any downloads that were interrupted by app kill
-        final downloadProvider = context.read<DownloadProvider>();
         downloadProvider.ensureInitialized().then((_) {
           downloadProvider.resumeQueuedDownloads(result.firstClient!);
         });
@@ -459,7 +466,7 @@ class _SetupScreenState extends State<SetupScreen> {
             MaterialPageRoute(builder: (context) => const AuthScreen()),
           );
         } else {
-          await context.read<DownloadProvider>().ensureInitialized();
+          await downloadProvider.ensureInitialized();
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
@@ -471,7 +478,7 @@ class _SetupScreenState extends State<SetupScreen> {
       appLogger.e('Error during multi-server connection', error: e, stackTrace: stackTrace);
 
       if (mounted) {
-        await context.read<DownloadProvider>().ensureInitialized();
+        await downloadProvider.ensureInitialized();
         if (!mounted) return;
         Navigator.pushReplacement(
           context,

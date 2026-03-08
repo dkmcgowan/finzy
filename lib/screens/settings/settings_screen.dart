@@ -7,7 +7,6 @@ import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../models/hotkey_model.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../auth_screen.dart';
 import '../profile/jellyfin_profile_switch_screen.dart';
