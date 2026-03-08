@@ -97,7 +97,7 @@ jobs:
   upload-amazon-appstore:
     needs: build-android
     runs-on: ubuntu-latest
-    if: ${{ secrets.AMAZON_APP_ID != '' }}
+    if: vars.AMAZON_UPLOAD_ENABLED == 'true'
     steps:
       - uses: actions/checkout@v4
 
