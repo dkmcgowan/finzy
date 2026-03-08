@@ -67,6 +67,9 @@ jobs:
       - name: Build APK
         run: flutter build apk --release --dart-define=ENABLE_UPDATE_CHECK=true
 
+      - name: Build AAB
+        run: flutter build appbundle --release --dart-define=ENABLE_UPDATE_CHECK=true
+
       - name: Clean up keystore
         if: always()
         run: rm -f android/app/upload-keystore.jks android/key.properties
@@ -84,6 +87,39 @@ jobs:
         with:
           name: android-apk
           path: finzy-android.apk
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+
+  upload-amazon-appstore:
+    needs: build-android
+    runs-on: ubuntu-latest
+    if: ${{ secrets.AMAZON_APP_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Upload to Amazon Appstore
+        env:
+          AMAZON_APPSTORE_CLIENT_ID: ${{ secrets.AMAZON_APPSTORE_CLIENT_ID }}
+          AMAZON_APPSTORE_CLIENT_SECRET: ${{ secrets.AMAZON_APPSTORE_CLIENT_SECRET }}
+          AMAZON_APP_ID: ${{ secrets.AMAZON_APP_ID }}
+        run: python scripts/upload_amazon_appstore.py finzy-android.apk
 
   build-ios:
     runs-on: macos-26
@@ -524,6 +560,28 @@ jobs:
       - name: Build installer and portables
         run: .\windows\build-installer.ps1 -X64BuildDir "build-x64" -Arm64BuildDir "build-arm64"
 
+      - name: Setup Flutter for MSIX
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies for MSIX
+        run: flutter pub get
+
+      - name: Create MSIX build structure
+        run: |
+          New-Item -ItemType Directory -Path "build\windows\x64\runner\Release" -Force
+          New-Item -ItemType Directory -Path "build\windows\arm64\runner\Release" -Force
+          Copy-Item -Path "build-x64\*" -Destination "build\windows\x64\runner\Release\" -Recurse
+          Copy-Item -Path "build-arm64\*" -Destination "build\windows\arm64\runner\Release\" -Recurse
+
+      - name: Build MSIX x64
+        run: dart run msix:create --build-windows false --architecture x64 -n finzy-windows-x64
+
+      - name: Build MSIX arm64
+        run: dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64
+
       - name: Attest Windows artifacts
         uses: actions/attest-build-provenance@v2
         with:
@@ -531,6 +589,8 @@ jobs:
             finzy-windows-x64-portable.zip
             finzy-windows-arm64-portable.zip
             finzy-windows-installer.exe
+            finzy-windows-x64.msix
+            finzy-windows-arm64.msix
 
       - name: Upload x64 portable
         uses: actions/upload-artifact@v4
@@ -549,6 +609,14 @@ jobs:
         with:
           name: windows-installer
           path: finzy-windows-installer.exe
+
+      - name: Upload MSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msix
+          path: |
+            finzy-windows-x64.msix
+            finzy-windows-arm64.msix
 
   build-linux-x64:
     runs-on: ubuntu-latest
@@ -646,6 +714,7 @@ jobs:
             finzy-linux-x64.tar.gz
             finzy-linux-x64.deb
             finzy-linux-x64.rpm
+            finzy-linux-x64.pkg.tar.zst
 
       - name: Upload Linux x64 artifacts
         uses: actions/upload-artifact@v4
@@ -655,6 +724,7 @@ jobs:
             finzy-linux-x64.tar.gz
             finzy-linux-x64.deb
             finzy-linux-x64.rpm
+            finzy-linux-x64.pkg.tar.zst
 
   build-linux-arm64:
     runs-on: ubuntu-24.04-arm
@@ -762,6 +832,7 @@ jobs:
             finzy-linux-arm64.tar.gz
             finzy-linux-arm64.deb
             finzy-linux-arm64.rpm
+            finzy-linux-arm64.pkg.tar.zst
 
       - name: Upload Linux arm64 artifacts
         uses: actions/upload-artifact@v4
@@ -771,6 +842,7 @@ jobs:
             finzy-linux-arm64.tar.gz
             finzy-linux-arm64.deb
             finzy-linux-arm64.rpm
+            finzy-linux-arm64.pkg.tar.zst
 
   create-release:
     needs: [build-android, build-ios, build-macos, package-windows, build-linux-x64, build-linux-arm64]
@@ -812,6 +884,7 @@ jobs:
             artifacts/windows-x64-portable/finzy-windows-x64-portable.zip
             artifacts/windows-arm64-portable/finzy-windows-arm64-portable.zip
             artifacts/windows-installer/finzy-windows-installer.exe
+            artifacts/windows-msix/*
             artifacts/linux-x64/*
             artifacts/linux-arm64/*
           draft: true

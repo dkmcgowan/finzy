@@ -12,25 +12,25 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 
 *More screenshots in the [screenshots folder](assets/screenshots/#readme)*
 
-## Platforms
-
-Finzy runs on:
-
-
-| Platform    | Variants                                                    |
-| ----------- | ----------------------------------------------------------- |
-| **iOS**     | iPhone, iPad                                                |
-| **Android** | Phone, Tablet, TV (universal APK)                            |
-| **Windows** | x64, arm64 — installer and portable (.zip)                 |
-| **macOS**   | x64, arm64 (universal .dmg)                                 |
-| **Linux**   | x64, arm64 — .deb, .rpm, and portable .tar.gz               |
-
-
 ## Download
 
-All builds are available in the [releases](https://github.com/dkmcgowan/finzy/releases/latest) folder. Choose the build for your platform and architecture.
+<a href='https://apps.apple.com/us/app/id6754315964'><img height='60' alt='Download on the App Store' src='./assets/app-store-badge.png'/></a>
+<a href='https://play.google.com/store/apps/details?id=com.dkmcgowan.finzy'><img height='60' alt='Get it on Google Play' src='./assets/play-store-badge.png'/></a>
+<a href='https://www.amazon.com/gp/product/B0GRRLSYDX'><img height='60' alt='Available at the Amazon App Store' src='./assets/amazon-badge.png'/></a>
 
-**iOS / iPad** — Test the beta via [TestFlight](https://testflight.apple.com/join/XXXXXXXX). *(Replace `XXXXXXXX` with your public link code from App Store Connect → TestFlight → External Testing.)*
+- [Windows (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest/download/finzy-windows-installer.exe)
+- [macOS (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest/download/finzy-macos.dmg)
+- [Linux (x64, arm64)](https://github.com/dkmcgowan/finzy/releases/latest) - .deb, .rpm, .pkg.tar.zst, and portable tar.gz available
+## - [NixOS/Nix](https://github.com/mio-19/nurpkgs/tree/main/pkgs/finzy) - Community package by [@mio-19](https://github.com/mio-19)
+- **Homebrew** (macOS):
+  ```bash
+  brew tap dkmcgowan/finzy https://github.com/dkmcgowan/finzy
+  brew install --cask finzy
+  ```
+## - **WinGet** (Windows):
+##   ```bash
+##   winget install dkmcgowan.finzy
+##   ```
 
 ## Features
 

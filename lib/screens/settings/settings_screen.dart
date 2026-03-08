@@ -36,7 +36,6 @@ import '../../services/download_storage_service.dart';
 import '../../services/saf_storage_service.dart';
 import '../../services/keyboard_shortcuts_service.dart';
 import '../../services/settings_service.dart' as settings;
-import '../../services/update_service.dart';
 import '../../utils/dialogs.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../utils/platform_detector.dart';
@@ -77,7 +76,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kVideoPlayback = 'video_playback';
 
   static const _kAdvanced = 'advanced';
-  static const _kUpdates = 'updates';
   static const _kAbout = 'about';
   static const _kSwitchProfile = 'switch_profile';
   static const _kQuickConnect = 'quick_connect';
@@ -128,7 +126,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kViewLogs = 'view_logs';
   static const _kClearCache = 'clear_cache';
   static const _kResetSettings = 'reset_settings';
-  static const _kCheckForUpdates = 'check_for_updates';
   static const _kSupportCoffee = 'support_coffee';
   static const _kSupportLunch = 'support_lunch';
   static const _kSupportDev = 'support_dev';
@@ -168,10 +165,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   bool _useExoPlayerForLiveTv = false; // Android only: Live TV player (default MPV)
   bool _confirmExitOnBack = true;
   bool _hideSupportDevelopment = false;
-
-  // Update checking state
-  bool _isCheckingForUpdate = false;
-  Map<String, dynamic>? _updateInfo;
 
   final _sectionNotifier = ValueNotifier<int>(0);
 
@@ -398,14 +391,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                     _buildAdvancedContent,
                     firstFocusNode: _focusTracker.get(_kImageQuality),
                   ),
-                  if (UpdateService.isUpdateCheckEnabled)
-                    _buildSectionNavTile(
-                      _kUpdates,
-                      t.settings.updates,
-                      Symbols.system_update_rounded,
-                      _buildUpdateContent,
-                      firstFocusNode: _focusTracker.get(_kCheckForUpdates),
-                    ),
                   ListTile(
                     focusNode: _focusTracker.get(_kSwitchProfile),
                     leading: const AppIcon(Symbols.switch_account_rounded, fill: 1),
@@ -1555,39 +1540,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     );
   }
 
-  Widget _buildUpdateContent() {
-    final hasUpdate = _updateInfo != null && _updateInfo!['hasUpdate'] == true;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ListTile(
-            focusNode: _focusTracker.get(_kCheckForUpdates),
-            leading: AppIcon(
-              hasUpdate ? Symbols.system_update_rounded : Symbols.check_circle_rounded,
-              fill: 1,
-              color: hasUpdate ? Colors.orange : null,
-            ),
-            title: Text(hasUpdate ? t.settings.updateAvailable : t.settings.checkForUpdates),
-            subtitle: hasUpdate ? Text(t.update.versionAvailable(version: _updateInfo!['latestVersion'])) : null,
-            trailing: _isCheckingForUpdate
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                : const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-            onTap: _isCheckingForUpdate
-                ? null
-                : () {
-                    if (hasUpdate) {
-                      _showUpdateDialog();
-                    } else {
-                      _checkForUpdates();
-                    }
-                  },
-        ),
-      ],
-    );
-  }
-
-
   void _showThemeDialog(ThemeProvider themeProvider) {
     showDialog(
       context: context,
@@ -2198,77 +2150,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   void _restartApp() {
     // Navigate to the root and remove all previous routes
     Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-  }
-
-  Future<void> _checkForUpdates() async {
-    setState(() {
-      _isCheckingForUpdate = true;
-    });
-
-    try {
-      final updateInfo = await UpdateService.checkForUpdates();
-
-      if (mounted) {
-        setState(() {
-          _updateInfo = updateInfo;
-          _isCheckingForUpdate = false;
-        });
-
-        if (updateInfo == null || updateInfo['hasUpdate'] != true) {
-          // Show "no updates" message
-          showAppSnackBar(context, t.update.latestVersion);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isCheckingForUpdate = false;
-        });
-
-        showErrorSnackBar(context, t.update.checkFailed);
-      }
-    }
-  }
-
-  void _showUpdateDialog() {
-    if (_updateInfo == null) return;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(t.settings.updateAvailable),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t.update.versionAvailable(version: _updateInfo!['latestVersion']),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                t.update.currentVersion(version: _updateInfo!['currentVersion']),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.close)),
-            FilledButton(
-              onPressed: () async {
-                final url = Uri.parse(_updateInfo!['releaseUrl']);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: Text(t.update.viewRelease),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   /// Generic option selection dialog for settings with SettingsProvider
