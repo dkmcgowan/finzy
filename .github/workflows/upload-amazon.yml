@@ -1,0 +1,43 @@
+name: Upload to Amazon Appstore
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  upload-amazon:
+    runs-on: ubuntu-latest
+    if: vars.AMAZON_UPLOAD_ENABLED == 'true'
+    permissions:
+      contents: read
+    steps:
+      - name: Get release version
+        id: release
+        run: |
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION=$(gh release view --json tagName -q .tagName)
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download APK from release
+        run: |
+          curl -L -o finzy-android.apk \
+            "https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.version }}/finzy-android.apk"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Upload to Amazon Appstore
+        env:
+          AMAZON_APPSTORE_CLIENT_ID: ${{ secrets.AMAZON_APPSTORE_CLIENT_ID }}
+          AMAZON_APPSTORE_CLIENT_SECRET: ${{ secrets.AMAZON_APPSTORE_CLIENT_SECRET }}
+          AMAZON_APP_ID: ${{ secrets.AMAZON_APP_ID }}
+        run: python scripts/upload_amazon_appstore.py finzy-android.apk

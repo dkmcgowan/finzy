@@ -94,33 +94,6 @@ jobs:
           name: android-aab
           path: build/app/outputs/bundle/release/app-release.aab
 
-  upload-amazon-appstore:
-    needs: build-android
-    runs-on: ubuntu-latest
-    if: vars.AMAZON_UPLOAD_ENABLED == 'true'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download APK
-        uses: actions/download-artifact@v4
-        with:
-          name: android-apk
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install requests
-        run: pip install requests
-
-      - name: Upload to Amazon Appstore
-        env:
-          AMAZON_APPSTORE_CLIENT_ID: ${{ secrets.AMAZON_APPSTORE_CLIENT_ID }}
-          AMAZON_APPSTORE_CLIENT_SECRET: ${{ secrets.AMAZON_APPSTORE_CLIENT_SECRET }}
-          AMAZON_APP_ID: ${{ secrets.AMAZON_APP_ID }}
-        run: python scripts/upload_amazon_appstore.py finzy-android.apk
-
   build-ios:
     runs-on: macos-26
     permissions:
@@ -879,6 +852,7 @@ jobs:
         with:
           files: |
             artifacts/android-apk/finzy-android.apk
+            artifacts/android-aab/app-release.aab
             artifacts/ios-ipa/finzy-ios.ipa
             artifacts/macos-dmg/finzy-macos.dmg
             artifacts/windows-x64-portable/finzy-windows-x64-portable.zip

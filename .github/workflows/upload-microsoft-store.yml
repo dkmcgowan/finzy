@@ -1,0 +1,54 @@
+name: Upload to Microsoft Store
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  upload-microsoft-store:
+    runs-on: ubuntu-latest
+    if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
+    permissions:
+      contents: read
+    steps:
+      - name: Get release version
+        id: release
+        run: |
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION=$(gh release view --json tagName -q .tagName)
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Download MSIX packages from release
+        run: |
+          VERSION="${{ steps.release.outputs.version }}"
+          curl -L -o finzy-windows-x64.msix \
+            "https://github.com/${{ github.repository }}/releases/download/$VERSION/finzy-windows-x64.msix"
+          curl -L -o finzy-windows-arm64.msix \
+            "https://github.com/${{ github.repository }}/releases/download/$VERSION/finzy-windows-arm64.msix"
+
+      - name: Setup Microsoft Store Developer CLI
+        uses: microsoft/microsoft-store-apppublisher@v1.3
+
+      - name: Configure Microsoft Store Developer CLI
+        run: |
+          msstore reconfigure \
+            --tenantId "${{ secrets.MICROSOFT_STORE_TENANT_ID }}" \
+            --sellerId "${{ secrets.MICROSOFT_STORE_SELLER_ID }}" \
+            --clientId "${{ secrets.MICROSOFT_STORE_CLIENT_ID }}" \
+            --clientSecret "${{ secrets.MICROSOFT_STORE_CLIENT_SECRET }}"
+
+      - name: Publish MSIX to Microsoft Store
+        run: |
+          # MSStore CLI (Microsoft's preferred tool for MSIX) - publishes our pre-built packages.
+          # x64 first; arm64 second. If both can't be in one submission, x64 will succeed.
+          msstore publish . -i finzy-windows-x64.msix -id "${{ secrets.MICROSOFT_STORE_PRODUCT_ID }}"
+          msstore publish . -i finzy-windows-arm64.msix -id "${{ secrets.MICROSOFT_STORE_PRODUCT_ID }}" || true

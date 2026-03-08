@@ -27,10 +27,10 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
   brew tap dkmcgowan/finzy https://github.com/dkmcgowan/finzy
   brew install --cask finzy
   ```
-## - **WinGet** (Windows):
-##   ```bash
-##   winget install dkmcgowan.finzy
-##   ```
+- **WinGet** (Windows):
+  ```powershell
+  winget install dkmcgowan.finzy
+  ```
 
 ## Features
 
