@@ -86,10 +86,16 @@ def main():
     }
 
     if apks_list:
-        # Replace existing APK
+        # Replace existing APK - ETag comes from response headers, not JSON body
         first_apk = apks_list[0]
         apk_id = first_apk["id"]
-        etag = first_apk.get("etag", "")
+        # GET the specific APK to retrieve ETag from response headers
+        apk_get = requests.get(f"{apks_url}/{apk_id}", headers=headers)
+        apk_get.raise_for_status()
+        etag = apk_get.headers.get("ETag", "").strip()
+        if not etag:
+            print("ERROR: No ETag in APK response headers. Cannot replace.", file=sys.stderr)
+            sys.exit(1)
         replace_url = f"{apks_url}/{apk_id}/replace"
         apk_headers["If-Match"] = etag
         resp = requests.put(replace_url, headers=apk_headers, data=apk_data)
