@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Upload AAB to Google Play Internal Testing via Android Publisher API.
+Upload AAB to Google Play Closed Testing (alpha) via Android Publisher API.
 
 Uses the Edits API: create edit, upload bundle, add to track release, commit.
 Ensures the bundle is properly attached to the release (fixes r0adkll draft issue).
@@ -27,7 +27,7 @@ except ImportError:
 
 SCOPES = ["https://www.googleapis.com/auth/androidpublisher"]
 PACKAGE_NAME = "com.dkmcgowan.finzy"
-TRACK = "internal"  # internal testing; API may require "qa" - change if track invalid
+TRACK = "alpha"  # closed testing
 
 
 def main():
