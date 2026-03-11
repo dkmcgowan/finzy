@@ -110,9 +110,18 @@ def main():
         print(f"Amazon API error {resp.status_code}: {resp.text}", file=sys.stderr)
     resp.raise_for_status()
 
+    # Get fresh ETag for edit (it changed after APK replace/upload) - required for commit
+    edit_get = requests.get(f"{BASE_URL}/v1/applications/{app_id}/edits/{edit_id}", headers=headers)
+    edit_get.raise_for_status()
+    edit_etag = edit_get.headers.get("ETag", "").strip()
+    if not edit_etag:
+        print("ERROR: No ETag in edit response headers. Cannot commit.", file=sys.stderr)
+        sys.exit(1)
+
     # Commit edit
     commit_url = f"{BASE_URL}/v1/applications/{app_id}/edits/{edit_id}/commit"
-    commit_resp = requests.post(commit_url, headers=headers)
+    commit_headers = {**headers, "If-Match": edit_etag}
+    commit_resp = requests.post(commit_url, headers=commit_headers)
     if commit_resp.status_code == 412:
         print("", file=sys.stderr)
         print("ERROR: App is still in Amazon review. The API cannot update apps", file=sys.stderr)

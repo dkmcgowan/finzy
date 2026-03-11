@@ -58,5 +58,4 @@ jobs:
           releaseName: ${{ steps.release.outputs.version }}
           track: internal
           status: completed
-          changesNotSentForReview: true
           whatsNewDirectory: whatsnew
