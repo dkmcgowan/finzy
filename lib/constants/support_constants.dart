@@ -3,8 +3,6 @@
 /// Configure before release:
 /// - [kPayPalMeUsername]: Your PayPal.Me username for desktop (Linux, Mac, Windows).
 ///   Set to null to hide the section on desktop.
-/// - Product IDs in [SupportTier]: Create consumable products in App Store Connect
-///   and Google Play Console.
 library;
 
 /// PayPal.Me username for desktop tips.
@@ -13,11 +11,10 @@ library;
 const String? kPayPalMeUsername = 'dkmcgowan';
 
 enum SupportTier {
-  coffee(2.99, 'finzy_tip_coffee'),
-  lunch(9.99, 'finzy_tip_lunch'),
-  support(19.99, 'finzy_tip_support');
+  coffee(2.99),
+  lunch(9.99),
+  support(19.99);
 
-  const SupportTier(this.amount, this.productId);
+  const SupportTier(this.amount);
   final double amount;
-  final String productId;
 }

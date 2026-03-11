@@ -34,7 +34,6 @@ import 'services/offline_watch_sync_service.dart';
 import 'services/server_connection_orchestrator.dart';
 import 'services/data_aggregation_service.dart';
 import 'services/in_app_review_service.dart';
-import 'services/support_service.dart';
 import 'models/registered_server.dart';
 import 'services/jellyfin_auth_service.dart';
 import 'services/server_registry.dart';
@@ -229,13 +228,10 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     // Start in-app review session tracking
     InAppReviewService.instance.startSession();
 
-    // Support/tips: listen for IAP purchase updates on iOS/Android
-    SupportService.instance.init();
   }
 
   @override
   void dispose() {
-    SupportService.instance.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

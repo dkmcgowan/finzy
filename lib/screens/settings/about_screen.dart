@@ -9,7 +9,6 @@ import '../../focus/focus_utils.dart';
 import '../../services/settings_service.dart';
 import '../../services/support_service.dart';
 import '../../services/update_service.dart';
-import '../../utils/platform_detector.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import '../../i18n/strings.g.dart';
@@ -205,8 +204,7 @@ class _AboutScreenState extends State<AboutScreen> {
               ],
 
               if (SupportService.instance.isAvailable &&
-                  !PlatformDetector.isAmazon() &&
-                  !PlatformDetector.isTV()) ...[
+                  (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) ...[
                 const SizedBox(height: 8),
 
                 Card(

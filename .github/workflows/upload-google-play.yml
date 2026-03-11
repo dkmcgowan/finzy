@@ -62,7 +62,7 @@ jobs:
           fi
           echo "Secret is set (length: ${#KEY_JSON} chars)"
 
-      - name: Upload to Google Play (Closed Testing)
+      - name: Upload to Google Play (Internal Testing)
         env:
           GOOGLE_PLAY_SERVICE_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_JSON }}
           GOOGLE_PLAY_RELEASE_NAME: ${{ steps.release.outputs.version }}
