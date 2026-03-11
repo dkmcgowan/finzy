@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get release version
+      - name: Get release info and notes
         id: release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -26,6 +26,14 @@ jobs:
             VERSION=$(gh release view --repo ${{ github.repository }} --json tagName -q .tagName)
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          RELEASE_JSON=$(gh release view "$VERSION" --repo ${{ github.repository }} --json body)
+          BODY=$(echo "$RELEASE_JSON" | jq -r '.body // ""')
+          if [ -n "$BODY" ] && [ "$BODY" != "null" ]; then
+            echo "$BODY" | sed 's/^#* *//g' | head -c 500 > release-notes.txt
+          else
+            echo "What's new in $VERSION" > release-notes.txt
+          fi
 
       - name: Download APK from release
         run: |
@@ -45,4 +53,6 @@ jobs:
           AMAZON_APPSTORE_CLIENT_ID: ${{ secrets.AMAZON_APPSTORE_CLIENT_ID }}
           AMAZON_APPSTORE_CLIENT_SECRET: ${{ secrets.AMAZON_APPSTORE_CLIENT_SECRET }}
           AMAZON_APP_ID: ${{ secrets.AMAZON_APP_ID }}
-        run: python scripts/upload_amazon_appstore.py finzy-android.apk
+        run: |
+          export AMAZON_RELEASE_NOTES="$(cat release-notes.txt)"
+          python scripts/upload_amazon_appstore.py finzy-android.apk

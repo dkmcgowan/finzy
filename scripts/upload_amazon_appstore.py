@@ -3,10 +3,11 @@
 Upload APK to Amazon Appstore via App Submission API.
 
 Note: Amazon's App Submission API does NOT support AAB - only APK.
-Uses: LWA token, create/get edit, replace APK, commit edit.
+Uses: LWA token, create/get edit, replace APK, update listing (recent changes), commit edit.
 
 Usage: python scripts/upload_amazon_appstore.py <apk_path>
 Env: AMAZON_APPSTORE_CLIENT_ID, AMAZON_APPSTORE_CLIENT_SECRET, AMAZON_APP_ID
+      AMAZON_RELEASE_NOTES (optional, for en-US recent changes - required for commit)
 """
 import os
 import sys
@@ -109,6 +110,25 @@ def main():
     if not resp.ok:
         print(f"Amazon API error {resp.status_code}: {resp.text}", file=sys.stderr)
     resp.raise_for_status()
+
+    # Update en-US listing recent changes (required for commit)
+    release_notes = os.environ.get("AMAZON_RELEASE_NOTES", "").strip() or "Bug fixes and improvements."
+    listings_url = f"{BASE_URL}/v1/applications/{app_id}/edits/{edit_id}/listings"
+    listing_get = requests.get(f"{listings_url}/en-US", headers=headers)
+    listing_get.raise_for_status()
+    listing_data = listing_get.json()
+    listing_etag = listing_get.headers.get("ETag", "").strip()
+    if not listing_etag:
+        print("ERROR: No ETag in listing response. Cannot update recent changes.", file=sys.stderr)
+        sys.exit(1)
+    listing_data["recentChanges"] = release_notes
+    listing_put = requests.put(
+        f"{listings_url}/en-US",
+        headers={**headers, "Content-Type": "application/json", "If-Match": listing_etag},
+        json=listing_data,
+    )
+    listing_put.raise_for_status()
+    print("Updated en-US recent changes")
 
     # Get fresh ETag for edit (it changed after APK replace/upload) - required for commit
     edit_get = requests.get(f"{BASE_URL}/v1/applications/{app_id}/edits/{edit_id}", headers=headers)

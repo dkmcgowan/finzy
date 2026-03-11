@@ -57,5 +57,5 @@ jobs:
           releaseFiles: app-release.aab
           releaseName: ${{ steps.release.outputs.version }}
           track: internal
-          status: completed
+          status: draft
           whatsNewDirectory: whatsnew
