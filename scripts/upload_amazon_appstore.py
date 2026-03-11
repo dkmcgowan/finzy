@@ -118,6 +118,8 @@ def main():
         print("ERROR: App is still in Amazon review. The API cannot update apps", file=sys.stderr)
         print("while they are pending approval. Wait until the app is Live, then retry.", file=sys.stderr)
         sys.exit(1)
+    if not commit_resp.ok:
+        print(f"Amazon commit error {commit_resp.status_code}: {commit_resp.text}", file=sys.stderr)
     commit_resp.raise_for_status()
     print("Committed edit - app submitted for review")
 
