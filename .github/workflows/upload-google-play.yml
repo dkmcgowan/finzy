@@ -38,6 +38,8 @@ jobs:
         run: |
           curl -L -o app-release.aab \
             "https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.version }}/app-release.aab"
+          ls -la app-release.aab
+          echo "AAB size: $(wc -c < app-release.aab) bytes"
 
       - name: Verify Google Play secret
         env:
