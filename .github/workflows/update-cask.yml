@@ -39,6 +39,7 @@ jobs:
           git add Casks/finzy.rb
           if ! git diff --staged --quiet; then
             git commit -m "chore: update cask to ${{ steps.release.outputs.version }}"
+            git pull --rebase origin "$BRANCH"
             git push origin "HEAD:$BRANCH"
           else
             echo "No cask changes to commit."
