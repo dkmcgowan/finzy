@@ -27,9 +27,19 @@ jobs:
           curl -L -o app-release.aab \
             "https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.version }}/app-release.aab"
 
+      - name: Verify Google Play secret
+        env:
+          KEY_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_JSON }}
+        run: |
+          if [ -z "$KEY_JSON" ]; then
+            echo "::error::GOOGLE_PLAY_SERVICE_JSON secret is empty or not set. Add it in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          echo "Secret is set (length: ${#KEY_JSON} chars)"
+
       - name: Upload to Google Play
         uses: italankin/google-play-aab-uploader@1.3
         with:
           package-name: com.dkmcgowan.finzy
           aab-path: app-release.aab
-          key-json: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          key-json: ${{ secrets.GOOGLE_PLAY_SERVICE_JSON }}
