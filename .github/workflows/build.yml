@@ -68,6 +68,7 @@ jobs:
         run: flutter build apk --release --dart-define=ENABLE_UPDATE_CHECK=true
 
       - name: Build AAB
+        if: vars.GOOGLE_PLAY_UPLOAD_ENABLED == 'true'
         run: flutter build appbundle --release --dart-define=ENABLE_UPDATE_CHECK=true
 
       - name: Clean up keystore
@@ -89,6 +90,7 @@ jobs:
           path: finzy-android.apk
 
       - name: Upload AAB
+        if: vars.GOOGLE_PLAY_UPLOAD_ENABLED == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: android-aab
@@ -233,7 +235,7 @@ jobs:
           zip -r build/ios/ipa/finzy.ipa Payload
 
       - name: Upload to TestFlight
-        if: steps.import-cert.outputs.imported == 'true'
+        if: steps.import-cert.outputs.imported == 'true' && vars.APPLE_STORE_UPLOAD == 'true'
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
@@ -534,15 +536,18 @@ jobs:
         run: .\windows\build-installer.ps1 -X64BuildDir "build-x64" -Arm64BuildDir "build-arm64"
 
       - name: Setup Flutter for MSIX
+        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           cache: true
 
       - name: Install dependencies for MSIX
+        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         run: flutter pub get
 
       - name: Create MSIX build structure
+        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         run: |
           New-Item -ItemType Directory -Path "build\windows\x64\runner\Release" -Force
           New-Item -ItemType Directory -Path "build\windows\arm64\runner\Release" -Force
@@ -550,10 +555,26 @@ jobs:
           Copy-Item -Path "build-arm64\*" -Destination "build\windows\arm64\runner\Release\" -Recurse
 
       - name: Build MSIX x64
-        run: dart run msix:create --build-windows false --architecture x64 -n finzy-windows-x64
+        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
+        env:
+          MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
+        run: |
+          if ($env:MSIX_PUBLISHER) {
+            dart run msix:create --build-windows false --architecture x64 -n finzy-windows-x64 --publisher $env:MSIX_PUBLISHER
+          } else {
+            dart run msix:create --build-windows false --architecture x64 -n finzy-windows-x64
+          }
 
       - name: Build MSIX arm64
-        run: dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64
+        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
+        env:
+          MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
+        run: |
+          if ($env:MSIX_PUBLISHER) {
+            dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64 --publisher $env:MSIX_PUBLISHER
+          } else {
+            dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64
+          }
 
       - name: Attest Windows artifacts
         uses: actions/attest-build-provenance@v2
@@ -562,6 +583,12 @@ jobs:
             finzy-windows-x64-portable.zip
             finzy-windows-arm64-portable.zip
             finzy-windows-installer.exe
+
+      - name: Attest Windows MSIX
+        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
             finzy-windows-x64.msix
             finzy-windows-arm64.msix
 
@@ -584,6 +611,7 @@ jobs:
           path: finzy-windows-installer.exe
 
       - name: Upload MSIX
+        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: windows-msix
@@ -831,6 +859,28 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R artifacts
 
+      - name: Prepare release files list
+        id: release-files
+        run: |
+          {
+            echo "artifacts/android-apk/finzy-android.apk"
+            [ -f "artifacts/android-aab/app-release.aab" ] && echo "artifacts/android-aab/app-release.aab"
+            echo "artifacts/ios-ipa/finzy-ios.ipa"
+            echo "artifacts/macos-dmg/finzy-macos.dmg"
+            echo "artifacts/windows-x64-portable/finzy-windows-x64-portable.zip"
+            echo "artifacts/windows-arm64-portable/finzy-windows-arm64-portable.zip"
+            echo "artifacts/windows-installer/finzy-windows-installer.exe"
+            if [ -d "artifacts/windows-msix" ]; then
+              echo "artifacts/windows-msix/finzy-windows-x64.msix"
+              echo "artifacts/windows-msix/finzy-windows-arm64.msix"
+            fi
+            echo "artifacts/linux-x64/*"
+            echo "artifacts/linux-arm64/*"
+          } > release-files.txt
+          echo "paths<<EOF" >> $GITHUB_OUTPUT
+          cat release-files.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Delete existing release assets
         continue-on-error: true
         run: |
@@ -850,17 +900,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/android-apk/finzy-android.apk
-            artifacts/android-aab/app-release.aab
-            artifacts/ios-ipa/finzy-ios.ipa
-            artifacts/macos-dmg/finzy-macos.dmg
-            artifacts/windows-x64-portable/finzy-windows-x64-portable.zip
-            artifacts/windows-arm64-portable/finzy-windows-arm64-portable.zip
-            artifacts/windows-installer/finzy-windows-installer.exe
-            artifacts/windows-msix/*
-            artifacts/linux-x64/*
-            artifacts/linux-arm64/*
+          files: ${{ steps.release-files.outputs.paths }}
           draft: true
           prerelease: false
           generate_release_notes: true

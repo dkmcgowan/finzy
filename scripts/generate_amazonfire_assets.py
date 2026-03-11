@@ -3,7 +3,7 @@
 Generate Amazon Fire Store assets from existing screenshots and icons.
 
 Amazon Fire Tablet:
-- Screenshots: 800x480, 1024x600, 1280x720, 1280x800, 1920x1080, 1920x1200, 2560x1600
+- Screenshots: 1920x1200 (4 images, stretch-to-fit from root tablet-*)
 - Icons: 512x512, 114x114 (PNG, transparent)
 
 Amazon Fire TV:
@@ -27,8 +27,8 @@ ANDROID_RES = os.path.join(REPO_ROOT, "android", "app", "src", "main", "res")
 AMAZONFIRE_TABLET = os.path.join(SCREENSHOTS, "amazonfire-tablet")
 AMAZONFIRE_TV = os.path.join(SCREENSHOTS, "amazonfire-tv")
 
-# Amazon Fire Tablet screenshot sizes (larger resolutions only; Amazon scales down)
-TABLET_SIZES = [(1920, 1080), (1920, 1200), (2560, 1600)]
+# Amazon Fire Tablet: single resolution 1920x1200 (best aspect match for tablet source)
+TABLET_SIZE = (1920, 1200)
 
 # Tablet icon sizes (PNG, transparent)
 TABLET_ICON_SIZES = [512, 114]
@@ -50,35 +50,27 @@ def main():
     os.makedirs(AMAZONFIRE_TV, exist_ok=True)
 
     # --- Tablet screenshots ---
-    # Prefer appstore-ipad (2752x2064), fallback to tablet-*
+    # Use root tablet-* (2800x1752); resize/stretch to 1920x1200 (best aspect match)
     tablet_sources = [
-        ("tablet-home", os.path.join(SCREENSHOTS, "appstore-ipad", "tablet-home.png")),
-        ("tablet-library", os.path.join(SCREENSHOTS, "appstore-ipad", "tablet-library.png")),
-        ("tablet-media-card", os.path.join(SCREENSHOTS, "appstore-ipad", "tablet-media-card.png")),
-        ("tablet-season", os.path.join(SCREENSHOTS, "appstore-ipad", "tablet-season.png")),
+        ("tablet-home", os.path.join(SCREENSHOTS, "tablet-home.png")),
+        ("tablet-library", os.path.join(SCREENSHOTS, "tablet-library.png")),
+        ("tablet-media-card", os.path.join(SCREENSHOTS, "tablet-media-card.png")),
+        ("tablet-season", os.path.join(SCREENSHOTS, "tablet-season.png")),
     ]
+    w, h = TABLET_SIZE
     for name, path in tablet_sources:
         if not os.path.isfile(path):
-            alt = os.path.join(SCREENSHOTS, f"{name}.png")
-            if os.path.isfile(alt):
-                path = alt
-            else:
-                print(f"  Skip {name}: not found", flush=True)
-                continue
+            print(f"  Skip {name}: not found", flush=True)
+            continue
         try:
             img = Image.open(path).convert("RGB")
         except Exception as e:
             print(f"  Skip {name}: {e}", flush=True)
             continue
-        for w, h in TABLET_SIZES:
-            out = Image.new("RGB", (w, h), (0, 0, 0))
-            img.thumbnail((w, h), Image.LANCZOS)
-            paste_x = (w - img.width) // 2
-            paste_y = (h - img.height) // 2
-            out.paste(img, (paste_x, paste_y))
-            out_path = os.path.join(AMAZONFIRE_TABLET, f"{name}-{w}x{h}.png")
-            out.save(out_path, "PNG")
-            print(f"  Wrote {out_path}")
+        out = img.resize((w, h), Image.LANCZOS)
+        out_path = os.path.join(AMAZONFIRE_TABLET, f"{name}-{w}x{h}.png")
+        out.save(out_path, "PNG")
+        print(f"  Wrote {out_path}")
         img.close()
 
     # --- Tablet icons (512x512, 114x114, transparent) ---
