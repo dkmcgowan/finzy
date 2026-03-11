@@ -100,6 +100,8 @@ def main():
         resp = requests.post(upload_url, headers=apk_headers, data=apk_data)
         print("Uploaded new APK")
 
+    if not resp.ok:
+        print(f"Amazon API error {resp.status_code}: {resp.text}", file=sys.stderr)
     resp.raise_for_status()
 
     # Commit edit
