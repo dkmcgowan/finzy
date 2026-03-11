@@ -1,0 +1,120 @@
+name: Upload to App Store (TestFlight)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  upload-apple:
+    runs-on: macos-latest
+    if: vars.APPLE_STORE_UPLOAD_ENABLED == 'true'
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get release info and notes
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION=$(gh release view --repo ${{ github.repository }} --json tagName -q .tagName)
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          RELEASE_JSON=$(gh release view "$VERSION" --repo ${{ github.repository }} --json body)
+          BODY=$(echo "$RELEASE_JSON" | jq -r '.body // ""')
+          if [ -n "$BODY" ] && [ "$BODY" != "null" ]; then
+            echo "$BODY" | sed 's/^#* *//g' | head -c 4000 > release-notes.txt
+          else
+            echo "What's new in $VERSION" > release-notes.txt
+          fi
+          echo "notes<<NOTES_EOF" >> $GITHUB_OUTPUT
+          cat release-notes.txt >> $GITHUB_OUTPUT
+          echo "NOTES_EOF" >> $GITHUB_OUTPUT
+
+          # Derive build number from version (e.g. 0.1.7 -> 7)
+          BUILD=$(echo "$VERSION" | sed -n 's/.*\.\([0-9]*\)$/\1/p')
+          if [ -z "$BUILD" ]; then
+            BUILD="0"
+          fi
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
+
+      - name: Download IPA from release
+        run: |
+          curl -L -o finzy-ios.ipa \
+            "https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.version }}/finzy-ios.ipa"
+
+      - name: Setup App Store Connect API key
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: |
+          if [ -z "$APP_STORE_CONNECT_API_KEY_ID" ] || [ -z "$APP_STORE_CONNECT_API_KEY_P8" ]; then
+            echo "::error::APP_STORE_CONNECT_API_KEY_ID and APP_STORE_CONNECT_API_KEY_P8 secrets are required."
+            exit 1
+          fi
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY_P8" | base64 --decode -o ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+
+      - name: Upload to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+        run: |
+          echo "Uploading finzy-ios.ipa to App Store Connect..."
+          xcrun altool --upload-app \
+            --type ios \
+            --file finzy-ios.ipa \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
+          echo "Upload complete - build submitted for processing"
+
+      - name: Wait for build processing
+        run: |
+          echo "Waiting 15 minutes for Apple to process the build..."
+          sleep 900
+
+      - name: Add TestFlight release notes
+        if: vars.APP_STORE_CONNECT_APP_ID != ''
+        uses: nthState/UploadTestFlightReleaseNotes@v2.0.1
+        with:
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          APP_ID: ${{ vars.APP_STORE_CONNECT_APP_ID }}
+          WHATS_NEW: ${{ steps.release.outputs.notes }}
+          BUILD_NUMBER: ${{ steps.release.outputs.build }}
+          PLATFORM: IOS
+          ATTEMPTS: "15"
+
+      # Updates BetaAppReviewDetail + BetaAppLocalization from .github/testflight-instructions.yaml
+      # Requires secret: TESTFLIGHT_DEMO_PASSWORD (demo account password)
+      - name: Update TestFlight review info
+        if: vars.APP_STORE_CONNECT_APP_ID != '' && vars.APPLE_SUBMIT_FOR_REVIEW == 'true'
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          APP_STORE_CONNECT_APP_ID: ${{ vars.APP_STORE_CONNECT_APP_ID }}
+          TESTFLIGHT_DEMO_PASSWORD: ${{ secrets.TESTFLIGHT_DEMO_PASSWORD }}
+        run: |
+          pip install -q -r scripts/requirements-appstore.txt
+          python scripts/update_testflight_review_info.py
+
+      - name: Submit for Beta App Review
+        if: vars.APP_STORE_CONNECT_APP_ID != '' && vars.APPLE_SUBMIT_FOR_REVIEW == 'true'
+        uses: shichen85/submit-for-testflight-review@v1
+        with:
+          app-id: ${{ vars.APP_STORE_CONNECT_APP_ID }}
+          bundle-version-string: ${{ steps.release.outputs.version }}
+          group-name: ${{ vars.APPLE_TESTFLIGHT_GROUP_NAME }}
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}

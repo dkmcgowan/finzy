@@ -234,24 +234,6 @@ jobs:
           cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r build/ios/ipa/finzy.ipa Payload
 
-      - name: Upload to TestFlight
-        if: steps.import-cert.outputs.imported == 'true' && vars.APPLE_STORE_UPLOAD == 'true'
-        env:
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
-        run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$APP_STORE_CONNECT_API_KEY_P8" | base64 --decode -o ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
-
-          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
-          echo "Uploading $IPA_PATH to App Store Connect..."
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$IPA_PATH" \
-            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
-
       - name: Rename IPA for artifact upload
         run: |
           IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
