@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../focus/dpad_navigator.dart';
 import '../i18n/strings.g.dart';
+import '../utils/platform_detector.dart';
 
 /// Utility functions for showing common dialogs
 
@@ -170,16 +174,32 @@ class _TextInputDialog extends StatefulWidget {
 
 class _TextInputDialogState extends State<_TextInputDialog> {
   late final TextEditingController _controller;
+  late final FocusNode _textFocusNode;
+  late final FocusNode _cancelFocusNode;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
+    _textFocusNode = FocusNode(debugLabel: 'TextInputDialog_text');
+    _cancelFocusNode = FocusNode(
+      debugLabel: 'TextInputDialog_cancel',
+      onKeyEvent: (node, event) {
+        if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _textFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _textFocusNode.dispose();
+    _cancelFocusNode.dispose();
     super.dispose();
   }
 
@@ -191,16 +211,39 @@ class _TextInputDialogState extends State<_TextInputDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isTV = PlatformDetector.isTV();
+
+    final textField = TextField(
+      controller: _controller,
+      focusNode: _textFocusNode,
+      autofocus: true,
+      decoration: InputDecoration(labelText: widget.labelText, hintText: widget.hintText),
+      onSubmitted: (_) => _submit(),
+    );
+
+    final content = isTV
+        ? Focus(
+            onKeyEvent: (node, event) {
+              if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
+              if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                _cancelFocusNode.requestFocus();
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: textField,
+          )
+        : textField;
+
     return AlertDialog(
       title: Text(widget.title),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        decoration: InputDecoration(labelText: widget.labelText, hintText: widget.hintText),
-        onSubmitted: (_) => _submit(),
-      ),
+      content: content,
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel)),
+        TextButton(
+          focusNode: _cancelFocusNode,
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.common.cancel),
+        ),
         TextButton(onPressed: _submit, child: Text(t.common.save)),
       ],
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:finzy/widgets/app_icon.dart';
+
+import '../../focus/dpad_navigator.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../i18n/strings.g.dart';
 import '../../models/mpv_config_models.dart';
@@ -98,7 +100,16 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
     final valueFocusNode = FocusNode();
     final saveFocusNode = FocusNode();
 
-    final cancelFocusNode = FocusNode();
+    final cancelFocusNode = FocusNode(
+      onKeyEvent: (_, event) {
+        if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          valueFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
 
     final result = await showDialog<bool>(
       context: context,
@@ -127,8 +138,12 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
             KeyboardListener(
               focusNode: FocusNode(skipTraversal: true),
               onKeyEvent: (event) {
-                if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                  cancelFocusNode.requestFocus();
+                if (event is KeyDownEvent) {
+                  if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    cancelFocusNode.requestFocus();
+                  } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    keyFocusNode.requestFocus();
+                  }
                 }
               },
               child: TextField(
@@ -199,7 +214,17 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
     if (_entries.isEmpty) return;
 
     final nameController = TextEditingController();
-    final cancelFocusNode = FocusNode();
+    final nameFocusNode = FocusNode();
+    final cancelFocusNode = FocusNode(
+      onKeyEvent: (_, event) {
+        if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          nameFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
     final saveFocusNode = FocusNode();
 
     final result = await showDialog<bool>(
@@ -214,6 +239,7 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
             }
           },
           child: TextField(
+            focusNode: nameFocusNode,
             controller: nameController,
             decoration: InputDecoration(labelText: t.mpvConfig.presetName, hintText: t.mpvConfig.presetNameHint),
             autofocus: true,
@@ -235,6 +261,10 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> {
         ],
       ),
     );
+
+    nameFocusNode.dispose();
+    cancelFocusNode.dispose();
+    saveFocusNode.dispose();
 
     if (result == true) {
       await _settingsService.saveMpvPreset(nameController.text.trim(), _entries);

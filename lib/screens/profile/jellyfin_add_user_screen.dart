@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import '../../focus/dpad_navigator.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/jellyfin_public_user.dart';
@@ -14,6 +16,7 @@ import '../../services/jellyfin_auth_service.dart';
 import '../../services/offline_watch_sync_service.dart';
 import '../../services/server_connection_orchestrator.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/auth_button_style.dart';
 import '../../services/server_registry.dart';
 import '../../services/storage_service.dart';
 import '../../theme/mono_tokens.dart';
@@ -44,6 +47,8 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
   JellyfinPublicUser? _selectedUser;
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _usernameFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
   String? _quickConnectCode;
   String? _quickConnectSecret;
   Timer? _quickConnectPollTimer;
@@ -64,6 +69,8 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
     _quickConnectPollTimer?.cancel();
     _usernameController.dispose();
     _passwordController.dispose();
+    _usernameFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -352,6 +359,7 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
   @override
   Widget build(BuildContext context) {
     if (_step == 'quick_connect') {
+      final isTV = PlatformDetector.isTV();
       return Scaffold(
         appBar: AppBar(title: const Text('Add user')),
         body: Center(
@@ -381,7 +389,20 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                OutlinedButton(onPressed: _cancelQuickConnect, child: Text(t.common.cancel)),
+                isTV
+                    ? FocusableWrapper(
+                        onSelect: _cancelQuickConnect,
+                        child: ElevatedButton(
+                          onPressed: _cancelQuickConnect,
+                          style: authPillButtonStyle(context, primary: false),
+                          child: Text(t.common.cancel),
+                        ),
+                      )
+                    : ElevatedButton(
+                        onPressed: _cancelQuickConnect,
+                        style: authPillButtonStyle(context, primary: false),
+                        child: Text(t.common.cancel),
+                      ),
               ],
             ),
           ),
@@ -390,6 +411,19 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
     }
 
     if (_step == 'manual') {
+      final isTV = PlatformDetector.isTV();
+      final theme = Theme.of(context);
+      final inputDecoration = isTV
+          ? InputDecoration(
+              border: const OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.5), width: 1.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: theme.colorScheme.primary, width: 4),
+              ),
+            )
+          : const InputDecoration(border: OutlineInputBorder());
       return Scaffold(
         appBar: AppBar(title: const Text('Add user')),
         body: SingleChildScrollView(
@@ -409,39 +443,103 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: t.auth.jellyfinUsername,
-                  border: const OutlineInputBorder(),
+              Focus(
+                onKeyEvent: (node, event) {
+                  if (!event.isActionable) return KeyEventResult.ignored;
+                  if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    node.focusInDirection(TraversalDirection.down);
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
+                },
+                child: TextFormField(
+                  focusNode: _usernameFocusNode,
+                  autofocus: _selectedUser == null,
+                  controller: _usernameController,
+                  decoration: inputDecoration.copyWith(labelText: t.auth.jellyfinUsername),
+                  cursorColor: isTV ? theme.colorScheme.primary : null,
+                  cursorWidth: isTV ? 3 : 2.0,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
                 ),
-                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: t.auth.jellyfinPassword,
-                  border: const OutlineInputBorder(),
+              Focus(
+                onKeyEvent: (node, event) {
+                  if (!event.isActionable) return KeyEventResult.ignored;
+                  if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    node.focusInDirection(TraversalDirection.down);
+                    return KeyEventResult.handled;
+                  }
+                  if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    _usernameFocusNode.requestFocus();
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
+                },
+                child: TextFormField(
+                  focusNode: _passwordFocusNode,
+                  autofocus: _selectedUser != null,
+                  controller: _passwordController,
+                  decoration: inputDecoration.copyWith(labelText: t.auth.jellyfinPassword),
+                  cursorColor: isTV ? theme.colorScheme.primary : null,
+                  cursorWidth: isTV ? 3 : 2.0,
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) {
+                    final user = _usernameController.text.trim();
+                    final pass = _passwordController.text;
+                    if (user.isEmpty) {
+                      _usernameFocusNode.requestFocus();
+                      return;
+                    }
+                    if (pass.isEmpty) {
+                      _passwordFocusNode.requestFocus();
+                      return;
+                    }
+                    _signInManual();
+                  },
                 ),
-                obscureText: true,
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _signInManual(),
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isAuthenticating ? null : _signInManual,
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                child: _isAuthenticating
-                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(t.auth.jellyfinSignIn),
-              ),
+              isTV
+                  ? FocusableWrapper(
+                      onSelect: _isAuthenticating ? null : _signInManual,
+                      onNavigateUp: () => _passwordFocusNode.requestFocus(),
+                      canRequestFocus: !_isAuthenticating,
+                      child: ElevatedButton(
+                        onPressed: _isAuthenticating ? null : _signInManual,
+                        style: authPillButtonStyle(context),
+                        child: _isAuthenticating
+                            ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                            : Text(t.auth.jellyfinSignIn),
+                      ),
+                    )
+                  : ElevatedButton(
+                      onPressed: _isAuthenticating ? null : _signInManual,
+                      style: authPillButtonStyle(context),
+                      child: _isAuthenticating
+                          ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                          : Text(t.auth.jellyfinSignIn),
+                    ),
               const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: _backToUsers,
-                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
-                child: Text(t.common.back),
-              ),
+              isTV
+                  ? FocusableWrapper(
+                      onSelect: _backToUsers,
+                      onNavigateUp: () {
+                        FocusManager.instance.primaryFocus?.focusInDirection(TraversalDirection.up);
+                      },
+                      child: ElevatedButton(
+                        onPressed: _backToUsers,
+                        style: authPillButtonStyle(context, primary: false),
+                        child: Text(t.common.back),
+                      ),
+                    )
+                  : ElevatedButton(
+                      onPressed: _backToUsers,
+                      style: authPillButtonStyle(context, primary: false),
+                      child: Text(t.common.back),
+                    ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),
                 Text(
@@ -500,6 +598,7 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                           );
                           return isTV
                               ? FocusableWrapper(
+                                  autofocus: index == 0,
                                   onSelect: () => _showUserOptions(user),
                                   child: card,
                                 )
@@ -507,11 +606,20 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                         },
                       ),
                       const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => _goToManual(null),
-                        style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                        child: const Text('Manual login'),
-                      ),
+                      isTV
+                          ? FocusableWrapper(
+                              onSelect: () => _goToManual(null),
+                              child: ElevatedButton(
+                                onPressed: () => _goToManual(null),
+                                style: authPillButtonStyle(context),
+                                child: const Text('Manual login'),
+                              ),
+                            )
+                          : ElevatedButton(
+                              onPressed: () => _goToManual(null),
+                              style: authPillButtonStyle(context),
+                              child: const Text('Manual login'),
+                            ),
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 12),
                         Text(

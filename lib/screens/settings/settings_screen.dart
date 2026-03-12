@@ -1753,7 +1753,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   }) {
     final controller = TextEditingController(text: currentValue.toString());
     String? errorText;
-    final cancelFocusNode = FocusNode();
+    final textFocusNode = FocusNode();
+    final cancelFocusNode = FocusNode(
+      onKeyEvent: (_, event) {
+        if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          textFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
     final saveFocusNode = FocusNode();
 
     showDialog(
@@ -1772,6 +1782,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                 },
                 child: TextField(
                   controller: controller,
+                  focusNode: textFocusNode,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     labelText: labelText,
@@ -1823,6 +1834,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
         );
       },
     ).then((_) {
+      textFocusNode.dispose();
       cancelFocusNode.dispose();
       saveFocusNode.dispose();
     });

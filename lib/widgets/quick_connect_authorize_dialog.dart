@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../focus/dpad_navigator.dart';
 import '../i18n/strings.g.dart';
 import '../providers/multi_server_provider.dart';
 import '../utils/provider_extensions.dart';
@@ -19,8 +20,24 @@ class QuickConnectAuthorizeDialog extends StatefulWidget {
 class _QuickConnectAuthorizeDialogState extends State<QuickConnectAuthorizeDialog> {
   final _codeController = TextEditingController();
   final _textFieldFocusNode = FocusNode();
-  final _cancelFocusNode = FocusNode();
+  late final FocusNode _cancelFocusNode;
   bool _isAuthorizing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cancelFocusNode = FocusNode(
+      debugLabel: 'QuickConnect_cancel',
+      onKeyEvent: (_, event) {
+        if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _textFieldFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -76,16 +93,6 @@ class _QuickConnectAuthorizeDialogState extends State<QuickConnectAuthorizeDialo
     return KeyEventResult.ignored;
   }
 
-  KeyEventResult _handleButtonKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      _textFieldFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
-
   @override
   Widget build(BuildContext context) {
     final hasServer = context.read<MultiServerProvider>().hasConnectedServers;
@@ -117,10 +124,7 @@ class _QuickConnectAuthorizeDialogState extends State<QuickConnectAuthorizeDialo
         ],
       ),
       actions: [
-        Focus(
-          skipTraversal: true,
-          onKeyEvent: _handleButtonKey,
-          child: FocusTraversalGroup(
+        FocusTraversalGroup(
             policy: OrderedTraversalPolicy(),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -149,7 +153,6 @@ class _QuickConnectAuthorizeDialogState extends State<QuickConnectAuthorizeDialo
               ],
             ),
           ),
-        ),
       ],
     );
   }
