@@ -20,7 +20,6 @@ import '../providers/playback_state_provider.dart';
 import '../widgets/hub_section.dart';
 import 'profile/jellyfin_profile_switch_screen.dart';
 import '../providers/user_profile_provider.dart';
-import '../providers/jellyfin_profile_provider.dart';
 import '../providers/settings_provider.dart';
 import '../mixins/refreshable.dart';
 import '../mixins/tab_visibility_aware.dart';
@@ -39,7 +38,6 @@ import '../services/watch_next_service.dart';
 import 'auth_screen.dart';
 import 'libraries/state_messages.dart';
 import 'main_screen.dart';
-import '../widgets/quick_connect_authorize_dialog.dart';
 import '../widgets/profile_app_bar_button.dart';
 
 
