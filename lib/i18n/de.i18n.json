@@ -16,6 +16,10 @@
     "authTokenHint": "Token eingeben",
     "authenticationTimeout": "Authentifizierung abgelaufen. Bitte erneut versuchen.",
     "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+    "connectionTimeout": "Verbindung abgelaufen. Bitte Netzwerk prüfen und erneut versuchen.",
+    "invalidPassword": "Ungültiger Benutzername oder Passwort.",
+    "notAuthorized": "Nicht autorisiert. Bitte erneut anmelden.",
+    "serverUnreachable": "Server nicht erreichbar. URL und Verbindung prüfen.",
     "scanQRToSignIn": "QR-Code scannen zum Anmelden",
     "waitingForAuth": "Warte auf Authentifizierung...\nBitte Anmeldung im Browser abschließen.",
     "useBrowser": "Browser verwenden"

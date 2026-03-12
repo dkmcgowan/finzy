@@ -10,6 +10,7 @@ import '../mixins/refreshable.dart';
 import '../models/hub.dart';
 import '../providers/multi_server_provider.dart';
 import '../utils/app_logger.dart';
+import '../utils/error_message_utils.dart';
 import '../utils/focus_utils.dart';
 import '../utils/platform_detector.dart';
 import '../utils/snackbar_helper.dart';
@@ -146,14 +147,14 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
         _isSearching = false;
         _lastSearchedQuery = query.trim();
       });
-    } catch (e) {
-      appLogger.e('Search failed', error: e);
+    } catch (e, st) {
       if (mounted) {
         setState(() {
           _isSearching = false;
         });
-        showErrorSnackBar(context, t.errors.searchFailed(error: e));
+        showErrorSnackBar(context, t.errors.searchFailed(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Search failed', e, st);
     }
   }
 

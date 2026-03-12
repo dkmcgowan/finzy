@@ -105,6 +105,10 @@ class _TranslationsAuthDe implements TranslationsAuthEn {
 	@override String get authTokenHint => 'Token eingeben';
 	@override String get authenticationTimeout => 'Authentifizierung abgelaufen. Bitte erneut versuchen.';
 	@override String get sessionExpired => 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.';
+	@override String get connectionTimeout => 'Verbindung abgelaufen. Bitte Netzwerk prüfen und erneut versuchen.';
+	@override String get invalidPassword => 'Ungültiger Benutzername oder Passwort.';
+	@override String get notAuthorized => 'Nicht autorisiert. Bitte erneut anmelden.';
+	@override String get serverUnreachable => 'Server nicht erreichbar. URL und Verbindung prüfen.';
 	@override String get scanQRToSignIn => 'QR-Code scannen zum Anmelden';
 	@override String get waitingForAuth => 'Warte auf Authentifizierung...\nBitte Anmeldung im Browser abschließen.';
 	@override String get useBrowser => 'Browser verwenden';
@@ -1305,6 +1309,10 @@ extension on TranslationsDe {
 			'auth.authTokenHint' => 'Token eingeben',
 			'auth.authenticationTimeout' => 'Authentifizierung abgelaufen. Bitte erneut versuchen.',
 			'auth.sessionExpired' => 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.',
+			'auth.connectionTimeout' => 'Verbindung abgelaufen. Bitte Netzwerk prüfen und erneut versuchen.',
+			'auth.invalidPassword' => 'Ungültiger Benutzername oder Passwort.',
+			'auth.notAuthorized' => 'Nicht autorisiert. Bitte erneut anmelden.',
+			'auth.serverUnreachable' => 'Server nicht erreichbar. URL und Verbindung prüfen.',
 			'auth.scanQRToSignIn' => 'QR-Code scannen zum Anmelden',
 			'auth.waitingForAuth' => 'Warte auf Authentifizierung...\nBitte Anmeldung im Browser abschließen.',
 			'auth.useBrowser' => 'Browser verwenden',
@@ -1799,12 +1807,12 @@ extension on TranslationsDe {
 			'libraries.libraryOptions' => 'Mediatheksoptionen',
 			'libraries.content' => 'Bibliotheksinhalt',
 			'libraries.selectLibrary' => 'Bibliothek auswählen',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
 			'libraries.noRecommendations' => 'Keine Empfehlungen verfügbar',
 			'libraries.noCollections' => 'Keine Sammlungen in dieser Mediathek',
 			'libraries.noFavorites' => 'Keine Favoriten in dieser Mediathek',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noGenres' => 'Keine Genres in dieser Mediathek',
 			'libraries.noFoldersFound' => 'Keine Ordner gefunden',
 			'libraries.folders' => 'Ordner',

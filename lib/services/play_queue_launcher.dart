@@ -5,7 +5,7 @@ import '../models/play_queue_response.dart';
 import '../models/media_metadata.dart';
 import '../models/playlist.dart';
 import '../providers/playback_state_provider.dart';
-import '../utils/app_logger.dart';
+import '../utils/error_message_utils.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/video_player_navigation.dart';
 import '../i18n/strings.g.dart';
@@ -273,13 +273,11 @@ class PlayQueueLauncher {
 
       await dismissLoading();
       return result;
-    } catch (e) {
-      appLogger.e('Failed to $action', error: e);
-
+    } catch (e, st) {
       if (context.mounted) {
-        showErrorSnackBar(context, t.messages.failedPlayback(action: action, error: e.toString()));
+        showErrorSnackBar(context, t.messages.failedPlayback(action: action, error: safeUserMessage(e)));
       }
-
+      logErrorWithStackTrace('Failed to $action', e, st);
       await dismissLoading();
       return PlayQueueError(e);
     } finally {

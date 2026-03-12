@@ -29,6 +29,7 @@ import '../mixins/watch_state_aware.dart';
 import '../utils/watch_state_notifier.dart';
 import '../utils/app_logger.dart';
 import '../utils/dialogs.dart';
+import '../utils/error_message_utils.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/video_player_navigation.dart';
 import '../utils/layout_constants.dart';
@@ -665,13 +666,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       });
 
       appLogger.d('Discover content loaded successfully');
-    } catch (e) {
-      appLogger.e('Failed to load discover content', error: e);
+    } catch (e, st) {
       setState(() {
-        _errorMessage = 'Failed to load content: $e';
+        _errorMessage = 'Failed to load content: ${safeUserMessage(e)}';
         _isLoading = false;
         _areHubsLoading = false;
       });
+      logErrorWithStackTrace('Failed to load discover content', e, st);
     }
   }
 

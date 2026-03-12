@@ -105,6 +105,10 @@ class _TranslationsAuthIt implements TranslationsAuthEn {
 	@override String get authTokenHint => 'Inserisci il tuo token';
 	@override String get authenticationTimeout => 'Autenticazione scaduta. Riprova.';
 	@override String get sessionExpired => 'La tua sessione è scaduta. Accedi di nuovo.';
+	@override String get connectionTimeout => 'Timeout di connessione. Controlla la rete e riprova.';
+	@override String get invalidPassword => 'Nome utente o password non validi.';
+	@override String get notAuthorized => 'Non autorizzato. Accedi di nuovo.';
+	@override String get serverUnreachable => 'Impossibile raggiungere il server. Controlla l\'URL e la connessione.';
 	@override String get scanQRToSignIn => 'Scansiona il QR code per accedere';
 	@override String get waitingForAuth => 'In attesa di autenticazione...\nCompleta l\'accesso dal tuo browser.';
 	@override String get useBrowser => 'Usa browser';
@@ -1305,6 +1309,10 @@ extension on TranslationsIt {
 			'auth.authTokenHint' => 'Inserisci il tuo token',
 			'auth.authenticationTimeout' => 'Autenticazione scaduta. Riprova.',
 			'auth.sessionExpired' => 'La tua sessione è scaduta. Accedi di nuovo.',
+			'auth.connectionTimeout' => 'Timeout di connessione. Controlla la rete e riprova.',
+			'auth.invalidPassword' => 'Nome utente o password non validi.',
+			'auth.notAuthorized' => 'Non autorizzato. Accedi di nuovo.',
+			'auth.serverUnreachable' => 'Impossibile raggiungere il server. Controlla l\'URL e la connessione.',
 			'auth.scanQRToSignIn' => 'Scansiona il QR code per accedere',
 			'auth.waitingForAuth' => 'In attesa di autenticazione...\nCompleta l\'accesso dal tuo browser.',
 			'auth.useBrowser' => 'Usa browser',
@@ -1799,12 +1807,12 @@ extension on TranslationsIt {
 			'libraries.libraryOptions' => 'Opzioni libreria',
 			'libraries.content' => 'contenuto della libreria',
 			'libraries.selectLibrary' => 'Seleziona libreria',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filtri (${count})',
 			'libraries.noRecommendations' => 'Nessun consiglio disponibile',
 			'libraries.noCollections' => 'Nessuna raccolta in questa libreria',
 			'libraries.noFavorites' => 'Nessun preferito in questa libreria',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noGenres' => 'Nessun genere in questa libreria',
 			'libraries.noFoldersFound' => 'Nessuna cartella trovata',
 			'libraries.folders' => 'cartelle',

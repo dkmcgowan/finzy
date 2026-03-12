@@ -105,6 +105,10 @@ class _TranslationsAuthZh implements TranslationsAuthEn {
 	@override String get authTokenHint => '输入你的令牌';
 	@override String get authenticationTimeout => '验证超时。请重试。';
 	@override String get sessionExpired => '您的会话已过期。请重新登录。';
+	@override String get connectionTimeout => '连接超时。请检查网络后重试。';
+	@override String get invalidPassword => '用户名或密码错误。';
+	@override String get notAuthorized => '未授权。请重新登录。';
+	@override String get serverUnreachable => '无法连接服务器。请检查 URL 和网络连接。';
 	@override String get scanQRToSignIn => '扫描二维码登录';
 	@override String get waitingForAuth => '等待验证中...\n请在你的浏览器中完成登录。';
 	@override String get useBrowser => '使用浏览器';
@@ -1305,6 +1309,10 @@ extension on TranslationsZh {
 			'auth.authTokenHint' => '输入你的令牌',
 			'auth.authenticationTimeout' => '验证超时。请重试。',
 			'auth.sessionExpired' => '您的会话已过期。请重新登录。',
+			'auth.connectionTimeout' => '连接超时。请检查网络后重试。',
+			'auth.invalidPassword' => '用户名或密码错误。',
+			'auth.notAuthorized' => '未授权。请重新登录。',
+			'auth.serverUnreachable' => '无法连接服务器。请检查 URL 和网络连接。',
 			'auth.scanQRToSignIn' => '扫描二维码登录',
 			'auth.waitingForAuth' => '等待验证中...\n请在你的浏览器中完成登录。',
 			'auth.useBrowser' => '使用浏览器',
@@ -1799,12 +1807,12 @@ extension on TranslationsZh {
 			'libraries.libraryOptions' => '媒体库选项',
 			'libraries.content' => '媒体库内容',
 			'libraries.selectLibrary' => '选择媒体库',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => '筛选器（${count}）',
 			'libraries.noRecommendations' => '暂无推荐',
 			'libraries.noCollections' => '此媒体库中没有合集',
 			'libraries.noFavorites' => '此媒体库中无收藏',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noGenres' => '此媒体库中无类型',
 			'libraries.noFoldersFound' => '未找到文件夹',
 			'libraries.folders' => '文件夹',

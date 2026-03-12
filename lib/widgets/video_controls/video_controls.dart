@@ -42,6 +42,7 @@ import '../../utils/provider_extensions.dart';
 import '../../utils/snackbar_helper.dart';
 import 'icons.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/error_message_utils.dart';
 import '../../i18n/strings.g.dart';
 import '../../focus/input_mode_tracker.dart';
 import 'widgets/track_chapter_controls.dart';
@@ -2229,10 +2230,11 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
           ),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+        showErrorSnackBar(context, t.messages.errorLoading(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('_loadPlaybackExtras failed', e, st);
     }
   }
 }

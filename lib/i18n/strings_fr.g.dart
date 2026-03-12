@@ -105,6 +105,10 @@ class _TranslationsAuthFr implements TranslationsAuthEn {
 	@override String get authTokenHint => 'Entrez votre token';
 	@override String get authenticationTimeout => 'Délai d\'authentification expiré. Veuillez réessayer.';
 	@override String get sessionExpired => 'Votre session a expiré. Veuillez vous reconnecter.';
+	@override String get connectionTimeout => 'Délai de connexion expiré. Vérifiez votre réseau et réessayez.';
+	@override String get invalidPassword => 'Nom d\'utilisateur ou mot de passe incorrect.';
+	@override String get notAuthorized => 'Non autorisé. Veuillez vous reconnecter.';
+	@override String get serverUnreachable => 'Impossible de joindre le serveur. Vérifiez l\'URL et votre connexion.';
 	@override String get scanQRToSignIn => 'Scannez ce QR code pour vous connecter';
 	@override String get waitingForAuth => 'En attente d\'authentification...\nVeuillez vous connecter dans votre navigateur.';
 	@override String get useBrowser => 'Utiliser le navigateur';
@@ -1305,6 +1309,10 @@ extension on TranslationsFr {
 			'auth.authTokenHint' => 'Entrez votre token',
 			'auth.authenticationTimeout' => 'Délai d\'authentification expiré. Veuillez réessayer.',
 			'auth.sessionExpired' => 'Votre session a expiré. Veuillez vous reconnecter.',
+			'auth.connectionTimeout' => 'Délai de connexion expiré. Vérifiez votre réseau et réessayez.',
+			'auth.invalidPassword' => 'Nom d\'utilisateur ou mot de passe incorrect.',
+			'auth.notAuthorized' => 'Non autorisé. Veuillez vous reconnecter.',
+			'auth.serverUnreachable' => 'Impossible de joindre le serveur. Vérifiez l\'URL et votre connexion.',
 			'auth.scanQRToSignIn' => 'Scannez ce QR code pour vous connecter',
 			'auth.waitingForAuth' => 'En attente d\'authentification...\nVeuillez vous connecter dans votre navigateur.',
 			'auth.useBrowser' => 'Utiliser le navigateur',
@@ -1799,12 +1807,12 @@ extension on TranslationsFr {
 			'libraries.libraryOptions' => 'Options de bibliothèque',
 			'libraries.content' => 'contenu de la bibliothèque',
 			'libraries.selectLibrary' => 'Sélectionner la bibliothèque',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filtres (${count})',
 			'libraries.noRecommendations' => 'Aucune recommandation disponible',
 			'libraries.noCollections' => 'Aucune collection dans cette bibliothèque',
 			'libraries.noFavorites' => 'Aucun favori dans cette bibliothèque',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noGenres' => 'Aucun genre dans cette bibliothèque',
 			'libraries.noFoldersFound' => 'Aucun dossier trouvé',
 			'libraries.folders' => 'dossiers',

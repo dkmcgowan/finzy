@@ -16,6 +16,10 @@
     "authTokenHint": "Ange din token",
     "authenticationTimeout": "Autentisering tog för lång tid. Försök igen.",
     "sessionExpired": "Din session har löpt ut. Logga in igen.",
+    "connectionTimeout": "Anslutningen tog för lång tid. Kontrollera nätverket och försök igen.",
+    "invalidPassword": "Ogiltigt användarnamn eller lösenord.",
+    "notAuthorized": "Ej behörig. Logga in igen.",
+    "serverUnreachable": "Kunde inte nå servern. Kontrollera URL:en och din anslutning.",
     "scanQRToSignIn": "Skanna QR-koden för att logga in",
     "waitingForAuth": "Väntar på autentisering...\nVänligen slutför inloggning i din webbläsare.",
     "useBrowser": "Använd webbläsare"

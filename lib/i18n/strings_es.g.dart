@@ -105,6 +105,10 @@ class _TranslationsAuthEs implements TranslationsAuthEn {
 	@override String get authTokenHint => 'Ingresa tu token';
 	@override String get authenticationTimeout => 'Tiempo de autenticación agotado. Por favor, intenta de nuevo.';
 	@override String get sessionExpired => 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.';
+	@override String get connectionTimeout => 'Tiempo de conexión agotado. Comprueba tu red e intenta de nuevo.';
+	@override String get invalidPassword => 'Usuario o contraseña incorrectos.';
+	@override String get notAuthorized => 'No autorizado. Por favor, inicia sesión de nuevo.';
+	@override String get serverUnreachable => 'No se pudo conectar al servidor. Comprueba la URL y tu conexión.';
 	@override String get scanQRToSignIn => 'Escanea este código QR para iniciar sesión';
 	@override String get waitingForAuth => 'Esperando autenticación...\nPor favor completa el inicio de sesión en tu navegador.';
 	@override String get useBrowser => 'Usar navegador';
@@ -1305,6 +1309,10 @@ extension on TranslationsEs {
 			'auth.authTokenHint' => 'Ingresa tu token',
 			'auth.authenticationTimeout' => 'Tiempo de autenticación agotado. Por favor, intenta de nuevo.',
 			'auth.sessionExpired' => 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.',
+			'auth.connectionTimeout' => 'Tiempo de conexión agotado. Comprueba tu red e intenta de nuevo.',
+			'auth.invalidPassword' => 'Usuario o contraseña incorrectos.',
+			'auth.notAuthorized' => 'No autorizado. Por favor, inicia sesión de nuevo.',
+			'auth.serverUnreachable' => 'No se pudo conectar al servidor. Comprueba la URL y tu conexión.',
 			'auth.scanQRToSignIn' => 'Escanea este código QR para iniciar sesión',
 			'auth.waitingForAuth' => 'Esperando autenticación...\nPor favor completa el inicio de sesión en tu navegador.',
 			'auth.useBrowser' => 'Usar navegador',
@@ -1799,12 +1807,12 @@ extension on TranslationsEs {
 			'libraries.libraryOptions' => 'Opciones de biblioteca',
 			'libraries.content' => 'contenido de la biblioteca',
 			'libraries.selectLibrary' => 'Seleccionar biblioteca',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filtros (${count})',
 			'libraries.noRecommendations' => 'No hay recomendaciones disponibles',
 			'libraries.noCollections' => 'No hay colecciones en esta biblioteca',
 			'libraries.noFavorites' => 'No hay favoritos en esta biblioteca',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noGenres' => 'No hay géneros en esta biblioteca',
 			'libraries.noFoldersFound' => 'No se encontraron carpetas',
 			'libraries.folders' => 'carpetas',

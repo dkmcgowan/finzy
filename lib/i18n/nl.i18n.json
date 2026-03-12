@@ -16,6 +16,10 @@
     "authTokenHint": "Voer je token in",
     "authenticationTimeout": "Authenticatie verlopen. Probeer opnieuw.",
     "sessionExpired": "Uw sessie is verlopen. Log opnieuw in.",
+    "connectionTimeout": "Verbinding verlopen. Controleer uw netwerk en probeer opnieuw.",
+    "invalidPassword": "Ongeldige gebruikersnaam of wachtwoord.",
+    "notAuthorized": "Niet geautoriseerd. Log opnieuw in.",
+    "serverUnreachable": "Kan server niet bereiken. Controleer de URL en uw verbinding.",
     "scanQRToSignIn": "Scan deze QR-code om in te loggen",
     "waitingForAuth": "Wachten op authenticatie...\nVoltooi het inloggen in je browser.",
     "useBrowser": "Gebruik browser"

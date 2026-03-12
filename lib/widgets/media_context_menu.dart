@@ -11,6 +11,7 @@ import '../providers/offline_mode_provider.dart';
 import '../providers/offline_watch_provider.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/app_logger.dart';
+import '../utils/error_message_utils.dart';
 import '../utils/library_refresh_notifier.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/dialogs.dart';
@@ -378,10 +379,11 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         showSuccessSnackBar(context, successMessage);
         widget.onRefresh?.call(widget.item.itemId);
       }
-    } catch (e) {
+    } catch (e, st) {
       if (context.mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+        showErrorSnackBar(context, t.messages.errorLoading(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Media context menu action failed', e, st);
     }
   }
 
@@ -402,10 +404,11 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         await Navigator.push(context, MaterialPageRoute(builder: (context) => screenBuilder(metadata)));
         widget.onRefresh?.call(widget.item.itemId);
       }
-    } catch (e) {
+    } catch (e, st) {
       if (context.mounted) {
-        showErrorSnackBar(context, '$errorPrefix: $e');
+        showErrorSnackBar(context, '$errorPrefix: ${safeUserMessage(e)}');
       }
+      logErrorWithStackTrace('Navigate to related item failed', e, st);
     }
   }
 
@@ -450,15 +453,16 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       } else if (context.mounted) {
         showErrorSnackBar(context, t.messages.fileInfoNotAvailable);
       }
-    } catch (e) {
+    } catch (e, st) {
       // Close loading indicator if it's still open
       if (context.mounted && Navigator.canPop(context)) {
         Navigator.pop(context);
       }
 
       if (context.mounted) {
-        showErrorSnackBar(context, t.messages.errorLoadingFileInfo(error: e.toString()));
+        showErrorSnackBar(context, t.messages.errorLoadingFileInfo(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Failed to load file info', e, st);
     }
   }
 
@@ -540,9 +544,9 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         }
       }
     } catch (e, stackTrace) {
-      appLogger.e('Error in add to playlist flow', error: e, stackTrace: stackTrace);
+      logErrorWithStackTrace('Error in add to playlist flow', e, stackTrace);
       if (context.mounted) {
-        showErrorSnackBar(context, '${t.playlists.errorLoading}: ${e.toString()}');
+        showErrorSnackBar(context, '${t.playlists.errorLoading}: ${safeUserMessage(e)}');
       }
     }
   }
@@ -603,9 +607,9 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         }
       }
     } catch (e, stackTrace) {
-      appLogger.e('Error in add to collection flow', error: e, stackTrace: stackTrace);
+      logErrorWithStackTrace('Error in add to collection flow', e, stackTrace);
       if (context.mounted) {
-        showErrorSnackBar(context, '${t.collections.errorAddingToCollection}: ${e.toString()}');
+        showErrorSnackBar(context, '${t.collections.errorAddingToCollection}: ${safeUserMessage(e)}');
       }
     }
   }
@@ -642,11 +646,11 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           showErrorSnackBar(context, t.collections.removeFromCollectionFailed);
         }
       }
-    } catch (e) {
-      appLogger.e('Failed to remove from collection', error: e);
+    } catch (e, st) {
       if (context.mounted) {
-        showErrorSnackBar(context, t.collections.removeFromCollectionError(error: e.toString()));
+        showErrorSnackBar(context, t.collections.removeFromCollectionError(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Failed to remove from collection', e, st);
     }
   }
 
@@ -713,14 +717,14 @@ class MediaContextMenuState extends State<MediaContextMenu> {
           showErrorSnackBar(context, isCollection ? t.collections.deleteFailed : t.playlists.errorDeleting);
         }
       }
-    } catch (e) {
-      appLogger.e('Failed to delete $itemTypeLabel', error: e);
+    } catch (e, st) {
       if (context.mounted) {
         showErrorSnackBar(
           context,
-          isCollection ? t.collections.deleteFailedWithError(error: e.toString()) : t.playlists.errorDeleting,
+          isCollection ? t.collections.deleteFailedWithError(error: safeUserMessage(e)) : t.playlists.errorDeleting,
         );
       }
+      logErrorWithStackTrace('Failed to delete $itemTypeLabel', e, st);
     }
   }
 
@@ -741,11 +745,11 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       if (context.mounted) {
         showErrorSnackBar(context, t.settings.cellularDownloadBlocked);
       }
-    } catch (e) {
-      appLogger.e('Failed to queue download', error: e);
+    } catch (e, st) {
       if (context.mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+        showErrorSnackBar(context, t.messages.errorLoading(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Failed to queue download', e, st);
     }
   }
 
@@ -775,11 +779,11 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         // Refresh the view if needed
         widget.onRefresh?.call(metadata.itemId);
       }
-    } catch (e) {
-      appLogger.e('Failed to delete download', error: e);
+    } catch (e, st) {
       if (context.mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+        showErrorSnackBar(context, t.messages.errorLoading(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Failed to delete download', e, st);
     }
   }
 

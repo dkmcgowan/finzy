@@ -2,6 +2,8 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 
+import '../../utils/app_logger.dart';
+import '../../utils/error_message_utils.dart';
 import '../font_loader.dart';
 import '../models.dart';
 import 'player_base.dart';
@@ -66,8 +68,9 @@ class PlayerNative extends PlayerBase {
       await observeProperty('sid', 'string');
       await observeProperty('audio-device-list', (Platform.isAndroid || Platform.isWindows) ? 'string' : 'node');
       await observeProperty('audio-device', 'string');
-    } catch (e) {
-      errorController.add('Initialization failed: $e');
+    } catch (e, st) {
+      appLogger.e('MPV initialization failed', error: e, stackTrace: st);
+      errorController.add('Initialization failed: ${safeUserMessage(e)}');
       rethrow;
     }
   }

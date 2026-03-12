@@ -16,6 +16,10 @@
     "authTokenHint": "Inserisci il tuo token",
     "authenticationTimeout": "Autenticazione scaduta. Riprova.",
     "sessionExpired": "La tua sessione è scaduta. Accedi di nuovo.",
+    "connectionTimeout": "Timeout di connessione. Controlla la rete e riprova.",
+    "invalidPassword": "Nome utente o password non validi.",
+    "notAuthorized": "Non autorizzato. Accedi di nuovo.",
+    "serverUnreachable": "Impossibile raggiungere il server. Controlla l'URL e la connessione.",
     "scanQRToSignIn": "Scansiona il QR code per accedere",
     "waitingForAuth": "In attesa di autenticazione...\nCompleta l'accesso dal tuo browser.",
     "useBrowser": "Usa browser"

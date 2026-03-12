@@ -16,6 +16,10 @@
     "authTokenHint": "输入你的令牌",
     "authenticationTimeout": "验证超时。请重试。",
     "sessionExpired": "您的会话已过期。请重新登录。",
+    "connectionTimeout": "连接超时。请检查网络后重试。",
+    "invalidPassword": "用户名或密码错误。",
+    "notAuthorized": "未授权。请重新登录。",
+    "serverUnreachable": "无法连接服务器。请检查 URL 和网络连接。",
     "scanQRToSignIn": "扫描二维码登录",
     "waitingForAuth": "等待验证中...\n请在你的浏览器中完成登录。",
     "useBrowser": "使用浏览器"

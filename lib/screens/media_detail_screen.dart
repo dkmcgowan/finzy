@@ -32,6 +32,7 @@ import '../providers/offline_watch_provider.dart';
 import '../providers/settings_provider.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/app_logger.dart';
+import '../utils/error_message_utils.dart';
 import '../utils/formatters.dart';
 import '../utils/scroll_utils.dart';
 import '../utils/provider_extensions.dart';
@@ -789,10 +790,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                     _updateWatchState();
                   }
                 }
-                } catch (e) {
+                } catch (e, st) {
                   if (mounted) {
-                    showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+                    showErrorSnackBar(context, t.messages.errorLoading(error: safeUserMessage(e)));
                   }
+                  logErrorWithStackTrace('Failed to update watch state', e, st);
                 }
               },
             icon: AppIcon(metadata.isWatched ? Symbols.remove_done_rounded : Symbols.check_rounded, fill: 1),
@@ -830,10 +832,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                   } else if (mounted) {
                     await _loadFullMetadata();
                   }
-                } catch (e) {
+                } catch (e, st) {
                   if (mounted) {
-                    showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+                    showErrorSnackBar(context, t.messages.errorLoading(error: safeUserMessage(e)));
                   }
+                  logErrorWithStackTrace('Failed to toggle favorite', e, st);
                 }
                 },
                 icon: AppIcon(
@@ -1819,10 +1822,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
           onRefresh: _loadFullMetadata,
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+        showErrorSnackBar(context, t.messages.errorLoading(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Failed to navigate to video player', e, st);
     }
   }
 

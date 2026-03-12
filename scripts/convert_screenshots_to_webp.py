@@ -1,8 +1,10 @@
 """
-Convert PNG screenshots in assets/screenshots/ to WebP format.
-Outputs .webp files alongside the .png files (same base names).
-Useful for copying to getfinzy.com or other web assets.
+Convert PNG screenshots to WebP format.
 
+DEPRECATED: Use scripts/generate_screenshot_assets.py instead, which outputs
+to assets/screenshots/webp/ and handles all screenshot-derived assets.
+
+This script kept for backwards compatibility; it outputs .webp alongside .png.
 Requires: pip install Pillow
 
 Run from repo root: python scripts/convert_screenshots_to_webp.py

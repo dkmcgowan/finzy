@@ -9,6 +9,7 @@ import '../utils/provider_extensions.dart';
 import '../services/play_queue_launcher.dart';
 import '../models/playlist.dart';
 import '../utils/app_logger.dart';
+import '../utils/error_message_utils.dart';
 import '../utils/snackbar_helper.dart';
 import '../mixins/refreshable.dart';
 import '../mixins/item_updatable.dart';
@@ -206,7 +207,7 @@ mixin StandardItemLoader<T extends StatefulWidget> on BaseMediaListDetailScreen<
 
   /// Get error message for failed load (can be overridden)
   String getLoadErrorMessage(Object error) {
-    return 'Failed to load items: ${error.toString()}';
+    return 'Failed to load items: ${safeUserMessage(error)}';
   }
 
   /// Get log message for successful load (can be overridden)
@@ -235,14 +236,14 @@ mixin StandardItemLoader<T extends StatefulWidget> on BaseMediaListDetailScreen<
       }
 
       appLogger.d(getLoadSuccessMessage(newItems.length));
-    } catch (e) {
-      appLogger.e('Failed to load items', error: e);
+    } catch (e, st) {
       if (mounted) {
         setState(() {
           errorMessage = getLoadErrorMessage(e);
           isLoading = false;
         });
       }
+      logErrorWithStackTrace('Failed to load items', e, st);
     }
   }
 }

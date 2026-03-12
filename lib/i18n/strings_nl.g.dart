@@ -105,6 +105,10 @@ class _TranslationsAuthNl implements TranslationsAuthEn {
 	@override String get authTokenHint => 'Voer je token in';
 	@override String get authenticationTimeout => 'Authenticatie verlopen. Probeer opnieuw.';
 	@override String get sessionExpired => 'Uw sessie is verlopen. Log opnieuw in.';
+	@override String get connectionTimeout => 'Verbinding verlopen. Controleer uw netwerk en probeer opnieuw.';
+	@override String get invalidPassword => 'Ongeldige gebruikersnaam of wachtwoord.';
+	@override String get notAuthorized => 'Niet geautoriseerd. Log opnieuw in.';
+	@override String get serverUnreachable => 'Kan server niet bereiken. Controleer de URL en uw verbinding.';
 	@override String get scanQRToSignIn => 'Scan deze QR-code om in te loggen';
 	@override String get waitingForAuth => 'Wachten op authenticatie...\nVoltooi het inloggen in je browser.';
 	@override String get useBrowser => 'Gebruik browser';
@@ -1305,6 +1309,10 @@ extension on TranslationsNl {
 			'auth.authTokenHint' => 'Voer je token in',
 			'auth.authenticationTimeout' => 'Authenticatie verlopen. Probeer opnieuw.',
 			'auth.sessionExpired' => 'Uw sessie is verlopen. Log opnieuw in.',
+			'auth.connectionTimeout' => 'Verbinding verlopen. Controleer uw netwerk en probeer opnieuw.',
+			'auth.invalidPassword' => 'Ongeldige gebruikersnaam of wachtwoord.',
+			'auth.notAuthorized' => 'Niet geautoriseerd. Log opnieuw in.',
+			'auth.serverUnreachable' => 'Kan server niet bereiken. Controleer de URL en uw verbinding.',
 			'auth.scanQRToSignIn' => 'Scan deze QR-code om in te loggen',
 			'auth.waitingForAuth' => 'Wachten op authenticatie...\nVoltooi het inloggen in je browser.',
 			'auth.useBrowser' => 'Gebruik browser',
@@ -1799,12 +1807,12 @@ extension on TranslationsNl {
 			'libraries.libraryOptions' => 'Bibliotheek opties',
 			'libraries.content' => 'bibliotheekinhoud',
 			'libraries.selectLibrary' => 'Bibliotheek kiezen',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
 			'libraries.noRecommendations' => 'Geen aanbevelingen beschikbaar',
 			'libraries.noCollections' => 'Geen collecties in deze bibliotheek',
 			'libraries.noFavorites' => 'Geen favorieten in deze bibliotheek',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noGenres' => 'Geen genres in deze bibliotheek',
 			'libraries.noFoldersFound' => 'Geen mappen gevonden',
 			'libraries.folders' => 'mappen',

@@ -2,16 +2,10 @@
 """
 Generate Amazon Fire Store assets from existing screenshots and icons.
 
-Amazon Fire Tablet:
-- Screenshots: 1920x1200 (4 images, stretch-to-fit from root tablet-*)
-- Icons: 512x512, 114x114 (PNG, transparent)
+DEPRECATED: Use scripts/generate_screenshot_assets.py instead, which handles
+all screenshot-derived assets (webp, extras, amazonfire, appstore) in one place.
 
-Amazon Fire TV:
-- TV banner: 1280x720 (from tv_banner or generated)
-- Screenshots: 1920x1080 landscape
-- Background: 1920x1080 landscape (no transparency)
-
-Run from repo root: python scripts/generate_amazonfire_assets.py
+This script kept for reference. Run from repo root: python scripts/generate_screenshot_assets.py
 Requires: pip install Pillow
 """
 import os

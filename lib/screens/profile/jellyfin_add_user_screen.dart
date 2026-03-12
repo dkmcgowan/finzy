@@ -17,6 +17,7 @@ import '../../services/offline_watch_sync_service.dart';
 import '../../services/server_connection_orchestrator.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/auth_button_style.dart';
+import '../../utils/error_message_utils.dart';
 import '../../services/server_registry.dart';
 import '../../services/storage_service.dart';
 import '../../theme/mono_tokens.dart';
@@ -199,11 +200,11 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
         userName: userName,
         primaryImageTag: primaryImageTag,
       );
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
         setState(() {
           _isAuthenticating = false;
-          _errorMessage = t.errors.authenticationFailed(error: e);
+          _errorMessage = mapAuthErrorToMessage(e, st);
         });
       }
     }

@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 
+import '../../utils/app_logger.dart';
+import '../../utils/error_message_utils.dart';
 import '../models.dart';
 import 'player_base.dart';
 
@@ -68,8 +70,9 @@ class PlayerAndroid extends PlayerBase {
       await observeProperty('aid', 'string');
       await observeProperty('sid', 'string');
       await observeProperty('demuxer-cache-time', 'double');
-    } catch (e) {
-      errorController.add('Initialization failed: $e');
+    } catch (e, st) {
+      appLogger.e('MPV initialization failed', error: e, stackTrace: st);
+      errorController.add('Initialization failed: ${safeUserMessage(e)}');
       rethrow;
     }
   }

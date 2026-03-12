@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../models/media_library.dart';
-import '../../../utils/app_logger.dart';
+import '../../../utils/error_message_utils.dart';
 import '../../../mixins/library_tab_state.dart';
 import '../../../mixins/refreshable.dart';
 import '../content_state_builder.dart';
@@ -211,14 +211,14 @@ abstract class BaseLibraryTabState<T, W extends BaseLibraryTab<T>> extends State
           widget.onDataLoaded!();
         });
       }
-    } catch (e) {
+    } catch (e, st) {
       if (!mounted) return;
 
-      appLogger.e('Error loading $errorContext', error: e);
       setState(() {
-        _errorMessage = 'Failed to load $errorContext: ${e.toString()}';
+        _errorMessage = 'Failed to load $errorContext: ${safeUserMessage(e)}';
         _isLoading = false;
       });
+      logErrorWithStackTrace('Error loading $errorContext', e, st);
     }
   }
 

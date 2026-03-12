@@ -4,6 +4,7 @@ import '../models/media_metadata.dart';
 import '../models/download_models.dart';
 import '../mpv/mpv.dart';
 import '../utils/app_logger.dart';
+import '../utils/error_message_utils.dart';
 import '../i18n/strings.g.dart';
 import '../database/app_database.dart';
 import 'download_storage_service.dart';
@@ -136,11 +137,12 @@ class PlaybackInitializationService {
         externalSubtitles: externalSubtitles,
         isOffline: false,
       );
-    } catch (e) {
+    } catch (e, st) {
       if (e is PlaybackException) {
         rethrow;
       }
-      throw PlaybackException(t.messages.errorLoading(error: e.toString()));
+      logErrorWithStackTrace('Playback initialization failed', e, st);
+      throw PlaybackException(t.messages.errorLoading(error: safeUserMessage(e)));
     }
   }
 

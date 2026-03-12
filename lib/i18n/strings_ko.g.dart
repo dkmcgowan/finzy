@@ -105,6 +105,10 @@ class _TranslationsAuthKo implements TranslationsAuthEn {
 	@override String get authTokenHint => '토큰을 입력하세요';
 	@override String get authenticationTimeout => '인증 시간이 초과되었습니다. 다시 시도해 주세요.';
 	@override String get sessionExpired => '세션이 만료되었습니다. 다시 로그인해 주세요.';
+	@override String get connectionTimeout => '연결 시간이 초과되었습니다. 네트워크를 확인하고 다시 시도해 주세요.';
+	@override String get invalidPassword => '사용자 이름 또는 비밀번호가 올바르지 않습니다.';
+	@override String get notAuthorized => '권한이 없습니다. 다시 로그인해 주세요.';
+	@override String get serverUnreachable => '서버에 연결할 수 없습니다. URL과 연결을 확인해 주세요.';
 	@override String get scanQRToSignIn => 'QR 코드를 스캔하여 로그인';
 	@override String get waitingForAuth => '인증 대기 중... 브라우저에서 로그인을 완료해 주세요.';
 	@override String get useBrowser => '브라우저 사용';
@@ -1305,6 +1309,10 @@ extension on TranslationsKo {
 			'auth.authTokenHint' => '토큰을 입력하세요',
 			'auth.authenticationTimeout' => '인증 시간이 초과되었습니다. 다시 시도해 주세요.',
 			'auth.sessionExpired' => '세션이 만료되었습니다. 다시 로그인해 주세요.',
+			'auth.connectionTimeout' => '연결 시간이 초과되었습니다. 네트워크를 확인하고 다시 시도해 주세요.',
+			'auth.invalidPassword' => '사용자 이름 또는 비밀번호가 올바르지 않습니다.',
+			'auth.notAuthorized' => '권한이 없습니다. 다시 로그인해 주세요.',
+			'auth.serverUnreachable' => '서버에 연결할 수 없습니다. URL과 연결을 확인해 주세요.',
 			'auth.scanQRToSignIn' => 'QR 코드를 스캔하여 로그인',
 			'auth.waitingForAuth' => '인증 대기 중... 브라우저에서 로그인을 완료해 주세요.',
 			'auth.useBrowser' => '브라우저 사용',
@@ -1799,12 +1807,12 @@ extension on TranslationsKo {
 			'libraries.libraryOptions' => '미디어 라이브러리 옵션',
 			'libraries.content' => '미디어 라이브러리 콘텐츠',
 			'libraries.selectLibrary' => '미디어 라이브러리 선택',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => '필터 (${count})',
 			'libraries.noRecommendations' => '추천 없음',
 			'libraries.noCollections' => '이 미디어 라이브러리에는 컬렉션이 없습니다',
 			'libraries.noFavorites' => '이 라이브러리에 즐겨찾기가 없습니다',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noGenres' => '이 라이브러리에 장르가 없습니다',
 			'libraries.noFoldersFound' => '폴더를 찾을 수 없습니다',
 			'libraries.folders' => '폴더',

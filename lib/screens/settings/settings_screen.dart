@@ -28,7 +28,7 @@ import '../../providers/server_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_profile_provider.dart';
-import '../../utils/app_logger.dart';
+import '../../utils/error_message_utils.dart';
 import '../../utils/provider_extensions.dart';
 
 import '../../services/download_storage_service.dart';
@@ -1082,11 +1082,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       if (mounted) {
         showSuccessSnackBar(context, t.messages.libraryScanStarted(title: library.title));
       }
-    } catch (e) {
-      appLogger.e('Library scan failed', error: e);
+    } catch (e, st) {
       if (mounted) {
-        showErrorSnackBar(context, t.messages.libraryScanFailed(error: e.toString()));
+        showErrorSnackBar(context, t.messages.libraryScanFailed(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Library scan failed', e, st);
     }
   }
 
@@ -1100,11 +1100,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       if (mounted) {
         showSuccessSnackBar(context, t.messages.metadataRefreshStarted(title: library.title));
       }
-    } catch (e) {
-      appLogger.e('Metadata refresh failed', error: e);
+    } catch (e, st) {
       if (mounted) {
-        showErrorSnackBar(context, t.messages.metadataRefreshFailed(error: e.toString()));
+        showErrorSnackBar(context, t.messages.metadataRefreshFailed(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Metadata refresh failed', e, st);
     }
   }
 

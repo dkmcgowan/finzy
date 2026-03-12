@@ -105,6 +105,10 @@ class _TranslationsAuthSv implements TranslationsAuthEn {
 	@override String get authTokenHint => 'Ange din token';
 	@override String get authenticationTimeout => 'Autentisering tog för lång tid. Försök igen.';
 	@override String get sessionExpired => 'Din session har löpt ut. Logga in igen.';
+	@override String get connectionTimeout => 'Anslutningen tog för lång tid. Kontrollera nätverket och försök igen.';
+	@override String get invalidPassword => 'Ogiltigt användarnamn eller lösenord.';
+	@override String get notAuthorized => 'Ej behörig. Logga in igen.';
+	@override String get serverUnreachable => 'Kunde inte nå servern. Kontrollera URL:en och din anslutning.';
 	@override String get scanQRToSignIn => 'Skanna QR-koden för att logga in';
 	@override String get waitingForAuth => 'Väntar på autentisering...\nVänligen slutför inloggning i din webbläsare.';
 	@override String get useBrowser => 'Använd webbläsare';
@@ -1305,6 +1309,10 @@ extension on TranslationsSv {
 			'auth.authTokenHint' => 'Ange din token',
 			'auth.authenticationTimeout' => 'Autentisering tog för lång tid. Försök igen.',
 			'auth.sessionExpired' => 'Din session har löpt ut. Logga in igen.',
+			'auth.connectionTimeout' => 'Anslutningen tog för lång tid. Kontrollera nätverket och försök igen.',
+			'auth.invalidPassword' => 'Ogiltigt användarnamn eller lösenord.',
+			'auth.notAuthorized' => 'Ej behörig. Logga in igen.',
+			'auth.serverUnreachable' => 'Kunde inte nå servern. Kontrollera URL:en och din anslutning.',
 			'auth.scanQRToSignIn' => 'Skanna QR-koden för att logga in',
 			'auth.waitingForAuth' => 'Väntar på autentisering...\nVänligen slutför inloggning i din webbläsare.',
 			'auth.useBrowser' => 'Använd webbläsare',
@@ -1799,12 +1807,12 @@ extension on TranslationsSv {
 			'libraries.libraryOptions' => 'Biblioteksalternativ',
 			'libraries.content' => 'bibliotekets innehåll',
 			'libraries.selectLibrary' => 'Välj bibliotek',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
 			'libraries.noRecommendations' => 'Inga rekommendationer tillgängliga',
 			'libraries.noCollections' => 'Inga samlingar i det här biblioteket',
 			'libraries.noFavorites' => 'Inga favoriter i detta bibliotek',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noGenres' => 'Inga genrer i detta bibliotek',
 			'libraries.noFoldersFound' => 'Inga mappar hittades',
 			'libraries.folders' => 'mappar',

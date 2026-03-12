@@ -40,6 +40,7 @@ import '../services/pip_service.dart';
 import '../services/shader_service.dart';
 import '../providers/shader_provider.dart';
 import '../utils/app_logger.dart';
+import '../utils/error_message_utils.dart';
 
 import '../utils/orientation_helper.dart';
 import '../utils/platform_detector.dart';
@@ -977,10 +978,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       if (mounted) {
         showErrorSnackBar(context, e.message);
       }
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: e.toString()));
+        showErrorSnackBar(context, t.messages.errorLoading(error: safeUserMessage(e)));
       }
+      logErrorWithStackTrace('Video player load failed', e, st);
     }
   }
 

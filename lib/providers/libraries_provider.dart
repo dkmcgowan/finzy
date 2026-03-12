@@ -6,6 +6,7 @@ import '../services/data_aggregation_service.dart';
 import '../services/storage_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/content_utils.dart';
+import '../utils/error_message_utils.dart';
 
 /// Load state for the libraries provider
 enum LibrariesLoadState { initial, loading, loaded, error }
@@ -81,9 +82,9 @@ class LibrariesProvider extends ChangeNotifier {
       appLogger.i('LibrariesProvider: Loaded ${_libraries.length} libraries');
       notifyListeners();
     } catch (e, stackTrace) {
-      appLogger.e('LibrariesProvider: Failed to load libraries', error: e, stackTrace: stackTrace);
+      logErrorWithStackTrace('LibrariesProvider: Failed to load libraries', e, stackTrace);
       _loadState = LibrariesLoadState.error;
-      _errorMessage = e.toString();
+      _errorMessage = safeUserMessage(e);
       notifyListeners();
     }
   }

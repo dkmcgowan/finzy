@@ -11,6 +11,7 @@ import '../providers/settings_provider.dart';
 import '../services/settings_service.dart' show EpisodePosterMode, ViewMode;
 import '../utils/provider_extensions.dart';
 import '../utils/app_logger.dart';
+import '../utils/error_message_utils.dart';
 import '../utils/grid_size_calculator.dart';
 import '../utils/layout_constants.dart';
 import '../widgets/focusable_filter_chip.dart';
@@ -369,13 +370,13 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
       _applySort();
 
       appLogger.d('Loaded ${items.length} items for hub: ${widget.hub.title}');
-    } catch (e) {
-      appLogger.e('Failed to load hub content', error: e);
+    } catch (e, st) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = t.messages.errorLoading(error: e.toString());
+        _errorMessage = t.messages.errorLoading(error: safeUserMessage(e));
         _isLoading = false;
       });
+      logErrorWithStackTrace('Failed to load hub content', e, st);
     }
   }
 

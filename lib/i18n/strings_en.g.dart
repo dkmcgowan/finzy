@@ -137,6 +137,18 @@ class TranslationsAuthEn {
 	/// en: 'Your session has expired. Please sign in again.'
 	String get sessionExpired => 'Your session has expired. Please sign in again.';
 
+	/// en: 'Connection timed out. Please check your network and try again.'
+	String get connectionTimeout => 'Connection timed out. Please check your network and try again.';
+
+	/// en: 'Invalid username or password.'
+	String get invalidPassword => 'Invalid username or password.';
+
+	/// en: 'Not authorized. Please sign in again.'
+	String get notAuthorized => 'Not authorized. Please sign in again.';
+
+	/// en: 'Could not reach server. Check the URL and your connection.'
+	String get serverUnreachable => 'Could not reach server. Check the URL and your connection.';
+
 	/// en: 'Scan this QR code to sign in'
 	String get scanQRToSignIn => 'Scan this QR code to sign in';
 
@@ -2921,6 +2933,10 @@ extension on Translations {
 			'auth.authTokenHint' => 'Enter your token',
 			'auth.authenticationTimeout' => 'Authentication timed out. Please try again.',
 			'auth.sessionExpired' => 'Your session has expired. Please sign in again.',
+			'auth.connectionTimeout' => 'Connection timed out. Please check your network and try again.',
+			'auth.invalidPassword' => 'Invalid username or password.',
+			'auth.notAuthorized' => 'Not authorized. Please sign in again.',
+			'auth.serverUnreachable' => 'Could not reach server. Check the URL and your connection.',
 			'auth.scanQRToSignIn' => 'Scan this QR code to sign in',
 			'auth.waitingForAuth' => 'Waiting for authentication...\nPlease complete sign-in in your browser.',
 			'auth.useBrowser' => 'Use browser',
@@ -3415,12 +3431,12 @@ extension on Translations {
 			'libraries.libraryOptions' => 'Library options',
 			'libraries.content' => 'library content',
 			'libraries.selectLibrary' => 'Select library',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
 			'libraries.noRecommendations' => 'No recommendations available',
 			'libraries.noCollections' => 'No collections in this library',
 			'libraries.noFavorites' => 'No favorites in this library',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noGenres' => 'No genres in this library',
 			'libraries.noFoldersFound' => 'No folders found',
 			'libraries.folders' => 'folders',

@@ -4,6 +4,7 @@ import '../models/media_metadata.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/desktop_app_bar.dart';
 import '../i18n/strings.g.dart';
+import '../utils/error_message_utils.dart';
 import 'base_media_list_detail_screen.dart';
 import 'focusable_detail_screen_mixin.dart';
 import '../mixins/grid_focus_node_mixin.dart';
@@ -57,7 +58,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
 
   @override
   String getLoadErrorMessage(Object error) {
-    return t.collections.failedToLoadItems(error: error.toString());
+    return t.collections.failedToLoadItems(error: safeUserMessage(error));
   }
 
   @override

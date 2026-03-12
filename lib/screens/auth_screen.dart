@@ -18,8 +18,8 @@ import '../providers/libraries_provider.dart';
 import '../services/offline_watch_sync_service.dart';
 import '../i18n/strings.g.dart';
 import '../theme/mono_tokens.dart';
-import '../utils/app_logger.dart';
 import '../utils/auth_button_style.dart';
+import '../utils/error_message_utils.dart';
 import '../utils/platform_detector.dart';
 import '../focus/focusable_wrapper.dart';
 import 'main_screen.dart';
@@ -110,12 +110,11 @@ class _AuthScreenState extends State<AuthScreen> {
       final userName = _jellyfinSelectedUser?.name ?? username;
       final primaryImageTag = _jellyfinSelectedUser?.primaryImageTag;
       await _completeJellyfinAuth(baseUrl: baseUrl, result: result, userName: userName, primaryImageTag: primaryImageTag);
-    } catch (e) {
-      appLogger.e('Jellyfin sign-in failed', error: e);
+    } catch (e, st) {
       if (!mounted) return;
       setState(() {
         _isAuthenticating = false;
-        _errorMessage = t.errors.authenticationFailed(error: e);
+        _errorMessage = mapAuthErrorToMessage(e, st);
       });
     }
   }
@@ -232,11 +231,11 @@ class _AuthScreenState extends State<AuthScreen> {
         _isAuthenticating = false;
         _errorMessage = null;
       });
-    } catch (e) {
+    } catch (e, st) {
       if (!mounted) return;
       setState(() {
         _isAuthenticating = false;
-        _errorMessage = t.errors.authenticationFailed(error: e);
+        _errorMessage = mapAuthErrorToMessage(e, st);
       });
     }
   }
@@ -417,23 +416,10 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  /// Builds the Jellyfin sign-in form and any error message
+  /// Builds the Jellyfin sign-in form and any error message.
+  /// Error is shown once inside each step's layout (server, users, manual).
   Widget _buildAuthContent() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildJellyfinForm(),
-        if (_errorMessage != null) ...[
-          const SizedBox(height: 16),
-          Text(
-            _errorMessage!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ],
-    );
+    return _buildJellyfinForm();
   }
 
   Widget _buildJellyfinForm() {
