@@ -512,10 +512,15 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         const SizedBox(height: 24),
         isTV
-            ? FocusableWrapper(
-                onSelect: _isAuthenticating ? null : _jellyfinConnectToServer,
-                onNavigateUp: () => _serverUrlFocusNode.requestFocus(),
-                canRequestFocus: !_isAuthenticating,
+            ? Focus(
+                onKeyEvent: (node, event) {
+                  if (!event.isActionable) return KeyEventResult.ignored;
+                  if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    _serverUrlFocusNode.requestFocus();
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
+                },
                 child: connectButton,
               )
             : connectButton,
@@ -580,38 +585,20 @@ class _AuthScreenState extends State<AuthScreen> {
           const SizedBox(height: 24),
           FocusTraversalOrder(
             order: const NumericFocusOrder(2),
-            child: isTV
-                ? FocusableWrapper(
-                    onSelect: () => _jellyfinGoToManual(null),
-                    child: ElevatedButton(
-                      onPressed: () => _jellyfinGoToManual(null),
-                      style: authPillButtonStyle(context),
-                      child: const Text('Manual login'),
-                    ),
-                  )
-                : ElevatedButton(
-                    onPressed: () => _jellyfinGoToManual(null),
-                    style: authPillButtonStyle(context),
-                    child: const Text('Manual login'),
-                  ),
+            child: ElevatedButton(
+              onPressed: () => _jellyfinGoToManual(null),
+              style: authPillButtonStyle(context),
+              child: const Text('Manual login'),
+            ),
           ),
           const SizedBox(height: 12),
           FocusTraversalOrder(
             order: const NumericFocusOrder(3),
-            child: isTV
-                ? FocusableWrapper(
-                    onSelect: _jellyfinBackToServer,
-                    child: ElevatedButton(
-                      onPressed: _jellyfinBackToServer,
-                      style: authPillButtonStyle(context, primary: false),
-                      child: const Text('Change server'),
-                    ),
-                  )
-                : ElevatedButton(
-                    onPressed: _jellyfinBackToServer,
-                    style: authPillButtonStyle(context, primary: false),
-                    child: const Text('Change server'),
-                  ),
+            child: ElevatedButton(
+              onPressed: _jellyfinBackToServer,
+              style: authPillButtonStyle(context, primary: false),
+              child: const Text('Change server'),
+            ),
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 12),
@@ -801,10 +788,15 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         const SizedBox(height: 24),
         isTV
-            ? FocusableWrapper(
-                onSelect: _isAuthenticating ? null : _signInWithJellyfin,
-                onNavigateUp: () => _passwordFocusNode.requestFocus(),
-                canRequestFocus: !_isAuthenticating,
+            ? Focus(
+                onKeyEvent: (node, event) {
+                  if (!event.isActionable) return KeyEventResult.ignored;
+                  if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    _passwordFocusNode.requestFocus();
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
+                },
                 child: ElevatedButton(
                   onPressed: _isAuthenticating ? null : _signInWithJellyfin,
                   style: authPillButtonStyle(context),
@@ -822,10 +814,14 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
         const SizedBox(height: 12),
         isTV
-            ? FocusableWrapper(
-                onSelect: _jellyfinBackToUsers,
-                onNavigateUp: () {
-                  FocusManager.instance.primaryFocus?.focusInDirection(TraversalDirection.up);
+            ? Focus(
+                onKeyEvent: (node, event) {
+                  if (!event.isActionable) return KeyEventResult.ignored;
+                  if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    FocusManager.instance.primaryFocus?.focusInDirection(TraversalDirection.up);
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
                 },
                 child: ElevatedButton(
                   onPressed: _jellyfinBackToUsers,
@@ -851,7 +847,6 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildJellyfinQuickConnectStep() {
-    final isTV = PlatformDetector.isTV();
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -882,20 +877,11 @@ class _AuthScreenState extends State<AuthScreen> {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 24),
-        isTV
-            ? FocusableWrapper(
-                onSelect: _jellyfinCancelQuickConnect,
-                child: ElevatedButton(
-                  onPressed: _jellyfinCancelQuickConnect,
-                  style: authPillButtonStyle(context, primary: false),
-                  child: Text(t.common.cancel),
-                ),
-              )
-            : ElevatedButton(
-                onPressed: _jellyfinCancelQuickConnect,
-                style: authPillButtonStyle(context, primary: false),
-                child: Text(t.common.cancel),
-              ),
+        ElevatedButton(
+          onPressed: _jellyfinCancelQuickConnect,
+          style: authPillButtonStyle(context, primary: false),
+          child: Text(t.common.cancel),
+        ),
       ],
     );
   }

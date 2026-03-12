@@ -359,7 +359,6 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
   @override
   Widget build(BuildContext context) {
     if (_step == 'quick_connect') {
-      final isTV = PlatformDetector.isTV();
       return Scaffold(
         appBar: AppBar(title: const Text('Add user')),
         body: Center(
@@ -389,20 +388,11 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                isTV
-                    ? FocusableWrapper(
-                        onSelect: _cancelQuickConnect,
-                        child: ElevatedButton(
-                          onPressed: _cancelQuickConnect,
-                          style: authPillButtonStyle(context, primary: false),
-                          child: Text(t.common.cancel),
-                        ),
-                      )
-                    : ElevatedButton(
-                        onPressed: _cancelQuickConnect,
-                        style: authPillButtonStyle(context, primary: false),
-                        child: Text(t.common.cancel),
-                      ),
+                ElevatedButton(
+                  onPressed: _cancelQuickConnect,
+                  style: authPillButtonStyle(context, primary: false),
+                  child: Text(t.common.cancel),
+                ),
               ],
             ),
           ),
@@ -503,10 +493,15 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
               ),
               const SizedBox(height: 24),
               isTV
-                  ? FocusableWrapper(
-                      onSelect: _isAuthenticating ? null : _signInManual,
-                      onNavigateUp: () => _passwordFocusNode.requestFocus(),
-                      canRequestFocus: !_isAuthenticating,
+                  ? Focus(
+                      onKeyEvent: (node, event) {
+                        if (!event.isActionable) return KeyEventResult.ignored;
+                        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                          _passwordFocusNode.requestFocus();
+                          return KeyEventResult.handled;
+                        }
+                        return KeyEventResult.ignored;
+                      },
                       child: ElevatedButton(
                         onPressed: _isAuthenticating ? null : _signInManual,
                         style: authPillButtonStyle(context),
@@ -524,10 +519,14 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                     ),
               const SizedBox(height: 12),
               isTV
-                  ? FocusableWrapper(
-                      onSelect: _backToUsers,
-                      onNavigateUp: () {
-                        FocusManager.instance.primaryFocus?.focusInDirection(TraversalDirection.up);
+                  ? Focus(
+                      onKeyEvent: (node, event) {
+                        if (!event.isActionable) return KeyEventResult.ignored;
+                        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                          FocusManager.instance.primaryFocus?.focusInDirection(TraversalDirection.up);
+                          return KeyEventResult.handled;
+                        }
+                        return KeyEventResult.ignored;
                       },
                       child: ElevatedButton(
                         onPressed: _backToUsers,
@@ -606,20 +605,11 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
                         },
                       ),
                       const SizedBox(height: 24),
-                      isTV
-                          ? FocusableWrapper(
-                              onSelect: () => _goToManual(null),
-                              child: ElevatedButton(
-                                onPressed: () => _goToManual(null),
-                                style: authPillButtonStyle(context),
-                                child: const Text('Manual login'),
-                              ),
-                            )
-                          : ElevatedButton(
-                              onPressed: () => _goToManual(null),
-                              style: authPillButtonStyle(context),
-                              child: const Text('Manual login'),
-                            ),
+                      ElevatedButton(
+                        onPressed: () => _goToManual(null),
+                        style: authPillButtonStyle(context),
+                        child: const Text('Manual login'),
+                      ),
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 12),
                         Text(

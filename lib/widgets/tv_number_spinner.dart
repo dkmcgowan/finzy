@@ -42,8 +42,17 @@ class TvNumberSpinner extends StatefulWidget {
   /// Use this to close the dialog or cancel the operation.
   final VoidCallback? onCancel;
 
+  /// Called when the user presses DOWN and there is a focusable item below
+  /// (e.g. Cancel/Save buttons). Use this to move focus down instead of
+  /// changing the value.
+  final VoidCallback? onNavigateDown;
+
   /// Whether the spinner should request focus when built.
   final bool autofocus;
+
+  /// Optional external FocusNode for programmatic focus control.
+  /// Use when the parent needs to refocus the spinner (e.g. Up from Cancel).
+  final FocusNode? focusNode;
 
   const TvNumberSpinner({
     super.key,
@@ -56,6 +65,8 @@ class TvNumberSpinner extends StatefulWidget {
     this.autofocus = false,
     this.onConfirm,
     this.onCancel,
+    this.onNavigateDown,
+    this.focusNode,
   });
 
   @override
@@ -64,19 +75,41 @@ class TvNumberSpinner extends StatefulWidget {
 
 class _TvNumberSpinnerState extends State<TvNumberSpinner> {
   late FocusNode _focusNode;
+  bool _ownsNode = false;
   Timer? _repeatTimer;
   bool _isFocused = false;
 
   @override
   void initState() {
     super.initState();
-    _focusNode = FocusNode(debugLabel: 'TvNumberSpinner');
+    if (widget.focusNode != null) {
+      _focusNode = widget.focusNode!;
+      _ownsNode = false;
+    } else {
+      _focusNode = FocusNode(debugLabel: 'TvNumberSpinner');
+      _ownsNode = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(TvNumberSpinner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      if (_ownsNode) _focusNode.dispose();
+      if (widget.focusNode != null) {
+        _focusNode = widget.focusNode!;
+        _ownsNode = false;
+      } else {
+        _focusNode = FocusNode(debugLabel: 'TvNumberSpinner');
+        _ownsNode = true;
+      }
+    }
   }
 
   @override
   void dispose() {
     _repeatTimer?.cancel();
-    _focusNode.dispose();
+    if (_ownsNode) _focusNode.dispose();
     super.dispose();
   }
 
@@ -126,6 +159,11 @@ class _TvNumberSpinnerState extends State<TvNumberSpinner> {
       // Handle SELECT key to confirm/move to save button
       if (key.isSelectKey && widget.onConfirm != null) {
         widget.onConfirm!();
+        return KeyEventResult.handled;
+      }
+      // Down: navigate to buttons below if callback provided, else decrement
+      if (key.isDownKey && widget.onNavigateDown != null) {
+        widget.onNavigateDown!();
         return KeyEventResult.handled;
       }
       if (key.isUpKey || key.isRightKey) {

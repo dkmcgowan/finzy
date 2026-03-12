@@ -40,6 +40,7 @@ import 'auth_screen.dart';
 import 'libraries/state_messages.dart';
 import 'main_screen.dart';
 import '../widgets/quick_connect_authorize_dialog.dart';
+import '../widgets/profile_app_bar_button.dart';
 
 
 class DiscoverScreen extends StatefulWidget {
@@ -133,6 +134,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   late FocusNode _userButtonFocusNode;
   bool _isRefreshFocused = false;
   bool _isUserFocused = false;
+
+  /// Key for the profile menu (used to open programmatically on D-pad Select).
+  /// Using ProfileAppBarButton ensures same positioning as Libraries screen.
+  final _profileMenuKey = GlobalKey<PopupMenuButtonState<String>>();
 
   /// Get the correct JellyfinClient for an item's server
   JellyfinClient _getClientForItem(MediaMetadata? item) {
@@ -427,10 +432,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       return KeyEventResult.handled;
     }
 
-    // SELECT: Show user menu
+    // SELECT: Show user menu (ProfileAppBarButton handles positioning)
     if (key.isSelectKey) {
-      final jellyfinProvider = context.read<JellyfinProfileProvider>();
-      _showUserMenu(context, jellyfinProvider);
+      _profileMenuKey.currentState?.showButtonMenu();
       return KeyEventResult.handled;
     }
 
@@ -897,57 +901,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     Navigator.push(context, MaterialPageRoute(builder: (context) => const JellyfinProfileSwitchScreen()));
   }
 
-  /// Show user menu programmatically (for D-pad select).
-  /// Profile switch is shown when a Jellyfin user is loaded.
-  void _showUserMenu(BuildContext context, JellyfinProfileProvider jellyfinProvider) {
-    final showSwitch = jellyfinProvider.currentUser != null;
-    final RenderBox? button = _userButtonFocusNode.context?.findRenderObject() as RenderBox?;
-    if (button == null) return;
-
-    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-    final Offset topLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
-    // Position menu below the avatar so it doesn't cover the icon.
-    // Use a non-zero anchor rect so Flutter consistently places it below.
-    final Rect anchor = Rect.fromLTWH(
-      topLeft.dx,
-      topLeft.dy + button.size.height + 8,
-      button.size.width,
-      button.size.height,
-    );
-    final position = RelativeRect.fromRect(anchor, Offset.zero & overlay.size);
-
-    showMenu<String>(
-      context: context,
-      position: position,
-      items: [
-        if (showSwitch)
-          PopupMenuItem(
-            value: 'switch_profile',
-            child: Row(
-              children: [AppIcon(Symbols.people_rounded, fill: 1), SizedBox(width: 8), Text(t.discover.switchProfile)],
-            ),
-          ),
-        PopupMenuItem(
-          value: 'quick_connect',
-          child: Row(children: [AppIcon(Symbols.qr_code_2_rounded, fill: 1), SizedBox(width: 8), Text(t.common.quickConnect)]),
-        ),
-        PopupMenuItem(
-          value: 'logout',
-          child: Row(children: [AppIcon(Symbols.logout_rounded, fill: 1), SizedBox(width: 8), Text(t.common.logout)]),
-        ),
-      ],
-    ).then((value) {
-      if (!context.mounted) return;
-      if (value == 'switch_profile') {
-        _handleJellyfinSwitchProfile(context);
-      } else if (value == 'quick_connect') {
-        showDialog(context: context, builder: (_) => const QuickConnectAuthorizeDialog());
-      } else if (value == 'logout') {
-        _handleLogout();
-      }
-    });
-  }
-
   Widget _buildOverlaidAppBar() {
     final statusBarHeight = MediaQuery.of(context).padding.top;
     return Container(
@@ -991,85 +944,23 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                 ),
               ),
-              Consumer<JellyfinProfileProvider>(
-                builder: (context, jellyfinProvider, child) {
-                  final showSwitch = jellyfinProvider.currentUser != null;
-                  Widget avatar;
-                  final jUser = jellyfinProvider.currentUser;
-                  if (jUser != null) {
-                    final imageUrl = jellyfinProvider.imageUrlFor(jUser);
-                    avatar = imageUrl.isNotEmpty
-                        ? ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: imageUrl,
-                              width: 32,
-                              height: 32,
-                              fit: BoxFit.cover,
-                              placeholder: (context, loadingProgress) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
-                              errorWidget: (context, error, stackTrace) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
-                            ),
-                          )
-                        : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white);
-                  } else {
-                    avatar = const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white);
-                  }
-                  return Focus(
-                    focusNode: _userButtonFocusNode,
-                    onKeyEvent: _handleUserKeyEvent,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: _isUserFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
-                        borderRadius: const BorderRadius.all(Radius.circular(20)),
-                      ),
-                      child: PopupMenuButton<String>(
-                        icon: avatar,
-                        offset: const Offset(0, 8),
-                        onSelected: (value) {
-                          if (value == 'switch_profile') {
-                            _handleJellyfinSwitchProfile(context);
-                          } else if (value == 'quick_connect') {
-                            showDialog(context: context, builder: (_) => const QuickConnectAuthorizeDialog());
-                          } else if (value == 'logout') {
-                            _handleLogout();
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          if (showSwitch)
-                            PopupMenuItem(
-                              value: 'switch_profile',
-                              child: Row(
-                                children: [
-                                  AppIcon(Symbols.people_rounded, fill: 1),
-                                  SizedBox(width: 8),
-                                  Text(t.discover.switchProfile),
-                                ],
-                              ),
-                            ),
-                          PopupMenuItem(
-                            value: 'quick_connect',
-                            child: Row(
-                              children: [
-                                AppIcon(Symbols.qr_code_2_rounded, fill: 1),
-                                SizedBox(width: 8),
-                                Text(t.common.quickConnect),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'logout',
-                            child: Row(
-                              children: [
-                                AppIcon(Symbols.logout_rounded, fill: 1),
-                                SizedBox(width: 8),
-                                Text(t.common.logout),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+              Focus(
+                focusNode: _userButtonFocusNode,
+                onKeyEvent: _handleUserKeyEvent,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: _isUserFocused ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+                    borderRadius: const BorderRadius.all(Radius.circular(20)),
+                  ),
+                  child: IconTheme(
+                    data: const IconThemeData(color: Colors.white),
+                    child: ProfileAppBarButton(
+                      menuKey: _profileMenuKey,
+                      onSwitchProfile: () => _handleJellyfinSwitchProfile(context),
+                      onLogout: _handleLogout,
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ],
           ),

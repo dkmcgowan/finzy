@@ -1686,6 +1686,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     required Future<void> Function(int value) onSave,
   }) {
     int spinnerValue = currentValue;
+    final spinnerFocusNode = FocusNode();
+    final cancelFocusNode = FocusNode(
+      onKeyEvent: (_, event) {
+        if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          spinnerFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
     final saveFocusNode = FocusNode();
 
     showDialog(
@@ -1704,6 +1715,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                     max: max,
                     suffix: suffixText,
                     autofocus: true,
+                    focusNode: spinnerFocusNode,
                     onChanged: (value) {
                       setDialogState(() {
                         spinnerValue = value;
@@ -1711,6 +1723,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                     },
                     onConfirm: () => saveFocusNode.requestFocus(),
                     onCancel: () => Navigator.pop(dialogContext),
+                    onNavigateDown: () => cancelFocusNode.requestFocus(),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -1722,7 +1735,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                 ],
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(t.common.cancel)),
+                TextButton(
+                  focusNode: cancelFocusNode,
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(t.common.cancel),
+                ),
                 TextButton(
                   focusNode: saveFocusNode,
                   onPressed: () async {
@@ -1738,7 +1755,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           },
         );
       },
-    ).then((_) => saveFocusNode.dispose());
+    ).then((_) {
+      spinnerFocusNode.dispose();
+      cancelFocusNode.dispose();
+      saveFocusNode.dispose();
+    });
   }
 
   /// Standard numeric input dialog with TextField for non-TV platforms.
