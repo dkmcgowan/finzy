@@ -356,6 +356,19 @@ def main():
         canvas.save(out_path, "PNG")
         print(f"  Wrote {out_path} ({banner_w}x{banner_h})")
 
+    # 6) Microsoft Store logos (Partner Center listing)
+    # 300x300 primary, 150x150 and 71x71 for smaller displays
+    MICROSOFT_SIZES = (300, 150, 71)
+    MICROSOFT_DIR = os.path.join(ASSETS, "microsoft")
+    os.makedirs(MICROSOFT_DIR, exist_ok=True)
+    print("")
+    print("Generating Microsoft Store logos...")
+    for size in MICROSOFT_SIZES:
+        resized = icon_1024.resize((size, size), Image.LANCZOS)
+        out_path = os.path.join(MICROSOFT_DIR, f"logo-{size}x{size}.png")
+        resized.save(out_path, "PNG")
+        print(f"  Wrote {out_path} ({size}x{size})")
+
 
 if __name__ == "__main__":
     main()

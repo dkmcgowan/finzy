@@ -35,6 +35,9 @@ jobs:
             assets/finzy.png
             assets/finzy_android_foreground.png
             assets/finzy_monochrome.png
+            assets/microsoft/logo-300x300.png
+            assets/microsoft/logo-150x150.png
+            assets/microsoft/logo-71x71.png
             android/app/src/main/res/drawable-mdpi/tv_banner.png
             android/app/src/main/res/drawable-hdpi/tv_banner.png
             android/app/src/main/res/drawable-xhdpi/tv_banner.png
