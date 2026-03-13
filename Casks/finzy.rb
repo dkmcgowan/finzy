@@ -1,6 +1,6 @@
 cask "finzy" do
-  version "0.1.9"
-  sha256 "5496a7d6d9fb60d09487a5d80130c8568f0762d85ad9931566d569e1c753226a"
+  version "0.2.2"
+  sha256 "5bb38fd976827c5be26f22e47921b1c9441165f8f28cfc7c19636edcb2873973"
 
   url "https://github.com/dkmcgowan/finzy/releases/download/#{version}/finzy-macos.dmg"
   name "Finzy"
