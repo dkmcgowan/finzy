@@ -86,10 +86,9 @@ flutter:
 msix_config:
   display_name: Finzy
   publisher_display_name: dkmcgowan
-  # Required for store: true. Get from https://partner.microsoft.com/dashboard
-  # > Product > Product identity > Package/Properties/Publisher
-  # Format: CN=PublisherGUID (e.g. CN=12345678-1234-1234-1234-123456789012)
-  publisher: CN=YOUR_PUBLISHER_ID
+  # Publisher is provided by MSIX_PUBLISHER secret in CI. For local dev only:
+  # Get from Partner Center > Product identity > Publisher (format: CN=GUID)
+  publisher: CN=placeholder
   identity_name: com.dkmcgowan.finzy
   logo_path: assets/finzy.png
   store: true

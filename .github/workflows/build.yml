@@ -518,18 +518,15 @@ jobs:
         run: .\windows\build-installer.ps1 -X64BuildDir "build-x64" -Arm64BuildDir "build-arm64"
 
       - name: Setup Flutter for MSIX
-        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           cache: true
 
       - name: Install dependencies for MSIX
-        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         run: flutter pub get
 
       - name: Create MSIX build structure
-        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         run: |
           New-Item -ItemType Directory -Path "build\windows\x64\runner\Release" -Force
           New-Item -ItemType Directory -Path "build\windows\arm64\runner\Release" -Force
@@ -537,26 +534,22 @@ jobs:
           Copy-Item -Path "build-arm64\*" -Destination "build\windows\arm64\runner\Release\" -Recurse
 
       - name: Build MSIX x64
-        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         env:
           MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
         run: |
-          if ($env:MSIX_PUBLISHER) {
-            dart run msix:create --build-windows false --architecture x64 -n finzy-windows-x64 --publisher $env:MSIX_PUBLISHER
-          } else {
-            dart run msix:create --build-windows false --architecture x64 -n finzy-windows-x64
+          if (-not $env:MSIX_PUBLISHER) {
+            Write-Error "MSIX_PUBLISHER secret is required for MSIX build. Set it in Partner Center > Product identity > Publisher (format: CN=GUID)."
           }
+          dart run msix:create --build-windows false --architecture x64 -n finzy-windows-x64 --publisher $env:MSIX_PUBLISHER
 
       - name: Build MSIX arm64
-        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         env:
           MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
         run: |
-          if ($env:MSIX_PUBLISHER) {
-            dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64 --publisher $env:MSIX_PUBLISHER
-          } else {
-            dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64
+          if (-not $env:MSIX_PUBLISHER) {
+            Write-Error "MSIX_PUBLISHER secret is required for MSIX build. Set it in Partner Center > Product identity > Publisher (format: CN=GUID)."
           }
+          dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64 --publisher $env:MSIX_PUBLISHER
 
       - name: Attest Windows artifacts
         uses: actions/attest-build-provenance@v2
@@ -567,7 +560,6 @@ jobs:
             finzy-windows-installer.exe
 
       - name: Attest Windows MSIX
-        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
@@ -593,7 +585,6 @@ jobs:
           path: finzy-windows-installer.exe
 
       - name: Upload MSIX
-        if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: windows-msix

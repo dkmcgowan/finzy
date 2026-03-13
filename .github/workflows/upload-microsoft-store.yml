@@ -8,7 +8,8 @@ on:
 jobs:
   upload-microsoft-store:
     runs-on: ubuntu-latest
-    if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true'
+    # Run on release publish when enabled, or always when manually triggered
+    if: vars.MICROSOFT_STORE_UPLOAD_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
     steps:
