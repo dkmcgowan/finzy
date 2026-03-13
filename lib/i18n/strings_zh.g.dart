@@ -207,8 +207,6 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	// Translations
 	@override String get title => '设置';
 	@override String get supportOptionalCaption => '可选——应用保持免费';
-	@override String get supportTierCoffee => '请我喝杯咖啡';
-	@override String get supportTierLunch => '请我吃顿午餐';
 	@override String get supportTierSupport => '支持开发';
 	@override String get supportTipThankYou => '感谢你的支持！';
 	@override String get language => '语言';
@@ -1375,8 +1373,6 @@ extension on TranslationsZh {
 			'update.checkFailed' => '无法检查更新',
 			'settings.title' => '设置',
 			'settings.supportOptionalCaption' => '可选——应用保持免费',
-			'settings.supportTierCoffee' => '请我喝杯咖啡',
-			'settings.supportTierLunch' => '请我吃顿午餐',
 			'settings.supportTierSupport' => '支持开发',
 			'settings.supportTipThankYou' => '感谢你的支持！',
 			'settings.language' => '语言',
@@ -1807,10 +1803,10 @@ extension on TranslationsZh {
 			'libraries.libraryOptions' => '媒体库选项',
 			'libraries.content' => '媒体库内容',
 			'libraries.selectLibrary' => '选择媒体库',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => '筛选器（${count}）',
 			'libraries.noRecommendations' => '暂无推荐',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.noCollections' => '此媒体库中没有合集',
 			'libraries.noFavorites' => '此媒体库中无收藏',
 			'libraries.noGenres' => '此媒体库中无类型',

@@ -207,8 +207,6 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	// Translations
 	@override String get title => 'Instellingen';
 	@override String get supportOptionalCaption => 'Optioneel — app blijft gratis';
-	@override String get supportTierCoffee => 'Trakteer mij op een koffie';
-	@override String get supportTierLunch => 'Trakteer mij op een lunch';
 	@override String get supportTierSupport => 'Ondersteun ontwikkeling';
 	@override String get supportTipThankYou => 'Bedankt voor je steun!';
 	@override String get language => 'Taal';
@@ -1375,8 +1373,6 @@ extension on TranslationsNl {
 			'update.checkFailed' => 'Kon niet controleren op updates',
 			'settings.title' => 'Instellingen',
 			'settings.supportOptionalCaption' => 'Optioneel — app blijft gratis',
-			'settings.supportTierCoffee' => 'Trakteer mij op een koffie',
-			'settings.supportTierLunch' => 'Trakteer mij op een lunch',
 			'settings.supportTierSupport' => 'Ondersteun ontwikkeling',
 			'settings.supportTipThankYou' => 'Bedankt voor je steun!',
 			'settings.language' => 'Taal',
@@ -1807,10 +1803,10 @@ extension on TranslationsNl {
 			'libraries.libraryOptions' => 'Bibliotheek opties',
 			'libraries.content' => 'bibliotheekinhoud',
 			'libraries.selectLibrary' => 'Bibliotheek kiezen',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
 			'libraries.noRecommendations' => 'Geen aanbevelingen beschikbaar',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.noCollections' => 'Geen collecties in deze bibliotheek',
 			'libraries.noFavorites' => 'Geen favorieten in deze bibliotheek',
 			'libraries.noGenres' => 'Geen genres in deze bibliotheek',

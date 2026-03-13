@@ -207,8 +207,6 @@ class _TranslationsSettingsIt implements TranslationsSettingsEn {
 	// Translations
 	@override String get title => 'Impostazioni';
 	@override String get supportOptionalCaption => 'Opzionale — l\'app resta gratuita';
-	@override String get supportTierCoffee => 'Offrimi un caffè';
-	@override String get supportTierLunch => 'Offrimi un pranzo';
 	@override String get supportTierSupport => 'Supporta lo sviluppo';
 	@override String get supportTipThankYou => 'Grazie per il tuo supporto!';
 	@override String get language => 'Lingua';
@@ -1375,8 +1373,6 @@ extension on TranslationsIt {
 			'update.checkFailed' => 'Impossibile controllare gli aggiornamenti',
 			'settings.title' => 'Impostazioni',
 			'settings.supportOptionalCaption' => 'Opzionale — l\'app resta gratuita',
-			'settings.supportTierCoffee' => 'Offrimi un caffè',
-			'settings.supportTierLunch' => 'Offrimi un pranzo',
 			'settings.supportTierSupport' => 'Supporta lo sviluppo',
 			'settings.supportTipThankYou' => 'Grazie per il tuo supporto!',
 			'settings.language' => 'Lingua',
@@ -1807,10 +1803,10 @@ extension on TranslationsIt {
 			'libraries.libraryOptions' => 'Opzioni libreria',
 			'libraries.content' => 'contenuto della libreria',
 			'libraries.selectLibrary' => 'Seleziona libreria',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filtri (${count})',
 			'libraries.noRecommendations' => 'Nessun consiglio disponibile',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.noCollections' => 'Nessuna raccolta in questa libreria',
 			'libraries.noFavorites' => 'Nessun preferito in questa libreria',
 			'libraries.noGenres' => 'Nessun genere in questa libreria',

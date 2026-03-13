@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:url_launcher/url_launcher.dart';
 
-import '../constants/support_constants.dart';
+import '../constants/support_constants.dart' show kPayPalMeUsername, kSupportPayPalUrl;
 import '../utils/app_logger.dart';
 
 /// Handles support/tip payments via PayPal on desktop (Windows, Mac, Linux).
@@ -16,18 +16,15 @@ class SupportService {
       kPayPalMeUsername != null &&
       kPayPalMeUsername!.isNotEmpty;
 
-  /// Initiate a tip by opening PayPal.Me in the browser.
+  /// Open the support PayPal link in the browser.
   /// Returns true if the URL launched successfully, false otherwise.
-  Future<bool> tip(SupportTier tier) async {
-    final username = kPayPalMeUsername;
-    if (username == null || username.isEmpty) {
-      appLogger.w('SupportService: PayPal username not configured');
+  Future<bool> openSupportLink() async {
+    if (!isAvailable) {
+      appLogger.w('SupportService: PayPal not configured');
       return false;
     }
-    // PayPal.Me format: https://paypal.me/username/amount (no currency = USD)
-    final amountStr = tier.amount.toStringAsFixed(2);
-    final uri = Uri.parse('https://paypal.me/$username/$amountStr');
     try {
+      final uri = Uri.parse(kSupportPayPalUrl);
       final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
       return launched;
     } catch (e) {

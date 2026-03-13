@@ -207,8 +207,6 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	// Translations
 	@override String get title => '설정';
 	@override String get supportOptionalCaption => '선택 사항 — 앱은 계속 무료입니다';
-	@override String get supportTierCoffee => '커피 한 잔 사주기';
-	@override String get supportTierLunch => '점심 한 끼 사주기';
 	@override String get supportTierSupport => '개발 지원하기';
 	@override String get supportTipThankYou => '후원해 주셔서 감사합니다!';
 	@override String get language => '언어';
@@ -1375,8 +1373,6 @@ extension on TranslationsKo {
 			'update.checkFailed' => '업데이트 확인 실패',
 			'settings.title' => '설정',
 			'settings.supportOptionalCaption' => '선택 사항 — 앱은 계속 무료입니다',
-			'settings.supportTierCoffee' => '커피 한 잔 사주기',
-			'settings.supportTierLunch' => '점심 한 끼 사주기',
 			'settings.supportTierSupport' => '개발 지원하기',
 			'settings.supportTipThankYou' => '후원해 주셔서 감사합니다!',
 			'settings.language' => '언어',
@@ -1807,10 +1803,10 @@ extension on TranslationsKo {
 			'libraries.libraryOptions' => '미디어 라이브러리 옵션',
 			'libraries.content' => '미디어 라이브러리 콘텐츠',
 			'libraries.selectLibrary' => '미디어 라이브러리 선택',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => '필터 (${count})',
 			'libraries.noRecommendations' => '추천 없음',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.noCollections' => '이 미디어 라이브러리에는 컬렉션이 없습니다',
 			'libraries.noFavorites' => '이 라이브러리에 즐겨찾기가 없습니다',
 			'libraries.noGenres' => '이 라이브러리에 장르가 없습니다',

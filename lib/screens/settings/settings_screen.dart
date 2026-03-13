@@ -47,7 +47,6 @@ import 'about_screen.dart';
 import 'logs_screen.dart';
 import 'mpv_config_screen.dart';
 import 'subtitle_styling_screen.dart';
-import '../../constants/support_constants.dart';
 import '../../services/support_service.dart';
 
 /// Helper class for option selection dialog items
@@ -125,9 +124,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kViewLogs = 'view_logs';
   static const _kClearCache = 'clear_cache';
   static const _kResetSettings = 'reset_settings';
-  static const _kSupportCoffee = 'support_coffee';
-  static const _kSupportLunch = 'support_lunch';
-  static const _kSupportDev = 'support_dev';
+  static const _kSupportDevelopment = 'support_development';
   static const _kLibrariesSection = 'libraries_section';
 
   static const _kImageQuality = 'image_quality';
@@ -202,7 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   void focusActiveTabIfReady() {
     if (!InputModeTracker.isKeyboardMode(context)) return;
     // Always start at the top when returning to Settings (no focus memory)
-    final firstKey = _showSupportDevelopment ? _kSupportCoffee : _kAppearance;
+    final firstKey = _showSupportDevelopment ? _kSupportDevelopment : _kAppearance;
     _focusTracker.get(firstKey).requestFocus();
   }
 
@@ -323,7 +320,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         if (!InputModeTracker.isKeyboardMode(context)) return;
-        final firstKey = _showSupportDevelopment ? _kSupportCoffee : _kAppearance;
+        final firstKey = _showSupportDevelopment ? _kSupportDevelopment : _kAppearance;
         _focusTracker.get(firstKey).requestFocus();
       });
     }
@@ -458,56 +455,21 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildSupportTierTile(
-          key: _kSupportCoffee,
-          icon: Symbols.coffee_rounded,
-          title: t.settings.supportTierCoffee,
-          amount: '\$${SupportTier.coffee.amount.toStringAsFixed(2)}',
-          tier: SupportTier.coffee,
-        ),
-        _buildSupportTierTile(
-          key: _kSupportLunch,
-          icon: Symbols.restaurant_rounded,
-          title: t.settings.supportTierLunch,
-          amount: '\$${SupportTier.lunch.amount.toStringAsFixed(2)}',
-          tier: SupportTier.lunch,
-        ),
-        _buildSupportTierTile(
-          key: _kSupportDev,
-          icon: Symbols.rocket_launch_rounded,
-          title: t.settings.supportTierSupport,
-          amount: '\$${SupportTier.support.amount.toStringAsFixed(2)}',
-          tier: SupportTier.support,
+        ListTile(
+          focusNode: _focusTracker.get(_kSupportDevelopment),
+          leading: const AppIcon(Symbols.volunteer_activism_rounded, fill: 1),
+          title: Text(t.settings.supportTierSupport),
+          trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+          onTap: () async {
+            final success = await SupportService.instance.openSupportLink();
+            if (mounted && success) {
+              showSuccessSnackBar(context, t.settings.supportTipThankYou);
+            }
+          },
         ),
         const Divider(height: 32),
       ],
     );
-  }
-
-  Widget _buildSupportTierTile({
-    required String key,
-    required IconData icon,
-    required String title,
-    required String amount,
-    required SupportTier tier,
-  }) {
-    return ListTile(
-      focusNode: _focusTracker.get(key),
-      leading: AppIcon(icon, fill: 1),
-      title: Text(title),
-      subtitle: Text(amount),
-      trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-      onTap: () => _handleSupportTierTap(tier),
-    );
-  }
-
-  Future<void> _handleSupportTierTap(SupportTier tier) async {
-    final success = await SupportService.instance.tip(tier);
-    if (mounted) {
-      if (success) {
-        showSuccessSnackBar(context, t.settings.supportTipThankYou);
-      }
-    }
   }
 
   Widget _buildAppearanceContent() {

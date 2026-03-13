@@ -371,12 +371,6 @@ class TranslationsSettingsEn {
 	/// en: 'Optional — app stays free'
 	String get supportOptionalCaption => 'Optional — app stays free';
 
-	/// en: 'Buy me a coffee'
-	String get supportTierCoffee => 'Buy me a coffee';
-
-	/// en: 'Buy me lunch'
-	String get supportTierLunch => 'Buy me lunch';
-
 	/// en: 'Support development'
 	String get supportTierSupport => 'Support development';
 
@@ -2999,8 +2993,6 @@ extension on Translations {
 			'update.checkFailed' => 'Failed to check for updates',
 			'settings.title' => 'Settings',
 			'settings.supportOptionalCaption' => 'Optional — app stays free',
-			'settings.supportTierCoffee' => 'Buy me a coffee',
-			'settings.supportTierLunch' => 'Buy me lunch',
 			'settings.supportTierSupport' => 'Support development',
 			'settings.supportTipThankYou' => 'Thank you for your support!',
 			'settings.language' => 'Language',
@@ -3431,10 +3423,10 @@ extension on Translations {
 			'libraries.libraryOptions' => 'Library options',
 			'libraries.content' => 'library content',
 			'libraries.selectLibrary' => 'Select library',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
 			'libraries.noRecommendations' => 'No recommendations available',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.noCollections' => 'No collections in this library',
 			'libraries.noFavorites' => 'No favorites in this library',
 			'libraries.noGenres' => 'No genres in this library',

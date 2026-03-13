@@ -207,8 +207,6 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	// Translations
 	@override String get title => 'Einstellungen';
 	@override String get supportOptionalCaption => 'Optional — App bleibt kostenlos';
-	@override String get supportTierCoffee => 'Spendiere mir einen Kaffee';
-	@override String get supportTierLunch => 'Spendiere mir ein Mittagessen';
 	@override String get supportTierSupport => 'Entwicklung unterstützen';
 	@override String get supportTipThankYou => 'Vielen Dank für deine Unterstützung!';
 	@override String get language => 'Sprache';
@@ -1375,8 +1373,6 @@ extension on TranslationsDe {
 			'update.checkFailed' => 'Fehler bei der Updateprüfung',
 			'settings.title' => 'Einstellungen',
 			'settings.supportOptionalCaption' => 'Optional — App bleibt kostenlos',
-			'settings.supportTierCoffee' => 'Spendiere mir einen Kaffee',
-			'settings.supportTierLunch' => 'Spendiere mir ein Mittagessen',
 			'settings.supportTierSupport' => 'Entwicklung unterstützen',
 			'settings.supportTipThankYou' => 'Vielen Dank für deine Unterstützung!',
 			'settings.language' => 'Sprache',
@@ -1807,10 +1803,10 @@ extension on TranslationsDe {
 			'libraries.libraryOptions' => 'Mediatheksoptionen',
 			'libraries.content' => 'Bibliotheksinhalt',
 			'libraries.selectLibrary' => 'Bibliothek auswählen',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
 			'libraries.noRecommendations' => 'Keine Empfehlungen verfügbar',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.noCollections' => 'Keine Sammlungen in dieser Mediathek',
 			'libraries.noFavorites' => 'Keine Favoriten in dieser Mediathek',
 			'libraries.noGenres' => 'Keine Genres in dieser Mediathek',

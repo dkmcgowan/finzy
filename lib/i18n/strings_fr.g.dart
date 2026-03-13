@@ -207,8 +207,6 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 	// Translations
 	@override String get title => 'Paramètres';
 	@override String get supportOptionalCaption => 'Optionnel — l\'app reste gratuite';
-	@override String get supportTierCoffee => 'Offrez-moi un café';
-	@override String get supportTierLunch => 'Offrez-moi un déjeuner';
 	@override String get supportTierSupport => 'Soutenir le développement';
 	@override String get supportTipThankYou => 'Merci pour votre soutien !';
 	@override String get language => 'Langue';
@@ -1375,8 +1373,6 @@ extension on TranslationsFr {
 			'update.checkFailed' => 'Échec de la vérification des mises à jour',
 			'settings.title' => 'Paramètres',
 			'settings.supportOptionalCaption' => 'Optionnel — l\'app reste gratuite',
-			'settings.supportTierCoffee' => 'Offrez-moi un café',
-			'settings.supportTierLunch' => 'Offrez-moi un déjeuner',
 			'settings.supportTierSupport' => 'Soutenir le développement',
 			'settings.supportTipThankYou' => 'Merci pour votre soutien !',
 			'settings.language' => 'Langue',
@@ -1807,10 +1803,10 @@ extension on TranslationsFr {
 			'libraries.libraryOptions' => 'Options de bibliothèque',
 			'libraries.content' => 'contenu de la bibliothèque',
 			'libraries.selectLibrary' => 'Sélectionner la bibliothèque',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filtres (${count})',
 			'libraries.noRecommendations' => 'Aucune recommandation disponible',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.noCollections' => 'Aucune collection dans cette bibliothèque',
 			'libraries.noFavorites' => 'Aucun favori dans cette bibliothèque',
 			'libraries.noGenres' => 'Aucun genre dans cette bibliothèque',

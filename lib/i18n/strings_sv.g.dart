@@ -207,8 +207,6 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	// Translations
 	@override String get title => 'Inställningar';
 	@override String get supportOptionalCaption => 'Frivilligt — appen förblir gratis';
-	@override String get supportTierCoffee => 'Bjud mig på en kaffe';
-	@override String get supportTierLunch => 'Bjud mig på lunch';
 	@override String get supportTierSupport => 'Stöd utvecklingen';
 	@override String get supportTipThankYou => 'Tack för ditt stöd!';
 	@override String get language => 'Språk';
@@ -1375,8 +1373,6 @@ extension on TranslationsSv {
 			'update.checkFailed' => 'Misslyckades att kontrollera uppdateringar',
 			'settings.title' => 'Inställningar',
 			'settings.supportOptionalCaption' => 'Frivilligt — appen förblir gratis',
-			'settings.supportTierCoffee' => 'Bjud mig på en kaffe',
-			'settings.supportTierLunch' => 'Bjud mig på lunch',
 			'settings.supportTierSupport' => 'Stöd utvecklingen',
 			'settings.supportTipThankYou' => 'Tack för ditt stöd!',
 			'settings.language' => 'Språk',
@@ -1807,10 +1803,10 @@ extension on TranslationsSv {
 			'libraries.libraryOptions' => 'Biblioteksalternativ',
 			'libraries.content' => 'bibliotekets innehåll',
 			'libraries.selectLibrary' => 'Välj bibliotek',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
 			'libraries.noRecommendations' => 'Inga rekommendationer tillgängliga',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.noCollections' => 'Inga samlingar i det här biblioteket',
 			'libraries.noFavorites' => 'Inga favoriter i detta bibliotek',
 			'libraries.noGenres' => 'Inga genrer i detta bibliotek',

@@ -32,7 +32,12 @@ jobs:
 
           mkdir -p whatsnew
           if [ -n "$BODY" ] && [ "$BODY" != "null" ]; then
-            echo "$BODY" | sed 's/^#* *//g' | head -c 500 > whatsnew/whatsnew-en-US
+            if echo "$BODY" | grep -q "Full release notes"; then
+              SHORT_BODY=$(echo "$BODY" | sed -n '/Full release notes/q;p')
+            else
+              SHORT_BODY="$BODY"
+            fi
+            echo "$SHORT_BODY" | sed 's/^#* *//g' | head -c 500 > whatsnew/whatsnew-en-US
           else
             echo "What's new in $VERSION" > whatsnew/whatsnew-en-US
           fi

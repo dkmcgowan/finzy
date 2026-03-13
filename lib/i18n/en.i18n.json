@@ -90,8 +90,6 @@
   "settings": {
     "title": "Settings",
     "supportOptionalCaption": "Optional — app stays free",
-    "supportTierCoffee": "Buy me a coffee",
-    "supportTierLunch": "Buy me lunch",
     "supportTierSupport": "Support development",
     "supportTipThankYou": "Thank you for your support!",
     "language": "Language",

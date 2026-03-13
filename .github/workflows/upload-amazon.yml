@@ -30,7 +30,12 @@ jobs:
           RELEASE_JSON=$(gh release view "$VERSION" --repo ${{ github.repository }} --json body)
           BODY=$(echo "$RELEASE_JSON" | jq -r '.body // ""')
           if [ -n "$BODY" ] && [ "$BODY" != "null" ]; then
-            echo "$BODY" | sed 's/^#* *//g' | head -c 500 > release-notes.txt
+            if echo "$BODY" | grep -q "Full release notes"; then
+              SHORT_BODY=$(echo "$BODY" | sed -n '/Full release notes/q;p')
+            else
+              SHORT_BODY="$BODY"
+            fi
+            echo "$SHORT_BODY" | sed 's/^#* *//g' | head -c 500 > release-notes.txt
           else
             echo "What's new in $VERSION" > release-notes.txt
           fi
