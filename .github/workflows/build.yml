@@ -532,6 +532,10 @@ jobs:
           New-Item -ItemType Directory -Path "build\windows\arm64\runner\Release" -Force
           Copy-Item -Path "build-x64\*" -Destination "build\windows\x64\runner\Release\" -Recurse
           Copy-Item -Path "build-arm64\*" -Destination "build\windows\arm64\runner\Release\" -Recurse
+          # msix package expects arm64 at build/windows/arm64/arm64/runner/Release when
+          # buildFilesFolderStart includes architecture (e.g. from x64 msix output path)
+          New-Item -ItemType Directory -Path "build\windows\arm64\arm64\runner\Release" -Force
+          Copy-Item -Path "build-arm64\*" -Destination "build\windows\arm64\arm64\runner\Release\" -Recurse
 
       - name: Build MSIX x64
         env:
@@ -540,7 +544,7 @@ jobs:
           if (-not $env:MSIX_PUBLISHER) {
             Write-Error "MSIX_PUBLISHER secret is required for MSIX build. Set it in Partner Center > Product identity > Publisher (format: CN=GUID)."
           }
-          dart run msix:create --build-windows false --architecture x64 -n finzy-windows-x64 --publisher $env:MSIX_PUBLISHER
+          dart run msix:create --build-windows false --architecture x64 -n finzy-windows-x64 -o . --publisher $env:MSIX_PUBLISHER
 
       - name: Build MSIX arm64
         env:
@@ -549,7 +553,7 @@ jobs:
           if (-not $env:MSIX_PUBLISHER) {
             Write-Error "MSIX_PUBLISHER secret is required for MSIX build. Set it in Partner Center > Product identity > Publisher (format: CN=GUID)."
           }
-          dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64 --publisher $env:MSIX_PUBLISHER
+          dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64 -o . --publisher $env:MSIX_PUBLISHER
 
       - name: Attest Windows artifacts
         uses: actions/attest-build-provenance@v2
