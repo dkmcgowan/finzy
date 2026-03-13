@@ -84,12 +84,12 @@ flutter:
     - assets/rating_icons/
 
 msix_config:
-  display_name: Finzy
+  display_name: Finzy for Jellyfin
   publisher_display_name: dkmcgowan
   # Publisher is provided by MSIX_PUBLISHER secret in CI. For local dev only:
   # Get from Partner Center > Product identity > Publisher (format: CN=GUID)
   publisher: CN=placeholder
-  identity_name: com.dkmcgowan.finzy
+  identity_name: DavidMcGowan.FinzyforJellyfin
   logo_path: assets/finzy.png
   store: true
   capabilities: internetClient, privateNetworkClientServer
