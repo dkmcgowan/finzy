@@ -62,6 +62,13 @@ This document lists feature gaps between Finzy and Jellyfin (web + API). It serv
 
 ## Planned
 
+### Transcoding & Download Quality
+
+- **Effort:** Medium
+- **Plan:** [docs/PLAN_TRANSCODING_AND_DOWNLOADS.md](PLAN_TRANSCODING_AND_DOWNLOADS.md)
+- **Playback mode:** Auto (PlaybackInfo, default), Direct Play, Force Transcode (1080p/720p/480p/Save bandwidth). Settings → Video Playback.
+- **Download quality:** Original (default), 1080p, 720p, 480p, Save bandwidth. Settings → Libraries. Server transcodes to MP4; no local FFmpeg.
+
 ### SyncPlay (Server-Native)
 
 - **Effort:** High
