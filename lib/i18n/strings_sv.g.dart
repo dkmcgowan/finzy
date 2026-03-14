@@ -194,6 +194,7 @@ class _TranslationsUpdateSv implements TranslationsUpdateEn {
 	@override String currentVersion({required Object version}) => 'Nuvarande: ${version}';
 	@override String get skipVersion => 'Hoppa över denna version';
 	@override String get viewRelease => 'Visa release';
+	@override String get updateInStore => 'Uppdatera i Store';
 	@override String get latestVersion => 'Du har den senaste versionen';
 	@override String get checkFailed => 'Misslyckades att kontrollera uppdateringar';
 }
@@ -1369,6 +1370,7 @@ extension on TranslationsSv {
 			'update.currentVersion' => ({required Object version}) => 'Nuvarande: ${version}',
 			'update.skipVersion' => 'Hoppa över denna version',
 			'update.viewRelease' => 'Visa release',
+			'update.updateInStore' => 'Uppdatera i Store',
 			'update.latestVersion' => 'Du har den senaste versionen',
 			'update.checkFailed' => 'Misslyckades att kontrollera uppdateringar',
 			'settings.title' => 'Inställningar',
@@ -1804,9 +1806,9 @@ extension on TranslationsSv {
 			'libraries.content' => 'bibliotekets innehåll',
 			'libraries.selectLibrary' => 'Välj bibliotek',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
-			'libraries.noRecommendations' => 'Inga rekommendationer tillgängliga',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noRecommendations' => 'Inga rekommendationer tillgängliga',
 			'libraries.noCollections' => 'Inga samlingar i det här biblioteket',
 			'libraries.noFavorites' => 'Inga favoriter i detta bibliotek',
 			'libraries.noGenres' => 'Inga genrer i detta bibliotek',

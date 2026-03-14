@@ -194,6 +194,7 @@ class _TranslationsUpdateEs implements TranslationsUpdateEn {
 	@override String currentVersion({required Object version}) => 'Actual: ${version}';
 	@override String get skipVersion => 'Saltar esta versión';
 	@override String get viewRelease => 'Ver versión';
+	@override String get updateInStore => 'Actualizar en la tienda';
 	@override String get latestVersion => 'Ya estás en la última versión';
 	@override String get checkFailed => 'Error al buscar actualizaciones';
 }
@@ -1369,6 +1370,7 @@ extension on TranslationsEs {
 			'update.currentVersion' => ({required Object version}) => 'Actual: ${version}',
 			'update.skipVersion' => 'Saltar esta versión',
 			'update.viewRelease' => 'Ver versión',
+			'update.updateInStore' => 'Actualizar en la tienda',
 			'update.latestVersion' => 'Ya estás en la última versión',
 			'update.checkFailed' => 'Error al buscar actualizaciones',
 			'settings.title' => 'Configuración',
@@ -1804,9 +1806,9 @@ extension on TranslationsEs {
 			'libraries.content' => 'contenido de la biblioteca',
 			'libraries.selectLibrary' => 'Seleccionar biblioteca',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filtros (${count})',
-			'libraries.noRecommendations' => 'No hay recomendaciones disponibles',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noRecommendations' => 'No hay recomendaciones disponibles',
 			'libraries.noCollections' => 'No hay colecciones en esta biblioteca',
 			'libraries.noFavorites' => 'No hay favoritos en esta biblioteca',
 			'libraries.noGenres' => 'No hay géneros en esta biblioteca',

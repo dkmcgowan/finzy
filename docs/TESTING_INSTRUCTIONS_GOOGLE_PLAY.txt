@@ -1,0 +1,10 @@
+This is a demo server with sample media for testing. All media content is public domain.
+
+Server URL: https://demo.jellyfin.org/stable
+Username: demo
+Password: (leave blank - no password)
+
+- On first launch you will see the server setup screen with a Server URL field, enter the server URL above, then tap Connect.
+- Then tap Manual login (do not select a user from the grid).
+- Enter username "demo" and leave the password blank, tap Sign in!
+- Then browse sample movies and shows to play videos.

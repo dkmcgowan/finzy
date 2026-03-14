@@ -84,6 +84,7 @@
     "currentVersion": "Huidig: ${version}",
     "skipVersion": "Deze versie overslaan",
     "viewRelease": "Bekijk release",
+    "updateInStore": "Bijwerken in de Store",
     "latestVersion": "Je hebt de nieuwste versie",
     "checkFailed": "Kon niet controleren op updates"
   },

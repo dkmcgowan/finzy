@@ -18,4 +18,3 @@ Full release notes
 ## Other
 
 - Bug fixes and improvements
-

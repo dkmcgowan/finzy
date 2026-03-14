@@ -194,6 +194,7 @@ class _TranslationsUpdateDe implements TranslationsUpdateEn {
 	@override String currentVersion({required Object version}) => 'Aktuell: ${version}';
 	@override String get skipVersion => 'Diese Version überspringen';
 	@override String get viewRelease => 'Release anzeigen';
+	@override String get updateInStore => 'Im Store aktualisieren';
 	@override String get latestVersion => 'Aktuellste Version installiert';
 	@override String get checkFailed => 'Fehler bei der Updateprüfung';
 }
@@ -1369,6 +1370,7 @@ extension on TranslationsDe {
 			'update.currentVersion' => ({required Object version}) => 'Aktuell: ${version}',
 			'update.skipVersion' => 'Diese Version überspringen',
 			'update.viewRelease' => 'Release anzeigen',
+			'update.updateInStore' => 'Im Store aktualisieren',
 			'update.latestVersion' => 'Aktuellste Version installiert',
 			'update.checkFailed' => 'Fehler bei der Updateprüfung',
 			'settings.title' => 'Einstellungen',
@@ -1804,9 +1806,9 @@ extension on TranslationsDe {
 			'libraries.content' => 'Bibliotheksinhalt',
 			'libraries.selectLibrary' => 'Bibliothek auswählen',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
-			'libraries.noRecommendations' => 'Keine Empfehlungen verfügbar',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noRecommendations' => 'Keine Empfehlungen verfügbar',
 			'libraries.noCollections' => 'Keine Sammlungen in dieser Mediathek',
 			'libraries.noFavorites' => 'Keine Favoriten in dieser Mediathek',
 			'libraries.noGenres' => 'Keine Genres in dieser Mediathek',

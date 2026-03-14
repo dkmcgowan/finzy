@@ -252,4 +252,3 @@ For completeness, key API areas from [api.jellyfin.org](https://api.jellyfin.org
 | `/Plugins/*`, `/Packages/*` | Admin — Not Adding |
 | `/Devices/*`, `/Auth/Keys/*` | Admin — Not Adding |
 | `/DisplayPreferences/*` | Later |
-

@@ -194,6 +194,7 @@ class _TranslationsUpdateKo implements TranslationsUpdateEn {
 	@override String currentVersion({required Object version}) => '현재 버전: ${version}';
 	@override String get skipVersion => '이 버전 건너뛰기';
 	@override String get viewRelease => '릴리스 정보 보기';
+	@override String get updateInStore => '스토어에서 업데이트';
 	@override String get latestVersion => '최신 버전을 사용 중입니다';
 	@override String get checkFailed => '업데이트 확인 실패';
 }
@@ -1369,6 +1370,7 @@ extension on TranslationsKo {
 			'update.currentVersion' => ({required Object version}) => '현재 버전: ${version}',
 			'update.skipVersion' => '이 버전 건너뛰기',
 			'update.viewRelease' => '릴리스 정보 보기',
+			'update.updateInStore' => '스토어에서 업데이트',
 			'update.latestVersion' => '최신 버전을 사용 중입니다',
 			'update.checkFailed' => '업데이트 확인 실패',
 			'settings.title' => '설정',
@@ -1804,9 +1806,9 @@ extension on TranslationsKo {
 			'libraries.content' => '미디어 라이브러리 콘텐츠',
 			'libraries.selectLibrary' => '미디어 라이브러리 선택',
 			'libraries.filtersWithCount' => ({required Object count}) => '필터 (${count})',
-			'libraries.noRecommendations' => '추천 없음',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noRecommendations' => '추천 없음',
 			'libraries.noCollections' => '이 미디어 라이브러리에는 컬렉션이 없습니다',
 			'libraries.noFavorites' => '이 라이브러리에 즐겨찾기가 없습니다',
 			'libraries.noGenres' => '이 라이브러리에 장르가 없습니다',

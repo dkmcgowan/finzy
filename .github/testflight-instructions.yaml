@@ -1,6 +1,6 @@
 # TestFlight Beta App Review instructions.
 # Used by upload-apple.yml to update App Store Connect before submitting for review.
-# Password must be in GitHub secret TESTFLIGHT_DEMO_PASSWORD (not stored here).
+# Instructions content is read from docs/TESTING_INSTRUCTIONS.txt - edit that file to change what reviewers see.
 
 feedback_email: help@getfinzy.com
 
@@ -9,18 +9,12 @@ beta_app_description: |
   Finzy is a Jellyfin client for iOS. Connect to your Jellyfin server to browse
   and stream your movies, TV shows, and music.
 
-# Demo account for reviewers (password from secret)
+# Demo account for reviewers
+# When no_password is true, TESTFLIGHT_DEMO_PASSWORD secret is not required
 demo_account:
-  server_url: https://jellyfin.veetid.io
-  username: reviewer
-  # password: from TESTFLIGHT_DEMO_PASSWORD secret
+  server_url: https://demo.jellyfin.org/stable
+  username: demo
+  no_password: true
 
-# What to test - instructions for Apple reviewers
-what_to_test: |
-  - Open the app. On first launch you will see the server setup screen with a Server URL field.
-  - Enter the server URL above in the Server URL field, then tap Connect (or press Enter).
-  - On the next screen, tap Manual login (do not select a user from the grid).
-  - Enter the demo account username in the Username field and the demo account password in the Password field.
-  - Tap Sign in.
-  - After login you can browse sample movies and TV shows, play videos, and use the main features.
-  - Use the bottom navigation for Home, Libraries, Live TV, Search, Downloads, and Settings.
+# Path to testing instructions (relative to repo root). Content is sent to Apple as reviewer notes.
+instructions_file: docs/TESTING_INSTRUCTIONS.txt

@@ -86,7 +86,7 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 - Refresh library metadata
 - Trailers (local and remote) on detail screens
 
-*For a full feature list and roadmap, see [FEATURES.md](FEATURES.md).*
+*For a full feature list and roadmap, see [FEATURES.md](docs/FEATURES.md).*
 
 ## Building from Source
 

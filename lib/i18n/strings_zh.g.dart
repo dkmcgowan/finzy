@@ -194,6 +194,7 @@ class _TranslationsUpdateZh implements TranslationsUpdateEn {
 	@override String currentVersion({required Object version}) => '当前版本: ${version}';
 	@override String get skipVersion => '跳过此版本';
 	@override String get viewRelease => '查看发布详情';
+	@override String get updateInStore => '在应用商店更新';
 	@override String get latestVersion => '已安装的版本是可用的最新版本';
 	@override String get checkFailed => '无法检查更新';
 }
@@ -1369,6 +1370,7 @@ extension on TranslationsZh {
 			'update.currentVersion' => ({required Object version}) => '当前版本: ${version}',
 			'update.skipVersion' => '跳过此版本',
 			'update.viewRelease' => '查看发布详情',
+			'update.updateInStore' => '在应用商店更新',
 			'update.latestVersion' => '已安装的版本是可用的最新版本',
 			'update.checkFailed' => '无法检查更新',
 			'settings.title' => '设置',
@@ -1804,9 +1806,9 @@ extension on TranslationsZh {
 			'libraries.content' => '媒体库内容',
 			'libraries.selectLibrary' => '选择媒体库',
 			'libraries.filtersWithCount' => ({required Object count}) => '筛选器（${count}）',
-			'libraries.noRecommendations' => '暂无推荐',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noRecommendations' => '暂无推荐',
 			'libraries.noCollections' => '此媒体库中没有合集',
 			'libraries.noFavorites' => '此媒体库中无收藏',
 			'libraries.noGenres' => '此媒体库中无类型',

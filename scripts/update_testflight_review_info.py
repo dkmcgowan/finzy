@@ -5,13 +5,18 @@ Update TestFlight Beta App Review info via App Store Connect API.
 Sets BetaAppReviewDetail (demo account, notes) and BetaAppLocalization
 (description, feedback email) so Beta App Review submission succeeds.
 
+Configuration: .github/testflight-instructions.yaml
+- instructions_file: path to reviewer notes (e.g. docs/TESTING_INSTRUCTIONS.txt)
+- demo_account: server_url, username, no_password (true = no TESTFLIGHT_DEMO_PASSWORD needed)
+
 Usage:
   python scripts/update_testflight_review_info.py
 
 Env:
   APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID,
   APP_STORE_CONNECT_API_KEY_P8 (base64), APP_STORE_CONNECT_APP_ID,
-  TESTFLIGHT_DEMO_PASSWORD, TESTFLIGHT_INSTRUCTIONS_PATH (optional)
+  TESTFLIGHT_DEMO_PASSWORD (optional when demo_account.no_password is true),
+  TESTFLIGHT_INSTRUCTIONS_PATH (optional, defaults to .github/testflight-instructions.yaml)
 """
 from __future__ import annotations
 
@@ -40,6 +45,22 @@ def load_instructions(path: str | None) -> dict:
     )
     with open(p, encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def load_instructions_content(instructions: dict, repo_root: Path) -> str:
+    """Load reviewer notes from instructions_file or build from what_to_test."""
+    instructions_file = instructions.get("instructions_file")
+    if instructions_file:
+        full_path = repo_root / instructions_file
+        if full_path.exists():
+            return full_path.read_text(encoding="utf-8").strip()
+    # Fallback: build from demo + what_to_test
+    demo = instructions.get("demo_account", {})
+    notes_parts = []
+    if demo.get("server_url"):
+        notes_parts.append(f"Server URL: {demo['server_url']}")
+    notes_parts.append("\nHow to test:\n" + (instructions.get("what_to_test", "") or ""))
+    return "\n".join(notes_parts).strip()
 
 
 def make_token(key_id: str, issuer_id: str, p8_b64: str) -> str:
@@ -105,21 +126,18 @@ def main() -> None:
 
     instructions = load_instructions(instructions_path)
     demo = instructions.get("demo_account", {})
-    if demo.get("username") and not demo_password:
+    no_password = demo.get("no_password", False)
+    if demo.get("username") and not no_password and not demo_password:
         print(
-            "Demo account requires TESTFLIGHT_DEMO_PASSWORD secret",
+            "Demo account requires TESTFLIGHT_DEMO_PASSWORD secret (or set no_password: true)",
             file=sys.stderr,
         )
         sys.exit(1)
 
     token = make_token(key_id, issuer_id, p8_b64)
 
-    # Build notes: server URL + what to test (includes username; password in demo fields)
-    notes_parts = []
-    if demo.get("server_url"):
-        notes_parts.append(f"Server URL: {demo['server_url']}")
-    notes_parts.append("\nHow to test:\n" + (instructions.get("what_to_test", "") or ""))
-    notes = "\n".join(notes_parts).strip()
+    repo_root = Path(__file__).resolve().parent.parent
+    notes = load_instructions_content(instructions, repo_root)
 
     # 1. Update BetaAppReviewDetail (demo account, notes)
     try:

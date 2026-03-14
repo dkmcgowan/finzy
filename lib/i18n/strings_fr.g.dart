@@ -194,6 +194,7 @@ class _TranslationsUpdateFr implements TranslationsUpdateEn {
 	@override String currentVersion({required Object version}) => 'Installé: ${version}';
 	@override String get skipVersion => 'Ignorer cette version';
 	@override String get viewRelease => 'Voir la Release';
+	@override String get updateInStore => 'Mettre à jour dans le Store';
 	@override String get latestVersion => 'Vous utilisez la dernière version';
 	@override String get checkFailed => 'Échec de la vérification des mises à jour';
 }
@@ -1369,6 +1370,7 @@ extension on TranslationsFr {
 			'update.currentVersion' => ({required Object version}) => 'Installé: ${version}',
 			'update.skipVersion' => 'Ignorer cette version',
 			'update.viewRelease' => 'Voir la Release',
+			'update.updateInStore' => 'Mettre à jour dans le Store',
 			'update.latestVersion' => 'Vous utilisez la dernière version',
 			'update.checkFailed' => 'Échec de la vérification des mises à jour',
 			'settings.title' => 'Paramètres',
@@ -1804,9 +1806,9 @@ extension on TranslationsFr {
 			'libraries.content' => 'contenu de la bibliothèque',
 			'libraries.selectLibrary' => 'Sélectionner la bibliothèque',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filtres (${count})',
-			'libraries.noRecommendations' => 'Aucune recommandation disponible',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noRecommendations' => 'Aucune recommandation disponible',
 			'libraries.noCollections' => 'Aucune collection dans cette bibliothèque',
 			'libraries.noFavorites' => 'Aucun favori dans cette bibliothèque',
 			'libraries.noGenres' => 'Aucun genre dans cette bibliothèque',

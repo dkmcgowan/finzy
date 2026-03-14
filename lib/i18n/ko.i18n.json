@@ -84,6 +84,7 @@
     "currentVersion": "현재 버전: ${version}",
     "skipVersion": "이 버전 건너뛰기",
     "viewRelease": "릴리스 정보 보기",
+    "updateInStore": "스토어에서 업데이트",
     "latestVersion": "최신 버전을 사용 중입니다",
     "checkFailed": "업데이트 확인 실패"
   },

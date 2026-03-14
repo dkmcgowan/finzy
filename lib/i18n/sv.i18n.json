@@ -84,6 +84,7 @@
     "currentVersion": "Nuvarande: ${version}",
     "skipVersion": "Hoppa över denna version",
     "viewRelease": "Visa release",
+    "updateInStore": "Uppdatera i Store",
     "latestVersion": "Du har den senaste versionen",
     "checkFailed": "Misslyckades att kontrollera uppdateringar"
   },

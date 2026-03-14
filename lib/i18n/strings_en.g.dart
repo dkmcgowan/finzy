@@ -350,6 +350,9 @@ class TranslationsUpdateEn {
 	/// en: 'View Release'
 	String get viewRelease => 'View Release';
 
+	/// en: 'Update in Store'
+	String get updateInStore => 'Update in Store';
+
 	/// en: 'You are on the latest version'
 	String get latestVersion => 'You are on the latest version';
 
@@ -2989,6 +2992,7 @@ extension on Translations {
 			'update.currentVersion' => ({required Object version}) => 'Current: ${version}',
 			'update.skipVersion' => 'Skip This Version',
 			'update.viewRelease' => 'View Release',
+			'update.updateInStore' => 'Update in Store',
 			'update.latestVersion' => 'You are on the latest version',
 			'update.checkFailed' => 'Failed to check for updates',
 			'settings.title' => 'Settings',
@@ -3424,9 +3428,9 @@ extension on Translations {
 			'libraries.content' => 'library content',
 			'libraries.selectLibrary' => 'Select library',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
-			'libraries.noRecommendations' => 'No recommendations available',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noRecommendations' => 'No recommendations available',
 			'libraries.noCollections' => 'No collections in this library',
 			'libraries.noFavorites' => 'No favorites in this library',
 			'libraries.noGenres' => 'No genres in this library',

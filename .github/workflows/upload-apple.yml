@@ -100,7 +100,8 @@ jobs:
           ATTEMPTS: "15"
 
       # Updates BetaAppReviewDetail + BetaAppLocalization from .github/testflight-instructions.yaml
-      # Requires secret: TESTFLIGHT_DEMO_PASSWORD (demo account password)
+      # Reviewer notes from docs/TESTING_INSTRUCTIONS.txt
+      # TESTFLIGHT_DEMO_PASSWORD optional when demo_account.no_password is true (demo.jellyfin.org)
       - name: Update TestFlight review info
         if: vars.APP_STORE_CONNECT_APP_ID != '' && vars.APPLE_SUBMIT_FOR_REVIEW == 'true'
         env:

@@ -84,6 +84,7 @@
     "currentVersion": "Current: ${version}",
     "skipVersion": "Skip This Version",
     "viewRelease": "View Release",
+    "updateInStore": "Update in Store",
     "latestVersion": "You are on the latest version",
     "checkFailed": "Failed to check for updates"
   },

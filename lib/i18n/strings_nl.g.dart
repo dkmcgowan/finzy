@@ -194,6 +194,7 @@ class _TranslationsUpdateNl implements TranslationsUpdateEn {
 	@override String currentVersion({required Object version}) => 'Huidig: ${version}';
 	@override String get skipVersion => 'Deze versie overslaan';
 	@override String get viewRelease => 'Bekijk release';
+	@override String get updateInStore => 'Bijwerken in de Store';
 	@override String get latestVersion => 'Je hebt de nieuwste versie';
 	@override String get checkFailed => 'Kon niet controleren op updates';
 }
@@ -1369,6 +1370,7 @@ extension on TranslationsNl {
 			'update.currentVersion' => ({required Object version}) => 'Huidig: ${version}',
 			'update.skipVersion' => 'Deze versie overslaan',
 			'update.viewRelease' => 'Bekijk release',
+			'update.updateInStore' => 'Bijwerken in de Store',
 			'update.latestVersion' => 'Je hebt de nieuwste versie',
 			'update.checkFailed' => 'Kon niet controleren op updates',
 			'settings.title' => 'Instellingen',
@@ -1804,9 +1806,9 @@ extension on TranslationsNl {
 			'libraries.content' => 'bibliotheekinhoud',
 			'libraries.selectLibrary' => 'Bibliotheek kiezen',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
-			'libraries.noRecommendations' => 'Geen aanbevelingen beschikbaar',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.noRecommendations' => 'Geen aanbevelingen beschikbaar',
 			'libraries.noCollections' => 'Geen collecties in deze bibliotheek',
 			'libraries.noFavorites' => 'Geen favorieten in deze bibliotheek',
 			'libraries.noGenres' => 'Geen genres in deze bibliotheek',

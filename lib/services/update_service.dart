@@ -1,13 +1,26 @@
-import 'package:package_info_plus/package_info_plus.dart';
+import 'dart:io' show Platform;
+
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:store_checker/store_checker.dart';
 
 /// Service to check for new versions on GitHub
 /// Only enabled when ENABLE_UPDATE_CHECK build flag is set
+/// Routes users to the appropriate store (Play Store, App Store, etc.) when installed from a store
 class UpdateService {
   static final Logger _logger = Logger();
   static const String _githubRepo = 'dkmcgowan/finzy';
+  static const String _githubReleasesUrl = 'https://github.com/dkmcgowan/finzy/releases';
+
+  // Store URLs
+  static const String _playStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.dkmcgowan.finzy';
+  static const String _amazonStoreUrl = 'https://www.amazon.com/gp/product/B0GRRLSYDX';
+  static const String _appStoreUrl = 'https://apps.apple.com/us/app/id6759632535';
+  static const String _microsoftStoreUrl =
+      'ms-windows-store://pdp/?productid=9P760MSPWFQ3';
 
   // SharedPreferences keys
   static const String _keySkippedVersion = 'update_skipped_version';
@@ -59,11 +72,69 @@ class UpdateService {
     await prefs.setString(_keyLastCheckTime, DateTime.now().toIso8601String());
   }
 
+  /// Returns the appropriate update URL and whether to use "Update in Store" label.
+  /// TestFlight: returns null (caller should not show dialog).
+  /// Store installs: returns store URL + isStoreUpdate: true.
+  /// Direct/sideloaded: returns GitHub URL + isStoreUpdate: false.
+  static Future<({String url, bool isStoreUpdate})?> getUpdateAction() async {
+    if (Platform.isIOS) {
+      try {
+        final source = await StoreChecker.getSource;
+        if (source == Source.IS_INSTALLED_FROM_TEST_FLIGHT) {
+          return null; // TestFlight handles updates; don't show dialog
+        }
+        if (source == Source.IS_INSTALLED_FROM_APP_STORE) {
+          return (url: _appStoreUrl, isStoreUpdate: true);
+        }
+      } catch (e) {
+        _logger.w('StoreChecker failed on iOS: $e');
+      }
+      return (url: _githubReleasesUrl, isStoreUpdate: false);
+    }
+
+    if (Platform.isAndroid) {
+      try {
+        final source = await StoreChecker.getSource;
+        switch (source) {
+          case Source.IS_INSTALLED_FROM_PLAY_STORE:
+            return (url: _playStoreUrl, isStoreUpdate: true);
+          case Source.IS_INSTALLED_FROM_AMAZON_APP_STORE:
+            return (url: _amazonStoreUrl, isStoreUpdate: true);
+          default:
+            return (url: _githubReleasesUrl, isStoreUpdate: false);
+        }
+      } catch (e) {
+        _logger.w('StoreChecker failed on Android: $e');
+      }
+      return (url: _githubReleasesUrl, isStoreUpdate: false);
+    }
+
+    if (Platform.isWindows) {
+      // Same build used for MSIX and installer; no runtime detection. Default to GitHub.
+      return (url: _githubReleasesUrl, isStoreUpdate: false);
+    }
+
+    // macOS (DMG/Homebrew), Linux: GitHub
+    return (url: _githubReleasesUrl, isStoreUpdate: false);
+  }
+
   /// Internal method that performs the actual update check
   /// [respectCooldown] - if true, checks cooldown and updates last check time
   static Future<Map<String, dynamic>?> _performUpdateCheck({required bool respectCooldown}) async {
     if (!isUpdateCheckEnabled) {
       return null;
+    }
+
+    // TestFlight: skip update check entirely (TestFlight handles updates)
+    if (Platform.isIOS) {
+      try {
+        final source = await StoreChecker.getSource;
+        if (source == Source.IS_INSTALLED_FROM_TEST_FLIGHT) {
+          return null;
+        }
+      } catch (_) {
+        // Proceed with check if StoreChecker fails
+      }
     }
 
     // Check cooldown if requested
@@ -106,11 +177,18 @@ class UpdateService {
             await _updateLastCheckTime();
           }
 
+          final action = await getUpdateAction();
+          if (action == null) {
+            return null; // TestFlight - don't show
+          }
+
           return {
             'hasUpdate': true,
             'currentVersion': currentVersion,
             'latestVersion': cleanVersion,
             'releaseUrl': data['html_url'] as String,
+            'updateUrl': action.url,
+            'isStoreUpdate': action.isStoreUpdate,
             'releaseName': data['name'] as String? ?? 'Version $cleanVersion',
             'releaseNotes': data['body'] as String? ?? '',
             'publishedAt': data['published_at'] as String,

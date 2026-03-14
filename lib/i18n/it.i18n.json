@@ -84,6 +84,7 @@
     "currentVersion": "Corrente: ${version}",
     "skipVersion": "Salta questa versione",
     "viewRelease": "Visualizza dettagli release",
+    "updateInStore": "Aggiorna nello Store",
     "latestVersion": "La versione installata è l'ultima disponibile",
     "checkFailed": "Impossibile controllare gli aggiornamenti"
   },

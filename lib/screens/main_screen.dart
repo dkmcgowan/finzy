@@ -298,13 +298,17 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
             ),
             FilledButton(
               onPressed: () async {
-                final url = Uri.parse(updateInfo['releaseUrl']);
+                final url = Uri.parse(
+                    updateInfo['updateUrl'] as String? ?? updateInfo['releaseUrl'] as String);
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 }
                 if (dialogContext.mounted) Navigator.pop(dialogContext);
               },
-              child: Text(t.update.viewRelease),
+              child: Text(
+                  (updateInfo['isStoreUpdate'] as bool? ?? false)
+                      ? t.update.updateInStore
+                      : t.update.viewRelease),
             ),
           ],
         );
