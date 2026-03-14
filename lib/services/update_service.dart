@@ -19,8 +19,6 @@ class UpdateService {
       'https://play.google.com/store/apps/details?id=com.dkmcgowan.finzy';
   static const String _amazonStoreUrl = 'https://www.amazon.com/gp/product/B0GRRLSYDX';
   static const String _appStoreUrl = 'https://apps.apple.com/us/app/id6759632535';
-  static const String _microsoftStoreUrl =
-      'ms-windows-store://pdp/?productid=9P760MSPWFQ3';
 
   // SharedPreferences keys
   static const String _keySkippedVersion = 'update_skipped_version';
