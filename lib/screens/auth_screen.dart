@@ -654,6 +654,11 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _showJellyfinUserOptions(JellyfinPublicUser user) {
+    // Users without a password: log in directly (like Jellyfin web)
+    if (!user.hasPassword) {
+      _jellyfinSignInWithPasswordlessUser(user);
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       builder: (context) => SafeArea(
@@ -682,6 +687,39 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _jellyfinSignInWithPasswordlessUser(JellyfinPublicUser user) async {
+    final baseUrl = _jellyfinBaseUrl;
+    if (baseUrl == null || baseUrl.isEmpty) return;
+
+    setState(() {
+      _isAuthenticating = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final storage = await StorageService.getInstance();
+      final deviceId = await storage.getOrCreateDeviceId();
+      final result = await JellyfinAuthService.authenticateByName(
+        baseUrl: baseUrl,
+        username: user.name,
+        password: '',
+        deviceId: deviceId,
+      );
+      await _completeJellyfinAuth(
+        baseUrl: baseUrl,
+        result: result,
+        userName: user.name,
+        primaryImageTag: user.primaryImageTag,
+      );
+    } catch (e, st) {
+      if (!mounted) return;
+      setState(() {
+        _isAuthenticating = false;
+        _errorMessage = mapAuthErrorToMessage(e, st);
+      });
+    }
   }
 
   Widget _buildJellyfinManualStep() {
