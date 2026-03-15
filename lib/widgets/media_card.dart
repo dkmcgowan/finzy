@@ -126,6 +126,10 @@ class MediaCardState extends State<MediaCard> {
       return;
     }
 
+    // Request focus before navigating so lastFocusedGridIndex is updated for touch taps
+    // (InkWell has canRequestFocus: false, so tap alone doesn't trigger onFocusChange)
+    widget.focusNodeToRestore?.requestFocus();
+
     if (widget.onTapOverride != null) {
       widget.onTapOverride!();
       return;
