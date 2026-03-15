@@ -59,7 +59,7 @@ These exist in `SettingsService` but are **never used** for playback—only in `
 | **1080p** | Request transcoded stream: `maxWidth=1920&maxHeight=1080`, container mp4. Server transcodes; we download the resulting stream. |
 | **720p** | `maxWidth=1280&maxHeight=720`, mp4 |
 | **480p** | `maxWidth=854&maxHeight=480`, mp4 |
-| **Save bandwidth** | `maxWidth=1920&maxHeight=1080&videoBitRate=3000000`, mp4 |
+| **Save storage** | `maxWidth=1920&maxHeight=1080&videoBitRate=3000000`, mp4 |
 
 ### Implementation
 
@@ -80,7 +80,7 @@ These exist in `SettingsService` but are **never used** for playback—only in `
 | Area | Setting Location | Default | Notes |
 |------|------------------|---------|-------|
 | Playback mode | Video Playback | Auto (PlaybackInfo) | Auto, Direct Play, Force Transcode (1080p/720p/480p/Save bandwidth) |
-| Download quality | Libraries | Original | Original, 1080p, 720p, 480p, Save bandwidth |
+| Download quality | Libraries | Original | Original, 1080p, 720p, 480p, Save storage |
 
 ---
 

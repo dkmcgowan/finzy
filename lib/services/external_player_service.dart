@@ -29,7 +29,12 @@ class ExternalPlayerService {
       if (videoUrl != null) {
         resolvedUrl = videoUrl;
       } else if (client != null && metadata != null) {
-        final playbackData = await client.getVideoPlaybackData(metadata.itemId, mediaIndex: mediaIndex);
+        final settings = await SettingsService.getInstance();
+        final playbackData = await client.getVideoPlaybackData(
+          metadata.itemId,
+          mediaIndex: mediaIndex,
+          playbackMode: settings.getPlaybackMode(),
+        );
 
         if (!playbackData.hasValidVideoUrl) {
           if (context.mounted) {

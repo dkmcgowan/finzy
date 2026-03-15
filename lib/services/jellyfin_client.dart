@@ -21,6 +21,7 @@ import '../models/cast_role.dart';
 import '../models/library_sort.dart';
 import '../models/video_playback_data.dart';
 import '../utils/app_logger.dart';
+import 'settings_service.dart';
 import '../utils/watch_state_notifier.dart';
 
 /// Jellyfin API client. Maps Jellyfin REST API to DTOs used by the UI.
@@ -929,7 +930,119 @@ class JellyfinClient {
     return PlaybackExtras(chapters: chapters, markers: markers);
   }
 
-  Future<VideoPlaybackData> getVideoPlaybackData(String itemId, {int mediaIndex = 0}) async {
+  /// Call PlaybackInfo for on-demand video; return DirectStreamUrl or TranscodingUrl.
+  Future<String?> _getVideoUrlFromPlaybackInfo(
+    String itemId,
+    int mediaIndex,
+    List<dynamic> mediaSources,
+    Map<String, dynamic> source,
+  ) async {
+    try {
+      final mediaSourceId = source['Id'] as String?;
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/Items/$itemId/PlaybackInfo',
+        data: {
+          'UserId': config.userId,
+          'EnableDirectPlay': true,
+          'EnableDirectStream': true,
+          'EnableTranscoding': true,
+          'AllowVideoStreamCopy': true,
+          'AllowAudioStreamCopy': true,
+          if (mediaSourceId != null && mediaSourceId.isNotEmpty) 'MediaSourceId': mediaSourceId,
+        },
+      );
+      if (response.statusCode != 200 || response.data == null) return null;
+      final data = response.data!;
+      final sources = data['MediaSources'] as List?;
+      if (sources == null || sources.isEmpty) return null;
+      final idx = mediaIndex.clamp(0, sources.length - 1);
+      final ps = sources[idx] as Map<String, dynamic>;
+      final directUrl = ps['DirectStreamUrl'] as String?;
+      final transcodeUrl = ps['TranscodingUrl'] as String?;
+      final supportsDirect = ps['SupportsDirectStream'] as bool? ?? false;
+      final supportsTranscode = ps['SupportsTranscoding'] as bool? ?? false;
+      final container = (ps['Container'] as String?)?.toLowerCase() ?? 'mp4';
+      final sourceId = ps['Id'] as String? ?? '';
+
+      String? url;
+      if (directUrl != null && directUrl.isNotEmpty) {
+        url = directUrl;
+      } else if (supportsTranscode && transcodeUrl != null && transcodeUrl.isNotEmpty) {
+        url = transcodeUrl;
+      } else if (supportsDirect) {
+        url = '/Videos/$itemId/stream.$container?Static=true&api_key=${config.token}';
+        if (sourceId.isNotEmpty) url = '$url&mediaSourceId=$sourceId';
+      } else if (transcodeUrl != null && transcodeUrl.isNotEmpty) {
+        url = transcodeUrl;
+      }
+      if (url == null) return null;
+      if (!url.startsWith('http')) {
+        url = '${config.baseUrl}${url.startsWith('/') ? url : '/$url'}';
+        if (!url.contains('api_key=')) {
+          url = url.contains('?') ? '$url&api_key=${config.token}' : '$url?api_key=${config.token}';
+        }
+      }
+      return url;
+    } catch (e) {
+      appLogger.w('PlaybackInfo failed for $itemId', error: e);
+      return null;
+    }
+  }
+
+  /// Build transcoding query params for playback mode (transcode options).
+  static List<String> _transcodeParamsForPlaybackMode(
+    PlaybackMode mode,
+    String mediaSourceId,
+    String token,
+  ) {
+    final q = <String>['api_key=$token'];
+    if (mediaSourceId.isNotEmpty) q.add('mediaSourceId=$mediaSourceId');
+    switch (mode) {
+      case PlaybackMode.transcode1080:
+        q.addAll(['maxWidth=1920', 'maxHeight=1080']);
+        break;
+      case PlaybackMode.transcode720:
+        q.addAll(['maxWidth=1280', 'maxHeight=720']);
+        break;
+      case PlaybackMode.transcode480:
+        q.addAll(['maxWidth=854', 'maxHeight=480']);
+        break;
+      default:
+        q.addAll(['maxWidth=1920', 'maxHeight=1080']);
+    }
+    return q;
+  }
+
+  /// Build transcoding query params for download quality.
+  static List<String> _transcodeParamsForDownloadQuality(
+    DownloadQuality quality,
+    String mediaSourceId,
+    String token,
+  ) {
+    final q = <String>['api_key=$token'];
+    if (mediaSourceId.isNotEmpty) q.add('mediaSourceId=$mediaSourceId');
+    switch (quality) {
+      case DownloadQuality.original:
+        return q; // Caller should use direct stream, not this
+      case DownloadQuality.p1080:
+        q.addAll(['maxWidth=1920', 'maxHeight=1080']);
+        break;
+      case DownloadQuality.p720:
+        q.addAll(['maxWidth=1280', 'maxHeight=720']);
+        break;
+      case DownloadQuality.p480:
+        q.addAll(['maxWidth=854', 'maxHeight=480']);
+        break;
+    }
+    return q;
+  }
+
+  Future<VideoPlaybackData> getVideoPlaybackData(
+    String itemId, {
+    int mediaIndex = 0,
+    PlaybackMode? playbackMode,
+    DownloadQuality? downloadQuality,
+  }) async {
     String? videoUrl;
     MediaInfo? mediaInfo;
     final versions = <MediaVersion>[];
@@ -948,18 +1061,40 @@ class JellyfinClient {
             final idx = mediaIndex.clamp(0, mediaSources.length - 1);
             final source = mediaSources[idx] as Map<String, dynamic>;
             final container = source['Container'] as String?;
-            // Prefer a direct, Range-capable stream so MPV can seek. The server may return
-            // TranscodingUrl (e.g. HLS) which is not seekable. Build stream.{container} with
-            // static=true to request the original file / direct stream (HTTP Range support).
-            if (container != null && container.isNotEmpty) {
-              final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
-              final q = <String>['static=true', 'allowVideoStreamCopy=true', 'allowAudioStreamCopy=true', 'api_key=${config.token}'];
-              final mediaSourceId = source['Id'] as String?;
-              if (mediaSourceId != null && mediaSourceId.isNotEmpty) {
-                q.add('mediaSourceId=$mediaSourceId');
+            final mediaSourceId = source['Id'] as String? ?? '';
+            final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
+
+            // Download flow: use download quality for URL
+            if (downloadQuality != null) {
+              if (downloadQuality == DownloadQuality.original) {
+                // Original: direct stream (same as direct play)
+                if (container != null && container.isNotEmpty) {
+                  final q = <String>['static=true', 'allowVideoStreamCopy=true', 'allowAudioStreamCopy=true', 'api_key=${config.token}'];
+                  if (mediaSourceId.isNotEmpty) q.add('mediaSourceId=$mediaSourceId');
+                  videoUrl = '${base}Videos/$itemId/stream.$container?${q.join('&')}';
+                }
+              } else {
+                final q = _transcodeParamsForDownloadQuality(downloadQuality, mediaSourceId, config.token);
+                videoUrl = '${base}Videos/$itemId/stream.mp4?${q.join('&')}';
               }
-              videoUrl = '${base}Videos/$itemId/stream.$container?${q.join('&')}';
+            } else if (playbackMode == PlaybackMode.directPlay) {
+              // Direct Play: static stream, Range-capable for seeking
+              if (container != null && container.isNotEmpty) {
+                final q = <String>['static=true', 'allowVideoStreamCopy=true', 'allowAudioStreamCopy=true', 'api_key=${config.token}'];
+                if (mediaSourceId.isNotEmpty) q.add('mediaSourceId=$mediaSourceId');
+                videoUrl = '${base}Videos/$itemId/stream.$container?${q.join('&')}';
+              }
+            } else if (playbackMode == PlaybackMode.transcode1080 ||
+                playbackMode == PlaybackMode.transcode720 ||
+                playbackMode == PlaybackMode.transcode480) {
+              // Transcode: use mode params
+              final q = _transcodeParamsForPlaybackMode(playbackMode!, mediaSourceId, config.token);
+              videoUrl = '${base}Videos/$itemId/stream.mp4?${q.join('&')}';
+            } else {
+              // Auto (or null): use PlaybackInfo (server decides)
+              videoUrl = await _getVideoUrlFromPlaybackInfo(itemId, mediaIndex, mediaSources, source);
             }
+
             if (videoUrl == null) {
               final directUrl = source['DirectStreamUrl'] as String?;
               final transcodeUrl = source['TranscodingUrl'] as String?;
@@ -979,7 +1114,6 @@ class JellyfinClient {
             final subtitleTracks = <MediaSubtitleTrack>[];
             var audioIdx = 0;
             var subIdx = 0;
-            final mediaSourceId = source['Id'] as String? ?? '';
             for (final s in streams) {
               final m = s as Map<String, dynamic>;
               final type = m['Type'] as String?;

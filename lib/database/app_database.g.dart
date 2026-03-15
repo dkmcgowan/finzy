@@ -196,6 +196,21 @@ class $DownloadedMediaTable extends DownloadedMedia
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isTranscodedMeta = const VerificationMeta(
+    'isTranscoded',
+  );
+  @override
+  late final GeneratedColumn<bool> isTranscoded = GeneratedColumn<bool>(
+    'is_transcoded',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_transcoded" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -215,6 +230,7 @@ class $DownloadedMediaTable extends DownloadedMedia
     errorMessage,
     retryCount,
     bgTaskId,
+    isTranscoded,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -349,6 +365,15 @@ class $DownloadedMediaTable extends DownloadedMedia
         bgTaskId.isAcceptableOrUnknown(data['bg_task_id']!, _bgTaskIdMeta),
       );
     }
+    if (data.containsKey('is_transcoded')) {
+      context.handle(
+        _isTranscodedMeta,
+        isTranscoded.isAcceptableOrUnknown(
+          data['is_transcoded']!,
+          _isTranscodedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -426,6 +451,10 @@ class $DownloadedMediaTable extends DownloadedMedia
         DriftSqlType.string,
         data['${effectivePrefix}bg_task_id'],
       ),
+      isTranscoded: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_transcoded'],
+      )!,
     );
   }
 
@@ -454,6 +483,9 @@ class DownloadedMediaItem extends DataClass
   final String? errorMessage;
   final int retryCount;
   final String? bgTaskId;
+
+  /// True when downloading a transcoded stream (pause/resume not supported)
+  final bool isTranscoded;
   const DownloadedMediaItem({
     required this.id,
     required this.serverId,
@@ -472,6 +504,7 @@ class DownloadedMediaItem extends DataClass
     this.errorMessage,
     required this.retryCount,
     this.bgTaskId,
+    required this.isTranscoded,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -509,6 +542,7 @@ class DownloadedMediaItem extends DataClass
     if (!nullToAbsent || bgTaskId != null) {
       map['bg_task_id'] = Variable<String>(bgTaskId);
     }
+    map['is_transcoded'] = Variable<bool>(isTranscoded);
     return map;
   }
 
@@ -547,6 +581,7 @@ class DownloadedMediaItem extends DataClass
       bgTaskId: bgTaskId == null && nullToAbsent
           ? const Value.absent()
           : Value(bgTaskId),
+      isTranscoded: Value(isTranscoded),
     );
   }
 
@@ -573,6 +608,7 @@ class DownloadedMediaItem extends DataClass
       errorMessage: serializer.fromJson<String?>(json['errorMessage']),
       retryCount: serializer.fromJson<int>(json['retryCount']),
       bgTaskId: serializer.fromJson<String?>(json['bgTaskId']),
+      isTranscoded: serializer.fromJson<bool>(json['isTranscoded']),
     );
   }
   @override
@@ -596,6 +632,7 @@ class DownloadedMediaItem extends DataClass
       'errorMessage': serializer.toJson<String?>(errorMessage),
       'retryCount': serializer.toJson<int>(retryCount),
       'bgTaskId': serializer.toJson<String?>(bgTaskId),
+      'isTranscoded': serializer.toJson<bool>(isTranscoded),
     };
   }
 
@@ -617,6 +654,7 @@ class DownloadedMediaItem extends DataClass
     Value<String?> errorMessage = const Value.absent(),
     int? retryCount,
     Value<String?> bgTaskId = const Value.absent(),
+    bool? isTranscoded,
   }) => DownloadedMediaItem(
     id: id ?? this.id,
     serverId: serverId ?? this.serverId,
@@ -637,6 +675,7 @@ class DownloadedMediaItem extends DataClass
     errorMessage: errorMessage.present ? errorMessage.value : this.errorMessage,
     retryCount: retryCount ?? this.retryCount,
     bgTaskId: bgTaskId.present ? bgTaskId.value : this.bgTaskId,
+    isTranscoded: isTranscoded ?? this.isTranscoded,
   );
   DownloadedMediaItem copyWithCompanion(DownloadedMediaCompanion data) {
     return DownloadedMediaItem(
@@ -669,6 +708,9 @@ class DownloadedMediaItem extends DataClass
           ? data.retryCount.value
           : this.retryCount,
       bgTaskId: data.bgTaskId.present ? data.bgTaskId.value : this.bgTaskId,
+      isTranscoded: data.isTranscoded.present
+          ? data.isTranscoded.value
+          : this.isTranscoded,
     );
   }
 
@@ -691,7 +733,8 @@ class DownloadedMediaItem extends DataClass
           ..write('downloadedAt: $downloadedAt, ')
           ..write('errorMessage: $errorMessage, ')
           ..write('retryCount: $retryCount, ')
-          ..write('bgTaskId: $bgTaskId')
+          ..write('bgTaskId: $bgTaskId, ')
+          ..write('isTranscoded: $isTranscoded')
           ..write(')'))
         .toString();
   }
@@ -715,6 +758,7 @@ class DownloadedMediaItem extends DataClass
     errorMessage,
     retryCount,
     bgTaskId,
+    isTranscoded,
   );
   @override
   bool operator ==(Object other) =>
@@ -736,7 +780,8 @@ class DownloadedMediaItem extends DataClass
           other.downloadedAt == this.downloadedAt &&
           other.errorMessage == this.errorMessage &&
           other.retryCount == this.retryCount &&
-          other.bgTaskId == this.bgTaskId);
+          other.bgTaskId == this.bgTaskId &&
+          other.isTranscoded == this.isTranscoded);
 }
 
 class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
@@ -757,6 +802,7 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
   final Value<String?> errorMessage;
   final Value<int> retryCount;
   final Value<String?> bgTaskId;
+  final Value<bool> isTranscoded;
   const DownloadedMediaCompanion({
     this.id = const Value.absent(),
     this.serverId = const Value.absent(),
@@ -775,6 +821,7 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     this.errorMessage = const Value.absent(),
     this.retryCount = const Value.absent(),
     this.bgTaskId = const Value.absent(),
+    this.isTranscoded = const Value.absent(),
   });
   DownloadedMediaCompanion.insert({
     this.id = const Value.absent(),
@@ -794,6 +841,7 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     this.errorMessage = const Value.absent(),
     this.retryCount = const Value.absent(),
     this.bgTaskId = const Value.absent(),
+    this.isTranscoded = const Value.absent(),
   }) : serverId = Value(serverId),
        itemId = Value(itemId),
        globalKey = Value(globalKey),
@@ -817,6 +865,7 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     Expression<String>? errorMessage,
     Expression<int>? retryCount,
     Expression<String>? bgTaskId,
+    Expression<bool>? isTranscoded,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -836,6 +885,7 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
       if (errorMessage != null) 'error_message': errorMessage,
       if (retryCount != null) 'retry_count': retryCount,
       if (bgTaskId != null) 'bg_task_id': bgTaskId,
+      if (isTranscoded != null) 'is_transcoded': isTranscoded,
     });
   }
 
@@ -857,6 +907,7 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     Value<String?>? errorMessage,
     Value<int>? retryCount,
     Value<String?>? bgTaskId,
+    Value<bool>? isTranscoded,
   }) {
     return DownloadedMediaCompanion(
       id: id ?? this.id,
@@ -876,6 +927,7 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
       errorMessage: errorMessage ?? this.errorMessage,
       retryCount: retryCount ?? this.retryCount,
       bgTaskId: bgTaskId ?? this.bgTaskId,
+      isTranscoded: isTranscoded ?? this.isTranscoded,
     );
   }
 
@@ -933,6 +985,9 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
     if (bgTaskId.present) {
       map['bg_task_id'] = Variable<String>(bgTaskId.value);
     }
+    if (isTranscoded.present) {
+      map['is_transcoded'] = Variable<bool>(isTranscoded.value);
+    }
     return map;
   }
 
@@ -955,7 +1010,8 @@ class DownloadedMediaCompanion extends UpdateCompanion<DownloadedMediaItem> {
           ..write('downloadedAt: $downloadedAt, ')
           ..write('errorMessage: $errorMessage, ')
           ..write('retryCount: $retryCount, ')
-          ..write('bgTaskId: $bgTaskId')
+          ..write('bgTaskId: $bgTaskId, ')
+          ..write('isTranscoded: $isTranscoded')
           ..write(')'))
         .toString();
   }
@@ -2486,6 +2542,7 @@ typedef $$DownloadedMediaTableCreateCompanionBuilder =
       Value<String?> errorMessage,
       Value<int> retryCount,
       Value<String?> bgTaskId,
+      Value<bool> isTranscoded,
     });
 typedef $$DownloadedMediaTableUpdateCompanionBuilder =
     DownloadedMediaCompanion Function({
@@ -2506,6 +2563,7 @@ typedef $$DownloadedMediaTableUpdateCompanionBuilder =
       Value<String?> errorMessage,
       Value<int> retryCount,
       Value<String?> bgTaskId,
+      Value<bool> isTranscoded,
     });
 
 class $$DownloadedMediaTableFilterComposer
@@ -2599,6 +2657,11 @@ class $$DownloadedMediaTableFilterComposer
 
   ColumnFilters<String> get bgTaskId => $composableBuilder(
     column: $table.bgTaskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isTranscoded => $composableBuilder(
+    column: $table.isTranscoded,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2696,6 +2759,11 @@ class $$DownloadedMediaTableOrderingComposer
     column: $table.bgTaskId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isTranscoded => $composableBuilder(
+    column: $table.isTranscoded,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DownloadedMediaTableAnnotationComposer
@@ -2769,6 +2837,11 @@ class $$DownloadedMediaTableAnnotationComposer
 
   GeneratedColumn<String> get bgTaskId =>
       $composableBuilder(column: $table.bgTaskId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isTranscoded => $composableBuilder(
+    column: $table.isTranscoded,
+    builder: (column) => column,
+  );
 }
 
 class $$DownloadedMediaTableTableManager
@@ -2825,6 +2898,7 @@ class $$DownloadedMediaTableTableManager
                 Value<String?> errorMessage = const Value.absent(),
                 Value<int> retryCount = const Value.absent(),
                 Value<String?> bgTaskId = const Value.absent(),
+                Value<bool> isTranscoded = const Value.absent(),
               }) => DownloadedMediaCompanion(
                 id: id,
                 serverId: serverId,
@@ -2843,6 +2917,7 @@ class $$DownloadedMediaTableTableManager
                 errorMessage: errorMessage,
                 retryCount: retryCount,
                 bgTaskId: bgTaskId,
+                isTranscoded: isTranscoded,
               ),
           createCompanionCallback:
               ({
@@ -2863,6 +2938,7 @@ class $$DownloadedMediaTableTableManager
                 Value<String?> errorMessage = const Value.absent(),
                 Value<int> retryCount = const Value.absent(),
                 Value<String?> bgTaskId = const Value.absent(),
+                Value<bool> isTranscoded = const Value.absent(),
               }) => DownloadedMediaCompanion.insert(
                 id: id,
                 serverId: serverId,
@@ -2881,6 +2957,7 @@ class $$DownloadedMediaTableTableManager
                 errorMessage: errorMessage,
                 retryCount: retryCount,
                 bgTaskId: bgTaskId,
+                isTranscoded: isTranscoded,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

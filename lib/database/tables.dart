@@ -48,6 +48,8 @@ class DownloadedMedia extends Table {
   TextColumn get errorMessage => text().nullable()();
   IntColumn get retryCount => integer().withDefault(const Constant(0))();
   TextColumn get bgTaskId => text().nullable()();
+  /// True when downloading a transcoded stream (pause/resume not supported)
+  BoolColumn get isTranscoded => boolean().withDefault(const Constant(false))();
 }
 
 /// Queue for offline watch progress and manual watch actions.

@@ -87,10 +87,13 @@ extension DownloadDatabaseOperations on AppDatabase {
   }
 
   /// Update download status
-  Future<void> updateDownloadStatus(String globalKey, int status) async {
-    await (update(
-      downloadedMedia,
-    )..where((t) => t.globalKey.equals(globalKey))).write(DownloadedMediaCompanion(status: Value(status)));
+  Future<void> updateDownloadStatus(String globalKey, int status, {bool? isTranscoded}) async {
+    await (update(downloadedMedia)..where((t) => t.globalKey.equals(globalKey))).write(
+      DownloadedMediaCompanion(
+        status: Value(status),
+        isTranscoded: isTranscoded != null ? Value(isTranscoded) : const Value.absent(),
+      ),
+    );
   }
 
   /// Update download progress
@@ -195,6 +198,7 @@ class _DownloadContext {
   final int? showYear;
   final bool isSafMode;
   final MediaInfo? mediaInfo;
+  final DownloadQuality downloadQuality;
 
   _DownloadContext({
     required this.metadata,
@@ -205,7 +209,23 @@ class _DownloadContext {
     this.showYear,
     this.isSafMode = false,
     this.mediaInfo,
+    required this.downloadQuality,
   });
+}
+
+/// Estimated output bitrate (bps) for transcoded download quality.
+/// Used to estimate total size when server doesn't send Content-Length.
+int _estimatedBitrateForQuality(DownloadQuality quality) {
+  switch (quality) {
+    case DownloadQuality.original:
+      return 0; // Direct stream, server provides Content-Length
+    case DownloadQuality.p1080:
+      return 5 * 1000 * 1000; // ~5 Mbps
+    case DownloadQuality.p720:
+      return 3 * 1000 * 1000; // ~3 Mbps
+    case DownloadQuality.p480:
+      return 1500 * 1000; // ~1.5 Mbps
+  }
 }
 
 class DownloadManagerService {
@@ -495,7 +515,6 @@ class DownloadManagerService {
   Future<void> _prepareAndEnqueueDownload(String globalKey, JellyfinClient client, DownloadQueueItem queueItem) async {
     try {
       appLogger.i('Preparing download for $globalKey');
-      await _transitionStatus(globalKey, DownloadStatus.downloading);
 
       final parsed = parseGlobalKey(globalKey);
       if (parsed == null) throw Exception('Invalid globalKey: $globalKey');
@@ -505,10 +524,24 @@ class DownloadManagerService {
       final metadata = await _apiCache.getMetadata(serverId, itemId);
       if (metadata == null) throw Exception('Metadata not found in cache for $globalKey');
 
-      final playbackData = await client.getVideoPlaybackData(metadata.itemId);
+      final settings = await SettingsService.getInstance();
+      final downloadQuality = settings.getDownloadQuality();
+      final playbackData = await client.getVideoPlaybackData(
+        metadata.itemId,
+        downloadQuality: downloadQuality,
+      );
       if (playbackData.videoUrl == null) throw Exception('Could not get video URL');
 
-      final ext = _getExtensionFromUrl(playbackData.videoUrl!) ?? 'mp4';
+      await _transitionStatus(
+        globalKey,
+        DownloadStatus.downloading,
+        isTranscoded: downloadQuality != DownloadQuality.original,
+      );
+
+      // Transcoded downloads use mp4; original uses container from URL
+      final ext = downloadQuality != DownloadQuality.original
+          ? 'mp4'
+          : (_getExtensionFromUrl(playbackData.videoUrl!) ?? 'mp4');
 
       // Look up show year for episodes
       int? showYear;
@@ -524,7 +557,6 @@ class DownloadManagerService {
           : metadata.title;
 
       // Get WiFi-only setting for native enforcement
-      final settings = await SettingsService.getInstance();
       final requiresWiFi = settings.getDownloadOnWifiOnly();
 
       if (_storageService.isUsingSaf) {
@@ -569,6 +601,7 @@ class DownloadManagerService {
           showYear: showYear,
           isSafMode: true,
           mediaInfo: playbackData.mediaInfo,
+          downloadQuality: downloadQuality,
         );
 
         await _database.updateBgTaskId(globalKey, task.taskId);
@@ -610,6 +643,7 @@ class DownloadManagerService {
           client: client,
           showYear: showYear,
           mediaInfo: playbackData.mediaInfo,
+          downloadQuality: downloadQuality,
         );
 
         await _database.updateBgTaskId(globalKey, task.taskId);
@@ -630,7 +664,7 @@ class DownloadManagerService {
   void _onTaskProgress(TaskProgressUpdate update) {
     if (_disposed) return;
     final globalKey = update.task.metaData;
-    if (globalKey.isEmpty || update.progress < 0) return;
+    if (globalKey.isEmpty) return;
 
     // If this item is being paused, the holding queue promoted it — cancel it
     if (_pausingKeys.contains(globalKey)) {
@@ -638,10 +672,56 @@ class DownloadManagerService {
       return;
     }
 
-    final progress = (update.progress * 100).round().clamp(0, 100);
+    int progress;
+    int totalBytes;
+    int downloadedBytes;
     final speedBytesPerSec = update.hasNetworkSpeed ? update.networkSpeed * 1024 * 1024 : 0.0;
-    final totalBytes = update.hasExpectedFileSize ? update.expectedFileSize : 0;
-    final downloadedBytes = totalBytes > 0 ? (update.progress * totalBytes).round() : 0;
+
+    if (update.progress >= 0 && update.hasExpectedFileSize) {
+      // Server provided Content-Length — use library's progress
+      progress = (update.progress * 100).round().clamp(0, 100);
+      totalBytes = update.expectedFileSize;
+      downloadedBytes = (update.progress * totalBytes).round();
+    } else {
+      // Transcoded stream without Content-Length — estimate from file size + duration
+      final ctx = _pendingDownloadContext[globalKey];
+      if (ctx != null &&
+          !ctx.isSafMode &&
+          ctx.downloadQuality != DownloadQuality.original &&
+          ctx.metadata.duration != null &&
+          ctx.metadata.duration! > 0) {
+        try {
+          final file = File(ctx.filePath);
+          if (file.existsSync()) {
+            downloadedBytes = file.lengthSync();
+            final durationSec = ctx.metadata.duration! / 1000;
+            final bitrate = _estimatedBitrateForQuality(ctx.downloadQuality);
+            totalBytes = (durationSec * bitrate / 8).round();
+            if (totalBytes > 0) {
+              progress = ((downloadedBytes / totalBytes) * 100).round().clamp(0, 100);
+            } else {
+              progress = 0;
+              totalBytes = 0;
+            }
+          } else {
+            progress = 0;
+            totalBytes = 0;
+            downloadedBytes = 0;
+          }
+        } catch (_) {
+          progress = 0;
+          totalBytes = 0;
+          downloadedBytes = 0;
+        }
+      } else {
+        progress = 0;
+        totalBytes = 0;
+        downloadedBytes = 0;
+      }
+    }
+
+    final ctx = _pendingDownloadContext[globalKey];
+    final isTranscoded = ctx?.downloadQuality != DownloadQuality.original;
 
     _progressController.add(
       DownloadProgress(
@@ -652,6 +732,7 @@ class DownloadManagerService {
         totalBytes: totalBytes,
         speed: speedBytesPerSec,
         currentFile: 'video',
+        isTranscoded: isTranscoded,
       ),
     );
 
@@ -1049,6 +1130,7 @@ class DownloadManagerService {
     int progress, {
     String? errorMessage,
     String? currentFile,
+    bool? isTranscoded,
   }) {
     _progressController.add(
       DownloadProgress(
@@ -1057,6 +1139,7 @@ class DownloadManagerService {
         progress: progress,
         errorMessage: errorMessage,
         currentFile: currentFile,
+        isTranscoded: isTranscoded ?? false,
       ),
     );
   }
@@ -1068,13 +1151,20 @@ class DownloadManagerService {
   /// 2. Emit progress to listeners
   ///
   /// Default progress is 0 for most statuses, 100 for completed.
-  Future<void> _transitionStatus(String globalKey, DownloadStatus status, {int? progress, String? errorMessage}) async {
-    await _database.updateDownloadStatus(globalKey, status.index);
+  Future<void> _transitionStatus(
+    String globalKey,
+    DownloadStatus status, {
+    int? progress,
+    String? errorMessage,
+    bool? isTranscoded,
+  }) async {
+    await _database.updateDownloadStatus(globalKey, status.index, isTranscoded: isTranscoded);
     _emitProgress(
       globalKey,
       status,
       progress ?? (status == DownloadStatus.completed ? 100 : 0),
       errorMessage: errorMessage,
+      isTranscoded: isTranscoded,
     );
   }
 

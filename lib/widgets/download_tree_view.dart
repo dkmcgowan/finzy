@@ -371,11 +371,19 @@ class _DownloadTreeViewState extends State<DownloadTreeView> {
     );
   }
 
-  /// Pause all active (downloading and queued) children of a container node
+  /// Pause all active (downloading and queued) children of a container node.
+  /// Transcoded children are cancelled (no pause support).
   void _pauseAllChildren(DownloadTreeNode node) {
-    final keys = _getActiveChildKeys(node);
-    for (final key in keys) {
-      widget.onPause?.call(key);
+    for (final child in node.children) {
+      if (child.hasChildren) {
+        _pauseAllChildren(child);
+      } else if (child.status == DownloadStatus.downloading || child.status == DownloadStatus.queued) {
+        if (child.downloadProgress?.isTranscoded ?? false) {
+          widget.onCancel?.call(child.key);
+        } else {
+          widget.onPause?.call(child.key);
+        }
+      }
     }
   }
 
@@ -385,19 +393,6 @@ class _DownloadTreeViewState extends State<DownloadTreeView> {
     for (final key in keys) {
       widget.onResume?.call(key);
     }
-  }
-
-  /// Get all active (downloading or queued) child keys from a container node
-  List<String> _getActiveChildKeys(DownloadTreeNode node) {
-    final List<String> keys = [];
-    for (final child in node.children) {
-      if (child.hasChildren) {
-        keys.addAll(_getActiveChildKeys(child));
-      } else if (child.status == DownloadStatus.downloading || child.status == DownloadStatus.queued) {
-        keys.add(child.key);
-      }
-    }
-    return keys;
   }
 
   /// Get all paused child keys from a container node
@@ -519,7 +514,8 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
   void didUpdateWidget(_DownloadTreeItem oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Reinitialize focus nodes if action count might have changed
-    if (oldWidget.node.status != widget.node.status) {
+    if (oldWidget.node.status != widget.node.status ||
+        oldWidget.node.downloadProgress?.isTranscoded != widget.node.downloadProgress?.isTranscoded) {
       _disposeButtonFocusNodes();
       _initButtonFocusNodes();
     }
@@ -563,8 +559,9 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
   int _getItemActionCount() {
     int count = 0;
     final status = widget.node.status;
-    if (status == DownloadStatus.downloading && widget.onPause != null) count++;
-    if (status == DownloadStatus.paused && widget.onResume != null) count++;
+    final isTranscoded = widget.node.downloadProgress?.isTranscoded ?? false;
+    if (status == DownloadStatus.downloading && widget.onPause != null && !isTranscoded) count++;
+    if (status == DownloadStatus.paused && widget.onResume != null && !isTranscoded) count++;
     if ((status == DownloadStatus.downloading || status == DownloadStatus.queued) && widget.onCancel != null) count++;
     if (status == DownloadStatus.failed && widget.onRetry != null) count++;
     if ((status == DownloadStatus.completed || status == DownloadStatus.failed || status == DownloadStatus.cancelled) &&
@@ -574,11 +571,33 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
     return count;
   }
 
+  bool _containerHasPausableChildren(DownloadTreeNode node) {
+    for (final child in node.children) {
+      if (child.hasChildren) {
+        if (_containerHasPausableChildren(child)) return true;
+      } else {
+        final canPause = (child.status == DownloadStatus.downloading || child.status == DownloadStatus.queued) &&
+            !(child.downloadProgress?.isTranscoded ?? false);
+        final canResume = child.status == DownloadStatus.paused && !(child.downloadProgress?.isTranscoded ?? false);
+        if (canPause || canResume) return true;
+      }
+    }
+    return false;
+  }
+
   int _getContainerActionCount() {
     int count = 0;
     final status = widget.node.status;
-    if ((status == DownloadStatus.downloading || status == DownloadStatus.queued) && widget.onPause != null) count++;
-    if (status == DownloadStatus.paused && widget.onResume != null) count++;
+    if ((status == DownloadStatus.downloading || status == DownloadStatus.queued) &&
+        widget.onPause != null &&
+        _containerHasPausableChildren(widget.node)) {
+      count++;
+    }
+    if (status == DownloadStatus.paused &&
+        widget.onResume != null &&
+        _containerHasPausableChildren(widget.node)) {
+      count++;
+    }
     if (widget.onDelete != null) count++;
     return count;
   }
@@ -759,11 +778,12 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
   List<Widget> _buildItemActions() {
     final globalKey = widget.node.key;
     final status = widget.node.status;
+    final isTranscoded = widget.node.downloadProgress?.isTranscoded ?? false;
     final actions = <Widget>[];
     int buttonIndex = 0;
 
-    // Pause button for downloading items
-    if (status == DownloadStatus.downloading && widget.onPause != null) {
+    // Pause button for downloading items (not for transcoded - cancel only)
+    if (status == DownloadStatus.downloading && widget.onPause != null && !isTranscoded) {
       actions.add(
         _buildActionButton(
           icon: Symbols.pause_rounded,
@@ -774,8 +794,8 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
       );
     }
 
-    // Resume button for paused items
-    if (status == DownloadStatus.paused && widget.onResume != null) {
+    // Resume button for paused items (not for transcoded)
+    if (status == DownloadStatus.paused && widget.onResume != null && !isTranscoded) {
       actions.add(
         _buildActionButton(
           icon: Symbols.play_arrow_rounded,
@@ -835,11 +855,14 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
 
   List<Widget> _buildContainerActions() {
     final status = widget.node.status;
+    final hasPausableChildren = _containerHasPausableChildren(widget.node);
     final actions = <Widget>[];
     int buttonIndex = 0;
 
-    // Pause all button
-    if ((status == DownloadStatus.downloading || status == DownloadStatus.queued) && widget.onPause != null) {
+    // Pause all button (only if any child can be paused)
+    if ((status == DownloadStatus.downloading || status == DownloadStatus.queued) &&
+        widget.onPause != null &&
+        hasPausableChildren) {
       actions.add(
         _buildActionButton(
           icon: Symbols.pause_rounded,
@@ -850,8 +873,8 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
       );
     }
 
-    // Resume all button
-    if (status == DownloadStatus.paused && widget.onResume != null) {
+    // Resume all button (only if any child can be resumed)
+    if (status == DownloadStatus.paused && widget.onResume != null && hasPausableChildren) {
       actions.add(
         _buildActionButton(
           icon: Symbols.play_arrow_rounded,

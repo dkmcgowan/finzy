@@ -1866,7 +1866,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
     final size = MediaQuery.of(context).size;
     final headerHeight = size.height * 0.6;
 
-    final isPhone = PlatformDetector.isPhone(context);
     final content = Focus(
       onKeyEvent: handleBack,
       child: Scaffold(
@@ -2071,18 +2070,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                         ),
                       ),
 
-                      // Back button: on TV/desktop stays in hero; on mobile, use floating button below
-                      if (!isPhone)
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          child: FocusableAppBarBackButton(
-                            focusNode: _backButtonFocusNode,
-                            onKeyEvent: _handleBackButtonKeyEvent,
-                            onPressed: () => Navigator.pop(context, _watchStateChanged),
-                            useAdjustedLeading: true,
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -2255,9 +2242,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                 ),
               ),
             ),
-            // Floating back button on mobile: stays visible when scrolling
-            if (isPhone)
-              Positioned(
+            // Floating back button: stays visible when scrolling
+            Positioned(
                 top: 0,
                 left: 0,
                 child: SafeArea(

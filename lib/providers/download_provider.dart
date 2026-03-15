@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:finzy/utils/content_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../database/app_database.dart';
 import '../models/download_models.dart';
 import '../models/media_metadata.dart';
 import '../services/download_manager_service.dart';
@@ -100,6 +101,7 @@ class DownloadProvider extends ChangeNotifier {
           progress: item.progress,
           downloadedBytes: item.downloadedBytes,
           totalBytes: item.totalBytes ?? 0,
+          isTranscoded: item.isTranscoded,
         );
 
         // Store server thumb path reference (file path computed from hash when needed)
@@ -107,14 +109,15 @@ class DownloadProvider extends ChangeNotifier {
 
         // Look up metadata from the bulk-loaded map (O(1) instead of DB query per item)
         // Falls back to individual query for any unpinned entries (e.g., legacy data)
-        final metadata = allMetadata[item.globalKey] ?? await apiCache.getMetadata(item.serverId, item.itemId);
-        if (metadata != null) {
-          _metadata[item.globalKey] = metadata;
+        // Falls back to synthetic metadata when cache is missing (e.g. after cache clear)
+        final metadata = allMetadata[item.globalKey] ??
+            await apiCache.getMetadata(item.serverId, item.itemId) ??
+            _syntheticMetadataFromDownload(item);
+        _metadata[item.globalKey] = metadata;
 
-          // For episodes, also load parent (show and season) metadata from the same map
-          if (metadata.isEpisode) {
-            _loadParentMetadataFromMap(metadata, allMetadata);
-          }
+        // For episodes, also load parent (show and season) metadata from the same map
+        if (metadata.isEpisode) {
+          _loadParentMetadataFromMap(metadata, allMetadata);
         }
       }
 
@@ -129,6 +132,21 @@ class DownloadProvider extends ChangeNotifier {
     } catch (e) {
       appLogger.e('Failed to load persisted downloads', error: e);
     }
+  }
+
+  /// Create minimal metadata from a download record when API cache metadata is missing.
+  /// Ensures downloads still appear after cache clear or for legacy data.
+  MediaMetadata _syntheticMetadataFromDownload(DownloadedMediaItem item) {
+    final type = item.type.toLowerCase();
+    return MediaMetadata(
+      itemId: item.itemId,
+      key: '${ApiCache.itemPrefix}${item.itemId}',
+      type: item.type,
+      title: 'Downloaded ${type == 'movie' ? 'Movie' : 'Episode'}',
+      serverId: item.serverId,
+      seriesId: item.seriesId,
+      seasonId: item.seasonId,
+    );
   }
 
   /// Load total episode counts from SharedPreferences
@@ -898,12 +916,17 @@ class DownloadProvider extends ChangeNotifier {
     return queuedCount;
   }
 
-  /// Pause a download (works for both downloading and queued items)
+  /// Pause a download (works for both downloading and queued items).
+  /// Transcoded downloads cannot be paused; cancel is used instead.
   Future<void> pauseDownload(String globalKey) async {
     final progress = _downloads[globalKey];
     if (progress != null &&
         (progress.status == DownloadStatus.downloading || progress.status == DownloadStatus.queued)) {
-      await _downloadManager.pauseDownload(globalKey);
+      if (progress.isTranscoded) {
+        await cancelDownload(globalKey);
+      } else {
+        await _downloadManager.pauseDownload(globalKey);
+      }
     }
   }
 

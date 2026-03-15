@@ -349,6 +349,27 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get downloadLocationSelectError => 'Ordnerauswahl fehlgeschlagen';
 	@override String get downloadOnWifiOnly => 'Nur über WLAN herunterladen';
 	@override String get downloadOnWifiOnlyDescription => 'Downloads über mobile Daten verhindern';
+	@override String get downloadQuality => 'Download-Qualität';
+	@override String get downloadQualityDescription => 'Qualität für Offline-Downloads. Original behält die Quelldatei; andere Optionen transkodieren, um Speicher zu sparen.';
+	@override String get downloadQualityOriginal => 'Original';
+	@override String get downloadQualityOriginalDescription => 'Nutzt die Originaldatei.';
+	@override String get downloadQuality1080p => '1080p';
+	@override String get downloadQuality1080pDescription => 'Transkodieren auf 1080p.';
+	@override String get downloadQuality720p => '720p';
+	@override String get downloadQuality720pDescription => 'Transkodieren auf 720p.';
+	@override String get downloadQuality480p => '480p';
+	@override String get downloadQuality480pDescription => 'Transkodieren auf 480p.';
+	@override String get playbackMode => 'Streaming-Modus';
+	@override String get playbackModeAutoDescription => 'Lässt den Server entscheiden.';
+	@override String get playbackModeAuto => 'Auto';
+	@override String get playbackModeDirectPlayDescription => 'Nutzt die Originaldatei.';
+	@override String get playbackModeDirectPlay => 'Direct Play';
+	@override String get transcodeQuality1080p => '1080p';
+	@override String get transcodeQuality1080pDescription => 'Stream auf 1080p transkodieren.';
+	@override String get transcodeQuality720p => '720p';
+	@override String get transcodeQuality720pDescription => 'Stream auf 720p transkodieren.';
+	@override String get transcodeQuality480p => '480p';
+	@override String get transcodeQuality480pDescription => 'Stream auf 480p transkodieren.';
 	@override String get cellularDownloadBlocked => 'Downloads sind über mobile Daten deaktiviert. Verbinde dich mit einem WLAN oder ändere die Einstellung.';
 	@override String get maxVolume => 'Maximale Lautstärke';
 	@override String get maxVolumeDescription => 'Lautstärke über 100% für leise Medien erlauben';
@@ -1516,6 +1537,27 @@ extension on TranslationsDe {
 			'settings.downloadLocationSelectError' => 'Ordnerauswahl fehlgeschlagen',
 			'settings.downloadOnWifiOnly' => 'Nur über WLAN herunterladen',
 			'settings.downloadOnWifiOnlyDescription' => 'Downloads über mobile Daten verhindern',
+			'settings.downloadQuality' => 'Download-Qualität',
+			'settings.downloadQualityDescription' => 'Qualität für Offline-Downloads. Original behält die Quelldatei; andere Optionen transkodieren, um Speicher zu sparen.',
+			'settings.downloadQualityOriginal' => 'Original',
+			'settings.downloadQualityOriginalDescription' => 'Nutzt die Originaldatei.',
+			'settings.downloadQuality1080p' => '1080p',
+			'settings.downloadQuality1080pDescription' => 'Transkodieren auf 1080p.',
+			'settings.downloadQuality720p' => '720p',
+			'settings.downloadQuality720pDescription' => 'Transkodieren auf 720p.',
+			'settings.downloadQuality480p' => '480p',
+			'settings.downloadQuality480pDescription' => 'Transkodieren auf 480p.',
+			'settings.playbackMode' => 'Streaming-Modus',
+			'settings.playbackModeAutoDescription' => 'Lässt den Server entscheiden.',
+			'settings.playbackModeAuto' => 'Auto',
+			'settings.playbackModeDirectPlayDescription' => 'Nutzt die Originaldatei.',
+			'settings.playbackModeDirectPlay' => 'Direct Play',
+			'settings.transcodeQuality1080p' => '1080p',
+			'settings.transcodeQuality1080pDescription' => 'Stream auf 1080p transkodieren.',
+			'settings.transcodeQuality720p' => '720p',
+			'settings.transcodeQuality720pDescription' => 'Stream auf 720p transkodieren.',
+			'settings.transcodeQuality480p' => '480p',
+			'settings.transcodeQuality480pDescription' => 'Stream auf 480p transkodieren.',
 			'settings.cellularDownloadBlocked' => 'Downloads sind über mobile Daten deaktiviert. Verbinde dich mit einem WLAN oder ändere die Einstellung.',
 			'settings.maxVolume' => 'Maximale Lautstärke',
 			'settings.maxVolumeDescription' => 'Lautstärke über 100% für leise Medien erlauben',
@@ -1785,6 +1827,8 @@ extension on TranslationsDe {
 			'libraries.trashEmptied' => ({required Object title}) => 'Papierkorb für „${title}“ geleert',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Papierkorb konnte nicht geleert werden: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analysiere „${title}“...',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analyse gestartet für „${title}“',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Analyse der Mediathek fehlgeschlagen: ${error}',
 			'libraries.noLibrariesFound' => 'Keine Mediatheken gefunden',
@@ -1806,8 +1850,6 @@ extension on TranslationsDe {
 			'libraries.content' => 'Bibliotheksinhalt',
 			'libraries.selectLibrary' => 'Bibliothek auswählen',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noRecommendations' => 'Keine Empfehlungen verfügbar',
 			'libraries.noCollections' => 'Keine Sammlungen in dieser Mediathek',
 			'libraries.noFavorites' => 'Keine Favoriten in dieser Mediathek',

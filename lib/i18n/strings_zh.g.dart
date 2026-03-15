@@ -349,6 +349,27 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get downloadLocationSelectError => '选择文件夹失败';
 	@override String get downloadOnWifiOnly => '仅在 WiFi 时下载';
 	@override String get downloadOnWifiOnlyDescription => '使用蜂窝数据时禁止下载';
+	@override String get downloadQuality => '下载质量';
+	@override String get downloadQualityDescription => '离线下载质量。原始保留源文件；其他选项转码以节省空间。';
+	@override String get downloadQualityOriginal => '原始';
+	@override String get downloadQualityOriginalDescription => '使用原文件。';
+	@override String get downloadQuality1080p => '1080p';
+	@override String get downloadQuality1080pDescription => '转码至 1080p。';
+	@override String get downloadQuality720p => '720p';
+	@override String get downloadQuality720pDescription => '转码至 720p。';
+	@override String get downloadQuality480p => '480p';
+	@override String get downloadQuality480pDescription => '转码至 480p。';
+	@override String get playbackMode => '流媒体模式';
+	@override String get playbackModeAutoDescription => '由服务器决定。';
+	@override String get playbackModeAuto => '自动';
+	@override String get playbackModeDirectPlayDescription => '使用原文件。';
+	@override String get playbackModeDirectPlay => 'Direct Play';
+	@override String get transcodeQuality1080p => '1080p';
+	@override String get transcodeQuality1080pDescription => '将流转码至 1080p。';
+	@override String get transcodeQuality720p => '720p';
+	@override String get transcodeQuality720pDescription => '将流转码至 720p。';
+	@override String get transcodeQuality480p => '480p';
+	@override String get transcodeQuality480pDescription => '将流转码至 480p。';
 	@override String get cellularDownloadBlocked => '蜂窝数据下已禁用下载。请连接 WiFi 或更改设置。';
 	@override String get maxVolume => '最大音量';
 	@override String get maxVolumeDescription => '允许音量超过 100% 以适应安静的媒体';
@@ -1516,6 +1537,27 @@ extension on TranslationsZh {
 			'settings.downloadLocationSelectError' => '选择文件夹失败',
 			'settings.downloadOnWifiOnly' => '仅在 WiFi 时下载',
 			'settings.downloadOnWifiOnlyDescription' => '使用蜂窝数据时禁止下载',
+			'settings.downloadQuality' => '下载质量',
+			'settings.downloadQualityDescription' => '离线下载质量。原始保留源文件；其他选项转码以节省空间。',
+			'settings.downloadQualityOriginal' => '原始',
+			'settings.downloadQualityOriginalDescription' => '使用原文件。',
+			'settings.downloadQuality1080p' => '1080p',
+			'settings.downloadQuality1080pDescription' => '转码至 1080p。',
+			'settings.downloadQuality720p' => '720p',
+			'settings.downloadQuality720pDescription' => '转码至 720p。',
+			'settings.downloadQuality480p' => '480p',
+			'settings.downloadQuality480pDescription' => '转码至 480p。',
+			'settings.playbackMode' => '流媒体模式',
+			'settings.playbackModeAutoDescription' => '由服务器决定。',
+			'settings.playbackModeAuto' => '自动',
+			'settings.playbackModeDirectPlayDescription' => '使用原文件。',
+			'settings.playbackModeDirectPlay' => 'Direct Play',
+			'settings.transcodeQuality1080p' => '1080p',
+			'settings.transcodeQuality1080pDescription' => '将流转码至 1080p。',
+			'settings.transcodeQuality720p' => '720p',
+			'settings.transcodeQuality720pDescription' => '将流转码至 720p。',
+			'settings.transcodeQuality480p' => '480p',
+			'settings.transcodeQuality480pDescription' => '将流转码至 480p。',
 			'settings.cellularDownloadBlocked' => '蜂窝数据下已禁用下载。请连接 WiFi 或更改设置。',
 			'settings.maxVolume' => '最大音量',
 			'settings.maxVolumeDescription' => '允许音量超过 100% 以适应安静的媒体',
@@ -1785,6 +1827,8 @@ extension on TranslationsZh {
 			'libraries.trashEmptied' => ({required Object title}) => '已清空 “${title}” 的回收站',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => '无法清空回收站: ${error}',
 			'libraries.analyzing' => ({required Object title}) => '正在分析 “${title}”...',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => '已开始分析 “${title}”',
 			'libraries.failedToAnalyze' => ({required Object error}) => '无法分析媒体库: ${error}',
 			'libraries.noLibrariesFound' => '未找到媒体库',
@@ -1806,8 +1850,6 @@ extension on TranslationsZh {
 			'libraries.content' => '媒体库内容',
 			'libraries.selectLibrary' => '选择媒体库',
 			'libraries.filtersWithCount' => ({required Object count}) => '筛选器（${count}）',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noRecommendations' => '暂无推荐',
 			'libraries.noCollections' => '此媒体库中没有合集',
 			'libraries.noFavorites' => '此媒体库中无收藏',

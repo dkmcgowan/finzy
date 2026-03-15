@@ -349,6 +349,27 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get downloadLocationSelectError => 'Kan map niet selecteren';
 	@override String get downloadOnWifiOnly => 'Alleen via WiFi downloaden';
 	@override String get downloadOnWifiOnlyDescription => 'Voorkom downloads bij gebruik van mobiele data';
+	@override String get downloadQuality => 'Downloadkwaliteit';
+	@override String get downloadQualityDescription => 'Kwaliteit voor offline downloads. Origineel behoudt het bronbestand; andere opties transcoderen om ruimte te besparen.';
+	@override String get downloadQualityOriginal => 'Origineel';
+	@override String get downloadQualityOriginalDescription => 'Gebruikt het originele bestand.';
+	@override String get downloadQuality1080p => '1080p';
+	@override String get downloadQuality1080pDescription => 'Transcoderen naar 1080p.';
+	@override String get downloadQuality720p => '720p';
+	@override String get downloadQuality720pDescription => 'Transcoderen naar 720p.';
+	@override String get downloadQuality480p => '480p';
+	@override String get downloadQuality480pDescription => 'Transcoderen naar 480p.';
+	@override String get playbackMode => 'Streamingmodus';
+	@override String get playbackModeAutoDescription => 'Laat de server beslissen.';
+	@override String get playbackModeAuto => 'Auto';
+	@override String get playbackModeDirectPlayDescription => 'Gebruikt het originele bestand.';
+	@override String get playbackModeDirectPlay => 'Direct Play';
+	@override String get transcodeQuality1080p => '1080p';
+	@override String get transcodeQuality1080pDescription => 'Transcodeer stream naar 1080p.';
+	@override String get transcodeQuality720p => '720p';
+	@override String get transcodeQuality720pDescription => 'Transcodeer stream naar 720p.';
+	@override String get transcodeQuality480p => '480p';
+	@override String get transcodeQuality480pDescription => 'Transcodeer stream naar 480p.';
 	@override String get cellularDownloadBlocked => 'Downloads zijn uitgeschakeld bij mobiele data. Maak verbinding met WiFi of wijzig de instelling.';
 	@override String get maxVolume => 'Maximaal volume';
 	@override String get maxVolumeDescription => 'Volume boven 100% toestaan voor stille media';
@@ -1516,6 +1537,27 @@ extension on TranslationsNl {
 			'settings.downloadLocationSelectError' => 'Kan map niet selecteren',
 			'settings.downloadOnWifiOnly' => 'Alleen via WiFi downloaden',
 			'settings.downloadOnWifiOnlyDescription' => 'Voorkom downloads bij gebruik van mobiele data',
+			'settings.downloadQuality' => 'Downloadkwaliteit',
+			'settings.downloadQualityDescription' => 'Kwaliteit voor offline downloads. Origineel behoudt het bronbestand; andere opties transcoderen om ruimte te besparen.',
+			'settings.downloadQualityOriginal' => 'Origineel',
+			'settings.downloadQualityOriginalDescription' => 'Gebruikt het originele bestand.',
+			'settings.downloadQuality1080p' => '1080p',
+			'settings.downloadQuality1080pDescription' => 'Transcoderen naar 1080p.',
+			'settings.downloadQuality720p' => '720p',
+			'settings.downloadQuality720pDescription' => 'Transcoderen naar 720p.',
+			'settings.downloadQuality480p' => '480p',
+			'settings.downloadQuality480pDescription' => 'Transcoderen naar 480p.',
+			'settings.playbackMode' => 'Streamingmodus',
+			'settings.playbackModeAutoDescription' => 'Laat de server beslissen.',
+			'settings.playbackModeAuto' => 'Auto',
+			'settings.playbackModeDirectPlayDescription' => 'Gebruikt het originele bestand.',
+			'settings.playbackModeDirectPlay' => 'Direct Play',
+			'settings.transcodeQuality1080p' => '1080p',
+			'settings.transcodeQuality1080pDescription' => 'Transcodeer stream naar 1080p.',
+			'settings.transcodeQuality720p' => '720p',
+			'settings.transcodeQuality720pDescription' => 'Transcodeer stream naar 720p.',
+			'settings.transcodeQuality480p' => '480p',
+			'settings.transcodeQuality480pDescription' => 'Transcodeer stream naar 480p.',
 			'settings.cellularDownloadBlocked' => 'Downloads zijn uitgeschakeld bij mobiele data. Maak verbinding met WiFi of wijzig de instelling.',
 			'settings.maxVolume' => 'Maximaal volume',
 			'settings.maxVolumeDescription' => 'Volume boven 100% toestaan voor stille media',
@@ -1785,6 +1827,8 @@ extension on TranslationsNl {
 			'libraries.trashEmptied' => ({required Object title}) => 'Prullenbak geleegd voor "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Kon prullenbak niet legen: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analyseren "${title}"...',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analyse gestart voor "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Kon bibliotheek niet analyseren: ${error}',
 			'libraries.noLibrariesFound' => 'Geen bibliotheken gevonden',
@@ -1806,8 +1850,6 @@ extension on TranslationsNl {
 			'libraries.content' => 'bibliotheekinhoud',
 			'libraries.selectLibrary' => 'Bibliotheek kiezen',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noRecommendations' => 'Geen aanbevelingen beschikbaar',
 			'libraries.noCollections' => 'Geen collecties in deze bibliotheek',
 			'libraries.noFavorites' => 'Geen favorieten in deze bibliotheek',

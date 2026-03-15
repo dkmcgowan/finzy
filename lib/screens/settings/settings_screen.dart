@@ -118,6 +118,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kShowDownloads = 'show_downloads';
   static const _kDownloadLocation = 'download_location';
   static const _kDownloadOnWifiOnly = 'download_on_wifi_only';
+  static const _kDownloadQuality = 'download_quality';
+  static const _kPlaybackMode = 'playback_mode';
   static const _kVideoPlayerControls = 'video_player_controls';
   static const _kVideoPlayerNavigation = 'video_player_navigation';
   static const _kDebugLogging = 'debug_logging';
@@ -153,6 +155,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   bool _enableChapterImages = false;
   int _autoSkipDelay = 5;
   bool _downloadOnWifiOnly = false;
+  settings.PlaybackMode _playbackMode = settings.PlaybackMode.auto;
+  settings.DownloadQuality _downloadQuality = settings.DownloadQuality.original;
   bool _videoPlayerNavigationEnabled = false;
   int _maxVolume = 100;
 
@@ -194,6 +198,21 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       SupportService.instance.isAvailable &&
       !_hideSupportDevelopment &&
       (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+
+  String get _playbackModeLabel => switch (_playbackMode) {
+        settings.PlaybackMode.auto => t.settings.playbackModeAuto,
+        settings.PlaybackMode.directPlay => t.settings.playbackModeDirectPlay,
+        settings.PlaybackMode.transcode1080 => t.settings.transcodeQuality1080p,
+        settings.PlaybackMode.transcode720 => t.settings.transcodeQuality720p,
+        settings.PlaybackMode.transcode480 => t.settings.transcodeQuality480p,
+      };
+
+  String get _downloadQualityLabel => switch (_downloadQuality) {
+        settings.DownloadQuality.original => t.settings.downloadQualityOriginal,
+        settings.DownloadQuality.p1080 => t.settings.downloadQuality1080p,
+        settings.DownloadQuality.p720 => t.settings.downloadQuality720p,
+        settings.DownloadQuality.p480 => t.settings.downloadQuality480p,
+      };
 
   @override
   void focusActiveTabIfReady() {
@@ -243,6 +262,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       _enableChapterImages = _settingsService.getEnableChapterImages();
       _autoSkipDelay = _settingsService.getAutoSkipDelay();
       _downloadOnWifiOnly = _settingsService.getDownloadOnWifiOnly();
+      _playbackMode = _settingsService.getPlaybackMode();
+      _downloadQuality = _settingsService.getDownloadQuality();
       _videoPlayerNavigationEnabled = _settingsService.getVideoPlayerNavigationEnabled();
       _maxVolume = _settingsService.getMaxVolume();
 
@@ -809,6 +830,14 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           await _settingsService.setDownloadOnWifiOnly(value);
         },
       ),
+      ListTile(
+        focusNode: _focusTracker.get(_kDownloadQuality),
+        leading: const AppIcon(Symbols.download_rounded, fill: 1),
+        title: Text(t.settings.downloadQuality),
+        subtitle: Text(_downloadQualityLabel),
+        trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+        onTap: () => _showDownloadQualityDialog(),
+      ),
     ];
   }
 
@@ -1076,6 +1105,14 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        ListTile(
+          focusNode: _focusTracker.get(_kPlaybackMode),
+          leading: const AppIcon(Symbols.stream_rounded, fill: 1),
+          title: Text(t.settings.playbackMode),
+          subtitle: Text(_playbackModeLabel),
+          trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+          onTap: () => _showPlaybackModeDialog(),
+        ),
         if (Platform.isAndroid)
             ListTile(
               focusNode: _focusTracker.get(_kPlayerBackend),
@@ -1595,6 +1632,157 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                 },
               );
             }).toList(),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
+        );
+      },
+    );
+  }
+
+  void _showPlaybackModeDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(t.settings.playbackMode),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: AppIcon(
+                  _playbackMode == settings.PlaybackMode.auto ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.playbackModeAuto),
+                subtitle: Text(t.settings.playbackModeAutoDescription),
+                onTap: () async {
+                  setState(() => _playbackMode = settings.PlaybackMode.auto);
+                  await _settingsService.setPlaybackMode(settings.PlaybackMode.auto);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: AppIcon(
+                  _playbackMode == settings.PlaybackMode.directPlay ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.playbackModeDirectPlay),
+                subtitle: Text(t.settings.playbackModeDirectPlayDescription),
+                onTap: () async {
+                  setState(() => _playbackMode = settings.PlaybackMode.directPlay);
+                  await _settingsService.setPlaybackMode(settings.PlaybackMode.directPlay);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: AppIcon(
+                  _playbackMode == settings.PlaybackMode.transcode1080 ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.transcodeQuality1080p),
+                subtitle: Text(t.settings.transcodeQuality1080pDescription),
+                onTap: () async {
+                  setState(() => _playbackMode = settings.PlaybackMode.transcode1080);
+                  await _settingsService.setPlaybackMode(settings.PlaybackMode.transcode1080);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: AppIcon(
+                  _playbackMode == settings.PlaybackMode.transcode720 ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.transcodeQuality720p),
+                subtitle: Text(t.settings.transcodeQuality720pDescription),
+                onTap: () async {
+                  setState(() => _playbackMode = settings.PlaybackMode.transcode720);
+                  await _settingsService.setPlaybackMode(settings.PlaybackMode.transcode720);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: AppIcon(
+                  _playbackMode == settings.PlaybackMode.transcode480 ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.transcodeQuality480p),
+                subtitle: Text(t.settings.transcodeQuality480pDescription),
+                onTap: () async {
+                  setState(() => _playbackMode = settings.PlaybackMode.transcode480);
+                  await _settingsService.setPlaybackMode(settings.PlaybackMode.transcode480);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
+        );
+      },
+    );
+  }
+
+  void _showDownloadQualityDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(t.settings.downloadQuality),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: AppIcon(
+                  _downloadQuality == settings.DownloadQuality.original ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.downloadQualityOriginal),
+                subtitle: Text(t.settings.downloadQualityOriginalDescription),
+                onTap: () async {
+                  setState(() => _downloadQuality = settings.DownloadQuality.original);
+                  await _settingsService.setDownloadQuality(settings.DownloadQuality.original);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: AppIcon(
+                  _downloadQuality == settings.DownloadQuality.p1080 ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.downloadQuality1080p),
+                subtitle: Text(t.settings.downloadQuality1080pDescription),
+                onTap: () async {
+                  setState(() => _downloadQuality = settings.DownloadQuality.p1080);
+                  await _settingsService.setDownloadQuality(settings.DownloadQuality.p1080);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: AppIcon(
+                  _downloadQuality == settings.DownloadQuality.p720 ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.downloadQuality720p),
+                subtitle: Text(t.settings.downloadQuality720pDescription),
+                onTap: () async {
+                  setState(() => _downloadQuality = settings.DownloadQuality.p720);
+                  await _settingsService.setDownloadQuality(settings.DownloadQuality.p720);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: AppIcon(
+                  _downloadQuality == settings.DownloadQuality.p480 ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(t.settings.downloadQuality480p),
+                subtitle: Text(t.settings.downloadQuality480pDescription),
+                onTap: () async {
+                  setState(() => _downloadQuality = settings.DownloadQuality.p480);
+                  await _settingsService.setDownloadQuality(settings.DownloadQuality.p480);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+            ],
           ),
           actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
         );

@@ -26,6 +26,12 @@ enum PerformanceProfile { small, medium, large }
 /// Grid preload level (cacheExtent). Low = fewer off-screen items, High = smoother scroll.
 enum GridPreloadLevel { low, medium, high }
 
+/// Playback mode for streaming: Auto, Direct Play, or transcode at a specific quality.
+enum PlaybackMode { auto, directPlay, transcode1080, transcode720, transcode480 }
+
+/// Download quality for offline content.
+enum DownloadQuality { original, p1080, p720, p480 }
+
 extension GridPreloadLevelExt on GridPreloadLevel {
   /// Cache extent in logical pixels for scroll views.
   double get cacheExtent => switch (this) {
@@ -84,6 +90,8 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyCustomDownloadPathType = 'custom_download_path_type';
   static const String _keyShowDownloads = 'show_downloads';
   static const String _keyDownloadOnWifiOnly = 'download_on_wifi_only';
+  static const String _keyDownloadQuality = 'download_quality';
+  static const String _keyPlaybackMode = 'playback_mode';
   static const String _keyVideoPlayerNavigationEnabled = 'video_player_navigation_enabled';
   static const String _keyShowPerformanceOverlay = 'show_performance_overlay';
   static const String _keyMpvConfigEntries = 'mpv_config_entries';
@@ -192,6 +200,48 @@ class SettingsService extends BaseSharedPreferencesService {
 
   String getPreferredAudioCodec() {
     return prefs.getString(_keyPreferredAudioCodec) ?? 'auto';
+  }
+
+  // Playback Mode (Auto, Direct Play, or transcode at 1080p/720p/480p/Save bandwidth)
+  Future<void> setPlaybackMode(PlaybackMode mode) async {
+    await prefs.setString(_keyPlaybackMode, mode.name);
+  }
+
+  PlaybackMode getPlaybackMode() {
+    final stored = prefs.getString(_keyPlaybackMode);
+    // Migrate legacy forceTranscode + transcode preset to combined mode
+    if (stored == 'saveBandwidth') {
+      prefs.setString(_keyPlaybackMode, PlaybackMode.transcode480.name);
+      return PlaybackMode.transcode480;
+    }
+    if (stored == 'forceTranscode') {
+      final preset = prefs.getString('transcode_quality_preset');
+      final migrated = switch (preset) {
+        'p720' => PlaybackMode.transcode720,
+        'p480' => PlaybackMode.transcode480,
+        'saveBandwidth' => PlaybackMode.transcode480,
+        _ => PlaybackMode.transcode1080,
+      };
+      prefs.remove('transcode_quality_preset');
+      prefs.setString(_keyPlaybackMode, migrated.name);
+      return migrated;
+    }
+    return _getEnumValue(_keyPlaybackMode, PlaybackMode.values, PlaybackMode.auto);
+  }
+
+  // Download Quality (Original, or transcoded presets)
+  Future<void> setDownloadQuality(DownloadQuality quality) async {
+    await prefs.setString(_keyDownloadQuality, quality.name);
+  }
+
+  DownloadQuality getDownloadQuality() {
+    final stored = prefs.getString(_keyDownloadQuality);
+    // Migrate legacy saveStorage/saveBandwidth → p480
+    if (stored == 'saveStorage' || stored == 'saveBandwidth') {
+      prefs.setString(_keyDownloadQuality, DownloadQuality.p480.name);
+      return DownloadQuality.p480;
+    }
+    return _getEnumValue(_keyDownloadQuality, DownloadQuality.values, DownloadQuality.original);
   }
 
   // Library Density
@@ -1323,6 +1373,8 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyCustomDownloadPath),
       prefs.remove(_keyCustomDownloadPathType),
       prefs.remove(_keyDownloadOnWifiOnly),
+      prefs.remove(_keyDownloadQuality),
+      prefs.remove(_keyPlaybackMode),
       prefs.remove(_keyVideoPlayerNavigationEnabled),
       prefs.remove(_keyShowPerformanceOverlay),
       prefs.remove(_keyMpvConfigEntries),

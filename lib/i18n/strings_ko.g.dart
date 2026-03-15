@@ -349,6 +349,27 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get downloadLocationSelectError => '폴더 선택 실패';
 	@override String get downloadOnWifiOnly => 'WiFi 연결 시에만 다운로드';
 	@override String get downloadOnWifiOnlyDescription => '셀룰러 데이터 사용 시 다운로드 불가';
+	@override String get downloadQuality => '다운로드 품질';
+	@override String get downloadQualityDescription => '오프라인 다운로드 품질. 원본은 소스 파일 유지; 다른 옵션은 공간 절약을 위해 트랜스코딩합니다.';
+	@override String get downloadQualityOriginal => '원본';
+	@override String get downloadQualityOriginalDescription => '원본 파일을 사용합니다.';
+	@override String get downloadQuality1080p => '1080p';
+	@override String get downloadQuality1080pDescription => '1080p로 트랜스코딩합니다.';
+	@override String get downloadQuality720p => '720p';
+	@override String get downloadQuality720pDescription => '720p로 트랜스코딩합니다.';
+	@override String get downloadQuality480p => '480p';
+	@override String get downloadQuality480pDescription => '480p로 트랜스코딩합니다.';
+	@override String get playbackMode => '스트리밍 모드';
+	@override String get playbackModeAutoDescription => '서버가 결정합니다.';
+	@override String get playbackModeAuto => '자동';
+	@override String get playbackModeDirectPlayDescription => '원본 파일을 사용합니다.';
+	@override String get playbackModeDirectPlay => 'Direct Play';
+	@override String get transcodeQuality1080p => '1080p';
+	@override String get transcodeQuality1080pDescription => '스트림을 1080p로 트랜스코딩합니다.';
+	@override String get transcodeQuality720p => '720p';
+	@override String get transcodeQuality720pDescription => '스트림을 720p로 트랜스코딩합니다.';
+	@override String get transcodeQuality480p => '480p';
+	@override String get transcodeQuality480pDescription => '스트림을 480p로 트랜스코딩합니다.';
 	@override String get cellularDownloadBlocked => '셀룰러 데이터에서 다운로드가 차단 되었습니다. WiFi에 연결하거나 설정을 변경하세요.';
 	@override String get maxVolume => '최대 볼륨';
 	@override String get maxVolumeDescription => '조용한 미디어를 위해 100% 이상의 볼륨 허용';
@@ -1516,6 +1537,27 @@ extension on TranslationsKo {
 			'settings.downloadLocationSelectError' => '폴더 선택 실패',
 			'settings.downloadOnWifiOnly' => 'WiFi 연결 시에만 다운로드',
 			'settings.downloadOnWifiOnlyDescription' => '셀룰러 데이터 사용 시 다운로드 불가',
+			'settings.downloadQuality' => '다운로드 품질',
+			'settings.downloadQualityDescription' => '오프라인 다운로드 품질. 원본은 소스 파일 유지; 다른 옵션은 공간 절약을 위해 트랜스코딩합니다.',
+			'settings.downloadQualityOriginal' => '원본',
+			'settings.downloadQualityOriginalDescription' => '원본 파일을 사용합니다.',
+			'settings.downloadQuality1080p' => '1080p',
+			'settings.downloadQuality1080pDescription' => '1080p로 트랜스코딩합니다.',
+			'settings.downloadQuality720p' => '720p',
+			'settings.downloadQuality720pDescription' => '720p로 트랜스코딩합니다.',
+			'settings.downloadQuality480p' => '480p',
+			'settings.downloadQuality480pDescription' => '480p로 트랜스코딩합니다.',
+			'settings.playbackMode' => '스트리밍 모드',
+			'settings.playbackModeAutoDescription' => '서버가 결정합니다.',
+			'settings.playbackModeAuto' => '자동',
+			'settings.playbackModeDirectPlayDescription' => '원본 파일을 사용합니다.',
+			'settings.playbackModeDirectPlay' => 'Direct Play',
+			'settings.transcodeQuality1080p' => '1080p',
+			'settings.transcodeQuality1080pDescription' => '스트림을 1080p로 트랜스코딩합니다.',
+			'settings.transcodeQuality720p' => '720p',
+			'settings.transcodeQuality720pDescription' => '스트림을 720p로 트랜스코딩합니다.',
+			'settings.transcodeQuality480p' => '480p',
+			'settings.transcodeQuality480pDescription' => '스트림을 480p로 트랜스코딩합니다.',
 			'settings.cellularDownloadBlocked' => '셀룰러 데이터에서 다운로드가 차단 되었습니다. WiFi에 연결하거나 설정을 변경하세요.',
 			'settings.maxVolume' => '최대 볼륨',
 			'settings.maxVolumeDescription' => '조용한 미디어를 위해 100% 이상의 볼륨 허용',
@@ -1785,6 +1827,8 @@ extension on TranslationsKo {
 			'libraries.trashEmptied' => ({required Object title}) => '「${title}」의 휴지통을 비웠습니다',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => '휴지통 비우기 실패: ${error}',
 			'libraries.analyzing' => ({required Object title}) => '"${title}" 분석 중...',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => '"${title}" 분석 시작됨',
 			'libraries.failedToAnalyze' => ({required Object error}) => '미디어 라이브러리 분석 실패: ${error}',
 			'libraries.noLibrariesFound' => '미디어 라이브러리 없음',
@@ -1806,8 +1850,6 @@ extension on TranslationsKo {
 			'libraries.content' => '미디어 라이브러리 콘텐츠',
 			'libraries.selectLibrary' => '미디어 라이브러리 선택',
 			'libraries.filtersWithCount' => ({required Object count}) => '필터 (${count})',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noRecommendations' => '추천 없음',
 			'libraries.noCollections' => '이 미디어 라이브러리에는 컬렉션이 없습니다',
 			'libraries.noFavorites' => '이 라이브러리에 즐겨찾기가 없습니다',

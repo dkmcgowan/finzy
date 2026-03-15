@@ -16,7 +16,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
@@ -31,6 +31,16 @@ class AppDatabase extends _$AppDatabase {
           await m.deleteTable('offline_watch_progress');
           await m.deleteTable('download_queue');
           await m.createAll();
+        }
+        if (from < 11) {
+          // Idempotent: column may already exist if migration ran partially or DB was copied
+          final tableInfo = await m.database.customSelect('PRAGMA table_info(downloaded_media)').get();
+          final hasColumn = tableInfo.any((r) => r.read<String>('name') == 'is_transcoded');
+          if (!hasColumn) {
+            await m.addColumn(downloadedMedia, downloadedMedia.isTranscoded);
+          }
+          // Older SQLite may leave new column NULL for existing rows; ensure all have a value
+          await m.database.customStatement('UPDATE downloaded_media SET is_transcoded = 0 WHERE is_transcoded IS NULL');
         }
       },
     );
@@ -199,9 +209,12 @@ class AppDatabase extends _$AppDatabase {
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final dbFolder = (Platform.isAndroid || Platform.isIOS)
-        ? await getApplicationDocumentsDirectory()
-        : await getApplicationSupportDirectory();
+    Directory dbFolder;
+    if (Platform.isAndroid || Platform.isIOS) {
+      dbFolder = await getApplicationDocumentsDirectory();
+    } else {
+      dbFolder = await getApplicationSupportDirectory();
+    }
 
     final file = File(p.join(dbFolder.path, 'finzy_downloads.db'));
 
@@ -210,12 +223,18 @@ LazyDatabase _openConnection() {
       await file.parent.create(recursive: true);
     }
 
-    // Migrate from old location on desktop (was in Documents subfolder)
+    // Migrate from old locations on desktop (was in Documents or path_provider's AppSupport)
     if (!Platform.isAndroid && !Platform.isIOS && !await file.exists()) {
-      final oldFolder = await getApplicationDocumentsDirectory();
+      final oldFolder = await getApplicationSupportDirectory();
       final oldFile = File(p.join(oldFolder.path, 'finzy_downloads.db'));
       if (await oldFile.exists()) {
         await oldFile.rename(file.path);
+      } else {
+        final docsFolder = await getApplicationDocumentsDirectory();
+        final docsFile = File(p.join(docsFolder.path, 'finzy_downloads.db'));
+        if (await docsFile.exists()) {
+          await docsFile.rename(file.path);
+        }
       }
     }
 

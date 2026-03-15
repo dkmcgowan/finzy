@@ -797,6 +797,66 @@ class TranslationsSettingsEn {
 	/// en: 'Prevent downloads when on cellular data'
 	String get downloadOnWifiOnlyDescription => 'Prevent downloads when on cellular data';
 
+	/// en: 'Download Quality'
+	String get downloadQuality => 'Download Quality';
+
+	/// en: 'Uses the original file.'
+	String get downloadQualityOriginalDescription => 'Uses the original file.';
+
+	/// en: 'Original'
+	String get downloadQualityOriginal => 'Original';
+
+	/// en: '1080p'
+	String get downloadQuality1080p => '1080p';
+
+	/// en: 'Transcode to 1080p.'
+	String get downloadQuality1080pDescription => 'Transcode to 1080p.';
+
+	/// en: '720p'
+	String get downloadQuality720p => '720p';
+
+	/// en: 'Transcode to 720p.'
+	String get downloadQuality720pDescription => 'Transcode to 720p.';
+
+	/// en: '480p'
+	String get downloadQuality480p => '480p';
+
+	/// en: 'Transcode to 480p.'
+	String get downloadQuality480pDescription => 'Transcode to 480p.';
+
+	/// en: 'Streaming Mode'
+	String get playbackMode => 'Streaming Mode';
+
+	/// en: 'Lets the server decide.'
+	String get playbackModeAutoDescription => 'Lets the server decide.';
+
+	/// en: 'Auto'
+	String get playbackModeAuto => 'Auto';
+
+	/// en: 'Uses the original file.'
+	String get playbackModeDirectPlayDescription => 'Uses the original file.';
+
+	/// en: 'Direct Play'
+	String get playbackModeDirectPlay => 'Direct Play';
+
+	/// en: '1080p'
+	String get transcodeQuality1080p => '1080p';
+
+	/// en: 'Transcode stream to 1080p.'
+	String get transcodeQuality1080pDescription => 'Transcode stream to 1080p.';
+
+	/// en: '720p'
+	String get transcodeQuality720p => '720p';
+
+	/// en: 'Transcode stream to 720p.'
+	String get transcodeQuality720pDescription => 'Transcode stream to 720p.';
+
+	/// en: '480p'
+	String get transcodeQuality480p => '480p';
+
+	/// en: 'Transcode stream to 480p.'
+	String get transcodeQuality480pDescription => 'Transcode stream to 480p.';
+
 	/// en: 'Downloads are disabled on cellular data. Connect to WiFi or change the setting.'
 	String get cellularDownloadBlocked => 'Downloads are disabled on cellular data. Connect to WiFi or change the setting.';
 
@@ -3138,6 +3198,26 @@ extension on Translations {
 			'settings.downloadLocationSelectError' => 'Failed to select folder',
 			'settings.downloadOnWifiOnly' => 'Download on WiFi only',
 			'settings.downloadOnWifiOnlyDescription' => 'Prevent downloads when on cellular data',
+			'settings.downloadQuality' => 'Download Quality',
+			'settings.downloadQualityOriginalDescription' => 'Uses the original file.',
+			'settings.downloadQualityOriginal' => 'Original',
+			'settings.downloadQuality1080p' => '1080p',
+			'settings.downloadQuality1080pDescription' => 'Transcode to 1080p.',
+			'settings.downloadQuality720p' => '720p',
+			'settings.downloadQuality720pDescription' => 'Transcode to 720p.',
+			'settings.downloadQuality480p' => '480p',
+			'settings.downloadQuality480pDescription' => 'Transcode to 480p.',
+			'settings.playbackMode' => 'Streaming Mode',
+			'settings.playbackModeAutoDescription' => 'Lets the server decide.',
+			'settings.playbackModeAuto' => 'Auto',
+			'settings.playbackModeDirectPlayDescription' => 'Uses the original file.',
+			'settings.playbackModeDirectPlay' => 'Direct Play',
+			'settings.transcodeQuality1080p' => '1080p',
+			'settings.transcodeQuality1080pDescription' => 'Transcode stream to 1080p.',
+			'settings.transcodeQuality720p' => '720p',
+			'settings.transcodeQuality720pDescription' => 'Transcode stream to 720p.',
+			'settings.transcodeQuality480p' => '480p',
+			'settings.transcodeQuality480pDescription' => 'Transcode stream to 480p.',
 			'settings.cellularDownloadBlocked' => 'Downloads are disabled on cellular data. Connect to WiFi or change the setting.',
 			'settings.maxVolume' => 'Maximum Volume',
 			'settings.maxVolumeDescription' => 'Allow volume boost above 100% for quiet media',
@@ -3408,6 +3488,8 @@ extension on Translations {
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Failed to empty trash: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analyzing "${title}"...',
 			'libraries.analysisStarted' => ({required Object title}) => 'Analysis started for "${title}"',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Failed to analyze library: ${error}',
 			'libraries.noLibrariesFound' => 'No libraries found',
 			'libraries.thisLibraryIsEmpty' => 'This library is empty',
@@ -3428,8 +3510,6 @@ extension on Translations {
 			'libraries.content' => 'library content',
 			'libraries.selectLibrary' => 'Select library',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filters (${count})',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noRecommendations' => 'No recommendations available',
 			'libraries.noCollections' => 'No collections in this library',
 			'libraries.noFavorites' => 'No favorites in this library',

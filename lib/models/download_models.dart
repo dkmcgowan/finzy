@@ -23,6 +23,9 @@ class DownloadProgress {
   // Thumbnail path (populated after artwork download completes)
   final String? thumbPath;
 
+  /// True when downloading a transcoded stream (no pause/resume support).
+  final bool isTranscoded;
+
   const DownloadProgress({
     required this.globalKey,
     required this.status,
@@ -33,6 +36,7 @@ class DownloadProgress {
     this.errorMessage,
     this.currentFile,
     this.thumbPath,
+    this.isTranscoded = false,
   });
 
   double get progressPercent => progress / 100.0;
@@ -61,6 +65,7 @@ class DownloadProgress {
     String? errorMessage,
     String? currentFile,
     String? thumbPath,
+    bool? isTranscoded,
   }) {
     return DownloadProgress(
       globalKey: globalKey ?? this.globalKey,
@@ -72,6 +77,7 @@ class DownloadProgress {
       errorMessage: errorMessage ?? this.errorMessage,
       currentFile: currentFile ?? this.currentFile,
       thumbPath: thumbPath ?? this.thumbPath,
+      isTranscoded: isTranscoded ?? this.isTranscoded,
     );
   }
 }

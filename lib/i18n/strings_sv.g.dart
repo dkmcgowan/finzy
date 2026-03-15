@@ -349,6 +349,27 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get downloadLocationSelectError => 'Kunde inte välja mapp';
 	@override String get downloadOnWifiOnly => 'Ladda ner endast på WiFi';
 	@override String get downloadOnWifiOnlyDescription => 'Förhindra nedladdningar vid användning av mobildata';
+	@override String get downloadQuality => 'Nedladdningskvalitet';
+	@override String get downloadQualityDescription => 'Kvalitet för offline-nedladdningar. Original behåller källfilen; andra alternativ transkoderar för att spara utrymme.';
+	@override String get downloadQualityOriginal => 'Original';
+	@override String get downloadQualityOriginalDescription => 'Använder originalfilen.';
+	@override String get downloadQuality1080p => '1080p';
+	@override String get downloadQuality1080pDescription => 'Transkodera till 1080p.';
+	@override String get downloadQuality720p => '720p';
+	@override String get downloadQuality720pDescription => 'Transkodera till 720p.';
+	@override String get downloadQuality480p => '480p';
+	@override String get downloadQuality480pDescription => 'Transkodera till 480p.';
+	@override String get playbackMode => 'Strömningsläge';
+	@override String get playbackModeAutoDescription => 'Låter servern bestämma.';
+	@override String get playbackModeAuto => 'Auto';
+	@override String get playbackModeDirectPlayDescription => 'Använder originalfilen.';
+	@override String get playbackModeDirectPlay => 'Direct Play';
+	@override String get transcodeQuality1080p => '1080p';
+	@override String get transcodeQuality1080pDescription => 'Transkodera ström till 1080p.';
+	@override String get transcodeQuality720p => '720p';
+	@override String get transcodeQuality720pDescription => 'Transkodera ström till 720p.';
+	@override String get transcodeQuality480p => '480p';
+	@override String get transcodeQuality480pDescription => 'Transkodera ström till 480p.';
 	@override String get cellularDownloadBlocked => 'Nedladdningar är inaktiverade på mobildata. Anslut till WiFi eller ändra inställningen.';
 	@override String get maxVolume => 'Maximal volym';
 	@override String get maxVolumeDescription => 'Tillåt volym över 100% för tyst media';
@@ -1516,6 +1537,27 @@ extension on TranslationsSv {
 			'settings.downloadLocationSelectError' => 'Kunde inte välja mapp',
 			'settings.downloadOnWifiOnly' => 'Ladda ner endast på WiFi',
 			'settings.downloadOnWifiOnlyDescription' => 'Förhindra nedladdningar vid användning av mobildata',
+			'settings.downloadQuality' => 'Nedladdningskvalitet',
+			'settings.downloadQualityDescription' => 'Kvalitet för offline-nedladdningar. Original behåller källfilen; andra alternativ transkoderar för att spara utrymme.',
+			'settings.downloadQualityOriginal' => 'Original',
+			'settings.downloadQualityOriginalDescription' => 'Använder originalfilen.',
+			'settings.downloadQuality1080p' => '1080p',
+			'settings.downloadQuality1080pDescription' => 'Transkodera till 1080p.',
+			'settings.downloadQuality720p' => '720p',
+			'settings.downloadQuality720pDescription' => 'Transkodera till 720p.',
+			'settings.downloadQuality480p' => '480p',
+			'settings.downloadQuality480pDescription' => 'Transkodera till 480p.',
+			'settings.playbackMode' => 'Strömningsläge',
+			'settings.playbackModeAutoDescription' => 'Låter servern bestämma.',
+			'settings.playbackModeAuto' => 'Auto',
+			'settings.playbackModeDirectPlayDescription' => 'Använder originalfilen.',
+			'settings.playbackModeDirectPlay' => 'Direct Play',
+			'settings.transcodeQuality1080p' => '1080p',
+			'settings.transcodeQuality1080pDescription' => 'Transkodera ström till 1080p.',
+			'settings.transcodeQuality720p' => '720p',
+			'settings.transcodeQuality720pDescription' => 'Transkodera ström till 720p.',
+			'settings.transcodeQuality480p' => '480p',
+			'settings.transcodeQuality480pDescription' => 'Transkodera ström till 480p.',
 			'settings.cellularDownloadBlocked' => 'Nedladdningar är inaktiverade på mobildata. Anslut till WiFi eller ändra inställningen.',
 			'settings.maxVolume' => 'Maximal volym',
 			'settings.maxVolumeDescription' => 'Tillåt volym över 100% för tyst media',
@@ -1785,6 +1827,8 @@ extension on TranslationsSv {
 			'libraries.trashEmptied' => ({required Object title}) => 'Papperskorg tömd för "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Misslyckades att tömma papperskorg: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analyserar "${title}"...',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analys startad för "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Misslyckades att analysera bibliotek: ${error}',
 			'libraries.noLibrariesFound' => 'Inga bibliotek hittades',
@@ -1806,8 +1850,6 @@ extension on TranslationsSv {
 			'libraries.content' => 'bibliotekets innehåll',
 			'libraries.selectLibrary' => 'Välj bibliotek',
 			'libraries.filtersWithCount' => ({required Object count}) => 'Filter (${count})',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.noRecommendations' => 'Inga rekommendationer tillgängliga',
 			'libraries.noCollections' => 'Inga samlingar i det här biblioteket',
 			'libraries.noFavorites' => 'Inga favoriter i detta bibliotek',

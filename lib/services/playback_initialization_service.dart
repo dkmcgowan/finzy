@@ -8,6 +8,7 @@ import '../utils/error_message_utils.dart';
 import '../i18n/strings.g.dart';
 import '../database/app_database.dart';
 import 'download_storage_service.dart';
+import 'settings_service.dart';
 import 'dart:io';
 import 'package:drift/drift.dart';
 
@@ -97,7 +98,12 @@ class PlaybackInitializationService {
         // For offline playback, we still need to fetch media info for subtitles
         // but use the local file path for video
         try {
-          final playbackData = await client.getVideoPlaybackData(metadata.itemId, mediaIndex: selectedMediaIndex);
+          final settings = await SettingsService.getInstance();
+          final playbackData = await client.getVideoPlaybackData(
+            metadata.itemId,
+            mediaIndex: selectedMediaIndex,
+            playbackMode: settings.getPlaybackMode(),
+          );
 
           final externalSubtitles = enableExternalSubtitles ? _buildExternalSubtitles(playbackData.mediaInfo) : <SubtitleTrack>[];
 
@@ -122,7 +128,12 @@ class PlaybackInitializationService {
       }
 
       // Fall back to network streaming
-      final playbackData = await client.getVideoPlaybackData(metadata.itemId, mediaIndex: selectedMediaIndex);
+      final settings = await SettingsService.getInstance();
+      final playbackData = await client.getVideoPlaybackData(
+        metadata.itemId,
+        mediaIndex: selectedMediaIndex,
+        playbackMode: settings.getPlaybackMode(),
+      );
 
       if (!playbackData.hasValidVideoUrl) {
         throw PlaybackException(t.messages.fileInfoNotAvailable);
