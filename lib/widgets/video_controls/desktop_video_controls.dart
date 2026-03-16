@@ -102,6 +102,9 @@ class DesktopVideoControls extends StatefulWidget {
   /// Called to toggle ambient lighting (passed to settings sheet)
   final VoidCallback? onToggleAmbientLighting;
 
+  /// Called when streaming or Live TV quality changes; caller should restart playback.
+  final VoidCallback? onQualityChanged;
+
   const DesktopVideoControls({
     super.key,
     required this.player,
@@ -152,6 +155,7 @@ class DesktopVideoControls extends StatefulWidget {
     this.liveChannelName,
     this.isAmbientLightingEnabled = false,
     this.onToggleAmbientLighting,
+    this.onQualityChanged,
   });
 
   @override
@@ -697,6 +701,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                 onShaderChanged: widget.onShaderChanged,
                 isAmbientLightingEnabled: widget.isAmbientLightingEnabled,
                 onToggleAmbientLighting: widget.onToggleAmbientLighting,
+                onQualityChanged: widget.onQualityChanged,
               ),
             ],
           ),

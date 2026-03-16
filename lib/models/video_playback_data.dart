@@ -16,11 +16,15 @@ class VideoPlaybackData {
   /// Markers for intro/credits skip functionality
   final List<Marker> markers;
 
+  /// Server-reported playback error (e.g. NoCompatibleStream) when PlaybackInfo returns ErrorCode
+  final String? playbackErrorReason;
+
   VideoPlaybackData({
     required this.videoUrl,
     required this.mediaInfo,
     required this.availableVersions,
     this.markers = const [],
+    this.playbackErrorReason,
   });
 
   /// Returns true if this playback data has a valid video URL

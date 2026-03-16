@@ -161,6 +161,9 @@ class _TranslationsCommonNl implements TranslationsCommonEn {
 	@override String get none => 'None';
 	@override String get loading => 'Laden...';
 	@override String get reconnect => 'Opnieuw verbinden';
+	@override String get goOffline => 'Offline gaan';
+	@override String get goOnline => 'Weer online';
+	@override String get connectionAvailable => 'Verbinding beschikbaar';
 	@override String get exitConfirmTitle => 'App afsluiten?';
 	@override String get exitConfirmMessage => 'Weet je zeker dat je wilt afsluiten?';
 	@override String get dontAskAgain => 'Niet meer vragen';
@@ -273,6 +276,9 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get liveTvPlayerDescription => 'MPV aanbevolen voor Live TV. ExoPlayer kan problemen veroorzaken op sommige apparaten.';
 	@override String get liveTvMpv => 'MPV (Recommended)';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
+	@override String get liveTvQuality => 'Live TV-kwaliteit';
+	@override String get liveTvQualityDescription => 'Beperk transcoderingskwaliteit voor Live TV. Geen limiet gebruikt serverstandaard.';
+	@override String get liveTvQualityNone => 'Geen limiet';
 	@override String get hardwareDecoding => 'Hardware decodering';
 	@override String get hardwareDecodingDescription => 'Gebruik hardware versnelling indien beschikbaar';
 	@override String get bufferSize => 'Buffer grootte';
@@ -318,6 +324,8 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get autoSkipIntroDescription => 'Intro-markeringen na enkele seconden automatisch overslaan';
 	@override String get enableExternalSubtitles => 'Enable External Subtitles';
 	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get alwaysBurnInSubtitleWhenTranscoding => 'Ondertitels inbranden bij transcoderen';
+	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => 'Bij transcoderen de geselecteerde ondertitel in de video inbranden. Gelijk aan jellyfin-web.';
 	@override String get enableTrickplay => 'Enable Trickplay Thumbnails';
 	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
 	@override String get enableChapterImages => 'Enable Chapter Images';
@@ -353,23 +361,20 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get downloadQualityDescription => 'Kwaliteit voor offline downloads. Origineel behoudt het bronbestand; andere opties transcoderen om ruimte te besparen.';
 	@override String get downloadQualityOriginal => 'Origineel';
 	@override String get downloadQualityOriginalDescription => 'Gebruikt het originele bestand.';
-	@override String get downloadQuality1080p => '1080p';
-	@override String get downloadQuality1080pDescription => 'Transcoderen naar 1080p.';
-	@override String get downloadQuality720p => '720p';
-	@override String get downloadQuality720pDescription => 'Transcoderen naar 720p.';
-	@override String get downloadQuality480p => '480p';
-	@override String get downloadQuality480pDescription => 'Transcoderen naar 480p.';
-	@override String get playbackMode => 'Streamingmodus';
 	@override String get playbackModeAutoDescription => 'Laat de server beslissen.';
 	@override String get playbackModeAuto => 'Auto';
+	@override String get playbackModeAutoDirect => 'Auto - Direct';
 	@override String get playbackModeDirectPlayDescription => 'Gebruikt het originele bestand.';
-	@override String get playbackModeDirectPlay => 'Direct Play';
-	@override String get transcodeQuality1080p => '1080p';
-	@override String get transcodeQuality1080pDescription => 'Transcodeer stream naar 1080p.';
-	@override String get transcodeQuality720p => '720p';
-	@override String get transcodeQuality720pDescription => 'Transcodeer stream naar 720p.';
-	@override String get transcodeQuality480p => '480p';
-	@override String get transcodeQuality480pDescription => 'Transcodeer stream naar 480p.';
+	@override String get playbackModeDirectPlay => 'Direct';
+	@override String get quality15Mbps => '15 Mbps';
+	@override String get quality10Mbps => '10 Mbps';
+	@override String get quality8Mbps => '8 Mbps';
+	@override String get quality6Mbps => '6 Mbps';
+	@override String get quality4Mbps => '4 Mbps';
+	@override String get quality3Mbps => '3 Mbps';
+	@override String get quality1_5Mbps => '1.5 Mbps';
+	@override String get quality720kbps => '720 kbps';
+	@override String get quality420kbps => '420 kbps';
 	@override String get cellularDownloadBlocked => 'Downloads zijn uitgeschakeld bij mobiele data. Maak verbinding met WiFi of wijzig de instelling.';
 	@override String get maxVolume => 'Maximaal volume';
 	@override String get maxVolumeDescription => 'Volume boven 100% toestaan voor stille media';
@@ -960,6 +965,7 @@ class _TranslationsDownloadsNl implements TranslationsDownloadsEn {
 	@override String get deleteDownload => 'Download verwijderen';
 	@override String get retryDownload => 'Download opnieuw proberen';
 	@override String get downloadQueued => 'Download in wachtrij';
+	@override String get downloadStarting => 'Bezig met starten...';
 	@override String episodesQueued({required Object count}) => '${count} afleveringen in wachtrij voor download';
 	@override String get downloadDeleted => 'Download verwijderd';
 	@override String deleteConfirm({required Object title}) => 'Weet je zeker dat je "${title}" wilt verwijderen? Het gedownloade bestand wordt van je apparaat verwijderd.';
@@ -1080,6 +1086,8 @@ class _TranslationsVideoSettingsNl implements TranslationsVideoSettingsEn {
 
 	// Translations
 	@override String get playbackSettings => 'Afspeelinstellingen';
+	@override String get quality => 'Kwaliteit';
+	@override String get qualityDescription => 'Streamingkwaliteit. Auto laat de server beslissen.';
 	@override String get playbackSpeed => 'Afspeelsnelheid';
 	@override String get sleepTimer => 'Slaaptimer';
 	@override String get audioSync => 'Audio synchronisatie';
@@ -1376,6 +1384,9 @@ extension on TranslationsNl {
 			'common.none' => 'None',
 			'common.loading' => 'Laden...',
 			'common.reconnect' => 'Opnieuw verbinden',
+			'common.goOffline' => 'Offline gaan',
+			'common.goOnline' => 'Weer online',
+			'common.connectionAvailable' => 'Verbinding beschikbaar',
 			'common.exitConfirmTitle' => 'App afsluiten?',
 			'common.exitConfirmMessage' => 'Weet je zeker dat je wilt afsluiten?',
 			'common.dontAskAgain' => 'Niet meer vragen',
@@ -1461,6 +1472,9 @@ extension on TranslationsNl {
 			'settings.liveTvPlayerDescription' => 'MPV aanbevolen voor Live TV. ExoPlayer kan problemen veroorzaken op sommige apparaten.',
 			'settings.liveTvMpv' => 'MPV (Recommended)',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
+			'settings.liveTvQuality' => 'Live TV-kwaliteit',
+			'settings.liveTvQualityDescription' => 'Beperk transcoderingskwaliteit voor Live TV. Geen limiet gebruikt serverstandaard.',
+			'settings.liveTvQualityNone' => 'Geen limiet',
 			'settings.hardwareDecoding' => 'Hardware decodering',
 			'settings.hardwareDecodingDescription' => 'Gebruik hardware versnelling indien beschikbaar',
 			'settings.bufferSize' => 'Buffer grootte',
@@ -1506,6 +1520,8 @@ extension on TranslationsNl {
 			'settings.autoSkipIntroDescription' => 'Intro-markeringen na enkele seconden automatisch overslaan',
 			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
 			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.alwaysBurnInSubtitleWhenTranscoding' => 'Ondertitels inbranden bij transcoderen',
+			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => 'Bij transcoderen de geselecteerde ondertitel in de video inbranden. Gelijk aan jellyfin-web.',
 			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
 			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
 			'settings.enableChapterImages' => 'Enable Chapter Images',
@@ -1541,23 +1557,20 @@ extension on TranslationsNl {
 			'settings.downloadQualityDescription' => 'Kwaliteit voor offline downloads. Origineel behoudt het bronbestand; andere opties transcoderen om ruimte te besparen.',
 			'settings.downloadQualityOriginal' => 'Origineel',
 			'settings.downloadQualityOriginalDescription' => 'Gebruikt het originele bestand.',
-			'settings.downloadQuality1080p' => '1080p',
-			'settings.downloadQuality1080pDescription' => 'Transcoderen naar 1080p.',
-			'settings.downloadQuality720p' => '720p',
-			'settings.downloadQuality720pDescription' => 'Transcoderen naar 720p.',
-			'settings.downloadQuality480p' => '480p',
-			'settings.downloadQuality480pDescription' => 'Transcoderen naar 480p.',
-			'settings.playbackMode' => 'Streamingmodus',
 			'settings.playbackModeAutoDescription' => 'Laat de server beslissen.',
 			'settings.playbackModeAuto' => 'Auto',
+			'settings.playbackModeAutoDirect' => 'Auto - Direct',
 			'settings.playbackModeDirectPlayDescription' => 'Gebruikt het originele bestand.',
-			'settings.playbackModeDirectPlay' => 'Direct Play',
-			'settings.transcodeQuality1080p' => '1080p',
-			'settings.transcodeQuality1080pDescription' => 'Transcodeer stream naar 1080p.',
-			'settings.transcodeQuality720p' => '720p',
-			'settings.transcodeQuality720pDescription' => 'Transcodeer stream naar 720p.',
-			'settings.transcodeQuality480p' => '480p',
-			'settings.transcodeQuality480pDescription' => 'Transcodeer stream naar 480p.',
+			'settings.playbackModeDirectPlay' => 'Direct',
+			'settings.quality15Mbps' => '15 Mbps',
+			'settings.quality10Mbps' => '10 Mbps',
+			'settings.quality8Mbps' => '8 Mbps',
+			'settings.quality6Mbps' => '6 Mbps',
+			'settings.quality4Mbps' => '4 Mbps',
+			'settings.quality3Mbps' => '3 Mbps',
+			'settings.quality1_5Mbps' => '1.5 Mbps',
+			'settings.quality720kbps' => '720 kbps',
+			'settings.quality420kbps' => '420 kbps',
 			'settings.cellularDownloadBlocked' => 'Downloads zijn uitgeschakeld bij mobiele data. Maak verbinding met WiFi of wijzig de instelling.',
 			'settings.maxVolume' => 'Maximaal volume',
 			'settings.maxVolumeDescription' => 'Volume boven 100% toestaan voor stille media',
@@ -1822,13 +1835,13 @@ extension on TranslationsNl {
 			'libraries.analyze' => 'Analyseren',
 			'libraries.analyzeLibrary' => 'Analyseer bibliotheek',
 			'libraries.refreshMetadata' => 'Vernieuw metadata',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.emptyTrash' => 'Prullenbak legen',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Prullenbak legen voor "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Prullenbak geleegd voor "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Kon prullenbak niet legen: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analyseren "${title}"...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analyse gestart voor "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Kon bibliotheek niet analyseren: ${error}',
 			'libraries.noLibrariesFound' => 'Geen bibliotheken gevonden',
@@ -1974,6 +1987,7 @@ extension on TranslationsNl {
 			'downloads.deleteDownload' => 'Download verwijderen',
 			'downloads.retryDownload' => 'Download opnieuw proberen',
 			'downloads.downloadQueued' => 'Download in wachtrij',
+			'downloads.downloadStarting' => 'Bezig met starten...',
 			'downloads.episodesQueued' => ({required Object count}) => '${count} afleveringen in wachtrij voor download',
 			'downloads.downloadDeleted' => 'Download verwijderd',
 			'downloads.deleteConfirm' => ({required Object title}) => 'Weet je zeker dat je "${title}" wilt verwijderen? Het gedownloade bestand wordt van je apparaat verwijderd.',
@@ -2123,6 +2137,8 @@ extension on TranslationsNl {
 			'companionRemote.remote.audio' => 'Audio',
 			'companionRemote.remote.searchHint' => 'Zoeken op desktop...',
 			'videoSettings.playbackSettings' => 'Afspeelinstellingen',
+			'videoSettings.quality' => 'Kwaliteit',
+			'videoSettings.qualityDescription' => 'Streamingkwaliteit. Auto laat de server beslissen.',
 			'videoSettings.playbackSpeed' => 'Afspeelsnelheid',
 			'videoSettings.sleepTimer' => 'Slaaptimer',
 			'videoSettings.audioSync' => 'Audio synchronisatie',

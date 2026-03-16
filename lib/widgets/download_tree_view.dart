@@ -487,7 +487,10 @@ class _DownloadTreeItem extends StatefulWidget {
 class _DownloadTreeItemState extends State<_DownloadTreeItem> {
   /// Treat downloading items with no progress/speed as effectively queued
   /// (they're waiting in background_downloader's HoldingQueue).
+  /// Transcode downloads are excluded: they often show 0% until the stream starts.
   DownloadStatus get _effectiveStatus {
+    final isTranscoded = widget.node.downloadProgress?.isTranscoded ?? false;
+    if (isTranscoded) return widget.node.status;
     if (widget.node.status == DownloadStatus.downloading &&
         widget.node.progress == 0 &&
         (widget.node.downloadProgress?.speed ?? 0) == 0) {
@@ -694,13 +697,15 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
               if (_effectiveStatus == DownloadStatus.downloading) ...[
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: widget.node.progress,
+                  value: widget.node.progress > 0 ? widget.node.progress : null,
                   backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 ),
                 if (widget.node.downloadProgress != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    '${(widget.node.progress * 100).toStringAsFixed(1)}% - ${widget.node.downloadProgress!.speedFormatted}',
+                    widget.node.progress > 0
+                        ? '${(widget.node.progress * 100).toStringAsFixed(1)}% - ${widget.node.downloadProgress!.speedFormatted}'
+                        : t.downloads.downloadStarting,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),

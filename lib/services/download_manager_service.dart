@@ -219,12 +219,24 @@ int _estimatedBitrateForQuality(DownloadQuality quality) {
   switch (quality) {
     case DownloadQuality.original:
       return 0; // Direct stream, server provides Content-Length
-    case DownloadQuality.p1080:
-      return 5 * 1000 * 1000; // ~5 Mbps
-    case DownloadQuality.p720:
-      return 3 * 1000 * 1000; // ~3 Mbps
-    case DownloadQuality.p480:
-      return 1500 * 1000; // ~1.5 Mbps
+    case DownloadQuality.p15:
+      return 15 * 1000 * 1000;
+    case DownloadQuality.p10:
+      return 10 * 1000 * 1000;
+    case DownloadQuality.p8:
+      return 8 * 1000 * 1000;
+    case DownloadQuality.p6:
+      return 6 * 1000 * 1000;
+    case DownloadQuality.p4:
+      return 4 * 1000 * 1000;
+    case DownloadQuality.p3:
+      return 3 * 1000 * 1000;
+    case DownloadQuality.p1_5:
+      return 1500 * 1000;
+    case DownloadQuality.p720k:
+      return 720 * 1000;
+    case DownloadQuality.p420k:
+      return 420 * 1000;
   }
 }
 
@@ -265,6 +277,12 @@ class DownloadManagerService {
   // Debounce timers for DB progress writes (keyed by globalKey).
   // UI progress streams are still real-time; only the DB write is debounced.
   final Map<String, Timer> _progressDebounceTimers = {};
+
+  // Periodic poll for transcode downloads (no Content-Length; progress from .part file)
+  final Map<String, Timer> _transcodePollTimers = {};
+
+  // Dio-based transcode downloads on desktop (background_downloader fails with chunked streams)
+  final Map<String, CancelToken> _dioTranscodeCancelTokens = {};
 
   /// Public method to check if downloads should be blocked due to cellular-only setting
   /// Can be used by DownloadProvider to show user-friendly error
@@ -588,6 +606,7 @@ class DownloadManagerService {
           updates: Updates.statusAndProgress,
           requiresWiFi: requiresWiFi,
           retries: 3,
+          headers: client.requestHeaders,
           metaData: globalKey,
           displayName: displayName,
         );
@@ -621,6 +640,32 @@ class DownloadManagerService {
 
         await File(downloadFilePath).parent.create(recursive: true);
 
+        // Transcode streams don't support Range requests — disable pause/resume for them
+        final isTranscode = downloadQuality != DownloadQuality.original;
+
+        // On desktop, background_downloader fails to write chunked transcode streams (zero bytes).
+        // Use Dio directly for transcode downloads.
+        final useDioTranscode = isTranscode &&
+            (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+
+        if (useDioTranscode) {
+          _runDioTranscodeDownload(
+            globalKey: globalKey,
+            url: playbackData.videoUrl!,
+            filePath: downloadFilePath,
+            headers: client.requestHeaders,
+            metadata: metadata,
+            queueItem: queueItem,
+            displayName: displayName,
+            extension: ext,
+            showYear: showYear,
+            mediaInfo: playbackData.mediaInfo,
+            downloadQuality: downloadQuality,
+            client: client,
+          );
+          return;
+        }
+
         final task = DownloadTask(
           url: playbackData.videoUrl!,
           filename: path.basename(downloadFilePath),
@@ -630,7 +675,8 @@ class DownloadManagerService {
           updates: Updates.statusAndProgress,
           requiresWiFi: requiresWiFi,
           retries: 3,
-          allowPause: true,
+          allowPause: !isTranscode,
+          headers: client.requestHeaders,
           metaData: globalKey,
           displayName: displayName,
         );
@@ -650,12 +696,14 @@ class DownloadManagerService {
         final success = await FileDownloader().enqueue(task);
         if (!success) throw Exception('Failed to enqueue download task');
         appLogger.i('Enqueued download task ${task.taskId} for $globalKey');
+        if (isTranscode) _startTranscodePoll(globalKey);
       }
     } catch (e) {
       appLogger.e('Failed to prepare download for $globalKey', error: e);
       await _transitionStatus(globalKey, DownloadStatus.failed, errorMessage: e.toString());
       await _database.updateDownloadError(globalKey, e.toString());
       await _database.removeFromQueue(globalKey);
+      _stopTranscodePoll(globalKey);
       _pendingDownloadContext.remove(globalKey);
     }
   }
@@ -684,6 +732,7 @@ class DownloadManagerService {
       downloadedBytes = (update.progress * totalBytes).round();
     } else {
       // Transcoded stream without Content-Length — estimate from file size + duration
+      // Check both final path and .part (background_downloader writes to .part during download)
       final ctx = _pendingDownloadContext[globalKey];
       if (ctx != null &&
           !ctx.isSafMode &&
@@ -692,13 +741,17 @@ class DownloadManagerService {
           ctx.metadata.duration! > 0) {
         try {
           final file = File(ctx.filePath);
-          if (file.existsSync()) {
-            downloadedBytes = file.lengthSync();
+          final partFile = File('${ctx.filePath}.part');
+          final fileToCheck = partFile.existsSync() ? partFile : file;
+          if (fileToCheck.existsSync()) {
+            downloadedBytes = fileToCheck.lengthSync();
             final durationSec = ctx.metadata.duration! / 1000;
             final bitrate = _estimatedBitrateForQuality(ctx.downloadQuality);
             totalBytes = (durationSec * bitrate / 8).round();
-            if (totalBytes > 0) {
-              progress = ((downloadedBytes / totalBytes) * 100).round().clamp(0, 100);
+            if (totalBytes > 0 && downloadedBytes > 0) {
+              progress = ((downloadedBytes / totalBytes) * 100).round().clamp(0, 99);
+            } else if (downloadedBytes > 0) {
+              progress = 1; // Show at least 1% when we have bytes
             } else {
               progress = 0;
               totalBytes = 0;
@@ -748,6 +801,180 @@ class DownloadManagerService {
     });
   }
 
+  /// Poll .part file for transcode progress when background_downloader doesn't emit updates.
+  void _pollTranscodeProgress(String globalKey) {
+    if (_disposed) return;
+    final ctx = _pendingDownloadContext[globalKey];
+    if (ctx == null || ctx.isSafMode || ctx.downloadQuality == DownloadQuality.original) return;
+    if (ctx.metadata.duration == null || ctx.metadata.duration! <= 0) return;
+
+    try {
+      final file = File(ctx.filePath);
+      final partFile = File('${ctx.filePath}.part');
+      final fileToCheck = partFile.existsSync() ? partFile : file;
+      if (!fileToCheck.existsSync()) return;
+
+      final downloadedBytes = fileToCheck.lengthSync();
+      if (downloadedBytes == 0) return;
+
+      final durationSec = ctx.metadata.duration! / 1000;
+      final bitrate = _estimatedBitrateForQuality(ctx.downloadQuality);
+      final totalBytes = (durationSec * bitrate / 8).round();
+      int progress;
+      if (totalBytes > 0) {
+        progress = ((downloadedBytes / totalBytes) * 100).round().clamp(0, 99);
+      } else {
+        progress = 1;
+      }
+
+      _progressController.add(
+        DownloadProgress(
+          globalKey: globalKey,
+          status: DownloadStatus.downloading,
+          progress: progress,
+          downloadedBytes: downloadedBytes,
+          totalBytes: totalBytes,
+          speed: 0,
+          currentFile: 'video',
+          isTranscoded: true,
+        ),
+      );
+    } catch (_) {}
+  }
+
+  void _startTranscodePoll(String globalKey) {
+    _transcodePollTimers[globalKey]?.cancel();
+    _transcodePollTimers[globalKey] = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      _pollTranscodeProgress(globalKey);
+    });
+  }
+
+  void _stopTranscodePoll(String globalKey) {
+    _transcodePollTimers.remove(globalKey)?.cancel();
+  }
+
+  /// Run transcode download via Dio on desktop (background_downloader fails with chunked streams).
+  Future<void> _runDioTranscodeDownload({
+    required String globalKey,
+    required String url,
+    required String filePath,
+    required Map<String, String> headers,
+    required MediaMetadata metadata,
+    required DownloadQueueItem queueItem,
+    required String displayName,
+    required String extension,
+    int? showYear,
+    MediaInfo? mediaInfo,
+    required DownloadQuality downloadQuality,
+    required JellyfinClient client,
+  }) async {
+    final cancelToken = CancelToken();
+    _dioTranscodeCancelTokens[globalKey] = cancelToken;
+
+    _pendingDownloadContext[globalKey] = _DownloadContext(
+      metadata: metadata,
+      queueItem: queueItem,
+      filePath: filePath,
+      extension: extension,
+      client: client,
+      showYear: showYear,
+      isSafMode: false,
+      mediaInfo: mediaInfo,
+      downloadQuality: downloadQuality,
+    );
+
+    _startTranscodePoll(globalKey);
+
+    try {
+      await _dio.download(
+        url,
+        filePath,
+        options: Options(
+          headers: headers,
+          receiveTimeout: const Duration(hours: 4),
+          sendTimeout: const Duration(seconds: 30),
+        ),
+        cancelToken: cancelToken,
+        onReceiveProgress: () {
+          var lastReceived = 0;
+          DateTime? lastUpdateTime;
+          return (int received, int total) {
+            if (_disposed) return;
+            final now = DateTime.now();
+            double speed = 0;
+            if (lastUpdateTime != null) {
+              final elapsed = now.difference(lastUpdateTime!).inMilliseconds / 1000.0;
+              if (elapsed > 0.1) {
+                speed = (received - lastReceived) / elapsed;
+              }
+            }
+            lastReceived = received;
+            lastUpdateTime = now;
+
+            int progress;
+            int totalBytes;
+            if (total > 0) {
+              progress = ((received / total) * 100).round().clamp(0, 99);
+              totalBytes = total;
+            } else if (metadata.duration != null && metadata.duration! > 0) {
+              final durationSec = metadata.duration! / 1000;
+              final bitrate = _estimatedBitrateForQuality(downloadQuality);
+              totalBytes = (durationSec * bitrate / 8).round();
+              progress = totalBytes > 0
+                  ? ((received / totalBytes) * 100).round().clamp(0, 99)
+                  : received > 0 ? 1 : 0;
+            } else {
+              progress = received > 0 ? 1 : 0;
+              totalBytes = 0;
+            }
+            _progressController.add(
+              DownloadProgress(
+                globalKey: globalKey,
+                status: DownloadStatus.downloading,
+                progress: progress,
+                downloadedBytes: received,
+                totalBytes: totalBytes,
+                speed: speed,
+                currentFile: 'video',
+                isTranscoded: true,
+              ),
+            );
+          };
+        }(),
+      );
+
+      if (_disposed || cancelToken.isCancelled) return;
+
+      _dioTranscodeCancelTokens.remove(globalKey);
+      final task = DownloadTask(
+        url: url,
+        filename: path.basename(filePath),
+        directory: path.dirname(filePath),
+        baseDirectory: BaseDirectory.root,
+        group: _downloadGroup,
+        metaData: globalKey,
+        displayName: displayName,
+      );
+      await _onDownloadComplete(globalKey, task);
+    } on DioException catch (e) {
+      _dioTranscodeCancelTokens.remove(globalKey);
+      if (e.type == DioExceptionType.cancel) {
+        await _transitionStatus(globalKey, DownloadStatus.cancelled);
+        await _database.removeFromQueue(globalKey);
+      } else {
+        await _onDownloadFailed(
+          globalKey,
+          e.response?.statusMessage ?? e.message ?? 'Download failed',
+        );
+      }
+    } catch (e) {
+      _dioTranscodeCancelTokens.remove(globalKey);
+      await _onDownloadFailed(globalKey, e.toString());
+    } finally {
+      _stopTranscodePoll(globalKey);
+    }
+  }
+
   /// Callback: background_downloader status change
   void _onTaskStatusChanged(TaskStatusUpdate update) {
     if (_disposed) return;
@@ -769,6 +996,7 @@ class DownloadManagerService {
             // Expected cancel from holding-queue promotion during pause — ignore
             break;
           }
+          _stopTranscodePoll(globalKey);
           final ctx = _pendingDownloadContext.remove(globalKey);
           if (ctx != null) {
             // Context still present → OS cancelled the task, not user code
@@ -798,6 +1026,7 @@ class DownloadManagerService {
 
   /// Handle a permanently failed download
   Future<void> _onDownloadFailed(String globalKey, String errorMessage) async {
+    _stopTranscodePoll(globalKey);
     _pendingDownloadContext.remove(globalKey);
     appLogger.e('Download failed for $globalKey: $errorMessage');
     await _transitionStatus(globalKey, DownloadStatus.failed, errorMessage: errorMessage);
@@ -813,6 +1042,7 @@ class DownloadManagerService {
     try {
       // Flush any pending debounced progress write before completing
       _progressDebounceTimers.remove(globalKey)?.cancel();
+      _stopTranscodePoll(globalKey);
 
       final ctx = _pendingDownloadContext.remove(globalKey);
 
@@ -1190,6 +1420,16 @@ class DownloadManagerService {
     _pausingKeys.add(globalKey);
 
     try {
+      // Dio transcode downloads: cancel (no pause support)
+      final cancelToken = _dioTranscodeCancelTokens.remove(globalKey);
+      if (cancelToken != null) {
+        cancelToken.cancel('User paused');
+        _stopTranscodePoll(globalKey);
+        _pendingDownloadContext.remove(globalKey);
+        await _transitionStatus(globalKey, DownloadStatus.paused);
+        await _database.removeFromQueue(globalKey);
+        return;
+      }
       final bgTaskId = await _database.getBgTaskId(globalKey);
       if (bgTaskId != null) {
         final task = await FileDownloader().taskForId(bgTaskId);
@@ -1201,6 +1441,7 @@ class DownloadManagerService {
           await FileDownloader().cancelTaskWithId(bgTaskId);
         }
       }
+      _stopTranscodePoll(globalKey);
       _pendingDownloadContext.remove(globalKey);
       await _transitionStatus(globalKey, DownloadStatus.paused);
       await _database.removeFromQueue(globalKey);
@@ -1244,23 +1485,43 @@ class DownloadManagerService {
   }
 
   /// Cancel a download
+  /// Removes the record and any partial files so the movie page shows "Download" again.
   Future<void> cancelDownload(String globalKey) async {
+    final cancelToken = _dioTranscodeCancelTokens.remove(globalKey);
+    if (cancelToken != null) {
+      cancelToken.cancel('User cancelled');
+    }
     final bgTaskId = await _database.getBgTaskId(globalKey);
     if (bgTaskId != null) {
       await FileDownloader().cancelTaskWithId(bgTaskId);
     }
-    _pendingDownloadContext.remove(globalKey);
-    await _transitionStatus(globalKey, DownloadStatus.cancelled);
-    await _database.removeFromQueue(globalKey);
+    _stopTranscodePoll(globalKey);
+
+    // Delete partial files (Dio writes directly; background_downloader uses temp)
+    final ctx = _pendingDownloadContext.remove(globalKey);
+    if (ctx != null && !ctx.isSafMode) {
+      try {
+        final file = File(ctx.filePath);
+        final partFile = File('${ctx.filePath}.part');
+        if (await file.exists()) await file.delete();
+        if (await partFile.exists()) await partFile.delete();
+      } catch (_) {}
+    }
+
+    // Remove from DB so movie page shows "Download" instead of stale state
+    await _database.deleteDownload(globalKey);
   }
 
   /// Delete a downloaded item and its files
   Future<void> deleteDownload(String globalKey) async {
-    // Cancel if actively downloading via background_downloader
+    // Cancel if actively downloading (Dio or background_downloader)
+    final cancelToken = _dioTranscodeCancelTokens.remove(globalKey);
+    if (cancelToken != null) cancelToken.cancel('User deleted');
     final bgTaskId = await _database.getBgTaskId(globalKey);
     if (bgTaskId != null) {
       await FileDownloader().cancelTaskWithId(bgTaskId);
     }
+    _stopTranscodePoll(globalKey);
     _pendingDownloadContext.remove(globalKey);
 
     // Delete files from storage
@@ -1760,6 +2021,14 @@ class DownloadManagerService {
       timer.cancel();
     }
     _progressDebounceTimers.clear();
+    for (final timer in _transcodePollTimers.values) {
+      timer.cancel();
+    }
+    _transcodePollTimers.clear();
+    for (final token in _dioTranscodeCancelTokens.values) {
+      token.cancel('Service disposed');
+    }
+    _dioTranscodeCancelTokens.clear();
     _progressController.close();
     _deletionProgressController.close();
   }

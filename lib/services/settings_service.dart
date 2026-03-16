@@ -26,11 +26,34 @@ enum PerformanceProfile { small, medium, large }
 /// Grid preload level (cacheExtent). Low = fewer off-screen items, High = smoother scroll.
 enum GridPreloadLevel { low, medium, high }
 
-/// Playback mode for streaming: Auto, Direct Play, or transcode at a specific quality.
-enum PlaybackMode { auto, directPlay, transcode1080, transcode720, transcode480 }
+/// Playback mode for streaming. Matches jellyfin-web quality options.
+enum PlaybackMode {
+  auto,
+  directPlay,
+  transcode15,
+  transcode10,
+  transcode8,
+  transcode6,
+  transcode4,
+  transcode3,
+  transcode1_5,
+  transcode720k,
+  transcode420k,
+}
 
-/// Download quality for offline content.
-enum DownloadQuality { original, p1080, p720, p480 }
+/// Download quality for offline content. Matches jellyfin-web quality options.
+enum DownloadQuality {
+  original,
+  p15,
+  p10,
+  p8,
+  p6,
+  p4,
+  p3,
+  p1_5,
+  p720k,
+  p420k,
+}
 
 extension GridPreloadLevelExt on GridPreloadLevel {
   /// Cache extent in logical pixels for scroll views.
@@ -84,6 +107,7 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyAutoSkipCommercial = 'auto_skip_commercial';
   static const String _keyAutoSkipDelay = 'auto_skip_delay';
   static const String _keyEnableExternalSubtitles = 'enable_external_subtitles';
+  static const String _keyAlwaysBurnInSubtitleWhenTranscoding = 'always_burn_in_subtitle_when_transcoding';
   static const String _keyEnableTrickplay = 'enable_trickplay';
   static const String _keyEnableChapterImages = 'enable_chapter_images';
   static const String _keyCustomDownloadPath = 'custom_download_path';
@@ -103,6 +127,7 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyAutoPlayNextEpisode = 'auto_play_next_episode';
   static const String _keyUseExoPlayer = 'use_exoplayer';
   static const String _keyUseExoPlayerForLiveTv = 'use_exoplayer_for_livetv';
+  static const String _keyLiveTvMaxStreamingBitrate = 'live_tv_max_streaming_bitrate';
   static const String _keyAlwaysKeepSidebarOpen = 'always_keep_sidebar_open';
   static const String _keyShowUnwatchedCount = 'show_unwatched_count';
   static const String _keyGlobalShaderPreset = 'global_shader_preset';
@@ -209,22 +234,33 @@ class SettingsService extends BaseSharedPreferencesService {
 
   PlaybackMode getPlaybackMode() {
     final stored = prefs.getString(_keyPlaybackMode);
-    // Migrate legacy forceTranscode + transcode preset to combined mode
-    if (stored == 'saveBandwidth') {
-      prefs.setString(_keyPlaybackMode, PlaybackMode.transcode480.name);
-      return PlaybackMode.transcode480;
+    // Migrate legacy values to new enum
+    final migrated = switch (stored) {
+      'saveBandwidth' => PlaybackMode.transcode1_5,
+      'transcode360' => PlaybackMode.transcode720k,
+      'transcode480' => PlaybackMode.transcode1_5,
+      'transcode720' => PlaybackMode.transcode4,
+      'transcode1080' => PlaybackMode.transcode10,
+      'transcode1080p60' => PlaybackMode.transcode15,
+      'transcode4k80' => PlaybackMode.transcode15,
+      'transcode4k120' => PlaybackMode.transcode15,
+      _ => null,
+    };
+    if (migrated != null) {
+      prefs.setString(_keyPlaybackMode, migrated.name);
+      return migrated;
     }
     if (stored == 'forceTranscode') {
       final preset = prefs.getString('transcode_quality_preset');
-      final migrated = switch (preset) {
-        'p720' => PlaybackMode.transcode720,
-        'p480' => PlaybackMode.transcode480,
-        'saveBandwidth' => PlaybackMode.transcode480,
-        _ => PlaybackMode.transcode1080,
+      final m = switch (preset) {
+        'p720' => PlaybackMode.transcode4,
+        'p480' => PlaybackMode.transcode1_5,
+        'saveBandwidth' => PlaybackMode.transcode1_5,
+        _ => PlaybackMode.transcode10,
       };
       prefs.remove('transcode_quality_preset');
-      prefs.setString(_keyPlaybackMode, migrated.name);
-      return migrated;
+      prefs.setString(_keyPlaybackMode, m.name);
+      return m;
     }
     return _getEnumValue(_keyPlaybackMode, PlaybackMode.values, PlaybackMode.auto);
   }
@@ -236,10 +272,21 @@ class SettingsService extends BaseSharedPreferencesService {
 
   DownloadQuality getDownloadQuality() {
     final stored = prefs.getString(_keyDownloadQuality);
-    // Migrate legacy saveStorage/saveBandwidth → p480
-    if (stored == 'saveStorage' || stored == 'saveBandwidth') {
-      prefs.setString(_keyDownloadQuality, DownloadQuality.p480.name);
-      return DownloadQuality.p480;
+    final migrated = switch (stored) {
+      'saveStorage' => DownloadQuality.p1_5,
+      'saveBandwidth' => DownloadQuality.p1_5,
+      'p360' => DownloadQuality.p720k,
+      'p480' => DownloadQuality.p1_5,
+      'p720' => DownloadQuality.p4,
+      'p1080' => DownloadQuality.p10,
+      'p1080p60' => DownloadQuality.p15,
+      'p4k80' => DownloadQuality.p15,
+      'p4k120' => DownloadQuality.p15,
+      _ => null,
+    };
+    if (migrated != null) {
+      prefs.setString(_keyDownloadQuality, migrated.name);
+      return migrated;
     }
     return _getEnumValue(_keyDownloadQuality, DownloadQuality.values, DownloadQuality.original);
   }
@@ -1057,6 +1104,15 @@ class SettingsService extends BaseSharedPreferencesService {
     return prefs.getBool(_keyEnableExternalSubtitles) ?? false;
   }
 
+  // Burn subtitles into transcoded video (jellyfin-web parity)
+  Future<void> setAlwaysBurnInSubtitleWhenTranscoding(bool value) async {
+    await prefs.setBool(_keyAlwaysBurnInSubtitleWhenTranscoding, value);
+  }
+
+  bool getAlwaysBurnInSubtitleWhenTranscoding() {
+    return prefs.getBool(_keyAlwaysBurnInSubtitleWhenTranscoding) ?? false;
+  }
+
   // Enable trickplay timeline thumbnails (probes server; default off)
   Future<void> setEnableTrickplay(bool value) async {
     await prefs.setBool(_keyEnableTrickplay, value);
@@ -1234,6 +1290,19 @@ class SettingsService extends BaseSharedPreferencesService {
     return prefs.getBool(_keyUseExoPlayerForLiveTv) ?? false; // Default: MPV (false = use MPV)
   }
 
+  // Live TV max streaming bitrate (bps). Null = no limit (server default).
+  Future<void> setLiveTvMaxStreamingBitrate(int? bitrate) async {
+    if (bitrate == null) {
+      await prefs.remove(_keyLiveTvMaxStreamingBitrate);
+    } else {
+      await prefs.setInt(_keyLiveTvMaxStreamingBitrate, bitrate);
+    }
+  }
+
+  int? getLiveTvMaxStreamingBitrate() {
+    return prefs.getInt(_keyLiveTvMaxStreamingBitrate);
+  }
+
   // Always Keep Sidebar Open (Desktop/TV only)
   Future<void> setAlwaysKeepSidebarOpen(bool enabled) async {
     await prefs.setBool(_keyAlwaysKeepSidebarOpen, enabled);
@@ -1385,6 +1454,7 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyAutoPlayNextEpisode),
       prefs.remove(_keyUseExoPlayer),
       prefs.remove(_keyUseExoPlayerForLiveTv),
+      prefs.remove(_keyLiveTvMaxStreamingBitrate),
       prefs.remove(_keyAlwaysKeepSidebarOpen),
       prefs.remove(_keyShowUnwatchedCount),
       prefs.remove(_keyGlobalShaderPreset),
@@ -1393,6 +1463,8 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keySelectedExternalPlayer),
       prefs.remove(_keyCustomExternalPlayers),
       prefs.remove(_keyConfirmExitOnBack),
+      prefs.remove(_keyEnableExternalSubtitles),
+      prefs.remove(_keyAlwaysBurnInSubtitleWhenTranscoding),
       prefs.remove(_keyEnableTrickplay),
       prefs.remove(_keyEnableChapterImages),
       prefs.remove(_keyImageQuality),

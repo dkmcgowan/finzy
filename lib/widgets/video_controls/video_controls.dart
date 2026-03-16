@@ -83,6 +83,7 @@ Widget appVideoControlsBuilder(
   String? liveChannelName,
   bool isAmbientLightingEnabled = false,
   VoidCallback? onToggleAmbientLighting,
+  VoidCallback? onQualityChanged,
 }) {
   return AppVideoControls(
     player: player,
@@ -111,6 +112,7 @@ Widget appVideoControlsBuilder(
     liveChannelName: liveChannelName,
     isAmbientLightingEnabled: isAmbientLightingEnabled,
     onToggleAmbientLighting: onToggleAmbientLighting,
+    onQualityChanged: onQualityChanged,
   );
 }
 
@@ -172,6 +174,9 @@ class AppVideoControls extends StatefulWidget {
   /// Called to toggle ambient lighting (passed to settings sheet)
   final VoidCallback? onToggleAmbientLighting;
 
+  /// Called when streaming or Live TV quality changes; caller should restart playback.
+  final VoidCallback? onQualityChanged;
+
   const AppVideoControls({
     super.key,
     required this.player,
@@ -200,6 +205,7 @@ class AppVideoControls extends StatefulWidget {
     this.liveChannelName,
     this.isAmbientLightingEnabled = false,
     this.onToggleAmbientLighting,
+    this.onQualityChanged,
   });
 
   @override
@@ -1051,6 +1057,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
       onShaderChanged: widget.onShaderChanged,
       isAmbientLightingEnabled: widget.isAmbientLightingEnabled,
       onToggleAmbientLighting: widget.player.playerType != 'exoplayer' ? widget.onToggleAmbientLighting : null,
+      onQualityChanged: widget.onQualityChanged,
     );
   }
 
@@ -2064,6 +2071,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
         liveChannelName: widget.liveChannelName,
         isAmbientLightingEnabled: widget.isAmbientLightingEnabled,
         onToggleAmbientLighting: widget.player.playerType != 'exoplayer' ? widget.onToggleAmbientLighting : null,
+        onQualityChanged: widget.onQualityChanged,
       ),
     );
   }

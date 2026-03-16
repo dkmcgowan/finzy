@@ -34,6 +34,7 @@ class ExternalPlayerService {
           metadata.itemId,
           mediaIndex: mediaIndex,
           playbackMode: settings.getPlaybackMode(),
+          startPositionMs: metadata.resumePositionMs,
         );
 
         if (!playbackData.hasValidVideoUrl) {

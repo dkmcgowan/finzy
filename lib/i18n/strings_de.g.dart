@@ -161,6 +161,9 @@ class _TranslationsCommonDe implements TranslationsCommonEn {
 	@override String get none => 'None';
 	@override String get loading => 'Laden...';
 	@override String get reconnect => 'Erneut verbinden';
+	@override String get goOffline => 'Offline gehen';
+	@override String get goOnline => 'Wieder online';
+	@override String get connectionAvailable => 'Verbindung verfügbar';
 	@override String get exitConfirmTitle => 'App beenden?';
 	@override String get exitConfirmMessage => 'Möchtest du die App wirklich beenden?';
 	@override String get dontAskAgain => 'Nicht erneut fragen';
@@ -273,6 +276,9 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get liveTvPlayerDescription => 'MPV wird für Live-TV empfohlen. ExoPlayer kann auf einigen Geräten Probleme verursachen.';
 	@override String get liveTvMpv => 'MPV (Recommended)';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
+	@override String get liveTvQuality => 'Live-TV-Qualität';
+	@override String get liveTvQualityDescription => 'Transcodierungsqualität für Live-TV begrenzen. Kein Limit nutzt Server-Standard.';
+	@override String get liveTvQualityNone => 'Kein Limit';
 	@override String get hardwareDecoding => 'Hardware-Decodierung';
 	@override String get hardwareDecodingDescription => 'Hardwarebeschleunigung verwenden, sofern verfügbar';
 	@override String get bufferSize => 'Puffergröße';
@@ -318,6 +324,8 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get autoSkipIntroDescription => 'Intro-Marker nach wenigen Sekunden automatisch überspringen';
 	@override String get enableExternalSubtitles => 'Enable External Subtitles';
 	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get alwaysBurnInSubtitleWhenTranscoding => 'Untertitel beim Transkodieren einbrennen';
+	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => 'Beim Transkodieren den gewählten Untertitel ins Video einbrennen. Entspricht jellyfin-web.';
 	@override String get enableTrickplay => 'Enable Trickplay Thumbnails';
 	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
 	@override String get enableChapterImages => 'Enable Chapter Images';
@@ -353,23 +361,20 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get downloadQualityDescription => 'Qualität für Offline-Downloads. Original behält die Quelldatei; andere Optionen transkodieren, um Speicher zu sparen.';
 	@override String get downloadQualityOriginal => 'Original';
 	@override String get downloadQualityOriginalDescription => 'Nutzt die Originaldatei.';
-	@override String get downloadQuality1080p => '1080p';
-	@override String get downloadQuality1080pDescription => 'Transkodieren auf 1080p.';
-	@override String get downloadQuality720p => '720p';
-	@override String get downloadQuality720pDescription => 'Transkodieren auf 720p.';
-	@override String get downloadQuality480p => '480p';
-	@override String get downloadQuality480pDescription => 'Transkodieren auf 480p.';
-	@override String get playbackMode => 'Streaming-Modus';
 	@override String get playbackModeAutoDescription => 'Lässt den Server entscheiden.';
 	@override String get playbackModeAuto => 'Auto';
+	@override String get playbackModeAutoDirect => 'Auto - Direct';
 	@override String get playbackModeDirectPlayDescription => 'Nutzt die Originaldatei.';
-	@override String get playbackModeDirectPlay => 'Direct Play';
-	@override String get transcodeQuality1080p => '1080p';
-	@override String get transcodeQuality1080pDescription => 'Stream auf 1080p transkodieren.';
-	@override String get transcodeQuality720p => '720p';
-	@override String get transcodeQuality720pDescription => 'Stream auf 720p transkodieren.';
-	@override String get transcodeQuality480p => '480p';
-	@override String get transcodeQuality480pDescription => 'Stream auf 480p transkodieren.';
+	@override String get playbackModeDirectPlay => 'Direct';
+	@override String get quality15Mbps => '15 Mbps';
+	@override String get quality10Mbps => '10 Mbps';
+	@override String get quality8Mbps => '8 Mbps';
+	@override String get quality6Mbps => '6 Mbps';
+	@override String get quality4Mbps => '4 Mbps';
+	@override String get quality3Mbps => '3 Mbps';
+	@override String get quality1_5Mbps => '1.5 Mbps';
+	@override String get quality720kbps => '720 kbps';
+	@override String get quality420kbps => '420 kbps';
 	@override String get cellularDownloadBlocked => 'Downloads sind über mobile Daten deaktiviert. Verbinde dich mit einem WLAN oder ändere die Einstellung.';
 	@override String get maxVolume => 'Maximale Lautstärke';
 	@override String get maxVolumeDescription => 'Lautstärke über 100% für leise Medien erlauben';
@@ -960,6 +965,7 @@ class _TranslationsDownloadsDe implements TranslationsDownloadsEn {
 	@override String get deleteDownload => 'Download löschen';
 	@override String get retryDownload => 'Download wiederholen';
 	@override String get downloadQueued => 'Download in Warteschlange';
+	@override String get downloadStarting => 'Wird gestartet...';
 	@override String episodesQueued({required Object count}) => '${count} Episoden zum Download hinzugefügt';
 	@override String get downloadDeleted => 'Download gelöscht';
 	@override String deleteConfirm({required Object title}) => 'Möchtest du "${title}" wirklich löschen? Die heruntergeladene Datei wird von deinem Gerät entfernt.';
@@ -1080,6 +1086,8 @@ class _TranslationsVideoSettingsDe implements TranslationsVideoSettingsEn {
 
 	// Translations
 	@override String get playbackSettings => 'Wiedergabeeinstellungen';
+	@override String get quality => 'Qualität';
+	@override String get qualityDescription => 'Streaming-Qualität. Auto lässt den Server entscheiden.';
 	@override String get playbackSpeed => 'Wiedergabegeschwindigkeit';
 	@override String get sleepTimer => 'Schlaftimer';
 	@override String get audioSync => 'Audio-Synchronisation';
@@ -1376,6 +1384,9 @@ extension on TranslationsDe {
 			'common.none' => 'None',
 			'common.loading' => 'Laden...',
 			'common.reconnect' => 'Erneut verbinden',
+			'common.goOffline' => 'Offline gehen',
+			'common.goOnline' => 'Wieder online',
+			'common.connectionAvailable' => 'Verbindung verfügbar',
 			'common.exitConfirmTitle' => 'App beenden?',
 			'common.exitConfirmMessage' => 'Möchtest du die App wirklich beenden?',
 			'common.dontAskAgain' => 'Nicht erneut fragen',
@@ -1461,6 +1472,9 @@ extension on TranslationsDe {
 			'settings.liveTvPlayerDescription' => 'MPV wird für Live-TV empfohlen. ExoPlayer kann auf einigen Geräten Probleme verursachen.',
 			'settings.liveTvMpv' => 'MPV (Recommended)',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
+			'settings.liveTvQuality' => 'Live-TV-Qualität',
+			'settings.liveTvQualityDescription' => 'Transcodierungsqualität für Live-TV begrenzen. Kein Limit nutzt Server-Standard.',
+			'settings.liveTvQualityNone' => 'Kein Limit',
 			'settings.hardwareDecoding' => 'Hardware-Decodierung',
 			'settings.hardwareDecodingDescription' => 'Hardwarebeschleunigung verwenden, sofern verfügbar',
 			'settings.bufferSize' => 'Puffergröße',
@@ -1506,6 +1520,8 @@ extension on TranslationsDe {
 			'settings.autoSkipIntroDescription' => 'Intro-Marker nach wenigen Sekunden automatisch überspringen',
 			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
 			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.alwaysBurnInSubtitleWhenTranscoding' => 'Untertitel beim Transkodieren einbrennen',
+			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => 'Beim Transkodieren den gewählten Untertitel ins Video einbrennen. Entspricht jellyfin-web.',
 			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
 			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
 			'settings.enableChapterImages' => 'Enable Chapter Images',
@@ -1541,23 +1557,20 @@ extension on TranslationsDe {
 			'settings.downloadQualityDescription' => 'Qualität für Offline-Downloads. Original behält die Quelldatei; andere Optionen transkodieren, um Speicher zu sparen.',
 			'settings.downloadQualityOriginal' => 'Original',
 			'settings.downloadQualityOriginalDescription' => 'Nutzt die Originaldatei.',
-			'settings.downloadQuality1080p' => '1080p',
-			'settings.downloadQuality1080pDescription' => 'Transkodieren auf 1080p.',
-			'settings.downloadQuality720p' => '720p',
-			'settings.downloadQuality720pDescription' => 'Transkodieren auf 720p.',
-			'settings.downloadQuality480p' => '480p',
-			'settings.downloadQuality480pDescription' => 'Transkodieren auf 480p.',
-			'settings.playbackMode' => 'Streaming-Modus',
 			'settings.playbackModeAutoDescription' => 'Lässt den Server entscheiden.',
 			'settings.playbackModeAuto' => 'Auto',
+			'settings.playbackModeAutoDirect' => 'Auto - Direct',
 			'settings.playbackModeDirectPlayDescription' => 'Nutzt die Originaldatei.',
-			'settings.playbackModeDirectPlay' => 'Direct Play',
-			'settings.transcodeQuality1080p' => '1080p',
-			'settings.transcodeQuality1080pDescription' => 'Stream auf 1080p transkodieren.',
-			'settings.transcodeQuality720p' => '720p',
-			'settings.transcodeQuality720pDescription' => 'Stream auf 720p transkodieren.',
-			'settings.transcodeQuality480p' => '480p',
-			'settings.transcodeQuality480pDescription' => 'Stream auf 480p transkodieren.',
+			'settings.playbackModeDirectPlay' => 'Direct',
+			'settings.quality15Mbps' => '15 Mbps',
+			'settings.quality10Mbps' => '10 Mbps',
+			'settings.quality8Mbps' => '8 Mbps',
+			'settings.quality6Mbps' => '6 Mbps',
+			'settings.quality4Mbps' => '4 Mbps',
+			'settings.quality3Mbps' => '3 Mbps',
+			'settings.quality1_5Mbps' => '1.5 Mbps',
+			'settings.quality720kbps' => '720 kbps',
+			'settings.quality420kbps' => '420 kbps',
 			'settings.cellularDownloadBlocked' => 'Downloads sind über mobile Daten deaktiviert. Verbinde dich mit einem WLAN oder ändere die Einstellung.',
 			'settings.maxVolume' => 'Maximale Lautstärke',
 			'settings.maxVolumeDescription' => 'Lautstärke über 100% für leise Medien erlauben',
@@ -1822,13 +1835,13 @@ extension on TranslationsDe {
 			'libraries.analyze' => 'Analysieren',
 			'libraries.analyzeLibrary' => 'Mediathek analysieren',
 			'libraries.refreshMetadata' => 'Metadaten aktualisieren',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.emptyTrash' => 'Papierkorb leeren',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Papierkorb für „${title}“ wird geleert...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Papierkorb für „${title}“ geleert',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Papierkorb konnte nicht geleert werden: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analysiere „${title}“...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analyse gestartet für „${title}“',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Analyse der Mediathek fehlgeschlagen: ${error}',
 			'libraries.noLibrariesFound' => 'Keine Mediatheken gefunden',
@@ -1974,6 +1987,7 @@ extension on TranslationsDe {
 			'downloads.deleteDownload' => 'Download löschen',
 			'downloads.retryDownload' => 'Download wiederholen',
 			'downloads.downloadQueued' => 'Download in Warteschlange',
+			'downloads.downloadStarting' => 'Wird gestartet...',
 			'downloads.episodesQueued' => ({required Object count}) => '${count} Episoden zum Download hinzugefügt',
 			'downloads.downloadDeleted' => 'Download gelöscht',
 			'downloads.deleteConfirm' => ({required Object title}) => 'Möchtest du "${title}" wirklich löschen? Die heruntergeladene Datei wird von deinem Gerät entfernt.',
@@ -2123,6 +2137,8 @@ extension on TranslationsDe {
 			'companionRemote.remote.audio' => 'Audio',
 			'companionRemote.remote.searchHint' => 'Auf Desktop suchen...',
 			'videoSettings.playbackSettings' => 'Wiedergabeeinstellungen',
+			'videoSettings.quality' => 'Qualität',
+			'videoSettings.qualityDescription' => 'Streaming-Qualität. Auto lässt den Server entscheiden.',
 			'videoSettings.playbackSpeed' => 'Wiedergabegeschwindigkeit',
 			'videoSettings.sleepTimer' => 'Schlaftimer',
 			'videoSettings.audioSync' => 'Audio-Synchronisation',

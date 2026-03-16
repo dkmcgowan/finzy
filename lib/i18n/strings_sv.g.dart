@@ -161,6 +161,9 @@ class _TranslationsCommonSv implements TranslationsCommonEn {
 	@override String get none => 'None';
 	@override String get loading => 'Laddar...';
 	@override String get reconnect => 'Återanslut';
+	@override String get goOffline => 'Gå offline';
+	@override String get goOnline => 'Tillbaka online';
+	@override String get connectionAvailable => 'Anslutning tillgänglig';
 	@override String get exitConfirmTitle => 'Avsluta appen?';
 	@override String get exitConfirmMessage => 'Är du säker på att du vill avsluta?';
 	@override String get dontAskAgain => 'Fråga inte igen';
@@ -273,6 +276,9 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get liveTvPlayerDescription => 'MPV rekommenderas för Live TV. ExoPlayer kan ha problem på vissa enheter.';
 	@override String get liveTvMpv => 'MPV (Recommended)';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
+	@override String get liveTvQuality => 'Live TV-kvalitet';
+	@override String get liveTvQualityDescription => 'Begränsa transkodningskvalitet för Live TV. Ingen gräns använder serverstandard.';
+	@override String get liveTvQualityNone => 'Ingen gräns';
 	@override String get hardwareDecoding => 'Hårdvaruavkodning';
 	@override String get hardwareDecodingDescription => 'Använd hårdvaruacceleration när tillgängligt';
 	@override String get bufferSize => 'Bufferstorlek';
@@ -318,6 +324,8 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get autoSkipIntroDescription => 'Hoppa automatiskt över intro-markörer efter några sekunder';
 	@override String get enableExternalSubtitles => 'Enable External Subtitles';
 	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get alwaysBurnInSubtitleWhenTranscoding => 'Bränna in undertexter vid transkodning';
+	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => 'Vid transkodning bränna in vald undertext i videon. Som jellyfin-web.';
 	@override String get enableTrickplay => 'Enable Trickplay Thumbnails';
 	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
 	@override String get enableChapterImages => 'Enable Chapter Images';
@@ -353,23 +361,20 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get downloadQualityDescription => 'Kvalitet för offline-nedladdningar. Original behåller källfilen; andra alternativ transkoderar för att spara utrymme.';
 	@override String get downloadQualityOriginal => 'Original';
 	@override String get downloadQualityOriginalDescription => 'Använder originalfilen.';
-	@override String get downloadQuality1080p => '1080p';
-	@override String get downloadQuality1080pDescription => 'Transkodera till 1080p.';
-	@override String get downloadQuality720p => '720p';
-	@override String get downloadQuality720pDescription => 'Transkodera till 720p.';
-	@override String get downloadQuality480p => '480p';
-	@override String get downloadQuality480pDescription => 'Transkodera till 480p.';
-	@override String get playbackMode => 'Strömningsläge';
 	@override String get playbackModeAutoDescription => 'Låter servern bestämma.';
 	@override String get playbackModeAuto => 'Auto';
+	@override String get playbackModeAutoDirect => 'Auto - Direct';
 	@override String get playbackModeDirectPlayDescription => 'Använder originalfilen.';
-	@override String get playbackModeDirectPlay => 'Direct Play';
-	@override String get transcodeQuality1080p => '1080p';
-	@override String get transcodeQuality1080pDescription => 'Transkodera ström till 1080p.';
-	@override String get transcodeQuality720p => '720p';
-	@override String get transcodeQuality720pDescription => 'Transkodera ström till 720p.';
-	@override String get transcodeQuality480p => '480p';
-	@override String get transcodeQuality480pDescription => 'Transkodera ström till 480p.';
+	@override String get playbackModeDirectPlay => 'Direct';
+	@override String get quality15Mbps => '15 Mbps';
+	@override String get quality10Mbps => '10 Mbps';
+	@override String get quality8Mbps => '8 Mbps';
+	@override String get quality6Mbps => '6 Mbps';
+	@override String get quality4Mbps => '4 Mbps';
+	@override String get quality3Mbps => '3 Mbps';
+	@override String get quality1_5Mbps => '1.5 Mbps';
+	@override String get quality720kbps => '720 kbps';
+	@override String get quality420kbps => '420 kbps';
 	@override String get cellularDownloadBlocked => 'Nedladdningar är inaktiverade på mobildata. Anslut till WiFi eller ändra inställningen.';
 	@override String get maxVolume => 'Maximal volym';
 	@override String get maxVolumeDescription => 'Tillåt volym över 100% för tyst media';
@@ -960,6 +965,7 @@ class _TranslationsDownloadsSv implements TranslationsDownloadsEn {
 	@override String get deleteDownload => 'Ta bort nedladdning';
 	@override String get retryDownload => 'Försök igen';
 	@override String get downloadQueued => 'Nedladdning köad';
+	@override String get downloadStarting => 'Startar...';
 	@override String episodesQueued({required Object count}) => '${count} avsnitt köade för nedladdning';
 	@override String get downloadDeleted => 'Nedladdning borttagen';
 	@override String deleteConfirm({required Object title}) => 'Är du säker på att du vill ta bort "${title}"? Den nedladdade filen kommer att tas bort från din enhet.';
@@ -1080,6 +1086,8 @@ class _TranslationsVideoSettingsSv implements TranslationsVideoSettingsEn {
 
 	// Translations
 	@override String get playbackSettings => 'Uppspelningsinställningar';
+	@override String get quality => 'Kvalitet';
+	@override String get qualityDescription => 'Strömningskvalitet. Auto låter servern bestämma.';
 	@override String get playbackSpeed => 'Uppspelningshastighet';
 	@override String get sleepTimer => 'Sovtimer';
 	@override String get audioSync => 'Ljudsynkronisering';
@@ -1376,6 +1384,9 @@ extension on TranslationsSv {
 			'common.none' => 'None',
 			'common.loading' => 'Laddar...',
 			'common.reconnect' => 'Återanslut',
+			'common.goOffline' => 'Gå offline',
+			'common.goOnline' => 'Tillbaka online',
+			'common.connectionAvailable' => 'Anslutning tillgänglig',
 			'common.exitConfirmTitle' => 'Avsluta appen?',
 			'common.exitConfirmMessage' => 'Är du säker på att du vill avsluta?',
 			'common.dontAskAgain' => 'Fråga inte igen',
@@ -1461,6 +1472,9 @@ extension on TranslationsSv {
 			'settings.liveTvPlayerDescription' => 'MPV rekommenderas för Live TV. ExoPlayer kan ha problem på vissa enheter.',
 			'settings.liveTvMpv' => 'MPV (Recommended)',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
+			'settings.liveTvQuality' => 'Live TV-kvalitet',
+			'settings.liveTvQualityDescription' => 'Begränsa transkodningskvalitet för Live TV. Ingen gräns använder serverstandard.',
+			'settings.liveTvQualityNone' => 'Ingen gräns',
 			'settings.hardwareDecoding' => 'Hårdvaruavkodning',
 			'settings.hardwareDecodingDescription' => 'Använd hårdvaruacceleration när tillgängligt',
 			'settings.bufferSize' => 'Bufferstorlek',
@@ -1506,6 +1520,8 @@ extension on TranslationsSv {
 			'settings.autoSkipIntroDescription' => 'Hoppa automatiskt över intro-markörer efter några sekunder',
 			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
 			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.alwaysBurnInSubtitleWhenTranscoding' => 'Bränna in undertexter vid transkodning',
+			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => 'Vid transkodning bränna in vald undertext i videon. Som jellyfin-web.',
 			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
 			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
 			'settings.enableChapterImages' => 'Enable Chapter Images',
@@ -1541,23 +1557,20 @@ extension on TranslationsSv {
 			'settings.downloadQualityDescription' => 'Kvalitet för offline-nedladdningar. Original behåller källfilen; andra alternativ transkoderar för att spara utrymme.',
 			'settings.downloadQualityOriginal' => 'Original',
 			'settings.downloadQualityOriginalDescription' => 'Använder originalfilen.',
-			'settings.downloadQuality1080p' => '1080p',
-			'settings.downloadQuality1080pDescription' => 'Transkodera till 1080p.',
-			'settings.downloadQuality720p' => '720p',
-			'settings.downloadQuality720pDescription' => 'Transkodera till 720p.',
-			'settings.downloadQuality480p' => '480p',
-			'settings.downloadQuality480pDescription' => 'Transkodera till 480p.',
-			'settings.playbackMode' => 'Strömningsläge',
 			'settings.playbackModeAutoDescription' => 'Låter servern bestämma.',
 			'settings.playbackModeAuto' => 'Auto',
+			'settings.playbackModeAutoDirect' => 'Auto - Direct',
 			'settings.playbackModeDirectPlayDescription' => 'Använder originalfilen.',
-			'settings.playbackModeDirectPlay' => 'Direct Play',
-			'settings.transcodeQuality1080p' => '1080p',
-			'settings.transcodeQuality1080pDescription' => 'Transkodera ström till 1080p.',
-			'settings.transcodeQuality720p' => '720p',
-			'settings.transcodeQuality720pDescription' => 'Transkodera ström till 720p.',
-			'settings.transcodeQuality480p' => '480p',
-			'settings.transcodeQuality480pDescription' => 'Transkodera ström till 480p.',
+			'settings.playbackModeDirectPlay' => 'Direct',
+			'settings.quality15Mbps' => '15 Mbps',
+			'settings.quality10Mbps' => '10 Mbps',
+			'settings.quality8Mbps' => '8 Mbps',
+			'settings.quality6Mbps' => '6 Mbps',
+			'settings.quality4Mbps' => '4 Mbps',
+			'settings.quality3Mbps' => '3 Mbps',
+			'settings.quality1_5Mbps' => '1.5 Mbps',
+			'settings.quality720kbps' => '720 kbps',
+			'settings.quality420kbps' => '420 kbps',
 			'settings.cellularDownloadBlocked' => 'Nedladdningar är inaktiverade på mobildata. Anslut till WiFi eller ändra inställningen.',
 			'settings.maxVolume' => 'Maximal volym',
 			'settings.maxVolumeDescription' => 'Tillåt volym över 100% för tyst media',
@@ -1822,13 +1835,13 @@ extension on TranslationsSv {
 			'libraries.analyze' => 'Analysera',
 			'libraries.analyzeLibrary' => 'Analysera bibliotek',
 			'libraries.refreshMetadata' => 'Uppdatera metadata',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.emptyTrash' => 'Töm papperskorg',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Tömmer papperskorg för "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Papperskorg tömd för "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Misslyckades att tömma papperskorg: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analyserar "${title}"...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analys startad för "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Misslyckades att analysera bibliotek: ${error}',
 			'libraries.noLibrariesFound' => 'Inga bibliotek hittades',
@@ -1974,6 +1987,7 @@ extension on TranslationsSv {
 			'downloads.deleteDownload' => 'Ta bort nedladdning',
 			'downloads.retryDownload' => 'Försök igen',
 			'downloads.downloadQueued' => 'Nedladdning köad',
+			'downloads.downloadStarting' => 'Startar...',
 			'downloads.episodesQueued' => ({required Object count}) => '${count} avsnitt köade för nedladdning',
 			'downloads.downloadDeleted' => 'Nedladdning borttagen',
 			'downloads.deleteConfirm' => ({required Object title}) => 'Är du säker på att du vill ta bort "${title}"? Den nedladdade filen kommer att tas bort från din enhet.',
@@ -2123,6 +2137,8 @@ extension on TranslationsSv {
 			'companionRemote.remote.audio' => 'Ljud',
 			'companionRemote.remote.searchHint' => 'Sök på datorn...',
 			'videoSettings.playbackSettings' => 'Uppspelningsinställningar',
+			'videoSettings.quality' => 'Kvalitet',
+			'videoSettings.qualityDescription' => 'Strömningskvalitet. Auto låter servern bestämma.',
 			'videoSettings.playbackSpeed' => 'Uppspelningshastighet',
 			'videoSettings.sleepTimer' => 'Sovtimer',
 			'videoSettings.audioSync' => 'Ljudsynkronisering',

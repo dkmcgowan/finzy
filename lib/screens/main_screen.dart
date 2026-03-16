@@ -498,6 +498,13 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
   void _triggerReconnect() {
     if (_isReconnecting) return;
+
+    // When forced offline, clear it first so reconnect can run
+    final offlineProvider = context.read<OfflineModeProvider?>();
+    if (offlineProvider?.isForcedOffline == true) {
+      offlineProvider!.setForcedOffline(false);
+    }
+
     setState(() => _isReconnecting = true);
 
     final serverManager = context.read<MultiServerProvider>().serverManager;
@@ -508,6 +515,10 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
         if (mounted) setState(() => _isReconnecting = false);
       });
     });
+  }
+
+  void _handleGoOffline() {
+    context.read<OfflineModeProvider>().setForcedOffline(true);
   }
 
   void _handleLiveTvChanged() {
@@ -926,27 +937,35 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
                         left: 0,
                         child: FocusScope(
                           node: _sidebarFocusScope,
-                          child: SideNavigationRail(
-                            key: _sideNavKey,
-                            selectedIndex: _currentIndex,
-                            selectedLibraryKey: _selectedLibraryGlobalKey,
-                            isOfflineMode: _isOffline,
-                            isSidebarFocused: _isSidebarFocused,
-                            alwaysExpanded: alwaysExpanded,
-                            isReconnecting: _isReconnecting,
-                            jellyfinFavoritesKey: context.watch<MultiServerProvider>().hasConnectedServers
-                                ? kJellyfinFavoritesKey
-                                : null,
-                            onDestinationSelected: (index) {
-                              _selectTab(index);
-                              _focusContent();
+                          child: Builder(
+                            builder: (context) {
+                              final offlineProvider = context.watch<OfflineModeProvider?>();
+                              return SideNavigationRail(
+                                key: _sideNavKey,
+                                selectedIndex: _currentIndex,
+                                selectedLibraryKey: _selectedLibraryGlobalKey,
+                                isOfflineMode: _isOffline,
+                                isSidebarFocused: _isSidebarFocused,
+                                alwaysExpanded: alwaysExpanded,
+                                isReconnecting: _isReconnecting,
+                                isForcedOffline: offlineProvider?.isForcedOffline ?? false,
+                                connectionAvailableWhenForced: offlineProvider?.connectionAvailableWhenForced ?? false,
+                                onGoOffline: offlineProvider != null ? _handleGoOffline : null,
+                                jellyfinFavoritesKey: context.watch<MultiServerProvider>().hasConnectedServers
+                                    ? kJellyfinFavoritesKey
+                                    : null,
+                                onDestinationSelected: (index) {
+                                  _selectTab(index);
+                                  _focusContent();
+                                },
+                                onLibrarySelected: (key) {
+                                  _selectLibrary(key);
+                                  _focusContent();
+                                },
+                                onNavigateToContent: _focusContent,
+                                onReconnect: _triggerReconnect,
+                              );
                             },
-                            onLibrarySelected: (key) {
-                              _selectLibrary(key);
-                              _focusContent();
-                            },
-                            onNavigateToContent: _focusContent,
-                            onReconnect: _triggerReconnect,
                           ),
                         ),
                       ),
@@ -982,39 +1001,60 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
         children: [
           // Reconnect bar when offline
           if (_isOffline)
-            Material(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: InkWell(
-                onTap: _isReconnecting ? null : _triggerReconnect,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_isReconnecting)
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Theme.of(context).colorScheme.primary,
+            Builder(
+              builder: (context) {
+                final isForcedOffline = context.watch<OfflineModeProvider?>()?.isForcedOffline ?? false;
+                final connectionAvailable = context.watch<OfflineModeProvider?>()?.connectionAvailableWhenForced ?? false;
+                final label = isForcedOffline ? t.common.goOnline : t.common.reconnect;
+                return Material(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: InkWell(
+                    onTap: _isReconnecting ? null : _triggerReconnect,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isReconnecting)
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            )
+                          else
+                            Icon(Symbols.wifi_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              if (connectionAvailable)
+                                Text(
+                                  t.common.connectionAvailable,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                                  ),
+                                ),
+                            ],
                           ),
-                        )
-                      else
-                        Icon(Symbols.wifi_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        t.common.reconnect,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           NavigationBar(
             selectedIndex: _currentIndex,

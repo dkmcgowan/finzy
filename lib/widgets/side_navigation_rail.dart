@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/library_constants.dart';
 import '../focus/dpad_navigator.dart';
+import '../utils/platform_detector.dart';
 import '../focus/focus_memory_tracker.dart';
 import '../models/media_library.dart';
 import '../navigation/navigation_tabs.dart';
@@ -147,6 +148,15 @@ class SideNavigationRail extends StatefulWidget {
   /// Called when the user taps the reconnect button in offline mode.
   final VoidCallback? onReconnect;
 
+  /// When true, user forced offline; show "Back Online" instead of "Reconnect".
+  final bool isForcedOffline;
+
+  /// When forced offline and network detected, show "Connection available".
+  final bool connectionAvailableWhenForced;
+
+  /// Called when the user taps "Go offline".
+  final VoidCallback? onGoOffline;
+
   /// When non-null (Jellyfin only), a "Favorites" item is shown below the library list; selecting it calls [onLibrarySelected] with this key.
   final String? jellyfinFavoritesKey;
 
@@ -162,6 +172,9 @@ class SideNavigationRail extends StatefulWidget {
     required this.onLibrarySelected,
     this.onNavigateToContent,
     this.onReconnect,
+    this.isForcedOffline = false,
+    this.connectionAvailableWhenForced = false,
+    this.onGoOffline,
     this.jellyfinFavoritesKey,
   });
 
@@ -187,6 +200,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
   static const _kDownloads = 'downloads';
   static const _kSettings = 'settings';
   static const _kReconnect = 'reconnect';
+  static const _kGoOffline = 'goOffline';
 
   /// Focus key for the Jellyfin-only "Favorites" sidebar item
   static const _kFavorites = 'favorites';
@@ -314,6 +328,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     int favoritesInsertIndex, {
     required bool showDownloads,
   }) {
+    final showGoOffline = !widget.isOfflineMode && widget.onGoOffline != null && !PlatformDetector.isTV();
     final keys = <String>{
       _kHome,
       _kLibraries,
@@ -321,6 +336,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
       if (showDownloads) _kDownloads,
       _kSettings,
       _kReconnect,
+      if (showGoOffline) _kGoOffline,
       'liveTv',
       ...orderedLibraries.map((lib) => lib.globalKey),
     };
@@ -344,8 +360,9 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     }
     if (pos == favoritesInsertIndex) libraryKeys.add(_kFavorites);
 
+    final showGoOffline = !widget.isOfflineMode && widget.onGoOffline != null && !PlatformDetector.isTV();
+    final showReconnect = widget.isOfflineMode && widget.onReconnect != null;
     return [
-      if (widget.isOfflineMode && widget.onReconnect != null) _kReconnect,
       if (!widget.isOfflineMode) ...[
         _kHome,
         _kLibraries,
@@ -354,6 +371,8 @@ class SideNavigationRailState extends State<SideNavigationRail> {
         _kSearch,
       ],
       if (showDownloads) _kDownloads,
+      if (showReconnect) _kReconnect,
+      if (showGoOffline) _kGoOffline,
       _kSettings,
     ];
   }
@@ -502,12 +521,6 @@ class SideNavigationRailState extends State<SideNavigationRail> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           clipBehavior: Clip.hardEdge,
                           children: [
-                            // Reconnect button when offline
-                            if (widget.isOfflineMode && widget.onReconnect != null) ...[
-                              _buildReconnectItem(isCollapsed: isCollapsed),
-                              const SizedBox(height: 8),
-                            ],
-
                             // In online mode, show full navigation
                             if (!widget.isOfflineMode) ...[
                               // Home
@@ -613,6 +626,24 @@ class SideNavigationRailState extends State<SideNavigationRail> {
 
                             const SizedBox(height: 8),
 
+                            // Go offline / Reconnect / Go online (above Settings, hidden on TV for Go offline)
+                            if (widget.isOfflineMode && widget.onReconnect != null)
+                              _buildReconnectItem(isCollapsed: isCollapsed),
+                            if (!widget.isOfflineMode && widget.onGoOffline != null && !PlatformDetector.isTV())
+                              _buildNavItem(
+                                icon: Symbols.wifi_off_rounded,
+                                selectedIcon: Symbols.wifi_off_rounded,
+                                label: Translations.of(context).common.goOffline,
+                                isSelected: false,
+                                isFocused: _focusTracker.isFocused(_kGoOffline),
+                                onTap: () => widget.onGoOffline?.call(),
+                                focusNode: _focusTracker.get(_kGoOffline),
+                                isCollapsed: isCollapsed,
+                              ),
+                            if ((widget.isOfflineMode && widget.onReconnect != null) ||
+                                (!widget.isOfflineMode && widget.onGoOffline != null && !PlatformDetector.isTV()))
+                              const SizedBox(height: 8),
+
                             // Settings
                             Builder(
                               builder: (context) {
@@ -695,16 +726,30 @@ class SideNavigationRailState extends State<SideNavigationRail> {
   Widget _buildReconnectItem({required bool isCollapsed}) {
     final t = tokens(context);
     final isFocused = _focusTracker.isFocused(_kReconnect);
+    final label = widget.isForcedOffline ? Translations.of(context).common.goOnline : Translations.of(context).common.reconnect;
 
     return NavigationRailItem(
       icon: widget.isReconnecting ? Symbols.sync_rounded : Symbols.wifi_rounded,
       label: widget.isReconnecting
           ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: t.text))
-          : Text(
-              Translations.of(context).common.reconnect,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: t.textMuted),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: t.textMuted),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                if (widget.connectionAvailableWhenForced)
+                  Text(
+                    Translations.of(context).common.connectionAvailable,
+                    style: TextStyle(fontSize: 11, color: t.textMuted.withValues(alpha: 0.8)),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+              ],
             ),
       isSelected: false,
       isFocused: isFocused,

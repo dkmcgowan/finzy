@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Monochrome version for themed icons - white fill, same scale as foreground -->
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(256,256) scale(1.28) translate(-256,-256)">
+    <path fill-rule="evenodd" fill="#FFFFFF" d="
+      M256 56
+      C122 56 56 122 56 256
+      C56 390 122 456 256 456
+      C390 456 456 390 456 256
+      C456 122 390 56 256 56 Z
+      M214 168
+      C214 156 228 148 240 156
+      L342 240
+      C354 250 354 262 342 272
+      L240 356
+      C228 364 214 356 214 344
+      Z
+    "/>
+  </g>
+</svg>

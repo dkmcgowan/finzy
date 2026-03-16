@@ -3,6 +3,7 @@ import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../mpv/mpv.dart';
+import '../../../widgets/focusable_list_tile.dart';
 import '../../../services/sleep_timer_service.dart';
 import '../../../utils/formatters.dart';
 import '../../../utils/snackbar_helper.dart';
@@ -28,6 +29,7 @@ class SleepTimerDurationList extends StatelessWidget {
 
     return ListView.builder(
       itemCount: durations.length,
+      itemExtent: 56,
       itemBuilder: (context, index) {
         final minutes = durations[index];
         final label = formatDurationTextual(
@@ -35,12 +37,10 @@ class SleepTimerDurationList extends StatelessWidget {
           abbreviated: false, // Use full format for better readability
         );
 
-        return ListTile(
+        return FocusableListTile(
+          dense: false,
           leading: const AppIcon(Symbols.timer_rounded, fill: 1, color: Colors.white70),
-          title: Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.normal),
-          ),
+          title: Text(label, style: const TextStyle(color: Colors.white)),
           onTap: () {
             sleepTimer.startTimer(Duration(minutes: minutes), () {
               // Pause playback when timer completes

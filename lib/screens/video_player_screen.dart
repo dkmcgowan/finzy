@@ -158,6 +158,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
   // App lifecycle state tracking
   bool _wasPlayingBeforeInactive = false;
 
+  /// Start position passed to player.open() for the current stream.
+  /// When on a transcode stream, the player reports position from stream start (0),
+  /// so we need this to compute the actual video position for quality-change restarts.
+  int? _lastPlaybackStartPositionMs;
+
   // Services
   MediaControlsManager? _mediaControlsManager;
   PlaybackProgressTracker? _progressTracker;
@@ -782,7 +787,22 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     }
   }
 
-  Future<void> _startPlayback() async {
+  /// Restart playback (e.g. after quality change). Preserves current position for VOD.
+  void _restartPlaybackForQualityChange() {
+    if (!mounted || player == null) return;
+    final rawPosition = player!.state.position.inMilliseconds;
+    // Transcode streams report position from stream start (0), not the video timeline.
+    // If player position is less than our stored start, we're on transcode: use start + raw.
+    final int videoPositionMs;
+    if (_lastPlaybackStartPositionMs != null && rawPosition < _lastPlaybackStartPositionMs!) {
+      videoPositionMs = _lastPlaybackStartPositionMs! + rawPosition;
+    } else {
+      videoPositionMs = rawPosition;
+    }
+    _startPlayback(overrideResumePosition: Duration(milliseconds: videoPositionMs));
+  }
+
+  Future<void> _startPlayback({Duration? overrideResumePosition}) async {
     if (!mounted) return;
 
     // Live TV mode: bypass standard playback initialization
@@ -861,6 +881,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
           selectedMediaIndex: widget.selectedMediaIndex,
           preferOffline: true, // Use downloaded file if available
           enableExternalSubtitles: enableExternalSubtitles,
+          overrideResumePositionMs: overrideResumePosition?.inMilliseconds,
         );
       }
 
@@ -874,10 +895,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         await player!.requestAudioFocus();
 
         // Pass resume position if available.
+        // overrideResumePosition takes precedence (e.g. when restarting after quality change).
         // In offline mode, prefer locally tracked progress over the cached server value
         // since the user may have watched further since downloading.
-        Duration? resumePosition;
-        if (widget.isOffline) {
+        Duration? resumePosition = overrideResumePosition;
+        if (resumePosition == null && widget.isOffline) {
           final globalKey = '${widget.metadata.serverId}:${widget.metadata.itemId}';
           final localOffset = await offlineWatchService!.getLocalResumePosition(globalKey);
           if (localOffset != null && localOffset > 0) {
@@ -888,6 +910,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         resumePosition ??= widget.metadata.resumePositionMs != null
             ? Duration(milliseconds: widget.metadata.resumePositionMs!)
             : null;
+
+        _lastPlaybackStartPositionMs = resumePosition?.inMilliseconds;
 
         // Always start playing immediately; external subtitles load on demand when user selects one
         await player!.open(
@@ -1893,6 +1917,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
                         liveChannelName: _liveChannelName,
                         isAmbientLightingEnabled: _ambientLightingService?.isEnabled ?? false,
                         onToggleAmbientLighting: _toggleAmbientLighting,
+                        onQualityChanged: _restartPlaybackForQualityChange,
                       ),
                     );
                   },

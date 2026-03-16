@@ -34,6 +34,9 @@ class MultiServerManager {
   /// the "back online" event on Android, so we poll when we have offline servers.
   Timer? _offlineReconnectTimer;
 
+  /// When true, user has forced offline; do not run periodic reconnect.
+  bool _isForcedOffline = false;
+
   /// Map of serverId to active reconnection futures
   final Map<String, Future<void>> _activeOptimizations = {};
 
@@ -307,9 +310,26 @@ class MultiServerManager {
   /// connectivity_plus can miss "back online" on Android, so we poll.
   static const Duration _offlineReconnectInterval = Duration(seconds: 45);
 
+  /// Called when user forces offline or goes back online. When forced, stop periodic reconnect.
+  void setForcedOffline(bool forced) {
+    if (_isForcedOffline == forced) return;
+    _isForcedOffline = forced;
+    if (forced) {
+      _offlineReconnectTimer?.cancel();
+      _offlineReconnectTimer = null;
+      appLogger.d('Forced offline: periodic reconnect paused');
+    } else {
+      if (offlineServerIds.isNotEmpty) {
+        _startOfflineReconnectTimer();
+      }
+    }
+  }
+
   void _startOfflineReconnectTimer() {
+    if (_isForcedOffline) return;
     _offlineReconnectTimer?.cancel();
     _offlineReconnectTimer = Timer.periodic(_offlineReconnectInterval, (_) {
+      if (_isForcedOffline) return;
       final offline = offlineServerIds;
       if (offline.isEmpty) return;
       appLogger.d('Periodic reconnect: ${offline.length} offline server(s)');

@@ -78,11 +78,14 @@ class PlaybackInitializationService {
   /// Returns a PlaybackInitializationResult with video URL and available versions
   /// If [preferOffline] is true and offline content is available, uses local file
   /// When [enableExternalSubtitles] is false, external subtitle list is empty so video loads fast.
+  /// When [overrideResumePositionMs] is set (e.g. quality change restart), use it for the URL
+  /// so transcode streams start at the correct position.
   Future<PlaybackInitializationResult> getPlaybackData({
     required MediaMetadata metadata,
     required int selectedMediaIndex,
     bool preferOffline = false,
     bool enableExternalSubtitles = false,
+    int? overrideResumePositionMs,
   }) async {
     try {
       // Check for offline content first if preferOffline is enabled
@@ -99,10 +102,12 @@ class PlaybackInitializationService {
         // but use the local file path for video
         try {
           final settings = await SettingsService.getInstance();
+          final startMs = overrideResumePositionMs ?? metadata.resumePositionMs;
           final playbackData = await client.getVideoPlaybackData(
             metadata.itemId,
             mediaIndex: selectedMediaIndex,
             playbackMode: settings.getPlaybackMode(),
+            startPositionMs: startMs,
           );
 
           final externalSubtitles = enableExternalSubtitles ? _buildExternalSubtitles(playbackData.mediaInfo) : <SubtitleTrack>[];
@@ -129,14 +134,20 @@ class PlaybackInitializationService {
 
       // Fall back to network streaming
       final settings = await SettingsService.getInstance();
+      final mode = settings.getPlaybackMode();
+      final startMs = overrideResumePositionMs ?? metadata.resumePositionMs;
+      appLogger.d('Playback init: itemId=${metadata.itemId} playbackMode=${mode.name} startMs=$startMs');
       final playbackData = await client.getVideoPlaybackData(
         metadata.itemId,
         mediaIndex: selectedMediaIndex,
-        playbackMode: settings.getPlaybackMode(),
+        playbackMode: mode,
+        startPositionMs: startMs,
       );
 
       if (!playbackData.hasValidVideoUrl) {
-        throw PlaybackException(t.messages.fileInfoNotAvailable);
+        throw PlaybackException(
+          playbackData.playbackErrorReason ?? t.messages.fileInfoNotAvailable,
+        );
       }
 
       final externalSubtitles = enableExternalSubtitles ? _buildExternalSubtitles(playbackData.mediaInfo) : <SubtitleTrack>[];

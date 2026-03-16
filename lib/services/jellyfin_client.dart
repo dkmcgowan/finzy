@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 import '../models/jellyfin_config.dart';
@@ -930,57 +932,284 @@ class JellyfinClient {
     return PlaybackExtras(chapters: chapters, markers: markers);
   }
 
+  /// Maps Jellyfin PlaybackInfo ErrorCode to user-facing message (jellyfin-web parity).
+  static String _playbackErrorCodeToMessage(String code) => switch (code) {
+        'NoCompatibleStream' => 'No compatible stream. Try a different quality or check server transcoding settings.',
+        'NotAllowed' => 'Playback not allowed.',
+        'NoCompatibleStreamWithDevice' => 'No compatible stream for this device.',
+        _ => 'Playback failed: $code',
+      };
+
+  /// Bitrate limits (bps) for transcode quality. Matches jellyfin-web quality options.
+  static const int _bitrate15M = 15000000;
+  static const int _bitrate10M = 10000000;
+  static const int _bitrate8M = 8000000;
+  static const int _bitrate6M = 6000000;
+  static const int _bitrate4M = 4000000;
+  static const int _bitrate3M = 3000000;
+  static const int _bitrate1_5M = 1500000;
+  static const int _bitrate720k = 720000;
+  static const int _bitrate420k = 420000;
+
+  static bool _isTranscodeMode(PlaybackMode mode) =>
+      mode != PlaybackMode.auto && mode != PlaybackMode.directPlay;
+
+  static int _bitrateForPlaybackMode(PlaybackMode mode) => switch (mode) {
+        PlaybackMode.transcode15 => _bitrate15M,
+        PlaybackMode.transcode10 => _bitrate10M,
+        PlaybackMode.transcode8 => _bitrate8M,
+        PlaybackMode.transcode6 => _bitrate6M,
+        PlaybackMode.transcode4 => _bitrate4M,
+        PlaybackMode.transcode3 => _bitrate3M,
+        PlaybackMode.transcode1_5 => _bitrate1_5M,
+        PlaybackMode.transcode720k => _bitrate720k,
+        PlaybackMode.transcode420k => _bitrate420k,
+        _ => _bitrate4M,
+      };
+
+  static int _bitrateForDownloadQuality(DownloadQuality quality) => switch (quality) {
+        DownloadQuality.p15 => _bitrate15M,
+        DownloadQuality.p10 => _bitrate10M,
+        DownloadQuality.p8 => _bitrate8M,
+        DownloadQuality.p6 => _bitrate6M,
+        DownloadQuality.p4 => _bitrate4M,
+        DownloadQuality.p3 => _bitrate3M,
+        DownloadQuality.p1_5 => _bitrate1_5M,
+        DownloadQuality.p720k => _bitrate720k,
+        DownloadQuality.p420k => _bitrate420k,
+        _ => _bitrate4M,
+      };
+
+  static const List<Map<String, dynamic>> _subtitleProfiles = [
+    {'Format': 'vtt', 'Method': 'External'},
+    {'Format': 'ass', 'Method': 'External'},
+    {'Format': 'ssa', 'Method': 'External'},
+  ];
+
+  /// Device profile for MPV (iOS, macOS, Windows, Linux, Android when ExoPlayer disabled).
+  /// MPV supports most formats for direct play; transcoding falls back to h264+aac in mp4.
+  static Map<String, dynamic> _buildMPVDeviceProfile() {
+    return {
+      'Name': 'Finzy',
+      'MaxStreamingBitrate': 120000000,
+      'MaxStaticBitrate': 100000000,
+      'DirectPlayProfiles': [
+        {'Container': 'mp4,m4v,mkv,webm', 'Type': 'Video', 'VideoCodec': 'h264,hevc,vp9,av1,mpeg2video', 'AudioCodec': 'aac,mp3,ac3,eac3,vorbis,opus'},
+      ],
+      'TranscodingProfiles': [
+        {'Container': 'mp4', 'Type': 'Video', 'VideoCodec': 'h264', 'AudioCodec': 'aac', 'Context': 'Streaming'},
+        {'Container': 'mkv', 'Type': 'Video', 'VideoCodec': 'h264', 'AudioCodec': 'aac', 'Context': 'Streaming'},
+      ],
+      'SubtitleProfiles': _subtitleProfiles,
+    };
+  }
+
+  /// Device profile for ExoPlayer (Android only). Conservative codecs to match typical
+  /// hardware decoder support; avoids ExoPlayer failures and MPV fallbacks.
+  static Map<String, dynamic> _buildExoPlayerDeviceProfile() {
+    return {
+      'Name': 'Finzy ExoPlayer',
+      'MaxStreamingBitrate': 120000000,
+      'MaxStaticBitrate': 100000000,
+      'DirectPlayProfiles': [
+        {'Container': 'mp4,m4v,mkv,webm', 'Type': 'Video', 'VideoCodec': 'h264,hevc,vp9', 'AudioCodec': 'aac,mp3,ac3,eac3,opus'},
+      ],
+      'TranscodingProfiles': [
+        {'Container': 'mp4', 'Type': 'Video', 'VideoCodec': 'h264', 'AudioCodec': 'aac', 'Context': 'Streaming'},
+        {'Container': 'mkv', 'Type': 'Video', 'VideoCodec': 'h264', 'AudioCodec': 'aac', 'Context': 'Streaming'},
+      ],
+      'SubtitleProfiles': _subtitleProfiles,
+    };
+  }
+
+  /// Returns MPV or ExoPlayer profile based on [useExoPlayer] (Android + ExoPlayer selected).
+  static Map<String, dynamic> _buildDeviceProfile({bool useExoPlayer = false}) {
+    return useExoPlayer ? _buildExoPlayerDeviceProfile() : _buildMPVDeviceProfile();
+  }
+
+  /// Derive default audio and subtitle stream indices from MediaStreams (jellyfin-web parity).
+  /// Returns (audioIndex, subtitleIndex) - use first with IsDefault, else first of each type.
+  /// Subtitle index only when [burnSubtitles] (for AlwaysBurnInSubtitleWhenTranscoding).
+  static ({int? audio, int? subtitle}) _getDefaultStreamIndices(
+    List<dynamic> streams,
+    bool burnSubtitles,
+  ) {
+    int? audioIdx;
+    int? subtitleIdx;
+    for (final s in streams) {
+      final m = s as Map<String, dynamic>;
+      final type = m['Type'] as String?;
+      final streamIndex = _toInt(m['Index']);
+      final isDefault = m['IsDefault'] == true;
+      if (type == 'Audio' && streamIndex != null) {
+        if (audioIdx == null || isDefault) audioIdx = streamIndex;
+      } else if (type == 'Subtitle' && streamIndex != null && burnSubtitles) {
+        if (subtitleIdx == null || isDefault) subtitleIdx = streamIndex;
+      }
+    }
+    return (audio: audioIdx, subtitle: subtitleIdx);
+  }
+
+  /// Pick optimal media source index from PlaybackInfo response (jellyfin-web getOptimalMediaSource).
+  /// Prefer: DirectPlay > DirectStream > Transcode; use first that supports each.
+  static int _getOptimalMediaSourceIndex(List<dynamic> sources) {
+    if (sources.isEmpty) return 0;
+    // First: prefer SupportsDirectPlay
+    for (var i = 0; i < sources.length; i++) {
+      final s = sources[i] as Map<String, dynamic>;
+      if (s['SupportsDirectPlay'] == true) return i;
+    }
+    // Second: SupportsDirectStream
+    for (var i = 0; i < sources.length; i++) {
+      final s = sources[i] as Map<String, dynamic>;
+      if (s['SupportsDirectStream'] == true) return i;
+    }
+    // Third: SupportsTranscoding
+    for (var i = 0; i < sources.length; i++) {
+      final s = sources[i] as Map<String, dynamic>;
+      if (s['SupportsTranscoding'] == true) return i;
+    }
+    return 0;
+  }
+
   /// Call PlaybackInfo for on-demand video; return DirectStreamUrl or TranscodingUrl.
+  /// When [maxStreamingBitrate] is set, server transcodes to fit; use for quality selection.
+  /// When [forceTranscode] is true, disables direct play/stream so server returns TranscodingUrl.
+  /// When [forceDirectPlay] is true, disables transcoding so server returns DirectStreamUrl when possible.
+  /// When [pickOptimalFromMultiple] is true and server returns multiple sources, picks best (DirectPlay > DirectStream > Transcode).
+  /// If forceDirectPlay returns null, retries with auto (server decides) to match official clients.
   Future<String?> _getVideoUrlFromPlaybackInfo(
     String itemId,
     int mediaIndex,
     List<dynamic> mediaSources,
-    Map<String, dynamic> source,
-  ) async {
-    try {
-      final mediaSourceId = source['Id'] as String?;
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/Items/$itemId/PlaybackInfo',
-        data: {
+    Map<String, dynamic> source, {
+    int? maxStreamingBitrate,
+    int? startTimeTicks,
+    bool alwaysBurnInSubtitleWhenTranscoding = false,
+    bool forceTranscode = false,
+    bool forceDirectPlay = false,
+    bool pickOptimalFromMultiple = false,
+    bool useExoPlayer = false,
+    int? audioStreamIndex,
+    int? subtitleStreamIndex,
+  }) async {
+    Future<String?> tryPlaybackInfo(bool directPlay, bool transcode) async {
+      try {
+        final mediaSourceId = source['Id'] as String?;
+        // Test: omit MediaSourceId when it equals itemId (jellyfin-web #6395 fix - server
+        // filters by this and returns no streams when it's the item ID, not a real media source)
+        // When pickOptimalFromMultiple, omit MediaSourceId so server returns all sources with capabilities
+        final includeMediaSourceId = !pickOptimalFromMultiple &&
+            mediaSourceId != null &&
+            mediaSourceId.isNotEmpty &&
+            mediaSourceId != itemId;
+        final body = <String, dynamic>{
           'UserId': config.userId,
-          'EnableDirectPlay': true,
-          'EnableDirectStream': true,
-          'EnableTranscoding': true,
+          'IsPlayback': true,
+          'AutoOpenLiveStream': true,
+          'EnableDirectPlay': directPlay,
+          'EnableDirectStream': directPlay,
+          'EnableTranscoding': transcode,
           'AllowVideoStreamCopy': true,
           'AllowAudioStreamCopy': true,
-          if (mediaSourceId != null && mediaSourceId.isNotEmpty) 'MediaSourceId': mediaSourceId,
-        },
-      );
-      if (response.statusCode != 200 || response.data == null) return null;
-      final data = response.data!;
-      final sources = data['MediaSources'] as List?;
-      if (sources == null || sources.isEmpty) return null;
-      final idx = mediaIndex.clamp(0, sources.length - 1);
-      final ps = sources[idx] as Map<String, dynamic>;
-      final directUrl = ps['DirectStreamUrl'] as String?;
-      final transcodeUrl = ps['TranscodingUrl'] as String?;
-      final supportsDirect = ps['SupportsDirectStream'] as bool? ?? false;
-      final supportsTranscode = ps['SupportsTranscoding'] as bool? ?? false;
-      final container = (ps['Container'] as String?)?.toLowerCase() ?? 'mp4';
-      final sourceId = ps['Id'] as String? ?? '';
-
-      String? url;
-      if (directUrl != null && directUrl.isNotEmpty) {
-        url = directUrl;
-      } else if (supportsTranscode && transcodeUrl != null && transcodeUrl.isNotEmpty) {
-        url = transcodeUrl;
-      } else if (supportsDirect) {
-        url = '/Videos/$itemId/stream.$container?Static=true&api_key=${config.token}';
-        if (sourceId.isNotEmpty) url = '$url&mediaSourceId=$sourceId';
-      } else if (transcodeUrl != null && transcodeUrl.isNotEmpty) {
-        url = transcodeUrl;
-      }
-      if (url == null) return null;
-      if (!url.startsWith('http')) {
-        url = '${config.baseUrl}${url.startsWith('/') ? url : '/$url'}';
-        if (!url.contains('api_key=')) {
-          url = url.contains('?') ? '$url&api_key=${config.token}' : '$url?api_key=${config.token}';
+          'DeviceProfile': _buildDeviceProfile(useExoPlayer: useExoPlayer),
+          if (includeMediaSourceId) 'MediaSourceId': mediaSourceId,
+          'AlwaysBurnInSubtitleWhenTranscoding': alwaysBurnInSubtitleWhenTranscoding,
+          ...? (audioStreamIndex != null ? {'AudioStreamIndex': audioStreamIndex} : null),
+          ...? (subtitleStreamIndex != null ? {'SubtitleStreamIndex': subtitleStreamIndex} : null),
+        };
+        if (startTimeTicks != null && startTimeTicks > 0) {
+          body['StartTimeTicks'] = startTimeTicks;
         }
+        if (maxStreamingBitrate != null && maxStreamingBitrate > 0) {
+          body['MaxStreamingBitrate'] = maxStreamingBitrate;
+        }
+        appLogger.d('PlaybackInfo request: itemId=$itemId mediaSourceId=${includeMediaSourceId ? mediaSourceId : "omitted (was same as itemId)"} directPlay=$directPlay transcode=$transcode maxBitrate=${maxStreamingBitrate ?? "none"} DeviceProfile=${useExoPlayer ? "Finzy ExoPlayer" : "Finzy"}');
+        final response = await _dio.post<Map<String, dynamic>>(
+          '/Items/$itemId/PlaybackInfo',
+          data: body,
+        );
+        if (response.statusCode != 200 || response.data == null) return null;
+        final data = response.data!;
+        final errorCode = data['ErrorCode'] as String?;
+        if (errorCode != null && errorCode.isNotEmpty) {
+          final errorMessage = data['ErrorMessage'] as String?;
+          final message = errorMessage?.isNotEmpty == true
+              ? errorMessage!
+              : _playbackErrorCodeToMessage(errorCode);
+          appLogger.w('PlaybackInfo ErrorCode=$errorCode: $message');
+          throw _PlaybackInfoException(message);
+        }
+        final sources = data['MediaSources'] as List?;
+        if (sources == null || sources.isEmpty) {
+          appLogger.d('PlaybackInfo response: MediaSources empty or null');
+          return null;
+        }
+        final idx = pickOptimalFromMultiple && sources.length > 1
+            ? _getOptimalMediaSourceIndex(sources)
+            : mediaIndex.clamp(0, sources.length - 1);
+        final ps = sources[idx] as Map<String, dynamic>;
+        final directUrl = ps['DirectStreamUrl'] as String?;
+        final transcodeUrl = ps['TranscodingUrl'] as String?;
+        final supportsTranscode = ps['SupportsTranscoding'] as bool? ?? false;
+        final supportsDirect = ps['SupportsDirectStream'] as bool? ?? ps['SupportsDirectPlay'] as bool? ?? false;
+        final container = ((ps['Container'] as String?)?.toLowerCase()) ?? '';
+        final sourceId = ps['Id'] as String? ?? '';
+
+        appLogger.d('PlaybackInfo response MediaSource[$idx]: DirectStreamUrl=${directUrl != null && directUrl.isNotEmpty ? "present" : "empty"} TranscodingUrl=${transcodeUrl != null && transcodeUrl.isNotEmpty ? "present" : "empty"} SupportsDirectStream=${ps['SupportsDirectStream']} SupportsDirectPlay=${ps['SupportsDirectPlay']} SupportsTranscoding=$supportsTranscode Container=$container Id=$sourceId');
+
+        String url;
+        String urlSource;
+        if (forceTranscode && transcodeUrl != null && transcodeUrl.isNotEmpty) {
+          url = transcodeUrl;
+          urlSource = 'TranscodingUrl (forced)';
+        } else if (directUrl != null && directUrl.isNotEmpty) {
+          url = directUrl;
+          urlSource = 'DirectStreamUrl';
+        } else if (supportsTranscode && transcodeUrl != null && transcodeUrl.isNotEmpty) {
+          url = transcodeUrl;
+          urlSource = 'TranscodingUrl';
+        } else if (transcodeUrl != null && transcodeUrl.isNotEmpty) {
+          url = transcodeUrl;
+          urlSource = 'TranscodingUrl (fallback)';
+        } else if (forceTranscode && (maxStreamingBitrate ?? 0) > 0) {
+          // User requested transcode but server returned no TranscodingUrl; build transcoding URL
+          final bitrate = maxStreamingBitrate ?? 0;
+          url = '/Videos/$itemId/stream.mp4?MaxStreamingBitrate=$bitrate&VideoCodec=h264&AudioCodec=aac&api_key=${config.token}';
+          if (sourceId.isNotEmpty) url = '$url&mediaSourceId=$sourceId';
+          urlSource = 'Transcoding (built fallback)';
+        } else if (supportsDirect && container.isNotEmpty) {
+          // Server returned no URLs but supports direct stream (matches Live TV fallback pattern)
+          url = '/Videos/$itemId/stream.$container?Static=true&api_key=${config.token}';
+          if (sourceId.isNotEmpty) url = '$url&mediaSourceId=$sourceId';
+          urlSource = 'DirectStream (Static fallback)';
+        } else {
+          // Last resort: generic stream endpoint (server will choose format)
+          url = '/Videos/$itemId/stream?api_key=${config.token}';
+          if (sourceId.isNotEmpty) url = '$url&mediaSourceId=$sourceId';
+          urlSource = 'stream (generic fallback)';
+        }
+        appLogger.d('PlaybackInfo: chose $urlSource (directUrl=${directUrl != null && directUrl.isNotEmpty}, transcodeUrl=${transcodeUrl != null && transcodeUrl.isNotEmpty}, supportsDirect=$supportsDirect, container=$container) maxStreamingBitrate=${maxStreamingBitrate ?? "none"}');
+        if (!url.startsWith('http')) {
+          url = '${config.baseUrl}${url.startsWith('/') ? url : '/$url'}';
+          if (!url.contains('api_key=')) {
+            url = url.contains('?') ? '$url&api_key=${config.token}' : '$url?api_key=${config.token}';
+          }
+        }
+        return url;
+      } catch (e) {
+        appLogger.w('PlaybackInfo failed for $itemId', error: e);
+        return null;
+      }
+    }
+
+    try {
+      final enableDirect = forceDirectPlay ? true : !forceTranscode;
+      final enableTranscode = forceDirectPlay ? false : true;
+      var url = await tryPlaybackInfo(enableDirect, enableTranscode);
+      if (url == null && forceDirectPlay) {
+        appLogger.d('PlaybackInfo: force direct play returned null, retrying with auto (server decides)');
+        url = await tryPlaybackInfo(true, true);
       }
       return url;
     } catch (e) {
@@ -989,59 +1218,12 @@ class JellyfinClient {
     }
   }
 
-  /// Build transcoding query params for playback mode (transcode options).
-  static List<String> _transcodeParamsForPlaybackMode(
-    PlaybackMode mode,
-    String mediaSourceId,
-    String token,
-  ) {
-    final q = <String>['api_key=$token'];
-    if (mediaSourceId.isNotEmpty) q.add('mediaSourceId=$mediaSourceId');
-    switch (mode) {
-      case PlaybackMode.transcode1080:
-        q.addAll(['maxWidth=1920', 'maxHeight=1080']);
-        break;
-      case PlaybackMode.transcode720:
-        q.addAll(['maxWidth=1280', 'maxHeight=720']);
-        break;
-      case PlaybackMode.transcode480:
-        q.addAll(['maxWidth=854', 'maxHeight=480']);
-        break;
-      default:
-        q.addAll(['maxWidth=1920', 'maxHeight=1080']);
-    }
-    return q;
-  }
-
-  /// Build transcoding query params for download quality.
-  static List<String> _transcodeParamsForDownloadQuality(
-    DownloadQuality quality,
-    String mediaSourceId,
-    String token,
-  ) {
-    final q = <String>['api_key=$token'];
-    if (mediaSourceId.isNotEmpty) q.add('mediaSourceId=$mediaSourceId');
-    switch (quality) {
-      case DownloadQuality.original:
-        return q; // Caller should use direct stream, not this
-      case DownloadQuality.p1080:
-        q.addAll(['maxWidth=1920', 'maxHeight=1080']);
-        break;
-      case DownloadQuality.p720:
-        q.addAll(['maxWidth=1280', 'maxHeight=720']);
-        break;
-      case DownloadQuality.p480:
-        q.addAll(['maxWidth=854', 'maxHeight=480']);
-        break;
-    }
-    return q;
-  }
-
   Future<VideoPlaybackData> getVideoPlaybackData(
     String itemId, {
     int mediaIndex = 0,
     PlaybackMode? playbackMode,
     DownloadQuality? downloadQuality,
+    int? startPositionMs,
   }) async {
     String? videoUrl;
     MediaInfo? mediaInfo;
@@ -1060,56 +1242,109 @@ class JellyfinClient {
           if (mediaSources != null && mediaSources.isNotEmpty) {
             final idx = mediaIndex.clamp(0, mediaSources.length - 1);
             final source = mediaSources[idx] as Map<String, dynamic>;
-            final container = source['Container'] as String?;
             final mediaSourceId = source['Id'] as String? ?? '';
-            final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
+
+            final startTimeTicks = startPositionMs != null && startPositionMs > 0
+                ? startPositionMs * 10000
+                : null;
+
+            final settings = await SettingsService.getInstance();
+            final alwaysBurnIn = settings.getAlwaysBurnInSubtitleWhenTranscoding();
+            final useExoPlayer = Platform.isAndroid && settings.getUseExoPlayer();
+            final streams = item['MediaStreams'] as List? ?? [];
+            final defaultIndices = _getDefaultStreamIndices(streams, alwaysBurnIn);
 
             // Download flow: use download quality for URL
             if (downloadQuality != null) {
               if (downloadQuality == DownloadQuality.original) {
-                // Original: direct stream (same as direct play)
-                if (container != null && container.isNotEmpty) {
-                  final q = <String>['static=true', 'allowVideoStreamCopy=true', 'allowAudioStreamCopy=true', 'api_key=${config.token}'];
-                  if (mediaSourceId.isNotEmpty) q.add('mediaSourceId=$mediaSourceId');
-                  videoUrl = '${base}Videos/$itemId/stream.$container?${q.join('&')}';
-                }
+                appLogger.d('Download: original quality, using PlaybackInfo (force direct play)');
+                videoUrl = await _getVideoUrlFromPlaybackInfo(
+                  itemId,
+                  mediaIndex,
+                  mediaSources,
+                  source,
+                  startTimeTicks: startTimeTicks,
+                  alwaysBurnInSubtitleWhenTranscoding: alwaysBurnIn,
+                  forceDirectPlay: true,
+                  pickOptimalFromMultiple: mediaSources.length > 1 && mediaIndex == 0,
+                  useExoPlayer: useExoPlayer,
+                  audioStreamIndex: defaultIndices.audio,
+                  subtitleStreamIndex: defaultIndices.subtitle,
+                );
               } else {
-                final q = _transcodeParamsForDownloadQuality(downloadQuality, mediaSourceId, config.token);
-                videoUrl = '${base}Videos/$itemId/stream.mp4?${q.join('&')}';
+                // Transcode: use PlaybackInfo with MaxStreamingBitrate (same as streaming)
+                final bitrate = _bitrateForDownloadQuality(downloadQuality);
+                appLogger.d('Download: quality=${downloadQuality.name} maxStreamingBitrate=$bitrate');
+                videoUrl = await _getVideoUrlFromPlaybackInfo(
+                  itemId,
+                  mediaIndex,
+                  mediaSources,
+                  source,
+                  maxStreamingBitrate: bitrate,
+                  startTimeTicks: startTimeTicks,
+                  alwaysBurnInSubtitleWhenTranscoding: alwaysBurnIn,
+                  forceTranscode: true,
+                  pickOptimalFromMultiple: mediaSources.length > 1 && mediaIndex == 0,
+                  useExoPlayer: useExoPlayer,
+                  audioStreamIndex: defaultIndices.audio,
+                  subtitleStreamIndex: defaultIndices.subtitle,
+                );
               }
             } else if (playbackMode == PlaybackMode.directPlay) {
-              // Direct Play: static stream, Range-capable for seeking
-              if (container != null && container.isNotEmpty) {
-                final q = <String>['static=true', 'allowVideoStreamCopy=true', 'allowAudioStreamCopy=true', 'api_key=${config.token}'];
-                if (mediaSourceId.isNotEmpty) q.add('mediaSourceId=$mediaSourceId');
-                videoUrl = '${base}Videos/$itemId/stream.$container?${q.join('&')}';
-              }
-            } else if (playbackMode == PlaybackMode.transcode1080 ||
-                playbackMode == PlaybackMode.transcode720 ||
-                playbackMode == PlaybackMode.transcode480) {
-              // Transcode: use mode params
-              final q = _transcodeParamsForPlaybackMode(playbackMode!, mediaSourceId, config.token);
-              videoUrl = '${base}Videos/$itemId/stream.mp4?${q.join('&')}';
+              appLogger.d('Playback: directPlay mode, using PlaybackInfo (force direct play)');
+              videoUrl = await _getVideoUrlFromPlaybackInfo(
+                itemId,
+                mediaIndex,
+                mediaSources,
+                source,
+                startTimeTicks: startTimeTicks,
+                alwaysBurnInSubtitleWhenTranscoding: alwaysBurnIn,
+                forceDirectPlay: true,
+                pickOptimalFromMultiple: mediaSources.length > 1 && mediaIndex == 0,
+                useExoPlayer: useExoPlayer,
+                audioStreamIndex: defaultIndices.audio,
+                subtitleStreamIndex: defaultIndices.subtitle,
+              );
+            } else if (playbackMode != null && _isTranscodeMode(playbackMode)) {
+              // Transcode: use PlaybackInfo with MaxStreamingBitrate (Jellyfin ignores
+              // maxWidth/maxHeight on direct stream URLs; bitrate forces proper transcode)
+              final bitrate = _bitrateForPlaybackMode(playbackMode);
+              appLogger.d('Playback: transcode mode=${playbackMode.name} maxStreamingBitrate=$bitrate');
+              videoUrl = await _getVideoUrlFromPlaybackInfo(
+                itemId,
+                mediaIndex,
+                mediaSources,
+                source,
+                maxStreamingBitrate: bitrate,
+                startTimeTicks: startTimeTicks,
+                alwaysBurnInSubtitleWhenTranscoding: alwaysBurnIn,
+                forceTranscode: true,
+                pickOptimalFromMultiple: mediaSources.length > 1 && mediaIndex == 0,
+                useExoPlayer: useExoPlayer,
+                audioStreamIndex: defaultIndices.audio,
+                subtitleStreamIndex: defaultIndices.subtitle,
+              );
             } else {
               // Auto (or null): use PlaybackInfo (server decides)
-              videoUrl = await _getVideoUrlFromPlaybackInfo(itemId, mediaIndex, mediaSources, source);
+              appLogger.d('Playback: auto mode, using PlaybackInfo (server decides)');
+              videoUrl = await _getVideoUrlFromPlaybackInfo(
+                itemId,
+                mediaIndex,
+                mediaSources,
+                source,
+                startTimeTicks: startTimeTicks,
+                alwaysBurnInSubtitleWhenTranscoding: alwaysBurnIn,
+                pickOptimalFromMultiple: mediaSources.length > 1 && mediaIndex == 0,
+                useExoPlayer: useExoPlayer,
+                audioStreamIndex: defaultIndices.audio,
+                subtitleStreamIndex: defaultIndices.subtitle,
+              );
             }
 
-            if (videoUrl == null) {
-              final directUrl = source['DirectStreamUrl'] as String?;
-              final transcodeUrl = source['TranscodingUrl'] as String?;
-              videoUrl = directUrl ?? transcodeUrl;
-              if (videoUrl != null && !videoUrl.startsWith('http')) {
-                videoUrl = '${config.baseUrl}$videoUrl';
-                if (!videoUrl.contains('?')) {
-                  videoUrl = '$videoUrl?api_key=${config.token}';
-                } else {
-                  videoUrl = '$videoUrl&api_key=${config.token}';
-                }
-              }
+            if (videoUrl != null) {
+              final urlForLog = videoUrl.replaceAll(RegExp(r'api_key=[^&]+'), 'api_key=***');
+              appLogger.d('Playback: final url=$urlForLog');
             }
-            videoUrl ??= '${config.baseUrl}/Videos/$itemId/stream?api_key=${config.token}';
-            final streams = item['MediaStreams'] as List? ?? [];
             final audioTracks = <MediaAudioTrack>[];
             final subtitleTracks = <MediaSubtitleTrack>[];
             var audioIdx = 0;
@@ -1153,13 +1388,15 @@ class JellyfinClient {
               }
             }
             final chapters = await getChapters(itemId);
-            mediaInfo = MediaInfo(
-              videoUrl: videoUrl,
-              audioTracks: audioTracks,
-              subtitleTracks: subtitleTracks,
-              chapters: chapters,
-              partId: null,
-            );
+            if (videoUrl != null) {
+              mediaInfo = MediaInfo(
+                videoUrl: videoUrl,
+                audioTracks: audioTracks,
+                subtitleTracks: subtitleTracks,
+                chapters: chapters,
+                partId: null,
+              );
+            }
             for (final ms in mediaSources) {
               final m = ms as Map<String, dynamic>;
               versions.add(MediaVersion(
@@ -1176,8 +1413,16 @@ class JellyfinClient {
           }
         }
       } catch (e) {
+        if (e is _PlaybackInfoException) {
+          return VideoPlaybackData(
+            videoUrl: null,
+            mediaInfo: mediaInfo,
+            availableVersions: versions,
+            markers: markers,
+            playbackErrorReason: e.message,
+          );
+        }
         appLogger.e('Jellyfin getVideoPlaybackData failed', error: e);
-        videoUrl = '${config.baseUrl}/Videos/$itemId/stream?api_key=${config.token}';
       }
     }
 
@@ -3056,26 +3301,38 @@ class JellyfinClient {
   ) async {
     if (_offlineMode) return null;
     try {
+      final settings = await SettingsService.getInstance();
+      final useExoPlayer = Platform.isAndroid && settings.getUseExoPlayerForLiveTv();
+      final maxBitrate = settings.getLiveTvMaxStreamingBitrate();
+      final body = <String, dynamic>{
+        'UserId': config.userId,
+        'IsPlayback': true,
+        'AutoOpenLiveStream': true,
+        'EnableDirectPlay': true,
+        'EnableDirectStream': true,
+        'EnableTranscoding': true,
+        'AllowVideoStreamCopy': true,
+        'AllowAudioStreamCopy': true,
+        'DeviceProfile': _buildDeviceProfile(useExoPlayer: useExoPlayer),
+      };
+      if (maxBitrate != null && maxBitrate > 0) {
+        body['MaxStreamingBitrate'] = maxBitrate;
+      }
       final response = await _dio.post<Map<String, dynamic>>(
         '/Items/$channelKey/PlaybackInfo',
-        data: {
-          'UserId': config.userId,
-          'EnableDirectPlay': true,
-          'EnableDirectStream': true,
-          'EnableTranscoding': true,
-          'AutoOpenLiveStream': true,
-          'AllowVideoStreamCopy': true,
-          'AllowAudioStreamCopy': true,
-        },
+        data: body,
       );
       if (response.statusCode != 200 || response.data == null) return null;
       final data = response.data!;
 
       final mediaSources = data['MediaSources'] as List?;
       if (mediaSources == null || mediaSources.isEmpty) return null;
-      var source = mediaSources[0] as Map<String, dynamic>;
+      final sourceIdx = mediaSources.length > 1
+          ? _getOptimalMediaSourceIndex(mediaSources)
+          : 0;
+      var source = mediaSources[sourceIdx] as Map<String, dynamic>;
 
-      appLogger.d('tuneChannel PlaybackInfo source: '
+      appLogger.d('tuneChannel PlaybackInfo source[$sourceIdx]: '
           'TranscodingUrl=${source['TranscodingUrl']}, '
           'SupportsDirectStream=${source['SupportsDirectStream']}, '
           'SupportsTranscoding=${source['SupportsTranscoding']}, '
@@ -3157,4 +3414,12 @@ class JellyfinClient {
       return null;
     }
   }
+}
+
+/// Thrown when PlaybackInfo returns an ErrorCode; message is user-facing.
+class _PlaybackInfoException implements Exception {
+  final String message;
+  _PlaybackInfoException(this.message);
+  @override
+  String toString() => message;
 }

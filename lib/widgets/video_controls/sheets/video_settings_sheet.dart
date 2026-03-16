@@ -20,9 +20,10 @@ import '../../../widgets/overlay_sheet.dart';
 import '../widgets/sync_offset_control.dart';
 import '../widgets/sleep_timer_content.dart';
 import '../../../i18n/strings.g.dart';
+import '../../../widgets/scroll_to_index_list_view.dart';
 import 'base_video_control_sheet.dart';
 
-enum _SettingsView { menu, speed, sleep, audioSync, subtitleSync, audioDevice, shader }
+enum _SettingsView { menu, speed, quality, sleep, audioSync, subtitleSync, audioDevice, shader, liveTvQuality }
 
 /// Reusable menu item widget for settings sheet
 class _SettingsMenuItem extends StatelessWidget {
@@ -90,6 +91,9 @@ class VideoSettingsSheet extends StatefulWidget {
   /// Called to toggle ambient lighting on/off (null if unsupported)
   final VoidCallback? onToggleAmbientLighting;
 
+  /// Called when streaming quality changes (VOD) or Live TV quality changes; caller should restart playback.
+  final VoidCallback? onQualityChanged;
+
   const VideoSettingsSheet({
     super.key,
     required this.player,
@@ -101,6 +105,7 @@ class VideoSettingsSheet extends StatefulWidget {
     this.onShaderChanged,
     this.isAmbientLightingEnabled = false,
     this.onToggleAmbientLighting,
+    this.onQualityChanged,
   });
 
   @override
@@ -114,6 +119,8 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   bool _enableHDR = true;
   bool _showPerformanceOverlay = false;
   bool _autoPlayNextEpisode = true;
+  Future<PlaybackMode>? _cachedQualityFuture;
+  Future<int?>? _cachedLiveTvQualityFuture;
 
   @override
   void initState() {
@@ -179,12 +186,30 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     OverlaySheetController.maybeOf(context)?.refocus();
   }
 
+  String _qualityLabel(PlaybackMode mode) => switch (mode) {
+        PlaybackMode.auto => t.settings.playbackModeAutoDirect,
+        PlaybackMode.directPlay => t.settings.playbackModeDirectPlay,
+        PlaybackMode.transcode15 => t.settings.quality15Mbps,
+        PlaybackMode.transcode10 => t.settings.quality10Mbps,
+        PlaybackMode.transcode8 => t.settings.quality8Mbps,
+        PlaybackMode.transcode6 => t.settings.quality6Mbps,
+        PlaybackMode.transcode4 => t.settings.quality4Mbps,
+        PlaybackMode.transcode3 => t.settings.quality3Mbps,
+        PlaybackMode.transcode1_5 => t.settings.quality1_5Mbps,
+        PlaybackMode.transcode720k => t.settings.quality720kbps,
+        PlaybackMode.transcode420k => t.settings.quality420kbps,
+      };
+
   String _getTitle() {
     switch (_currentView) {
       case _SettingsView.menu:
         return t.videoSettings.playbackSettings;
       case _SettingsView.speed:
         return t.videoSettings.playbackSpeed;
+      case _SettingsView.quality:
+        return t.videoSettings.quality;
+      case _SettingsView.liveTvQuality:
+        return t.videoSettings.quality;
       case _SettingsView.sleep:
         return t.videoSettings.sleepTimer;
       case _SettingsView.audioSync:
@@ -204,6 +229,9 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
         return Symbols.tune_rounded;
       case _SettingsView.speed:
         return Symbols.speed_rounded;
+      case _SettingsView.quality:
+      case _SettingsView.liveTvQuality:
+        return Symbols.high_quality_rounded;
       case _SettingsView.sleep:
         return Symbols.bedtime_rounded;
       case _SettingsView.audioSync:
@@ -235,6 +263,50 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
 
     return ListView(
       children: [
+        // Quality - streaming quality (Auto, Direct Play, or transcode tiers) for VOD
+        if (!widget.isLive)
+          FutureBuilder<PlaybackMode>(
+            future: SettingsService.getInstance().then((s) => s.getPlaybackMode()),
+            builder: (context, snapshot) {
+              final label = snapshot.hasData ? _qualityLabel(snapshot.data!) : '...';
+              return _SettingsMenuItem(
+                icon: Symbols.high_quality_rounded,
+                title: t.videoSettings.quality,
+                valueText: label,
+                onTap: () => _navigateTo(_SettingsView.quality),
+              );
+            },
+          ),
+
+        // Live TV Quality - only when watching Live TV
+        if (widget.isLive)
+          FutureBuilder<int?>(
+            future: SettingsService.getInstance().then((s) => s.getLiveTvMaxStreamingBitrate()),
+            builder: (context, snapshot) {
+              final bitrate = snapshot.data;
+              final label = bitrate == null
+                  ? t.settings.playbackModeAutoDirect
+                  : switch (bitrate) {
+                      15000000 => t.settings.quality15Mbps,
+                      10000000 => t.settings.quality10Mbps,
+                      8000000 => t.settings.quality8Mbps,
+                      6000000 => t.settings.quality6Mbps,
+                      4000000 => t.settings.quality4Mbps,
+                      3000000 => t.settings.quality3Mbps,
+                      1500000 => t.settings.quality1_5Mbps,
+                      720000 => t.settings.quality720kbps,
+                      420000 => t.settings.quality420kbps,
+                      _ => t.settings.liveTvQualityNone,
+                    };
+              return _SettingsMenuItem(
+                icon: Symbols.high_quality_rounded,
+                title: t.videoSettings.quality,
+                valueText: label,
+                onTap: () => _navigateTo(_SettingsView.liveTvQuality),
+              );
+            },
+          ),
+
         // Playback Speed - hidden for live TV and when user cannot control playback
         if (widget.canControl && !widget.isLive)
           StreamBuilder<double>(
@@ -382,6 +454,117 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     );
   }
 
+  Widget _buildQualityView() {
+    _cachedQualityFuture ??= SettingsService.getInstance().then((s) => s.getPlaybackMode());
+    return FutureBuilder<PlaybackMode>(
+      future: _cachedQualityFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator(color: Colors.white70));
+        }
+        final currentMode = snapshot.data!;
+        final modes = [
+          PlaybackMode.auto,
+          PlaybackMode.directPlay,
+          PlaybackMode.transcode15,
+          PlaybackMode.transcode10,
+          PlaybackMode.transcode8,
+          PlaybackMode.transcode6,
+          PlaybackMode.transcode4,
+          PlaybackMode.transcode3,
+          PlaybackMode.transcode1_5,
+          PlaybackMode.transcode720k,
+          PlaybackMode.transcode420k,
+        ];
+        final selectedIndex = modes.indexOf(currentMode);
+        if (selectedIndex < 0) return const SizedBox.shrink();
+        return ScrollToIndexListView(
+          itemCount: modes.length,
+          initialIndex: selectedIndex,
+          itemBuilder: (context, index) {
+            final mode = modes[index];
+            final isSelected = currentMode == mode;
+            return FocusableListTile(
+              key: ValueKey(mode),
+              title: Text(_qualityLabel(mode), style: TextStyle(color: isSelected ? kBrandAccent : Colors.white)),
+              trailing: isSelected ? const AppIcon(Symbols.check_rounded, fill: 1, color: kBrandAccent) : null,
+              onTap: () async {
+                final settings = await SettingsService.getInstance();
+                await settings.setPlaybackMode(mode);
+                widget.onQualityChanged?.call();
+                if (context.mounted) OverlaySheetController.of(context).close();
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  static const List<int?> _liveTvQualityBitrates = [
+    null,
+    15000000,
+    10000000,
+    8000000,
+    6000000,
+    4000000,
+    3000000,
+    1500000,
+    720000,
+    420000,
+  ];
+
+  String _liveTvQualityLabel(int? bitrate) {
+    if (bitrate == null) return t.settings.playbackModeAutoDirect;
+    return switch (bitrate) {
+      15000000 => t.settings.quality15Mbps,
+      10000000 => t.settings.quality10Mbps,
+      8000000 => t.settings.quality8Mbps,
+      6000000 => t.settings.quality6Mbps,
+      4000000 => t.settings.quality4Mbps,
+      3000000 => t.settings.quality3Mbps,
+      1500000 => t.settings.quality1_5Mbps,
+      720000 => t.settings.quality720kbps,
+      420000 => t.settings.quality420kbps,
+      _ => t.settings.liveTvQualityNone,
+    };
+  }
+
+  Widget _buildLiveTvQualityView() {
+    _cachedLiveTvQualityFuture ??= SettingsService.getInstance().then((s) => s.getLiveTvMaxStreamingBitrate());
+    return FutureBuilder<int?>(
+      future: _cachedLiveTvQualityFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator(color: Colors.white70));
+        }
+        final currentBitrate = snapshot.data;
+        final bitrates = _liveTvQualityBitrates;
+        final selectedIndex = bitrates.indexOf(currentBitrate);
+        final safeIndex = selectedIndex >= 0 ? selectedIndex : 0;
+        return ScrollToIndexListView(
+          itemCount: bitrates.length,
+          initialIndex: safeIndex,
+          itemBuilder: (context, index) {
+            final bitrate = bitrates[index];
+            final isSelected = bitrate == currentBitrate;
+            return FocusableListTile(
+              key: ValueKey(bitrate),
+              title: Text(_liveTvQualityLabel(bitrate), style: TextStyle(color: isSelected ? kBrandAccent : Colors.white)),
+              trailing: isSelected ? const AppIcon(Symbols.check_rounded, fill: 1, color: kBrandAccent) : null,
+              onTap: () async {
+                final settings = await SettingsService.getInstance();
+                await settings.setLiveTvMaxStreamingBitrate(bitrate);
+                widget.onQualityChanged?.call();
+                if (context.mounted) OverlaySheetController.of(context).close();
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildSpeedView() {
     return StreamBuilder<double>(
       stream: widget.player.streams.rate,
@@ -389,17 +572,20 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
       builder: (context, snapshot) {
         final currentRate = snapshot.data ?? 1.0;
         final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
+        final selectedIndex = speeds.indexWhere((s) => (currentRate - s).abs() < 0.01);
+        final safeIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
-        return ListView.builder(
+        return ScrollToIndexListView(
           itemCount: speeds.length,
+          initialIndex: safeIndex,
           itemBuilder: (context, index) {
             final speed = speeds[index];
             final isSelected = (currentRate - speed).abs() < 0.01;
             final label = speed == 1.0 ? 'Normal' : '${speed.toStringAsFixed(2)}x';
 
-            return ListTile(
-              title: Text(label, style: TextStyle(color: isSelected ? Colors.blue : Colors.white)),
-              trailing: isSelected ? const AppIcon(Symbols.check_rounded, fill: 1, color: Colors.blue) : null,
+            return FocusableListTile(
+              title: Text(label, style: TextStyle(color: isSelected ? kBrandAccent : Colors.white)),
+              trailing: isSelected ? const AppIcon(Symbols.check_rounded, fill: 1, color: kBrandAccent) : null,
               onTap: () async {
                 widget.player.setRate(speed);
                 // Save as default playback speed
@@ -536,8 +722,11 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   }
 
   Widget _buildFlatDeviceList(List<AudioDevice> devices, AudioDevice currentDevice) {
-    return ListView.builder(
+    final selectedIndex = devices.indexWhere((d) => d.name == currentDevice.name);
+    final safeIndex = selectedIndex >= 0 ? selectedIndex : 0;
+    return ScrollToIndexListView(
       itemCount: devices.length,
+      initialIndex: safeIndex,
       itemBuilder: (context, index) => _buildDeviceTile(devices[index], currentDevice),
     );
   }
@@ -546,9 +735,9 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     final isSelected = device.name == currentDevice.name;
     final label = device.description.isEmpty ? device.name : device.description;
 
-    return ListTile(
-      title: Text(label, style: TextStyle(color: isSelected ? Colors.blue : Colors.white)),
-      trailing: isSelected ? const AppIcon(Symbols.check_rounded, fill: 1, color: Colors.blue) : null,
+    return FocusableListTile(
+      title: Text(label, style: TextStyle(color: isSelected ? kBrandAccent : Colors.white)),
+      trailing: isSelected ? const AppIcon(Symbols.check_rounded, fill: 1, color: kBrandAccent) : null,
       onTap: () {
         widget.player.setAudioDevice(device);
         OverlaySheetController.of(context).close();
@@ -563,9 +752,13 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
       builder: (context, shaderProvider, _) {
         final currentPreset = widget.shaderService!.currentPreset;
         final presets = ShaderPreset.allPresets;
+        final selectedIndex = presets.indexWhere((p) => p.id == currentPreset.id);
+        final safeIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
-        return ListView.builder(
+        return ScrollToIndexListView(
           itemCount: presets.length,
+          initialIndex: safeIndex,
+          itemExtent: 72.0,
           itemBuilder: (context, index) {
             final preset = presets[index];
             final isSelected = preset.id == currentPreset.id;
@@ -630,6 +823,10 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             return _buildMenuView();
           case _SettingsView.speed:
             return _buildSpeedView();
+          case _SettingsView.quality:
+            return _buildQualityView();
+          case _SettingsView.liveTvQuality:
+            return _buildLiveTvQualityView();
           case _SettingsView.sleep:
             return _buildSleepView();
           case _SettingsView.audioSync:

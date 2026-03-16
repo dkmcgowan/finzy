@@ -13,12 +13,24 @@ class OfflineModeProvider extends ChangeNotifier {
   bool _hasNetworkConnection = true;
   late bool _hasServerConnection;
   bool _isInitialized = false;
+  bool _isForcedOffline = false;
+
+  /// Light polling when forced offline (~90s) to detect network for "Connection available".
+  static const Duration _forcedOfflinePollInterval = Duration(seconds: 90);
+  Timer? _forcedOfflinePollTimer;
+  bool _connectionAvailableWhenForced = false;
 
   OfflineModeProvider(this._serverManager) : _hasServerConnection = _serverManager.onlineServerIds.isNotEmpty;
 
+  /// Whether the user has forced offline mode (no auto reconnect).
+  bool get isForcedOffline => _isForcedOffline;
+
+  /// When forced offline and network is detected (via light polling), show "Connection available".
+  bool get connectionAvailableWhenForced => _isForcedOffline && _connectionAvailableWhenForced;
+
   /// Whether the app is currently in offline mode
-  /// Offline = no network OR no servers reachable
-  bool get isOffline => !_hasNetworkConnection || !_hasServerConnection;
+  /// Offline = no network OR no servers reachable OR forced offline
+  bool get isOffline => _isForcedOffline || !_hasNetworkConnection || !_hasServerConnection;
 
   /// Whether there is network connectivity (WiFi, mobile data, etc.)
   bool get hasNetworkConnection => _hasNetworkConnection;
@@ -70,10 +82,44 @@ class OfflineModeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set forced offline mode. When true, no auto reconnect; user taps "Back Online".
+  void setForcedOffline(bool forced) {
+    if (_isForcedOffline == forced) return;
+    _isForcedOffline = forced;
+    _serverManager.setForcedOffline(forced);
+
+    if (forced) {
+      _updateConnectionFlags().then((_) {
+        _connectionAvailableWhenForced = _hasNetworkConnection;
+        notifyListeners();
+      });
+      _startForcedOfflinePolling();
+    } else {
+      _forcedOfflinePollTimer?.cancel();
+      _forcedOfflinePollTimer = null;
+      _connectionAvailableWhenForced = false;
+    }
+    notifyListeners();
+  }
+
+  void _startForcedOfflinePolling() {
+    _forcedOfflinePollTimer?.cancel();
+    _forcedOfflinePollTimer = Timer.periodic(_forcedOfflinePollInterval, (_) async {
+      if (!_isForcedOffline) return;
+      final result = await Connectivity().checkConnectivity();
+      final hasNetwork = !result.contains(ConnectivityResult.none);
+      if (_connectionAvailableWhenForced != hasNetwork) {
+        _connectionAvailableWhenForced = hasNetwork;
+        notifyListeners();
+      }
+    });
+  }
+
   @override
   void dispose() {
     _connectivitySubscription?.cancel();
     _serverStatusSubscription?.cancel();
+    _forcedOfflinePollTimer?.cancel();
     super.dispose();
   }
 }

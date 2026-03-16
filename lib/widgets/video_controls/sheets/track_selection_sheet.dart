@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../mpv/mpv.dart';
 import '../../../widgets/overlay_sheet.dart';
+import '../../../widgets/scroll_to_index_list_view.dart';
 import 'base_video_control_sheet.dart';
 import '../helpers/track_filter_helper.dart';
 import '../helpers/track_selection_helper.dart';
@@ -79,8 +80,26 @@ class _TrackSelectionSheetState<T> extends State<TrackSelectionSheet<T>> {
         final extraTracks = widget.extraTracks ?? [];
         final itemCount = availableTracks.length + (widget.showOffOption ? 1 : 0) + extraTracks.length;
 
-        return ListView.builder(
+        int selectedIndex = 0;
+        if (widget.showOffOption && isOffSelected) {
+          selectedIndex = 0;
+        } else if (selectedTrack != null) {
+          final selectedId = TrackSelectionHelper.getTrackId(selectedTrack);
+          final inAvailable = availableTracks.indexWhere((t) => TrackSelectionHelper.getTrackId(t) == selectedId);
+          if (inAvailable >= 0) {
+            selectedIndex = inAvailable + (widget.showOffOption ? 1 : 0);
+          } else {
+            final inExtra = extraTracks.indexWhere((t) => TrackSelectionHelper.getTrackId(t) == selectedId);
+            if (inExtra >= 0) {
+              selectedIndex = availableTracks.length + (widget.showOffOption ? 1 : 0) + inExtra;
+            }
+          }
+        }
+        final safeSelectedIndex = selectedIndex.clamp(0, itemCount - 1);
+
+        return ScrollToIndexListView(
           itemCount: itemCount,
+          initialIndex: safeSelectedIndex,
           itemBuilder: (context, index) {
             if (widget.showOffOption && index == 0) {
               return _buildOffTile(isOffSelected);

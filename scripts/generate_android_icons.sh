@@ -8,6 +8,8 @@ set -e
 
 # Configuration
 SVG_SOURCE="assets/finzy.svg"
+FOREGROUND_SVG="assets/finzy_android_foreground.svg"
+MONOCHROME_SVG="assets/finzy_monochrome.svg"
 ANDROID_RES="android/app/src/main/res"
 TEMP_DIR="/tmp/android_icons_$$"
 
@@ -117,6 +119,32 @@ for density in "${!MONO_SIZES[@]}"; do
     mkdir -p "$output_dir"
     generate_white_icon "$size" "$output_dir/ic_launcher_monochrome.png"
 done
+
+# Generate adaptive icon foreground + monochrome PNGs (for flutter_launcher_icons)
+echo ""
+echo "📐 Generating adaptive icon assets (finzy_android_foreground.png, finzy_monochrome.png)..."
+
+if [ -f "$FOREGROUND_SVG" ]; then
+    magick -background none -density 2048 "$FOREGROUND_SVG" -resize 1024x1024 "assets/finzy_android_foreground.png"
+    echo "  ✓ Generated finzy_android_foreground.png (icon fills frame)"
+else
+    echo "  ⚠ $FOREGROUND_SVG not found; run scripts/generate_finzy_pngs.py to create it"
+fi
+
+if [ -f "$MONOCHROME_SVG" ]; then
+    magick -background none -density 2048 "$MONOCHROME_SVG" -resize 1024x1024 "assets/finzy_monochrome.png"
+    echo "  ✓ Generated finzy_monochrome.png"
+else
+    echo "  ⚠ $MONOCHROME_SVG not found; run scripts/generate_finzy_pngs.py to create it"
+fi
+
+# Apply adaptive icon config (pubspec.yaml: flutter_launcher_icons)
+if [ -f "assets/finzy_android_foreground.png" ] && [ -f "assets/finzy_monochrome.png" ]; then
+    echo ""
+    echo "🔧 Running flutter_launcher_icons..."
+    dart run flutter_launcher_icons
+    echo "  ✓ Adaptive icons applied"
+fi
 
 # Clean up
 rm -rf "$TEMP_DIR"

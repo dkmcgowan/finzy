@@ -16,6 +16,7 @@ class SleepTimerActiveStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
     return Container(
       padding: const EdgeInsets.all(16),
       color: kBrandAccent.withValues(alpha: 0.1),
@@ -23,12 +24,12 @@ class SleepTimerActiveStatus extends StatelessWidget {
         children: [
           Text(
             t.videoControls.timerActive,
-            style: const TextStyle(color: kBrandAccent, fontSize: 16, fontWeight: FontWeight.bold),
+            style: theme.titleMedium?.copyWith(color: kBrandAccent, fontWeight: FontWeight.bold) ?? const TextStyle(color: kBrandAccent, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             t.videoControls.playbackWillPauseIn(duration: formatDurationWithSeconds(remainingTime)),
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: theme.bodyMedium?.copyWith(color: Colors.white70) ?? const TextStyle(color: Colors.white70),
           ),
           const SizedBox(height: 16),
           Row(

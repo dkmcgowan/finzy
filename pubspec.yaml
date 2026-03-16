@@ -101,6 +101,7 @@ flutter_launcher_icons:
   image_path: "assets/finzy.png"
   adaptive_icon_background: "#1A1F2E"
   adaptive_icon_foreground: "assets/finzy_android_foreground.png"
+  adaptive_icon_foreground_inset: 0
   adaptive_icon_monochrome: "assets/finzy_monochrome.png"
   macos:
     generate: false

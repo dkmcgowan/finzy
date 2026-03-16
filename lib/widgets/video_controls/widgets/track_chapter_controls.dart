@@ -70,6 +70,9 @@ class TrackChapterControls extends StatelessWidget {
   /// Called to toggle ambient lighting (passed to settings sheet)
   final VoidCallback? onToggleAmbientLighting;
 
+  /// Called when streaming or Live TV quality changes; caller should restart playback.
+  final VoidCallback? onQualityChanged;
+
   /// List of FocusNodes for the buttons (passed from parent for navigation)
   final List<FocusNode>? focusNodes;
 
@@ -121,6 +124,7 @@ class TrackChapterControls extends StatelessWidget {
     this.onShaderChanged,
     this.isAmbientLightingEnabled = false,
     this.onToggleAmbientLighting,
+    this.onQualityChanged,
   });
 
   /// Handle key event for button navigation
@@ -228,6 +232,7 @@ class TrackChapterControls extends StatelessWidget {
                       onShaderChanged: onShaderChanged,
                       isAmbientLightingEnabled: isAmbientLightingEnabled,
                       onToggleAmbientLighting: onToggleAmbientLighting,
+                      onQualityChanged: onQualityChanged,
                     ),
                   ).whenComplete(() {
                     onStartAutoHide?.call();

@@ -161,6 +161,9 @@ class _TranslationsCommonZh implements TranslationsCommonEn {
 	@override String get none => 'None';
 	@override String get loading => '加载中...';
 	@override String get reconnect => '重新连接';
+	@override String get goOffline => '进入离线模式';
+	@override String get goOnline => '返回在线';
+	@override String get connectionAvailable => '连接可用';
 	@override String get exitConfirmTitle => '退出应用？';
 	@override String get exitConfirmMessage => '确定要退出吗？';
 	@override String get dontAskAgain => '不再询问';
@@ -273,6 +276,9 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get liveTvPlayerDescription => '直播电视推荐使用 MPV。ExoPlayer 在某些设备上可能有问题。';
 	@override String get liveTvMpv => 'MPV (Recommended)';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
+	@override String get liveTvQuality => '直播电视画质';
+	@override String get liveTvQualityDescription => '限制直播电视的转码画质。不限制则使用服务器默认。';
+	@override String get liveTvQualityNone => '不限制';
 	@override String get hardwareDecoding => '硬件解码';
 	@override String get hardwareDecodingDescription => '如果可用，使用硬件加速';
 	@override String get bufferSize => '缓冲区大小';
@@ -318,6 +324,8 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get autoSkipIntroDescription => '几秒钟后自动跳过片头标记';
 	@override String get enableExternalSubtitles => 'Enable External Subtitles';
 	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get alwaysBurnInSubtitleWhenTranscoding => '转码时烧录字幕';
+	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => '转码时将所选字幕烧录到视频中。与 jellyfin-web 相同。';
 	@override String get enableTrickplay => 'Enable trickplay thumbnails';
 	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
 	@override String get enableChapterImages => 'Enable Chapter Images';
@@ -353,23 +361,20 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get downloadQualityDescription => '离线下载质量。原始保留源文件；其他选项转码以节省空间。';
 	@override String get downloadQualityOriginal => '原始';
 	@override String get downloadQualityOriginalDescription => '使用原文件。';
-	@override String get downloadQuality1080p => '1080p';
-	@override String get downloadQuality1080pDescription => '转码至 1080p。';
-	@override String get downloadQuality720p => '720p';
-	@override String get downloadQuality720pDescription => '转码至 720p。';
-	@override String get downloadQuality480p => '480p';
-	@override String get downloadQuality480pDescription => '转码至 480p。';
-	@override String get playbackMode => '流媒体模式';
 	@override String get playbackModeAutoDescription => '由服务器决定。';
 	@override String get playbackModeAuto => '自动';
+	@override String get playbackModeAutoDirect => '自动 - Direct';
 	@override String get playbackModeDirectPlayDescription => '使用原文件。';
-	@override String get playbackModeDirectPlay => 'Direct Play';
-	@override String get transcodeQuality1080p => '1080p';
-	@override String get transcodeQuality1080pDescription => '将流转码至 1080p。';
-	@override String get transcodeQuality720p => '720p';
-	@override String get transcodeQuality720pDescription => '将流转码至 720p。';
-	@override String get transcodeQuality480p => '480p';
-	@override String get transcodeQuality480pDescription => '将流转码至 480p。';
+	@override String get playbackModeDirectPlay => 'Direct';
+	@override String get quality15Mbps => '15 Mbps';
+	@override String get quality10Mbps => '10 Mbps';
+	@override String get quality8Mbps => '8 Mbps';
+	@override String get quality6Mbps => '6 Mbps';
+	@override String get quality4Mbps => '4 Mbps';
+	@override String get quality3Mbps => '3 Mbps';
+	@override String get quality1_5Mbps => '1.5 Mbps';
+	@override String get quality720kbps => '720 kbps';
+	@override String get quality420kbps => '420 kbps';
 	@override String get cellularDownloadBlocked => '蜂窝数据下已禁用下载。请连接 WiFi 或更改设置。';
 	@override String get maxVolume => '最大音量';
 	@override String get maxVolumeDescription => '允许音量超过 100% 以适应安静的媒体';
@@ -960,6 +965,7 @@ class _TranslationsDownloadsZh implements TranslationsDownloadsEn {
 	@override String get deleteDownload => '删除下载';
 	@override String get retryDownload => '重试下载';
 	@override String get downloadQueued => '下载已排队';
+	@override String get downloadStarting => '正在启动...';
 	@override String episodesQueued({required Object count}) => '${count} 集已加入下载队列';
 	@override String get downloadDeleted => '下载已删除';
 	@override String deleteConfirm({required Object title}) => '确定要删除 "${title}" 吗？下载的文件将从您的设备中删除。';
@@ -1080,6 +1086,8 @@ class _TranslationsVideoSettingsZh implements TranslationsVideoSettingsEn {
 
 	// Translations
 	@override String get playbackSettings => '播放设置';
+	@override String get quality => '画质';
+	@override String get qualityDescription => '流媒体画质。自动由服务器决定。';
 	@override String get playbackSpeed => '播放速度';
 	@override String get sleepTimer => '睡眠定时器';
 	@override String get audioSync => '音频同步';
@@ -1376,6 +1384,9 @@ extension on TranslationsZh {
 			'common.none' => 'None',
 			'common.loading' => '加载中...',
 			'common.reconnect' => '重新连接',
+			'common.goOffline' => '进入离线模式',
+			'common.goOnline' => '返回在线',
+			'common.connectionAvailable' => '连接可用',
 			'common.exitConfirmTitle' => '退出应用？',
 			'common.exitConfirmMessage' => '确定要退出吗？',
 			'common.dontAskAgain' => '不再询问',
@@ -1461,6 +1472,9 @@ extension on TranslationsZh {
 			'settings.liveTvPlayerDescription' => '直播电视推荐使用 MPV。ExoPlayer 在某些设备上可能有问题。',
 			'settings.liveTvMpv' => 'MPV (Recommended)',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
+			'settings.liveTvQuality' => '直播电视画质',
+			'settings.liveTvQualityDescription' => '限制直播电视的转码画质。不限制则使用服务器默认。',
+			'settings.liveTvQualityNone' => '不限制',
 			'settings.hardwareDecoding' => '硬件解码',
 			'settings.hardwareDecodingDescription' => '如果可用，使用硬件加速',
 			'settings.bufferSize' => '缓冲区大小',
@@ -1506,6 +1520,8 @@ extension on TranslationsZh {
 			'settings.autoSkipIntroDescription' => '几秒钟后自动跳过片头标记',
 			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
 			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.alwaysBurnInSubtitleWhenTranscoding' => '转码时烧录字幕',
+			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => '转码时将所选字幕烧录到视频中。与 jellyfin-web 相同。',
 			'settings.enableTrickplay' => 'Enable trickplay thumbnails',
 			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
 			'settings.enableChapterImages' => 'Enable Chapter Images',
@@ -1541,23 +1557,20 @@ extension on TranslationsZh {
 			'settings.downloadQualityDescription' => '离线下载质量。原始保留源文件；其他选项转码以节省空间。',
 			'settings.downloadQualityOriginal' => '原始',
 			'settings.downloadQualityOriginalDescription' => '使用原文件。',
-			'settings.downloadQuality1080p' => '1080p',
-			'settings.downloadQuality1080pDescription' => '转码至 1080p。',
-			'settings.downloadQuality720p' => '720p',
-			'settings.downloadQuality720pDescription' => '转码至 720p。',
-			'settings.downloadQuality480p' => '480p',
-			'settings.downloadQuality480pDescription' => '转码至 480p。',
-			'settings.playbackMode' => '流媒体模式',
 			'settings.playbackModeAutoDescription' => '由服务器决定。',
 			'settings.playbackModeAuto' => '自动',
+			'settings.playbackModeAutoDirect' => '自动 - Direct',
 			'settings.playbackModeDirectPlayDescription' => '使用原文件。',
-			'settings.playbackModeDirectPlay' => 'Direct Play',
-			'settings.transcodeQuality1080p' => '1080p',
-			'settings.transcodeQuality1080pDescription' => '将流转码至 1080p。',
-			'settings.transcodeQuality720p' => '720p',
-			'settings.transcodeQuality720pDescription' => '将流转码至 720p。',
-			'settings.transcodeQuality480p' => '480p',
-			'settings.transcodeQuality480pDescription' => '将流转码至 480p。',
+			'settings.playbackModeDirectPlay' => 'Direct',
+			'settings.quality15Mbps' => '15 Mbps',
+			'settings.quality10Mbps' => '10 Mbps',
+			'settings.quality8Mbps' => '8 Mbps',
+			'settings.quality6Mbps' => '6 Mbps',
+			'settings.quality4Mbps' => '4 Mbps',
+			'settings.quality3Mbps' => '3 Mbps',
+			'settings.quality1_5Mbps' => '1.5 Mbps',
+			'settings.quality720kbps' => '720 kbps',
+			'settings.quality420kbps' => '420 kbps',
 			'settings.cellularDownloadBlocked' => '蜂窝数据下已禁用下载。请连接 WiFi 或更改设置。',
 			'settings.maxVolume' => '最大音量',
 			'settings.maxVolumeDescription' => '允许音量超过 100% 以适应安静的媒体',
@@ -1822,13 +1835,13 @@ extension on TranslationsZh {
 			'libraries.analyze' => '分析',
 			'libraries.analyzeLibrary' => '分析媒体库',
 			'libraries.refreshMetadata' => '刷新元数据',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.emptyTrash' => '清空回收站',
 			'libraries.emptyingTrash' => ({required Object title}) => '正在清空 “${title}” 的回收站...',
 			'libraries.trashEmptied' => ({required Object title}) => '已清空 “${title}” 的回收站',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => '无法清空回收站: ${error}',
 			'libraries.analyzing' => ({required Object title}) => '正在分析 “${title}”...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => '已开始分析 “${title}”',
 			'libraries.failedToAnalyze' => ({required Object error}) => '无法分析媒体库: ${error}',
 			'libraries.noLibrariesFound' => '未找到媒体库',
@@ -1974,6 +1987,7 @@ extension on TranslationsZh {
 			'downloads.deleteDownload' => '删除下载',
 			'downloads.retryDownload' => '重试下载',
 			'downloads.downloadQueued' => '下载已排队',
+			'downloads.downloadStarting' => '正在启动...',
 			'downloads.episodesQueued' => ({required Object count}) => '${count} 集已加入下载队列',
 			'downloads.downloadDeleted' => '下载已删除',
 			'downloads.deleteConfirm' => ({required Object title}) => '确定要删除 "${title}" 吗？下载的文件将从您的设备中删除。',
@@ -2123,6 +2137,8 @@ extension on TranslationsZh {
 			'companionRemote.remote.audio' => '音频',
 			'companionRemote.remote.searchHint' => '在桌面上搜索...',
 			'videoSettings.playbackSettings' => '播放设置',
+			'videoSettings.quality' => '画质',
+			'videoSettings.qualityDescription' => '流媒体画质。自动由服务器决定。',
 			'videoSettings.playbackSpeed' => '播放速度',
 			'videoSettings.sleepTimer' => '睡眠定时器',
 			'videoSettings.audioSync' => '音频同步',

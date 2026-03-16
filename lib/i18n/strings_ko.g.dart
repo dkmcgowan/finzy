@@ -161,6 +161,9 @@ class _TranslationsCommonKo implements TranslationsCommonEn {
 	@override String get none => 'None';
 	@override String get loading => '로딩 중...';
 	@override String get reconnect => '다시 연결';
+	@override String get goOffline => '오프라인으로 전환';
+	@override String get goOnline => '다시 온라인';
+	@override String get connectionAvailable => '연결 가능';
 	@override String get exitConfirmTitle => '앱을 종료하시겠습니까?';
 	@override String get exitConfirmMessage => '정말 종료하시겠습니까?';
 	@override String get dontAskAgain => '다시 묻지 않기';
@@ -273,6 +276,9 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get liveTvPlayerDescription => '라이브 TV에는 MPV를 권장합니다. ExoPlayer는 일부 기기에서 문제가 있을 수 있습니다.';
 	@override String get liveTvMpv => 'MPV (Recommended)';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
+	@override String get liveTvQuality => '라이브 TV 품질';
+	@override String get liveTvQualityDescription => '라이브 TV의 트랜스코딩 품질을 제한합니다. 제한 없음은 서버 기본값을 사용합니다.';
+	@override String get liveTvQualityNone => '제한 없음';
 	@override String get hardwareDecoding => '하드웨어 디코딩';
 	@override String get hardwareDecodingDescription => '가능한 경우 하드웨어 가속을 사용합니다';
 	@override String get bufferSize => '버퍼 크기';
@@ -318,6 +324,8 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get autoSkipIntroDescription => '몇 초 후 오프닝을 자동으로 건너뛰기';
 	@override String get enableExternalSubtitles => 'Enable External Subtitles';
 	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get alwaysBurnInSubtitleWhenTranscoding => '트랜스코딩 시 자막 굽기';
+	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => '트랜스코딩 시 선택한 자막을 비디오에 굽습니다. jellyfin-web과 동일합니다.';
 	@override String get enableTrickplay => 'Enable Trickplay Thumbnails';
 	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
 	@override String get enableChapterImages => 'Enable Chapter Images';
@@ -353,23 +361,20 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get downloadQualityDescription => '오프라인 다운로드 품질. 원본은 소스 파일 유지; 다른 옵션은 공간 절약을 위해 트랜스코딩합니다.';
 	@override String get downloadQualityOriginal => '원본';
 	@override String get downloadQualityOriginalDescription => '원본 파일을 사용합니다.';
-	@override String get downloadQuality1080p => '1080p';
-	@override String get downloadQuality1080pDescription => '1080p로 트랜스코딩합니다.';
-	@override String get downloadQuality720p => '720p';
-	@override String get downloadQuality720pDescription => '720p로 트랜스코딩합니다.';
-	@override String get downloadQuality480p => '480p';
-	@override String get downloadQuality480pDescription => '480p로 트랜스코딩합니다.';
-	@override String get playbackMode => '스트리밍 모드';
 	@override String get playbackModeAutoDescription => '서버가 결정합니다.';
 	@override String get playbackModeAuto => '자동';
+	@override String get playbackModeAutoDirect => '자동 - Direct';
 	@override String get playbackModeDirectPlayDescription => '원본 파일을 사용합니다.';
-	@override String get playbackModeDirectPlay => 'Direct Play';
-	@override String get transcodeQuality1080p => '1080p';
-	@override String get transcodeQuality1080pDescription => '스트림을 1080p로 트랜스코딩합니다.';
-	@override String get transcodeQuality720p => '720p';
-	@override String get transcodeQuality720pDescription => '스트림을 720p로 트랜스코딩합니다.';
-	@override String get transcodeQuality480p => '480p';
-	@override String get transcodeQuality480pDescription => '스트림을 480p로 트랜스코딩합니다.';
+	@override String get playbackModeDirectPlay => 'Direct';
+	@override String get quality15Mbps => '15 Mbps';
+	@override String get quality10Mbps => '10 Mbps';
+	@override String get quality8Mbps => '8 Mbps';
+	@override String get quality6Mbps => '6 Mbps';
+	@override String get quality4Mbps => '4 Mbps';
+	@override String get quality3Mbps => '3 Mbps';
+	@override String get quality1_5Mbps => '1.5 Mbps';
+	@override String get quality720kbps => '720 kbps';
+	@override String get quality420kbps => '420 kbps';
 	@override String get cellularDownloadBlocked => '셀룰러 데이터에서 다운로드가 차단 되었습니다. WiFi에 연결하거나 설정을 변경하세요.';
 	@override String get maxVolume => '최대 볼륨';
 	@override String get maxVolumeDescription => '조용한 미디어를 위해 100% 이상의 볼륨 허용';
@@ -1028,6 +1033,7 @@ class _TranslationsDownloadsKo implements TranslationsDownloadsEn {
 	@override String get deleteDownload => '다운로드 삭제';
 	@override String get retryDownload => '다운로드 재시도';
 	@override String get downloadQueued => '다운로드 대기 중';
+	@override String get downloadStarting => '시작 중...';
 	@override String episodesQueued({required Object count}) => '${count} 에피소드가 다운로드 대기열에 추가 되었습니다';
 	@override String get downloadDeleted => '다운로드 삭제됨';
 	@override String deleteConfirm({required Object title}) => '"${title}"를 삭제 하시겠습니까? 다운로드한 파일이 기기에서 삭제됩니다.';
@@ -1080,6 +1086,8 @@ class _TranslationsVideoSettingsKo implements TranslationsVideoSettingsEn {
 
 	// Translations
 	@override String get playbackSettings => '재생 설정';
+	@override String get quality => '품질';
+	@override String get qualityDescription => '스트리밍 품질. 자동은 서버가 결정합니다.';
 	@override String get playbackSpeed => '재생 속도';
 	@override String get sleepTimer => '취침 타이머';
 	@override String get audioSync => '오디오 동기화';
@@ -1376,6 +1384,9 @@ extension on TranslationsKo {
 			'common.none' => 'None',
 			'common.loading' => '로딩 중...',
 			'common.reconnect' => '다시 연결',
+			'common.goOffline' => '오프라인으로 전환',
+			'common.goOnline' => '다시 온라인',
+			'common.connectionAvailable' => '연결 가능',
 			'common.exitConfirmTitle' => '앱을 종료하시겠습니까?',
 			'common.exitConfirmMessage' => '정말 종료하시겠습니까?',
 			'common.dontAskAgain' => '다시 묻지 않기',
@@ -1461,6 +1472,9 @@ extension on TranslationsKo {
 			'settings.liveTvPlayerDescription' => '라이브 TV에는 MPV를 권장합니다. ExoPlayer는 일부 기기에서 문제가 있을 수 있습니다.',
 			'settings.liveTvMpv' => 'MPV (Recommended)',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
+			'settings.liveTvQuality' => '라이브 TV 품질',
+			'settings.liveTvQualityDescription' => '라이브 TV의 트랜스코딩 품질을 제한합니다. 제한 없음은 서버 기본값을 사용합니다.',
+			'settings.liveTvQualityNone' => '제한 없음',
 			'settings.hardwareDecoding' => '하드웨어 디코딩',
 			'settings.hardwareDecodingDescription' => '가능한 경우 하드웨어 가속을 사용합니다',
 			'settings.bufferSize' => '버퍼 크기',
@@ -1506,6 +1520,8 @@ extension on TranslationsKo {
 			'settings.autoSkipIntroDescription' => '몇 초 후 오프닝을 자동으로 건너뛰기',
 			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
 			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.alwaysBurnInSubtitleWhenTranscoding' => '트랜스코딩 시 자막 굽기',
+			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => '트랜스코딩 시 선택한 자막을 비디오에 굽습니다. jellyfin-web과 동일합니다.',
 			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
 			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
 			'settings.enableChapterImages' => 'Enable Chapter Images',
@@ -1541,23 +1557,20 @@ extension on TranslationsKo {
 			'settings.downloadQualityDescription' => '오프라인 다운로드 품질. 원본은 소스 파일 유지; 다른 옵션은 공간 절약을 위해 트랜스코딩합니다.',
 			'settings.downloadQualityOriginal' => '원본',
 			'settings.downloadQualityOriginalDescription' => '원본 파일을 사용합니다.',
-			'settings.downloadQuality1080p' => '1080p',
-			'settings.downloadQuality1080pDescription' => '1080p로 트랜스코딩합니다.',
-			'settings.downloadQuality720p' => '720p',
-			'settings.downloadQuality720pDescription' => '720p로 트랜스코딩합니다.',
-			'settings.downloadQuality480p' => '480p',
-			'settings.downloadQuality480pDescription' => '480p로 트랜스코딩합니다.',
-			'settings.playbackMode' => '스트리밍 모드',
 			'settings.playbackModeAutoDescription' => '서버가 결정합니다.',
 			'settings.playbackModeAuto' => '자동',
+			'settings.playbackModeAutoDirect' => '자동 - Direct',
 			'settings.playbackModeDirectPlayDescription' => '원본 파일을 사용합니다.',
-			'settings.playbackModeDirectPlay' => 'Direct Play',
-			'settings.transcodeQuality1080p' => '1080p',
-			'settings.transcodeQuality1080pDescription' => '스트림을 1080p로 트랜스코딩합니다.',
-			'settings.transcodeQuality720p' => '720p',
-			'settings.transcodeQuality720pDescription' => '스트림을 720p로 트랜스코딩합니다.',
-			'settings.transcodeQuality480p' => '480p',
-			'settings.transcodeQuality480pDescription' => '스트림을 480p로 트랜스코딩합니다.',
+			'settings.playbackModeDirectPlay' => 'Direct',
+			'settings.quality15Mbps' => '15 Mbps',
+			'settings.quality10Mbps' => '10 Mbps',
+			'settings.quality8Mbps' => '8 Mbps',
+			'settings.quality6Mbps' => '6 Mbps',
+			'settings.quality4Mbps' => '4 Mbps',
+			'settings.quality3Mbps' => '3 Mbps',
+			'settings.quality1_5Mbps' => '1.5 Mbps',
+			'settings.quality720kbps' => '720 kbps',
+			'settings.quality420kbps' => '420 kbps',
 			'settings.cellularDownloadBlocked' => '셀룰러 데이터에서 다운로드가 차단 되었습니다. WiFi에 연결하거나 설정을 변경하세요.',
 			'settings.maxVolume' => '최대 볼륨',
 			'settings.maxVolumeDescription' => '조용한 미디어를 위해 100% 이상의 볼륨 허용',
@@ -1822,13 +1835,13 @@ extension on TranslationsKo {
 			'libraries.analyze' => '분석',
 			'libraries.analyzeLibrary' => '미디어 라이브러리 분석',
 			'libraries.refreshMetadata' => '메타데이터 새로 고침',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.emptyTrash' => '휴지통 비우기',
 			'libraries.emptyingTrash' => ({required Object title}) => '「${title}」의 휴지통을 비우고 있습니다...',
 			'libraries.trashEmptied' => ({required Object title}) => '「${title}」의 휴지통을 비웠습니다',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => '휴지통 비우기 실패: ${error}',
 			'libraries.analyzing' => ({required Object title}) => '"${title}" 분석 중...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => '"${title}" 분석 시작됨',
 			'libraries.failedToAnalyze' => ({required Object error}) => '미디어 라이브러리 분석 실패: ${error}',
 			'libraries.noLibrariesFound' => '미디어 라이브러리 없음',
@@ -2024,6 +2037,7 @@ extension on TranslationsKo {
 			'downloads.deleteDownload' => '다운로드 삭제',
 			'downloads.retryDownload' => '다운로드 재시도',
 			'downloads.downloadQueued' => '다운로드 대기 중',
+			'downloads.downloadStarting' => '시작 중...',
 			'downloads.episodesQueued' => ({required Object count}) => '${count} 에피소드가 다운로드 대기열에 추가 되었습니다',
 			'downloads.downloadDeleted' => '다운로드 삭제됨',
 			'downloads.deleteConfirm' => ({required Object title}) => '"${title}"를 삭제 하시겠습니까? 다운로드한 파일이 기기에서 삭제됩니다.',
@@ -2123,6 +2137,8 @@ extension on TranslationsKo {
 			'companionRemote.remote.audio' => '오디오',
 			'companionRemote.remote.searchHint' => '데스크톱에서 검색...',
 			'videoSettings.playbackSettings' => '재생 설정',
+			'videoSettings.quality' => '품질',
+			'videoSettings.qualityDescription' => '스트리밍 품질. 자동은 서버가 결정합니다.',
 			'videoSettings.playbackSpeed' => '재생 속도',
 			'videoSettings.sleepTimer' => '취침 타이머',
 			'videoSettings.audioSync' => '오디오 동기화',

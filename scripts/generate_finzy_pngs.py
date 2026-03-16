@@ -1,48 +1,11 @@
 """
 Generate finzy PNG assets from assets/finzy.svg:
 - finzy.png: 1024x1024 transparent
-- finzy_android_foreground.png: 1440x1440, icon centered (same icon size as 1024x1024)
-- finzy_monochrome.png: 1440x1440, same layout, monochrome
+- finzy_android_foreground.png: 1024x1024, icon fills frame (scaled 1.28x for adaptive icon)
+- finzy_monochrome.png: 1024x1024, white silhouette for themed icons
+- Runs dart run flutter_launcher_icons to apply adaptive icon config
 
-Logic matches scripts/generate_android_icons.sh: non-square SVG is rendered with
-aspect ratio preserved, fitted inside the target size, then centered on canvas.
-Run from repo root:  python scripts/generate_finzy_pngs.py
-"""
-import os
-import re
-import sys
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(SCRIPT_DIR)
-ASSETS = os.path.join(REPO_ROOT, "assets")
-SVG_PATH = os.path.join(ASSETS, "finzy.svg")
-
-ICON_SIZE = 1024
-FOREGROUND_SIZE = 1440
-
-
-def get_svg_viewbox(svg_path: str) -> tuple[float, float] | None:
-    """Parse viewBox from SVG; return (width, height) or None."""
-    with open(svg_path, encoding="utf-8") as f:
-        text = f.read()
-    parts = re.search(r'viewBox="\s*[\d.-]+\s+[\d.-]+\s+([\d.]+)\s+([\d.]+)\s*"', text)
-    if not parts:
-        return None
-    return float(parts.group(1)), float(parts.group(2))
-
-
-"""
-Generate finzy PNG assets from assets/finzy.svg:
-- finzy.png: 1024x1024 transparent
-- finzy_android_foreground.png: 1440x1440, icon centered (same icon size as 1024x1024)
-- finzy_monochrome.png: 1440x1440, same layout, monochrome
-
-Logic matches scripts/generate_android_icons.sh: non-square SVG is rendered with
-aspect ratio preserved, fitted inside the target size, then centered on canvas.
-
-Requires either:
-  - cairosvg + Cairo (pip install cairosvg; on Windows you may need GTK3 runtime for Cairo), or
-  - ImageMagick (magick) on PATH: https://imagemagick.org/script/download.php#windows
+Requires: cairosvg + Cairo, or ImageMagick (magick) on PATH.
 Run from repo root:  python scripts/generate_finzy_pngs.py
 """
 import os
@@ -57,10 +20,9 @@ ASSETS = os.path.join(REPO_ROOT, "assets")
 SVG_PATH = os.path.join(ASSETS, "finzy.svg")
 
 ICON_SIZE = 1024
-FOREGROUND_SIZE = 1440
-# Icon size inside the 1440x1440 foreground/monochrome canvas (scale to fit inside this box)
-FOREGROUND_ICON_MAX_WIDTH = 630
-FOREGROUND_ICON_MAX_HEIGHT = 705
+FOREGROUND_SIZE = 1024
+# Squircle in finzy.svg occupies ~78% of canvas (56-456 in 512). Scale 1.28 fills the frame.
+FOREGROUND_SCALE = 512 / 400  # 1.28
 
 
 def get_svg_viewbox(svg_path: str) -> tuple[float, float] | None:
@@ -192,32 +154,26 @@ def main():
     icon_1024.save(finzy_png, "PNG")
     print(f"Wrote {finzy_png} ({ICON_SIZE}x{ICON_SIZE})")
 
-    # 2) 1440x1440 with icon scaled to fit in 630x705 box, centered
-    scale = min(
-        FOREGROUND_ICON_MAX_WIDTH / icon_1024.width,
-        FOREGROUND_ICON_MAX_HEIGHT / icon_1024.height,
-    )
-    icon_w = int(round(icon_1024.width * scale))
-    icon_h = int(round(icon_1024.height * scale))
-    icon_small = icon_1024.resize((icon_w, icon_h), Image.LANCZOS)
+    # 2) Foreground: icon scaled to fill frame (adaptive icon, no black border)
+    scale = FOREGROUND_SCALE
+    scaled_w = int(round(icon_1024.width * scale))
+    scaled_h = int(round(icon_1024.height * scale))
+    icon_scaled = icon_1024.resize((scaled_w, scaled_h), Image.LANCZOS)
     w, h = FOREGROUND_SIZE, FOREGROUND_SIZE
-    pad = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    x = (w - icon_small.width) // 2
-    y = (h - icon_small.height) // 2
-    pad.paste(icon_small, (x, y), icon_small)
+    x = (scaled_w - w) // 2
+    y = (scaled_h - h) // 2
+    foreground_img = icon_scaled.crop((x, y, x + w, y + h))
     foreground_path = os.path.join(ASSETS, "finzy_android_foreground.png")
-    pad.save(foreground_path, "PNG")
-    print(f"Wrote {foreground_path} ({w}x{h}, icon {icon_small.width}x{icon_small.height} centered)")
+    foreground_img.save(foreground_path, "PNG")
+    print(f"Wrote {foreground_path} ({w}x{h}, icon fills frame)")
 
-    # 3) Monochrome: same as foreground, grayscale (preserve alpha)
-    r, g, b, a = pad.split()
-    rgb_only = Image.merge("RGB", (r, g, b))
-    gray = rgb_only.convert("L")
-    mono_rgba = Image.new("RGBA", pad.size)
-    mono_rgba.paste(Image.merge("RGB", (gray, gray, gray)), (0, 0), a)
+    # 3) Monochrome: white silhouette for themed icons (system tints it)
+    r, g, b, a = foreground_img.split()
+    mono_rgba = Image.new("RGBA", foreground_img.size, (255, 255, 255, 0))
+    mono_rgba.paste((255, 255, 255, 255), (0, 0), a)
     mono_path = os.path.join(ASSETS, "finzy_monochrome.png")
     mono_rgba.save(mono_path, "PNG")
-    print(f"Wrote {mono_path} ({w}x{h}, monochrome)")
+    print(f"Wrote {mono_path} ({w}x{h}, white silhouette)")
 
     # 4) Android drawable icons: ic_launcher_monochrome + ic_stat_notification
     # ic_launcher.xml references @drawable/ic_launcher_monochrome (adaptive icon monochrome layer)
@@ -368,6 +324,24 @@ def main():
         out_path = os.path.join(MICROSOFT_DIR, f"logo-{size}x{size}.png")
         resized.save(out_path, "PNG")
         print(f"  Wrote {out_path} ({size}x{size})")
+
+    # 7) Apply adaptive icon config (pubspec.yaml: flutter_launcher_icons)
+    print("")
+    print("Running flutter_launcher_icons...")
+    cmd = "dart run flutter_launcher_icons" if sys.platform == "win32" else ["dart", "run", "flutter_launcher_icons"]
+    result = subprocess.run(
+        cmd,
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        shell=sys.platform == "win32",
+    )
+    if result.returncode != 0:
+        print(f"  Warning: flutter_launcher_icons failed: {result.stderr}", file=sys.stderr)
+    else:
+        print("  [OK] Adaptive icons applied")
 
 
 if __name__ == "__main__":
