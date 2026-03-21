@@ -16,7 +16,7 @@ jobs:
       - name: Get release version
         id: release
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -n "${{ github.event.release.tag_name }}" ]; then
             VERSION="${{ github.event.release.tag_name }}"
