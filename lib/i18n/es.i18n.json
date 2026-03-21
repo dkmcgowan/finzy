@@ -20,6 +20,7 @@
     "invalidPassword": "Usuario o contraseña incorrectos.",
     "notAuthorized": "No autorizado. Por favor, inicia sesión de nuevo.",
     "serverUnreachable": "No se pudo conectar al servidor. Comprueba la URL y tu conexión.",
+    "serverError": "Error del servidor. Inténtalo de nuevo más tarde.",
     "scanQRToSignIn": "Escanea este código QR para iniciar sesión",
     "waitingForAuth": "Esperando autenticación...\nPor favor completa el inicio de sesión en tu navegador.",
     "useBrowser": "Usar navegador"
@@ -109,6 +110,8 @@
     "episodeThumbnail": "Miniatura de Episodio",
     "episodeThumbnailDescription": "Mostrar miniaturas de capturas de pantalla de episodios en 16:9",
     "timeFormat": "Formato de hora",
+    "system": "Sistema",
+    "systemDescription": "Seguir configuración de formato de hora del sistema",
     "twelveHour": "12 horas",
     "twentyFourHour": "24 horas",
     "twelveHourDescription": "ej. 1:00 PM",
@@ -162,6 +165,8 @@
     "liveTvQuality": "Calidad de TV en vivo",
     "liveTvQualityDescription": "Limitar la calidad de transcodificación para TV en vivo. Sin límite usa el predeterminado del servidor.",
     "liveTvQualityNone": "Sin límite",
+    "streamingQuality": "Calidad de streaming",
+    "streamingQualityDescription": "Limitar la calidad de transcodificación para VOD. Auto deja que el servidor decida.",
     "hardwareDecoding": "Decodificación por Hardware",
     "hardwareDecodingDescription": "Usar aceleración por hardware cuando esté disponible",
     "bufferSize": "Tamaño del Buffer",
@@ -477,7 +482,8 @@
     "noItemsAvailable": "No hay elementos disponibles",
     "failedToCreatePlayQueueNoItems": "Error al crear la cola de reproducción - no hay elementos",
     "failedPlayback": "Error al ${action}: ${error}",
-    "switchingToCompatiblePlayer": "Cambiando a reproductor compatible..."
+    "switchingToCompatiblePlayer": "Cambiando a reproductor compatible...",
+    "qualityRevertedOnError": "Se revirtió a la calidad anterior debido a un error de reproducción."
   },
   "subtitlingStyling": {
     "stylingOptions": "Opciones de Estilo",

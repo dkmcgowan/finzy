@@ -18,7 +18,7 @@ enum ViewMode { grid, list }
 
 enum EpisodePosterMode { seriesPoster, seasonPoster, episodeThumbnail }
 
-enum TimeFormat { twelveHour, twentyFourHour }
+enum TimeFormat { system, twelveHour, twentyFourHour }
 
 /// Performance tier for image quality and grid preload. Small = fastest, Large = best quality.
 enum PerformanceProfile { small, medium, large }
@@ -131,6 +131,7 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyAlwaysKeepSidebarOpen = 'always_keep_sidebar_open';
   static const String _keyShowUnwatchedCount = 'show_unwatched_count';
   static const String _keyGlobalShaderPreset = 'global_shader_preset';
+  static const String _keyDefaultBoxFitMode = 'default_box_fit_mode';
   static const String _keyRequireProfileSelectionOnOpen = 'require_profile_selection_on_open';
   static const String _keyUseExternalPlayer = 'use_external_player';
   static const String _keySelectedExternalPlayer = 'selected_external_player';
@@ -334,7 +335,7 @@ class SettingsService extends BaseSharedPreferencesService {
   }
 
   TimeFormat getTimeFormat() {
-    return _getEnumValue(_keyTimeFormat, TimeFormat.values, TimeFormat.twelveHour);
+    return _getEnumValue(_keyTimeFormat, TimeFormat.values, TimeFormat.system);
   }
 
   // Performance: Image Quality (TV default: small, else: medium)
@@ -1328,6 +1329,15 @@ class SettingsService extends BaseSharedPreferencesService {
 
   String getGlobalShaderPreset() {
     return prefs.getString(_keyGlobalShaderPreset) ?? 'none'; // Default: no shader
+  }
+
+  // Default BoxFit mode for video (0=contain, 1=cover, 2=fill)
+  Future<void> setDefaultBoxFitMode(int mode) async {
+    await prefs.setInt(_keyDefaultBoxFitMode, mode.clamp(0, 2));
+  }
+
+  int getDefaultBoxFitMode() {
+    return prefs.getInt(_keyDefaultBoxFitMode) ?? 0;
   }
 
   // Require Profile Selection on App Open

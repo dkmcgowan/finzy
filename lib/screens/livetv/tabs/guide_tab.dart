@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -37,7 +38,7 @@ enum _GuideZone { timeNav, grid }
 
 class GuideTabState extends State<GuideTab> {
   static const _slotWidth = 180.0;
-  static const _channelColumnWidth = 140.0;
+  static const _channelColumnWidth = 100.0;
   static const _rowHeight = 64.0;
   static const _timeHeaderHeight = 40.0;
   static const _minutesPerSlot = 30;
@@ -645,9 +646,7 @@ class GuideTabState extends State<GuideTab> {
 
     if (target == today) return t.liveTv.today;
 
-    final format = MaterialLocalizations.of(context);
-    final full = format.formatFullDate(target);
-    return full.split(',').first;
+    return DateFormat('EEEE', LocaleSettings.currentLocale.languageCode).format(target);
   }
 
   List<(String, int)> get _timeSlots => [
@@ -785,7 +784,7 @@ class GuideTabState extends State<GuideTab> {
   }
 
   Widget _buildTimeNavigation(ThemeData theme) {
-    final timeLabel = formatGuideTime(_gridStart, use24Hour: context.read<SettingsProvider>().use24HourTime);
+    final timeLabel = formatGuideTime(_gridStart, use24Hour: context.read<SettingsProvider>().use24HourTime(context));
     final dayLabel = _dayLabel(_gridStart);
 
     return Container(
@@ -853,7 +852,7 @@ class GuideTabState extends State<GuideTab> {
   // ---------------------------------------------------------------------------
 
   Widget _buildTimeHeader(ThemeData theme) {
-    final use24h = context.read<SettingsProvider>().use24HourTime;
+    final use24h = context.read<SettingsProvider>().use24HourTime(context);
     final slots = <Widget>[];
     var current = _gridStart;
 
@@ -980,7 +979,8 @@ class GuideTabState extends State<GuideTab> {
             channel,
             program,
             theme,
-            isLast: program == programs.last,
+            isFirst: progStart == gridStartEpoch,
+            isLast: program == programs.last && progEnd != gridEndEpoch,
             isFocused: identical(program, focusProg),
           ),
         ),
@@ -1000,6 +1000,7 @@ class GuideTabState extends State<GuideTab> {
     LiveTvChannel channel,
     LiveTvProgram program,
     ThemeData theme, {
+    bool isFirst = false,
     bool isLast = false,
     bool isFocused = false,
   }) {
@@ -1008,18 +1009,16 @@ class GuideTabState extends State<GuideTab> {
 
     Color materialColor;
     if (isFocused) {
-      materialColor = theme.colorScheme.primary.withValues(alpha: 0.25);
+      materialColor = theme.colorScheme.primary.withValues(alpha: 0.15);
     } else if (isCurrentlyAiring) {
-      materialColor = theme.colorScheme.primaryContainer;
+      materialColor = theme.colorScheme.onSurface.withValues(alpha: 0.12);
     } else {
-      materialColor = theme.colorScheme.surfaceContainerHigh;
+      materialColor = theme.colorScheme.onSurface.withValues(alpha: 0.05);
     }
 
     Color titleColor;
     if (isFocused) {
       titleColor = theme.colorScheme.primary;
-    } else if (isCurrentlyAiring) {
-      titleColor = theme.colorScheme.onPrimaryContainer;
     } else {
       titleColor = theme.colorScheme.onSurface;
     }
@@ -1027,8 +1026,6 @@ class GuideTabState extends State<GuideTab> {
     Color subtitleColor;
     if (isFocused) {
       subtitleColor = theme.colorScheme.primary.withValues(alpha: 0.7);
-    } else if (isCurrentlyAiring) {
-      subtitleColor = theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.7);
     } else {
       subtitleColor = theme.colorScheme.onSurfaceVariant;
     }
@@ -1048,7 +1045,7 @@ class GuideTabState extends State<GuideTab> {
           child: Container(
             decoration: BoxDecoration(
               border: Border(
-                left: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)),
+                left: isFirst ? BorderSide.none : BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)),
                 right: isLast ? BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)) : BorderSide.none,
               ),
             ),
@@ -1059,8 +1056,8 @@ class GuideTabState extends State<GuideTab> {
               children: [
                 Text(
                   program.seriesTitle ?? program.title,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: isCurrentlyAiring ? FontWeight.w600 : FontWeight.normal,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                     color: titleColor,
                   ),
                   maxLines: 1,
@@ -1075,7 +1072,7 @@ class GuideTabState extends State<GuideTab> {
                   ),
                 if (program.startTime != null)
                   Text(
-                    '${formatGuideTime(program.startTime!, use24Hour: context.read<SettingsProvider>().use24HourTime)} · ${formatDurationTextual(program.durationMinutes * 60000)}',
+                    '${formatGuideTime(program.startTime!, use24Hour: context.read<SettingsProvider>().use24HourTime(context))} · ${formatDurationTextual(program.durationMinutes * 60000)}',
                     style: theme.textTheme.labelSmall?.copyWith(color: subtitleColor),
                     maxLines: 1,
                   ),

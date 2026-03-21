@@ -493,17 +493,26 @@ class _OverlaySheetHostState extends State<OverlaySheetHost>
             alignment: Alignment.bottomCenter,
             child: Transform.translate(
               offset: Offset(0, _dragOffset.clamp(0, double.infinity)),
-              child: Material(
-                color: _backgroundColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                clipBehavior: Clip.antiAlias,
-                child: Theme(
-                  data: _buildOverlayTheme(context),
-                  child: SafeArea(
-                    top: false,
-                    child: ConstrainedBox(
-                      constraints: effectiveConstraints,
-                      child: _pageStack.isNotEmpty ? _pageStack.last.builder(context) : const SizedBox.shrink(),
+              child: SafeArea(
+                left: true,
+                right: true,
+                top: false,
+                bottom: false,
+                child: Material(
+                  color: _backgroundColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  clipBehavior: Clip.antiAlias,
+                  child: Theme(
+                    data: _buildOverlayTheme(context),
+                    child: SafeArea(
+                      top: false,
+                      bottom: true,
+                      left: false,
+                      right: false,
+                      child: ConstrainedBox(
+                        constraints: effectiveConstraints,
+                        child: _pageStack.isNotEmpty ? _pageStack.last.builder(context) : const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                 ),

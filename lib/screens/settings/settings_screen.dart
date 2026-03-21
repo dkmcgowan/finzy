@@ -97,6 +97,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   static const _kHardwareDecoding = 'hardware_decoding';
   static const _kMatchContentFrameRate = 'match_content_frame_rate';
   static const _kBufferSize = 'buffer_size';
+  static const _kStreamingQuality = 'streaming_quality';
+  static const _kLiveTvQuality = 'live_tv_quality';
   static const _kSubtitleStyling = 'subtitle_styling';
   static const _kMpvConfig = 'mpv_config';
   static const _kSmallSkipDuration = 'small_skip_duration';
@@ -156,6 +158,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
   int _autoSkipDelay = 5;
   bool _downloadOnWifiOnly = false;
   settings.DownloadQuality _downloadQuality = settings.DownloadQuality.original;
+  settings.PlaybackMode _playbackMode = settings.PlaybackMode.auto;
+  int? _liveTvBitrate;
   bool _videoPlayerNavigationEnabled = false;
   int _maxVolume = 100;
 
@@ -212,6 +216,35 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
         settings.DownloadQuality.p420k => t.settings.quality420kbps,
       };
 
+  String get _streamingQualityLabel => switch (_playbackMode) {
+        settings.PlaybackMode.auto => t.settings.playbackModeAutoDirect,
+        settings.PlaybackMode.directPlay => t.settings.playbackModeDirectPlay,
+        settings.PlaybackMode.transcode15 => t.settings.quality15Mbps,
+        settings.PlaybackMode.transcode10 => t.settings.quality10Mbps,
+        settings.PlaybackMode.transcode8 => t.settings.quality8Mbps,
+        settings.PlaybackMode.transcode6 => t.settings.quality6Mbps,
+        settings.PlaybackMode.transcode4 => t.settings.quality4Mbps,
+        settings.PlaybackMode.transcode3 => t.settings.quality3Mbps,
+        settings.PlaybackMode.transcode1_5 => t.settings.quality1_5Mbps,
+        settings.PlaybackMode.transcode720k => t.settings.quality720kbps,
+        settings.PlaybackMode.transcode420k => t.settings.quality420kbps,
+      };
+
+  String get _liveTvQualityLabel => _liveTvBitrate == null
+      ? t.settings.playbackModeAutoDirect
+      : switch (_liveTvBitrate) {
+          15000000 => t.settings.quality15Mbps,
+          10000000 => t.settings.quality10Mbps,
+          8000000 => t.settings.quality8Mbps,
+          6000000 => t.settings.quality6Mbps,
+          4000000 => t.settings.quality4Mbps,
+          3000000 => t.settings.quality3Mbps,
+          1500000 => t.settings.quality1_5Mbps,
+          720000 => t.settings.quality720kbps,
+          420000 => t.settings.quality420kbps,
+          _ => t.settings.liveTvQualityNone,
+        };
+
   @override
   void focusActiveTabIfReady() {
     if (!InputModeTracker.isKeyboardMode(context)) return;
@@ -262,6 +295,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
       _autoSkipDelay = _settingsService.getAutoSkipDelay();
       _downloadOnWifiOnly = _settingsService.getDownloadOnWifiOnly();
       _downloadQuality = _settingsService.getDownloadQuality();
+      _playbackMode = _settingsService.getPlaybackMode();
+      _liveTvBitrate = _settingsService.getLiveTvMaxStreamingBitrate();
       _videoPlayerNavigationEnabled = _settingsService.getVideoPlayerNavigationEnabled();
       _maxVolume = _settingsService.getMaxVolume();
 
@@ -1157,6 +1192,36 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
             onTap: () => _showBufferSizeDialog(),
           ),
           ListTile(
+            focusNode: _focusTracker.get(_kStreamingQuality),
+            leading: const AppIcon(Symbols.high_quality_rounded, fill: 1),
+            title: Text(t.settings.streamingQuality),
+            subtitle: Text(t.settings.streamingQualityDescription),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_streamingQualityLabel, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                const SizedBox(width: 8),
+                const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+              ],
+            ),
+            onTap: () => _showStreamingQualityDialog(),
+          ),
+          ListTile(
+            focusNode: _focusTracker.get(_kLiveTvQuality),
+            leading: const AppIcon(Symbols.live_tv_rounded, fill: 1),
+            title: Text(t.settings.liveTvQuality),
+            subtitle: Text(t.settings.liveTvQualityDescription),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_liveTvQualityLabel, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                const SizedBox(width: 8),
+                const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+              ],
+            ),
+            onTap: () => _showLiveTvQualityDialog(),
+          ),
+          ListTile(
             focusNode: _focusTracker.get(_kSubtitleStyling),
             leading: const AppIcon(Symbols.subtitles_rounded, fill: 1),
             title: Text(t.settings.subtitleStyling),
@@ -1629,6 +1694,119 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
                     _settingsService.setBufferSize(size);
                   });
                   Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
+        );
+      },
+    );
+  }
+
+  static const List<settings.PlaybackMode> _streamingQualityModes = [
+    settings.PlaybackMode.auto,
+    settings.PlaybackMode.directPlay,
+    settings.PlaybackMode.transcode15,
+    settings.PlaybackMode.transcode10,
+    settings.PlaybackMode.transcode8,
+    settings.PlaybackMode.transcode6,
+    settings.PlaybackMode.transcode4,
+    settings.PlaybackMode.transcode3,
+    settings.PlaybackMode.transcode1_5,
+    settings.PlaybackMode.transcode720k,
+    settings.PlaybackMode.transcode420k,
+  ];
+
+  void _showStreamingQualityDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(t.settings.streamingQuality),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _streamingQualityModes.map((mode) {
+              return ListTile(
+                leading: AppIcon(
+                  _playbackMode == mode ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(switch (mode) {
+                  settings.PlaybackMode.auto => t.settings.playbackModeAutoDirect,
+                  settings.PlaybackMode.directPlay => t.settings.playbackModeDirectPlay,
+                  settings.PlaybackMode.transcode15 => t.settings.quality15Mbps,
+                  settings.PlaybackMode.transcode10 => t.settings.quality10Mbps,
+                  settings.PlaybackMode.transcode8 => t.settings.quality8Mbps,
+                  settings.PlaybackMode.transcode6 => t.settings.quality6Mbps,
+                  settings.PlaybackMode.transcode4 => t.settings.quality4Mbps,
+                  settings.PlaybackMode.transcode3 => t.settings.quality3Mbps,
+                  settings.PlaybackMode.transcode1_5 => t.settings.quality1_5Mbps,
+                  settings.PlaybackMode.transcode720k => t.settings.quality720kbps,
+                  settings.PlaybackMode.transcode420k => t.settings.quality420kbps,
+                }),
+                onTap: () async {
+                  final navigator = Navigator.of(context);
+                  setState(() => _playbackMode = mode);
+                  await _settingsService.setPlaybackMode(mode);
+                  navigator.pop();
+                },
+              );
+            }).toList(),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
+        );
+      },
+    );
+  }
+
+  static const List<int?> _liveTvQualityBitrates = [
+    null,
+    15000000,
+    10000000,
+    8000000,
+    6000000,
+    4000000,
+    3000000,
+    1500000,
+    720000,
+    420000,
+  ];
+
+  void _showLiveTvQualityDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(t.settings.liveTvQuality),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _liveTvQualityBitrates.map((bitrate) {
+              final label = bitrate == null
+                  ? t.settings.playbackModeAutoDirect
+                  : switch (bitrate) {
+                      15000000 => t.settings.quality15Mbps,
+                      10000000 => t.settings.quality10Mbps,
+                      8000000 => t.settings.quality8Mbps,
+                      6000000 => t.settings.quality6Mbps,
+                      4000000 => t.settings.quality4Mbps,
+                      3000000 => t.settings.quality3Mbps,
+                      1500000 => t.settings.quality1_5Mbps,
+                      720000 => t.settings.quality720kbps,
+                      420000 => t.settings.quality420kbps,
+                      _ => t.settings.liveTvQualityNone,
+                    };
+              return ListTile(
+                leading: AppIcon(
+                  _liveTvBitrate == bitrate ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                  fill: 1,
+                ),
+                title: Text(label),
+                onTap: () async {
+                  final navigator = Navigator.of(context);
+                  setState(() => _liveTvBitrate = bitrate);
+                  await _settingsService.setLiveTvMaxStreamingBitrate(bitrate);
+                  navigator.pop();
                 },
               );
             }).toList(),
@@ -2353,6 +2531,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
     _showOptionSelectionDialog<settings.TimeFormat>(
       title: t.settings.timeFormat,
       options: [
+        _DialogOption(
+          value: settings.TimeFormat.system,
+          title: t.settings.system,
+          subtitle: t.settings.systemDescription,
+        ),
         _DialogOption(
           value: settings.TimeFormat.twelveHour,
           title: t.settings.twelveHour,

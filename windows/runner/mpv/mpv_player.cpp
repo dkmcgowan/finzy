@@ -404,6 +404,9 @@ void MpvPlayer::HandleMpvEvent(mpv_event* event) {
       if (end->reason == MPV_END_FILE_REASON_ERROR) {
         data[flutter::EncodableValue("error")] =
             flutter::EncodableValue(static_cast<int>(end->error));
+        const char* errStr = mpv_error_string(end->error);
+        data[flutter::EncodableValue("message")] =
+            flutter::EncodableValue(errStr ? std::string(errStr) : std::string());
       }
       SendEvent("end-file", data);
       break;

@@ -109,6 +109,7 @@ class _TranslationsAuthEs implements TranslationsAuthEn {
 	@override String get invalidPassword => 'Usuario o contraseña incorrectos.';
 	@override String get notAuthorized => 'No autorizado. Por favor, inicia sesión de nuevo.';
 	@override String get serverUnreachable => 'No se pudo conectar al servidor. Comprueba la URL y tu conexión.';
+	@override String get serverError => 'Error del servidor. Inténtalo de nuevo más tarde.';
 	@override String get scanQRToSignIn => 'Escanea este código QR para iniciar sesión';
 	@override String get waitingForAuth => 'Esperando autenticación...\nPor favor completa el inicio de sesión en tu navegador.';
 	@override String get useBrowser => 'Usar navegador';
@@ -226,6 +227,8 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get episodeThumbnail => 'Miniatura de Episodio';
 	@override String get episodeThumbnailDescription => 'Mostrar miniaturas de capturas de pantalla de episodios en 16:9';
 	@override String get timeFormat => 'Formato de hora';
+	@override String get system => 'Sistema';
+	@override String get systemDescription => 'Seguir configuración de formato de hora del sistema';
 	@override String get twelveHour => '12 horas';
 	@override String get twentyFourHour => '24 horas';
 	@override String get twelveHourDescription => 'ej. 1:00 PM';
@@ -279,6 +282,8 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get liveTvQuality => 'Calidad de TV en vivo';
 	@override String get liveTvQualityDescription => 'Limitar la calidad de transcodificación para TV en vivo. Sin límite usa el predeterminado del servidor.';
 	@override String get liveTvQualityNone => 'Sin límite';
+	@override String get streamingQuality => 'Calidad de streaming';
+	@override String get streamingQualityDescription => 'Limitar la calidad de transcodificación para VOD. Auto deja que el servidor decida.';
 	@override String get hardwareDecoding => 'Decodificación por Hardware';
 	@override String get hardwareDecodingDescription => 'Usar aceleración por hardware cuando esté disponible';
 	@override String get bufferSize => 'Tamaño del Buffer';
@@ -631,6 +636,7 @@ class _TranslationsMessagesEs implements TranslationsMessagesEn {
 	@override String get failedToCreatePlayQueueNoItems => 'Error al crear la cola de reproducción - no hay elementos';
 	@override String failedPlayback({required Object action, required Object error}) => 'Error al ${action}: ${error}';
 	@override String get switchingToCompatiblePlayer => 'Cambiando a reproductor compatible...';
+	@override String get qualityRevertedOnError => 'Se revirtió a la calidad anterior debido a un error de reproducción.';
 }
 
 // Path: subtitlingStyling
@@ -1341,6 +1347,7 @@ extension on TranslationsEs {
 			'auth.invalidPassword' => 'Usuario o contraseña incorrectos.',
 			'auth.notAuthorized' => 'No autorizado. Por favor, inicia sesión de nuevo.',
 			'auth.serverUnreachable' => 'No se pudo conectar al servidor. Comprueba la URL y tu conexión.',
+			'auth.serverError' => 'Error del servidor. Inténtalo de nuevo más tarde.',
 			'auth.scanQRToSignIn' => 'Escanea este código QR para iniciar sesión',
 			'auth.waitingForAuth' => 'Esperando autenticación...\nPor favor completa el inicio de sesión en tu navegador.',
 			'auth.useBrowser' => 'Usar navegador',
@@ -1422,6 +1429,8 @@ extension on TranslationsEs {
 			'settings.episodeThumbnail' => 'Miniatura de Episodio',
 			'settings.episodeThumbnailDescription' => 'Mostrar miniaturas de capturas de pantalla de episodios en 16:9',
 			'settings.timeFormat' => 'Formato de hora',
+			'settings.system' => 'Sistema',
+			'settings.systemDescription' => 'Seguir configuración de formato de hora del sistema',
 			'settings.twelveHour' => '12 horas',
 			'settings.twentyFourHour' => '24 horas',
 			'settings.twelveHourDescription' => 'ej. 1:00 PM',
@@ -1475,6 +1484,8 @@ extension on TranslationsEs {
 			'settings.liveTvQuality' => 'Calidad de TV en vivo',
 			'settings.liveTvQualityDescription' => 'Limitar la calidad de transcodificación para TV en vivo. Sin límite usa el predeterminado del servidor.',
 			'settings.liveTvQualityNone' => 'Sin límite',
+			'settings.streamingQuality' => 'Calidad de streaming',
+			'settings.streamingQualityDescription' => 'Limitar la calidad de transcodificación para VOD. Auto deja que el servidor decida.',
 			'settings.hardwareDecoding' => 'Decodificación por Hardware',
 			'settings.hardwareDecodingDescription' => 'Usar aceleración por hardware cuando esté disponible',
 			'settings.bufferSize' => 'Tamaño del Buffer',
@@ -1765,6 +1776,7 @@ extension on TranslationsEs {
 			'messages.failedToCreatePlayQueueNoItems' => 'Error al crear la cola de reproducción - no hay elementos',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => 'Error al ${action}: ${error}',
 			'messages.switchingToCompatiblePlayer' => 'Cambiando a reproductor compatible...',
+			'messages.qualityRevertedOnError' => 'Se revirtió a la calidad anterior debido a un error de reproducción.',
 			'subtitlingStyling.stylingOptions' => 'Opciones de Estilo',
 			'subtitlingStyling.fontSize' => 'Tamaño de Fuente',
 			'subtitlingStyling.textColor' => 'Color de Texto',
@@ -1829,14 +1841,14 @@ extension on TranslationsEs {
 			'errors.invalidToken' => 'Token no válido',
 			'errors.failedToVerifyToken' => ({required Object error}) => 'Error al verificar el token: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => 'Error al cambiar al perfil ${displayName}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.title' => 'Bibliotecas',
 			'libraries.scanLibraryFiles' => 'Escanear Archivos de la Biblioteca',
 			'libraries.scanLibrary' => 'Escanear Biblioteca',
 			'libraries.analyze' => 'Analizar',
 			'libraries.analyzeLibrary' => 'Analizar Biblioteca',
 			'libraries.refreshMetadata' => 'Actualizar Metadatos',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.emptyTrash' => 'Vaciar Papelera',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Vaciando papelera de "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Papelera vaciada para "${title}"',

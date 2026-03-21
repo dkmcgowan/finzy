@@ -20,6 +20,9 @@ class VideoFilterManager {
   final List<MediaVersion> availableVersions;
   final int selectedMediaIndex;
 
+  /// Called when box fit mode changes (for persistence)
+  final void Function(int mode)? onBoxFitModeChanged;
+
   /// BoxFit mode state: 0=contain (letterbox), 1=cover (fill screen), 2=fill (stretch)
   int _boxFitMode = 0;
 
@@ -38,7 +41,13 @@ class VideoFilterManager {
   /// Debounced video filter update with leading edge execution
   late final Debounce _debouncedUpdateVideoFilter;
 
-  VideoFilterManager({required this.player, required this.availableVersions, required this.selectedMediaIndex}) {
+  VideoFilterManager({
+    required this.player,
+    required this.availableVersions,
+    required this.selectedMediaIndex,
+    int initialBoxFitMode = 0,
+    this.onBoxFitModeChanged,
+  }) : _boxFitMode = initialBoxFitMode.clamp(0, 2) {
     _debouncedUpdateVideoFilter = debounce(
       updateVideoFilter,
       const Duration(milliseconds: 50),
@@ -53,10 +62,15 @@ class VideoFilterManager {
   /// Current player size
   Size? get playerSize => _playerSize;
 
+  void _notifyBoxFitChanged() {
+    onBoxFitModeChanged?.call(_boxFitMode);
+  }
+
   /// Cycle through BoxFit modes: contain → cover → fill → contain (for button)
   void cycleBoxFitMode() {
     _boxFitMode = (_boxFitMode + 1) % 3;
     updateVideoFilter();
+    _notifyBoxFitChanged();
   }
 
   /// Reset to contain mode (mode 0). Used when enabling ambient lighting.
@@ -64,6 +78,7 @@ class VideoFilterManager {
     if (_boxFitMode != 0) {
       _boxFitMode = 0;
       updateVideoFilter();
+      _notifyBoxFitChanged();
     }
   }
 
@@ -71,6 +86,7 @@ class VideoFilterManager {
   void toggleContainCover() {
     _boxFitMode = _boxFitMode == 0 ? 1 : 0;
     updateVideoFilter();
+    _notifyBoxFitChanged();
   }
 
   /// Force contain mode for PiP (no cropping/stretching)
@@ -88,6 +104,7 @@ class VideoFilterManager {
       _boxFitMode = _prePipBoxFitMode!;
       _prePipBoxFitMode = null;
       updateVideoFilter();
+      _notifyBoxFitChanged();
     }
   }
 

@@ -154,6 +154,16 @@ abstract class Player {
   Future<void> command(List<String> args);
 
   // ============================================
+  // Subtitle Fonts
+  // ============================================
+
+  /// Configure subtitle fonts for libass rendering.
+  ///
+  /// Extracts a comprehensive Unicode font (Go Noto) to the cache directory
+  /// and sets `sub-fonts-dir` and `sub-font` properties.
+  Future<void> configureSubtitleFonts();
+
+  // ============================================
   // Passthrough Mode (Audio)
   // ============================================
 
@@ -228,6 +238,9 @@ abstract class Player {
   // ============================================
   // Lifecycle
   // ============================================
+
+  /// Whether the player has been disposed.
+  bool get disposed;
 
   /// Dispose of the player and release resources.
   ///

@@ -20,6 +20,7 @@
     "invalidPassword": "Nome utente o password non validi.",
     "notAuthorized": "Non autorizzato. Accedi di nuovo.",
     "serverUnreachable": "Impossibile raggiungere il server. Controlla l'URL e la connessione.",
+    "serverError": "Errore del server. Riprova più tardi.",
     "scanQRToSignIn": "Scansiona il QR code per accedere",
     "waitingForAuth": "In attesa di autenticazione...\nCompleta l'accesso dal tuo browser.",
     "useBrowser": "Usa browser"
@@ -109,6 +110,8 @@
     "episodeThumbnail": "Miniatura episodio",
     "episodeThumbnailDescription": "Mostra miniature 16:9 degli episodi",
     "timeFormat": "Formato ora",
+    "system": "Sistema",
+    "systemDescription": "Segui il formato orario del sistema",
     "twelveHour": "12 ore",
     "twentyFourHour": "24 ore",
     "twelveHourDescription": "es. 1:00 PM",
@@ -162,6 +165,8 @@
     "liveTvQuality": "Qualità TV in diretta",
     "liveTvQualityDescription": "Limita la qualità di transcodifica per la TV in diretta. Nessun limite usa l'impostazione predefinita del server.",
     "liveTvQualityNone": "Nessun limite",
+    "streamingQuality": "Qualità streaming",
+    "streamingQualityDescription": "Limita la qualità di transcodifica per VOD. Auto lascia decidere al server.",
     "hardwareDecoding": "Decodifica Hardware",
     "hardwareDecodingDescription": "Utilizza l'accelerazione hardware quando disponibile",
     "bufferSize": "Dimensione buffer",
@@ -477,7 +482,8 @@
     "noItemsAvailable": "Nessun elemento disponibile",
     "failedToCreatePlayQueueNoItems": "Impossibile creare la coda di riproduzione - nessun elemento",
     "failedPlayback": "Impossibile ${action}: ${error}",
-    "switchingToCompatiblePlayer": "Passaggio al lettore compatibile..."
+    "switchingToCompatiblePlayer": "Passaggio al lettore compatibile...",
+    "qualityRevertedOnError": "Ripristinata la qualità precedente a causa di un errore di riproduzione."
   },
   "subtitlingStyling": {
     "stylingOptions": "Opzioni stile",

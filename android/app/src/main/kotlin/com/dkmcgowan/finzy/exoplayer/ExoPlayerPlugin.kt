@@ -2,6 +2,8 @@ package com.dkmcgowan.finzy.exoplayer
 
 import android.app.Activity
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.dkmcgowan.finzy.mpv.MpvPlayerCore
 import com.dkmcgowan.finzy.mpv.MpvPlayerDelegate
@@ -24,6 +26,10 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
     private lateinit var methodChannel: MethodChannel
     private lateinit var eventChannel: EventChannel
     private var eventSink: EventChannel.EventSink? = null
+    private var sessionGeneration = 0
+    private var fallbackInProgress = false
+    private var configuredBufferSizeBytes: Int? = null
+    private val pendingMpvProperties = mutableListOf<Pair<String, String>>()
     private var playerCore: ExoPlayerCore? = null
     private var mpvCore: MpvPlayerCore? = null  // MPV fallback player
     private var usingMpvFallback: Boolean = false
@@ -58,6 +64,7 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
     }
 
     override fun onDetachedFromActivity() {
+        sessionGeneration++
         playerCore?.dispose()
         playerCore = null
         mpvCore?.dispose()
@@ -75,6 +82,8 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
+        sessionGeneration++
+        fallbackInProgress = false
         activity = null
         activityBinding = null
         Log.d(TAG, "Detached from activity for config changes")
@@ -96,6 +105,10 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
+            "getHeapSize" -> {
+                val heapBytes = Runtime.getRuntime().maxMemory()
+                result.success((heapBytes / 1024 / 1024).toInt())
+            }
             "initialize" -> handleInitialize(call, result)
             "dispose" -> handleDispose(result)
             "open" -> handleOpen(call, result)
@@ -121,6 +134,7 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
             "getPlayerType" -> result.success(if (usingMpvFallback) "mpv" else "exoplayer")
             "setSubtitleStyle" -> handleSetSubtitleStyle(call, result)
             "observeProperty" -> handleObserveProperty(call, result)
+            "setMpvProperty" -> handleSetMpvProperty(call, result)
             else -> result.notImplemented()
         }
     }
@@ -139,7 +153,15 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
         }
 
         val bufferSizeBytes = call.argument<Int>("bufferSizeBytes")
+        configuredBufferSizeBytes = bufferSizeBytes
 
+        sessionGeneration++
+        if (mpvCore != null || fallbackInProgress) {
+            mpvCore?.dispose()
+            mpvCore = null
+            usingMpvFallback = false
+            fallbackInProgress = false
+        }
         currentActivity.runOnUiThread {
             try {
                 playerCore = ExoPlayerCore(currentActivity).apply {
@@ -160,17 +182,26 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
     }
 
     private fun handleDispose(result: MethodChannel.Result) {
+        sessionGeneration++
         activity?.runOnUiThread {
             if (usingMpvFallback) {
-                mpvCore?.dispose()
-                mpvCore = null
+                mpvCore?.dispose {
+                    mpvCore = null
+                    usingMpvFallback = false
+                    Log.d(TAG, "Disposed")
+                    result.success(null)
+                } ?: run {
+                    mpvCore = null
+                    usingMpvFallback = false
+                    result.success(null)
+                }
             } else {
                 playerCore?.dispose()
                 playerCore = null
+                usingMpvFallback = false
+                Log.d(TAG, "Disposed")
+                result.success(null)
             }
-            usingMpvFallback = false
-            Log.d(TAG, "Disposed")
-            result.success(null)
         } ?: result.success(null)
     }
 
@@ -185,6 +216,9 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
             result.error("INVALID_ARGS", "Missing 'uri'", null)
             return
         }
+
+        // New media = fresh slate for pending MPV properties
+        pendingMpvProperties.clear()
 
         activity?.runOnUiThread {
             if (usingMpvFallback) {
@@ -430,6 +464,24 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
         result.success(null)
     }
 
+    private fun handleSetMpvProperty(call: MethodCall, result: MethodChannel.Result) {
+        val name = call.argument<String>("name")
+        val value = call.argument<String>("value")
+
+        if (name == null || value == null) {
+            result.error("INVALID_ARGS", "Missing 'name' or 'value'", null)
+            return
+        }
+
+        if (usingMpvFallback) {
+            mpvCore?.setProperty(name, value)
+        } else {
+            // Store for later application if ExoPlayer falls back to MPV
+            pendingMpvProperties.add(Pair(name, value))
+        }
+        result.success(null)
+    }
+
     private fun handleSetSubtitleStyle(call: MethodCall, result: MethodChannel.Result) {
         val fontSize = call.argument<Number>("fontSize")?.toFloat() ?: 55f
         val textColor = call.argument<String>("textColor") ?: "#FFFFFF"
@@ -538,25 +590,6 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
         eventSink?.success(event)
     }
 
-    /**
-     * Opens a content:// URI via ContentResolver and returns the raw FD number,
-     * or null if the URI is not a content:// scheme or opening fails.
-     * The returned FD is detached so MPV can own and close it via fdclose://.
-     */
-    private fun openContentFd(uriString: String): Int? {
-        if (!uriString.startsWith("content://")) return null
-        return try {
-            val uri = Uri.parse(uriString)
-            val pfd = activity?.contentResolver?.openFileDescriptor(uri, "r") ?: return null
-            val fd = pfd.detachFd()
-            Log.d(TAG, "Opened content FD $fd for $uriString")
-            fd
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to open content FD: ${e.message}", e)
-            null
-        }
-    }
-
     override fun onFormatUnsupported(
         uri: String,
         headers: Map<String, String>?,
@@ -564,49 +597,99 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
         errorMessage: String
     ): Boolean {
         val currentActivity = activity ?: return false
+        fallbackInProgress = true
 
         Log.i(TAG, "ExoPlayer error, switching to MPV fallback at ${positionMs}ms: $errorMessage")
 
-        currentActivity.runOnUiThread {
-            try {
-                // Dispose ExoPlayer
-                playerCore?.dispose()
-                playerCore = null
+        // Dispose ExoPlayer immediately
+        playerCore?.dispose()
+        playerCore = null
 
-                // Create and initialize MPV
-                mpvCore = MpvPlayerCore(currentActivity).apply {
+        val generation = sessionGeneration
+
+        Handler(Looper.getMainLooper()).post {
+            if (generation != sessionGeneration) {
+                fallbackInProgress = false
+                return@post
+            }
+            val act = activity
+            if (act == null) {
+                fallbackInProgress = false
+                return@post
+            }
+
+            try {
+                val core = MpvPlayerCore(act).apply {
                     delegate = this@ExoPlayerPlugin
                 }
-                val success = mpvCore?.initialize() ?: false
+                mpvCore = core
 
+                val success = core.initialize()
+
+                if (generation != sessionGeneration) {
+                    if (mpvCore === core) {
+                        core.dispose()
+                        mpvCore = null
+                    }
+                    fallbackInProgress = false
+                    return@post
+                }
                 if (!success) {
+                    if (mpvCore === core) {
+                        core.dispose()
+                        mpvCore = null
+                    }
+                    fallbackInProgress = false
                     Log.e(TAG, "Failed to initialize MPV fallback")
                     onEvent("end-file", mapOf("reason" to "error", "message" to "Fallback failed: $errorMessage"))
-                    return@runOnUiThread
+                    return@post
                 }
 
                 usingMpvFallback = true
+                fallbackInProgress = false
 
                 // Configure basic MPV properties for media playback
-                mpvCore?.setProperty("hwdec", "auto")
-                mpvCore?.setProperty("vo", "gpu")
-                mpvCore?.setProperty("ao", "audiotrack")
+                core.setProperty("hwdec", "auto")
+                core.setProperty("vo", "gpu")
+                core.setProperty("ao", "audiotrack,opensles")
+
+                // Forward buffer config to MPV fallback
+                val bufferSize = configuredBufferSizeBytes
+                if (bufferSize != null && bufferSize > 0) {
+                    core.setProperty("demuxer-max-bytes", bufferSize.toString())
+                    core.setProperty("demuxer-max-back-bytes", (bufferSize / 4).toString())
+                } else {
+                    // Cap based on heap when no explicit buffer (matches video_player_screen logic)
+                    val heapMB = (Runtime.getRuntime().maxMemory() / 1024 / 1024).toInt()
+                    if (heapMB > 0) {
+                        val autoBackMB = if (heapMB <= 256) 16 else if (heapMB <= 512) 32 else 48
+                        val autoForwardMB = if (heapMB <= 256) 32 else if (heapMB <= 512) 64 else 100
+                        core.setProperty("demuxer-max-bytes", "${autoForwardMB * 1024 * 1024}")
+                        core.setProperty("demuxer-max-back-bytes", "${autoBackMB * 1024 * 1024}")
+                    }
+                }
+
+                // Apply any pending MPV properties from Dart (e.g. stream-lavf-o for VOD reconnect)
+                for ((propName, propValue) in pendingMpvProperties) {
+                    core.setProperty(propName, propValue)
+                }
+                pendingMpvProperties.clear()
 
                 // Setup property observers
-                mpvCore?.observeProperty("time-pos", "double")
-                mpvCore?.observeProperty("duration", "double")
-                mpvCore?.observeProperty("pause", "flag")
-                mpvCore?.observeProperty("paused-for-cache", "flag")
-                mpvCore?.observeProperty("demuxer-cache-time", "double")
-                mpvCore?.observeProperty("eof-reached", "flag")
-                mpvCore?.observeProperty("track-list", "string")
-                mpvCore?.observeProperty("aid", "string")
-                mpvCore?.observeProperty("sid", "string")
-                mpvCore?.observeProperty("volume", "double")
-                mpvCore?.observeProperty("speed", "double")
+                core.observeProperty("time-pos", "double")
+                core.observeProperty("duration", "double")
+                core.observeProperty("pause", "flag")
+                core.observeProperty("paused-for-cache", "flag")
+                core.observeProperty("demuxer-cache-time", "double")
+                core.observeProperty("eof-reached", "flag")
+                core.observeProperty("track-list", "string")
+                core.observeProperty("aid", "string")
+                core.observeProperty("sid", "string")
+                core.observeProperty("volume", "double")
+                core.observeProperty("speed", "double")
 
                 // Show the MPV surface
-                mpvCore?.setVisible(true)
+                core.setVisible(true)
 
                 // Load media at the same position
                 val startSeconds = positionMs / 1000.0
@@ -616,23 +699,46 @@ class ExoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
                     options.add("http-header-fields-append=$key: $value")
                 }
                 val optionsStr = options.joinToString(",")
-                // Convert content:// URIs to fdclose:// for MPV (SAF SD card downloads)
-                val mpvUri = openContentFd(uri)?.let { "fdclose://$it" } ?: uri
-                mpvCore?.command(arrayOf("loadfile", mpvUri, "replace", "-1", optionsStr))
+                val mpvUri = openContentFd(uri, act.contentResolver)?.let { "fdclose://$it" } ?: uri
+                core.command(arrayOf("loadfile", mpvUri, "replace", "-1", optionsStr))
+
+                // On GPUs without compute shaders, MPV can't do dynamic peak detection
+                // and spline tone-mapping produces dim/washed-out results with extreme
+                // static HDR peak metadata. Use reinhard which handles this better.
+                val peakDetection = core.getProperty("hdr-compute-peak")
+                if (peakDetection == "no") {
+                    Log.i(TAG, "No compute shaders — overriding tone-mapping to reinhard")
+                    core.setProperty("tone-mapping", "reinhard")
+                    core.setProperty("tone-mapping-param", "0.7")
+                    core.setProperty("tone-mapping-mode", "luma")
+                }
 
                 // Request audio focus
-                mpvCore?.requestAudioFocus()
+                core.requestAudioFocus()
 
-                // Emit backend-switched event so Flutter can show notification
                 onEvent("backend-switched", null)
-
                 Log.i(TAG, "Successfully switched to MPV fallback")
             } catch (e: Exception) {
+                fallbackInProgress = false
                 Log.e(TAG, "Failed to switch to MPV fallback", e)
                 onEvent("end-file", mapOf("reason" to "error", "message" to "Fallback failed: ${e.message}"))
             }
         }
 
         return true // Fallback is being handled
+    }
+
+    private fun openContentFd(uriString: String, resolver: android.content.ContentResolver? = activity?.contentResolver): Int? {
+        if (!uriString.startsWith("content://")) return null
+        return try {
+            val uri = Uri.parse(uriString)
+            val pfd = resolver?.openFileDescriptor(uri, "r") ?: return null
+            val fd = pfd.detachFd()
+            Log.d(TAG, "Opened content FD $fd for $uriString")
+            fd
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open content FD: ${e.message}", e)
+            null
+        }
     }
 }

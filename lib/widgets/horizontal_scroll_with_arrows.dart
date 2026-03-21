@@ -55,6 +55,7 @@ class _HorizontalScrollWithArrowsState extends State<HorizontalScrollWithArrows>
 
   void _updateScrollState() {
     if (!mounted) return;
+    if (_scrollController.positions.length != 1) return;
 
     final position = _scrollController.position;
     setState(() {
@@ -64,6 +65,7 @@ class _HorizontalScrollWithArrowsState extends State<HorizontalScrollWithArrows>
   }
 
   void _animateScroll(double direction) {
+    if (_scrollController.positions.length != 1) return;
     final position = _scrollController.position;
     final delta = direction * position.viewportDimension * widget.scrollAmount;
     final targetScroll = (position.pixels + delta).clamp(0.0, position.maxScrollExtent);

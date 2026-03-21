@@ -20,6 +20,7 @@
     "invalidPassword": "Invalid username or password.",
     "notAuthorized": "Not authorized. Please sign in again.",
     "serverUnreachable": "Could not reach server. Check the URL and your connection.",
+    "serverError": "Server error. Please try again later.",
     "scanQRToSignIn": "Scan this QR code to sign in",
     "waitingForAuth": "Waiting for authentication...\nPlease complete sign-in in your browser.",
     "useBrowser": "Use browser"
@@ -109,6 +110,8 @@
     "episodeThumbnail": "Episode Thumbnail",
     "episodeThumbnailDescription": "Show 16:9 episode screenshot thumbnails",
     "timeFormat": "Time Format",
+    "system": "System",
+    "systemDescription": "Follow system time format setting",
     "twelveHour": "12-hour",
     "twentyFourHour": "24-hour",
     "twelveHourDescription": "e.g. 1:00 PM",
@@ -162,6 +165,8 @@
     "liveTvQuality": "Live TV Quality",
     "liveTvQualityDescription": "Limit transcoding quality for Live TV. No limit uses server default.",
     "liveTvQualityNone": "No limit",
+    "streamingQuality": "Streaming Quality",
+    "streamingQualityDescription": "Limit transcoding quality for VOD. Auto lets the server decide.",
     "hardwareDecoding": "Hardware Decoding",
     "hardwareDecodingDescription": "Use hardware acceleration when available",
     "bufferSize": "Buffer Size",
@@ -476,7 +481,8 @@
     "noItemsAvailable": "No items available",
     "failedToCreatePlayQueueNoItems": "Failed to create play queue - no items",
     "failedPlayback": "Failed to ${action}: ${error}",
-    "switchingToCompatiblePlayer": "Switching to compatible player..."
+    "switchingToCompatiblePlayer": "Switching to compatible player...",
+    "qualityRevertedOnError": "Reverted to previous quality due to playback error."
   },
   "subtitlingStyling": {
     "stylingOptions": "Styling Options",

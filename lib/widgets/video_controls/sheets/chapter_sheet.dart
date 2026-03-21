@@ -21,12 +21,16 @@ class ChapterSheet extends StatefulWidget {
   final bool chaptersLoaded;
   final String? serverId; // Server ID for the metadata these chapters belong to
 
+  /// For transcode: seeks require reload. When set, use this instead of player.seek.
+  final Future<void> Function(Duration moviePosition)? onTranscodeSeek;
+
   const ChapterSheet({
     super.key,
     required this.player,
     required this.chapters,
     required this.chaptersLoaded,
     this.serverId,
+    this.onTranscodeSeek,
   });
 
   @override
@@ -136,9 +140,13 @@ class _ChapterSheetState extends State<ChapterSheet> {
                   trailing: isCurrentChapter
                       ? const AppIcon(Symbols.play_circle_rounded, fill: 1, color: Colors.blue)
                       : null,
-                  onTap: () {
-                    widget.player.seek(chapter.startTime);
-                    OverlaySheetController.of(context).close();
+                  onTap: () async {
+                    if (widget.onTranscodeSeek != null) {
+                      await widget.onTranscodeSeek!(chapter.startTime);
+                    } else {
+                      widget.player.seek(chapter.startTime);
+                    }
+                    if (context.mounted) OverlaySheetController.of(context).close();
                   },
                 );
               },

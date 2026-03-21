@@ -122,6 +122,7 @@ class MultiServerManager {
 
         final client = _createJellyfinClient(registered.jellyfinData);
         await client.loadUserPolicy();
+        await client.reportCapabilities();
 
         _clients[serverId] = client;
         _servers[serverId] = registered;
@@ -177,6 +178,7 @@ class MultiServerManager {
 
       final client = _createJellyfinClient(registered.jellyfinData);
       await client.loadUserPolicy();
+      await client.reportCapabilities();
 
       _clients[serverId] = client;
       _servers[serverId] = registered;
@@ -364,6 +366,7 @@ class MultiServerManager {
 
       final client = _createJellyfinClient(registered.jellyfinData);
       await client.loadUserPolicy();
+      await client.reportCapabilities();
 
       _clients[serverId] = client;
       updateServerStatus(serverId, true);

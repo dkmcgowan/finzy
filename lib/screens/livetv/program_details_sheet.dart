@@ -277,7 +277,7 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
                       [
                         if (channel != null) channel.displayName,
                         if (program.startTime != null && program.endTime != null)
-                          '${formatGuideTime(program.startTime!, use24Hour: context.read<SettingsProvider>().use24HourTime)} - ${formatGuideTime(program.endTime!, use24Hour: context.read<SettingsProvider>().use24HourTime)}',
+                          '${formatGuideTime(program.startTime!, use24Hour: context.read<SettingsProvider>().use24HourTime(context))} - ${formatGuideTime(program.endTime!, use24Hour: context.read<SettingsProvider>().use24HourTime(context))}',
                         if (program.durationMinutes > 0) formatDurationTextual(program.durationMinutes * 60000),
                       ].join(' · '),
                       style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),

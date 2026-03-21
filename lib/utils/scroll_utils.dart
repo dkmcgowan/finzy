@@ -14,7 +14,7 @@ void scrollListToIndex(
   bool animate = true,
   bool disableAnimations = false,
 }) {
-  if (!controller.hasClients || itemExtent <= 0) return;
+  if (controller.positions.length != 1 || itemExtent <= 0) return;
 
   final viewport = controller.position.viewportDimension;
   final targetCenter = leadingPadding + (index * itemExtent) + (itemExtent / 2);

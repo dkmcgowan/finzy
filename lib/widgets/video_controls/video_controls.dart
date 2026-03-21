@@ -79,11 +79,15 @@ Widget appVideoControlsBuilder(
   ShaderService? shaderService,
   VoidCallback? onShaderChanged,
   String Function(Duration time)? thumbnailUrlBuilder,
+  int? positionOffsetMs,
   bool isLive = false,
   String? liveChannelName,
   bool isAmbientLightingEnabled = false,
   VoidCallback? onToggleAmbientLighting,
-  VoidCallback? onQualityChanged,
+  void Function({PlaybackMode? previousPlaybackMode, int? previousLiveTvBitrate})? onQualityChanged,
+  /// For transcode streams, seeks require reloading the stream. When set and positionOffsetMs is set,
+  /// this is called instead of player.seek() with the target movie position in ms.
+  Future<void> Function(Duration moviePosition)? onTranscodeSeek,
 }) {
   return AppVideoControls(
     player: player,
@@ -108,11 +112,13 @@ Widget appVideoControlsBuilder(
     shaderService: shaderService,
     onShaderChanged: onShaderChanged,
     thumbnailUrlBuilder: thumbnailUrlBuilder,
+    positionOffsetMs: positionOffsetMs,
     isLive: isLive,
     liveChannelName: liveChannelName,
     isAmbientLightingEnabled: isAmbientLightingEnabled,
     onToggleAmbientLighting: onToggleAmbientLighting,
     onQualityChanged: onQualityChanged,
+    onTranscodeSeek: onTranscodeSeek,
   );
 }
 
@@ -162,6 +168,9 @@ class AppVideoControls extends StatefulWidget {
   /// Optional callback that returns a thumbnail URL for a given timestamp.
   final String Function(Duration time)? thumbnailUrlBuilder;
 
+  /// For transcode streams: playback start position in ms (player reports from stream start).
+  final int? positionOffsetMs;
+
   /// Whether this is a live TV stream (disables seek, progress, etc.)
   final bool isLive;
 
@@ -175,7 +184,10 @@ class AppVideoControls extends StatefulWidget {
   final VoidCallback? onToggleAmbientLighting;
 
   /// Called when streaming or Live TV quality changes; caller should restart playback.
-  final VoidCallback? onQualityChanged;
+  final void Function({PlaybackMode? previousPlaybackMode, int? previousLiveTvBitrate})? onQualityChanged;
+
+  /// For transcode: seeks require reload. When set with positionOffsetMs, used instead of player.seek.
+  final Future<void> Function(Duration moviePosition)? onTranscodeSeek;
 
   const AppVideoControls({
     super.key,
@@ -201,11 +213,13 @@ class AppVideoControls extends StatefulWidget {
     this.shaderService,
     this.onShaderChanged,
     this.thumbnailUrlBuilder,
+    this.positionOffsetMs,
     this.isLive = false,
     this.liveChannelName,
     this.isAmbientLightingEnabled = false,
     this.onToggleAmbientLighting,
     this.onQualityChanged,
+    this.onTranscodeSeek,
   });
 
   @override
@@ -286,7 +300,13 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
     _focusNode = FocusNode();
     _skipMarkerFocusNode = FocusNode(debugLabel: 'SkipMarkerButton');
     _seekThrottle = throttle(
-      (Duration pos) => widget.player.seek(pos),
+      (Duration pos) {
+        if (widget.positionOffsetMs != null && widget.onTranscodeSeek != null) {
+          widget.onTranscodeSeek!(pos);
+        } else {
+          widget.player.seek(pos);
+        }
+      },
       const Duration(milliseconds: 200),
       leading: true,
       trailing: true,
@@ -422,8 +442,26 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
   }
 
   void _skipMarker() {
-    if (_currentMarker != null) {
-      final endTime = _currentMarker!.endTime;
+    if (_currentMarker == null) {
+      _cancelAutoSkipTimer();
+      return;
+    }
+    final marker = _currentMarker!;
+    final endTime = marker.endTime;
+    final duration = widget.player.state.duration;
+    // When credits/outro extends to end and no next episode, seeking is useless — go back instead
+    if (marker.isOutro &&
+        widget.onNext == null &&
+        duration.inMilliseconds > 0 &&
+        endTime.inMilliseconds >= duration.inMilliseconds - 500) {
+      widget.onBack?.call();
+      _cancelAutoSkipTimer();
+      return;
+    }
+    if (_useTranscodeSeek) {
+      widget.onTranscodeSeek!(endTime);
+      widget.onSeekCompleted?.call(endTime);
+    } else {
       widget.player.seek(endTime);
       widget.onSeekCompleted?.call(endTime);
     }
@@ -1058,6 +1096,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
       isAmbientLightingEnabled: widget.isAmbientLightingEnabled,
       onToggleAmbientLighting: widget.player.playerType != 'exoplayer' ? widget.onToggleAmbientLighting : null,
       onQualityChanged: widget.onQualityChanged,
+      onTranscodeSeek: widget.onTranscodeSeek,
     );
   }
 
@@ -1067,36 +1106,36 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
 
   void _seekByTime({required bool forward}) {
     final delta = Duration(seconds: forward ? _seekTimeSmall : -_seekTimeSmall);
-    final newPosition = seekWithClamping(widget.player, delta);
-    widget.onSeekCompleted?.call(newPosition);
+    if (_useTranscodeSeek) {
+      final offsetMs = widget.positionOffsetMs!;
+      final streamPosMs = widget.player.state.position.inMilliseconds;
+      final currentMovieMs = offsetMs + streamPosMs;
+      final durationMs = widget.metadata.duration ?? 0;
+      final newMovieMs = (currentMovieMs + delta.inMilliseconds).clamp(0, durationMs);
+      final newPosition = Duration(milliseconds: newMovieMs);
+      widget.onTranscodeSeek!(newPosition);
+      widget.onSeekCompleted?.call(newPosition);
+    } else {
+      final newPosition = seekWithClamping(widget.player, delta);
+      widget.onSeekCompleted?.call(newPosition);
+    }
   }
 
   void _seekToChapter({required bool forward}) {
     if (_chapters.isEmpty) {
-      // No chapters - seek by configured amount
-      final delta = Duration(seconds: forward ? _seekTimeSmall : -_seekTimeSmall);
-      final duration = widget.player.state.duration;
-      final unclamped = widget.player.state.position + delta;
-      Duration newPosition;
-      if (unclamped < Duration.zero) {
-        newPosition = Duration.zero;
-      } else if (unclamped > duration) {
-        newPosition = duration;
-      } else {
-        newPosition = unclamped;
-      }
-      seekWithClamping(widget.player, delta);
-      widget.onSeekCompleted?.call(newPosition);
+      _seekByTime(forward: forward);
       return;
     }
 
-    final currentPositionMs = widget.player.state.position.inMilliseconds;
+    final currentMoviePositionMs = _useTranscodeSeek
+        ? widget.positionOffsetMs! + widget.player.state.position.inMilliseconds
+        : widget.player.state.position.inMilliseconds;
 
     if (forward) {
       // Find next chapter
       for (final chapter in _chapters) {
         final chapterStart = chapter.startTimeOffset ?? 0;
-        if (chapterStart > currentPositionMs) {
+        if (chapterStart > currentMoviePositionMs) {
           _seekToPosition(Duration(milliseconds: chapterStart));
           return;
         }
@@ -1105,7 +1144,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
       // Find previous/current chapter
       for (int i = _chapters.length - 1; i >= 0; i--) {
         final chapterStart = _chapters[i].startTimeOffset ?? 0;
-        if (currentPositionMs > chapterStart + 3000) {
+        if (currentMoviePositionMs > chapterStart + 3000) {
           // If more than 3 seconds into chapter, go to start of current chapter
           _seekToPosition(Duration(milliseconds: chapterStart));
           return;
@@ -1117,18 +1156,33 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
   }
 
   void _seekToPosition(Duration position) {
-    widget.player.seek(position);
-    widget.onSeekCompleted?.call(position);
+    if (_useTranscodeSeek) {
+      widget.onTranscodeSeek!(position);
+      widget.onSeekCompleted?.call(position);
+    } else {
+      widget.player.seek(position);
+      widget.onSeekCompleted?.call(position);
+    }
   }
 
+  bool get _useTranscodeSeek =>
+      widget.positionOffsetMs != null && widget.onTranscodeSeek != null;
+
   /// Throttled seek for timeline slider - executes immediately then throttles to 200ms
-  void _throttledSeek(Duration position) => _seekThrottle([position]);
+  void _throttledSeek(Duration position) {
+    _seekThrottle([position]);
+  }
 
   /// Finalizes the seek when user stops scrubbing the timeline
   void _finalizeSeek(Duration position) {
     _seekThrottle.cancel();
-    widget.player.seek(position);
-    widget.onSeekCompleted?.call(position);
+    if (_useTranscodeSeek) {
+      widget.onTranscodeSeek!(position);
+      widget.onSeekCompleted?.call(position);
+    } else {
+      widget.player.seek(position);
+      widget.onSeekCompleted?.call(position);
+    }
   }
 
   /// Handle tap in skip zone for desktop mode
@@ -1953,6 +2007,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
                                             canControl: widget.canControl,
                                             hasFirstFrame: widget.hasFirstFrame,
                                             thumbnailUrlBuilder: widget.thumbnailUrlBuilder,
+                                            positionOffsetMs: widget.positionOffsetMs,
                                             isLive: widget.isLive,
                                             liveChannelName: widget.liveChannelName,
                                           ),
@@ -2067,11 +2122,13 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
         shaderService: widget.shaderService,
         onShaderChanged: widget.onShaderChanged,
         thumbnailUrlBuilder: widget.thumbnailUrlBuilder,
+        positionOffsetMs: widget.positionOffsetMs,
         isLive: widget.isLive,
         liveChannelName: widget.liveChannelName,
         isAmbientLightingEnabled: widget.isAmbientLightingEnabled,
         onToggleAmbientLighting: widget.player.playerType != 'exoplayer' ? widget.onToggleAmbientLighting : null,
         onQualityChanged: widget.onQualityChanged,
+        onTranscodeSeek: widget.onTranscodeSeek,
       ),
     );
   }

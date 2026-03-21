@@ -35,7 +35,12 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.HttpDataSource
+import androidx.media3.datasource.cronet.CronetDataSource
+import org.chromium.net.CronetEngine
+import java.util.concurrent.Executors
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -78,7 +83,25 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     companion object {
         private const val TAG = "ExoPlayerCore"
         private const val SHORT_VIDEO_LENGTH_MS = 300000L // 5 minutes
+        private const val WATCHDOG_CHECK_INTERVAL_MS = 1000L
+        private const val WATCHDOG_TIMEOUT_MS = 8000L
+        private const val DECODER_HANG_TIMEOUT_MS = 5000L
+
+        private var cronetEngine: CronetEngine? = null
+        private fun getCronetEngine(context: Context): CronetEngine {
+            return cronetEngine ?: synchronized(this) {
+                cronetEngine ?: CronetEngine.Builder(context.applicationContext)
+                    .enableHttp2(true)
+                    .enableQuic(true)
+                    .build()
+                    .also { cronetEngine = it }
+            }
+        }
+        private val cronetExecutor = Executors.newSingleThreadExecutor()
     }
+
+    private var httpDataSourceFactory: HttpDataSource.Factory? = null
+    private var dataSourceFactory: DefaultDataSource.Factory? = null
 
     private var surfaceView: SurfaceView? = null
     private var surfaceContainer: FrameLayout? = null
@@ -87,6 +110,7 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     private var overlayLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exoPlayer: ExoPlayer? = null
     private var trackSelector: DefaultTrackSelector? = null
+    @Volatile private var disposing: Boolean = false
     var delegate: ExoPlayerDelegate? = null
     var isInitialized: Boolean = false
         private set
@@ -102,8 +126,19 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     private var hasAudioFocus: Boolean = false
     private var wasPlayingBeforeFocusLoss: Boolean = false
 
+    // Frame watchdog: detects black screen (audio plays but 0 video frames rendered)
+    private var frameWatchdogRunnable: Runnable? = null
+    private var frameWatchdogStartTime: Long = 0L
+    // Decoder hang detection: tracks gap between decoder init and first rendered frame
+    private var decoderHangRunnable: Runnable? = null
+    private var decoderInitName: String? = null
+    private var firstFrameRendered: Boolean = false
+
     // Track state for event emission
     private var lastPosition: Long = 0
+    /** Position to use for fallback: max of current position and pending start position. */
+    private var pendingStartPositionMs: Long = 0
+    private val effectivePosition: Long get() = maxOf(lastPosition, pendingStartPositionMs)
     private var lastDuration: Long = 0
     private var lastBufferedPosition: Long = 0
     private var positionUpdateRunnable: Runnable? = null
@@ -144,8 +179,10 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     }
 
     private fun ensureFlutterOverlayOnTop() {
+        if (disposing) return
         val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
         contentView.post {
+            if (disposing || !isInitialized) return@post
             var flutterContainer: ViewGroup? = null
 
             for (i in 0 until contentView.childCount) {
@@ -209,6 +246,7 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
             return true
         }
 
+        disposing = false
         try {
             audioManager = activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -307,8 +345,12 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
                 setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             }
 
-            // Create factories for buildWithAssSupport (like AndroidTV-FireTV)
-            val dataSourceFactory = DefaultDataSource.Factory(activity)
+            // Cronet DataSource for HTTP/2 multiplexing — reuses connections, prevents high-bitrate stutter
+            httpDataSourceFactory = CronetDataSource.Factory(getCronetEngine(activity), cronetExecutor)
+                .setConnectionTimeoutMs(15_000)
+                .setReadTimeoutMs(10_000)
+            dataSourceFactory = DefaultDataSource.Factory(activity, httpDataSourceFactory!!)
+
             val extractorsFactory = DefaultExtractorsFactory()
 
             // Inline buildWithAssSupport to retain AssHandler reference for font scale control.
@@ -333,17 +375,29 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
                 }.toTypedArray()
             }
 
-            val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, wrappedExtractorsFactory)
+            val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory!!, wrappedExtractorsFactory)
                 .setSubtitleParserFactory(assParserFactory)
 
             val wrappedRenderersFactory = AssRenderersFactory(handler, renderersFactory)
 
-            val loadControl = DefaultLoadControl.Builder().apply {
-                if (bufferSizeBytes != null && bufferSizeBytes > 0) {
-                    setTargetBufferBytes(bufferSizeBytes)
-                    setPrioritizeTimeOverSizeThresholds(false)
-                    Log.d(TAG, "Buffer byte limit set to ${bufferSizeBytes / 1024 / 1024}MB")
+            val targetBufferBytes = if (bufferSizeBytes != null && bufferSizeBytes > 0) {
+                bufferSizeBytes
+            } else {
+                val memInfo = android.app.ActivityManager.MemoryInfo()
+                (activity.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager)
+                    .getMemoryInfo(memInfo)
+                val availableMB = memInfo.availMem / (1024 * 1024)
+                when {
+                    availableMB <= 512 -> 30 * 1024 * 1024
+                    availableMB <= 1024 -> 80 * 1024 * 1024
+                    availableMB <= 2048 -> 120 * 1024 * 1024
+                    else -> 200 * 1024 * 1024
                 }
+            }
+            val loadControl = DefaultLoadControl.Builder().apply {
+                setTargetBufferBytes(targetBufferBytes)
+                setPrioritizeTimeOverSizeThresholds(false)
+                Log.d(TAG, "Buffer: ${targetBufferBytes / 1024 / 1024}MB limit, dataSource=Cronet")
             }.build()
 
             exoPlayer = ExoPlayer.Builder(activity)
@@ -364,6 +418,7 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
             handler.init(exoPlayer!!)
 
             exoPlayer!!.addListener(this)
+            exoPlayer!!.addAnalyticsListener(decoderHangListener)
             surfaceView?.let { exoPlayer!!.setVideoSurfaceView(it) }
 
             Log.d(TAG, "SubtitleView childCount after ASS setup: ${subtitleView?.childCount}")
@@ -392,6 +447,7 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
 
     private val surfaceCallback = object : android.view.SurfaceHolder.Callback {
         override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+            if (disposing) return
             Log.d(TAG, "Surface created")
             ensureFlutterOverlayOnTop()
         }
@@ -478,8 +534,11 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
                 delegate?.onPropertyChange("paused-for-cache", false)
                 delegate?.onEvent("playback-restart", null)
                 emitTrackList()
+                // Start frame watchdog to detect black screen (HDR tunneling issue)
+                startFrameWatchdog()
             }
             Player.STATE_ENDED -> {
+                stopFrameWatchdog()
                 delegate?.onPropertyChange("eof-reached", true)
                 delegate?.onEvent("end-file", mapOf("reason" to "eof"))
             }
@@ -488,18 +547,33 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
 
     override fun onTracksChanged(tracks: Tracks) {
         Log.d(TAG, "onTracksChanged")
+        // Detect video track present but deselected (unsupported codec — plays audio only)
+        val hasAnyVideoGroup = tracks.groups.any { it.type == C.TRACK_TYPE_VIDEO }
+        val hasSelectedVideo = tracks.groups.any { it.type == C.TRACK_TYPE_VIDEO && it.isSelected }
+        if (hasAnyVideoGroup && !hasSelectedVideo && currentMediaUri != null) {
+            Log.w(TAG, "Video track present but not selected (unsupported codec)")
+            delegate?.onFormatUnsupported(
+                uri = currentMediaUri!!,
+                headers = currentHeaders,
+                positionMs = effectivePosition,
+                errorMessage = "Video track present but no decoder available"
+            )
+            return
+        }
         emitTrackList()
     }
 
     override fun onPlayerError(error: PlaybackException) {
         Log.e(TAG, "Player error: ${error.message} (code: ${error.errorCode})", error)
+        stopFrameWatchdog()
+        cancelDecoderHangCheck()
 
         if (currentMediaUri != null) {
             Log.w(TAG, "ExoPlayer error (code ${error.errorCode}) - attempting fallback to MPV")
             val handled = delegate?.onFormatUnsupported(
                 uri = currentMediaUri!!,
                 headers = currentHeaders,
-                positionMs = lastPosition,
+                positionMs = effectivePosition,
                 errorMessage = error.message ?: "Unknown error"
             ) ?: false
 
@@ -524,6 +598,7 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     }
 
     private fun updateSurfaceViewSize(videoWidth: Int, videoHeight: Int, pixelRatio: Float) {
+        if (disposing) return
         if (videoWidth == 0 || videoHeight == 0) return
 
         val surface = surfaceView ?: return
@@ -672,32 +747,162 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
         delegate?.onPropertyChange("track-list", trackList)
     }
 
+    // Decoder hang detection via AnalyticsListener:
+    // Tracks the gap between onVideoDecoderInitialized and onRenderedFirstFrame.
+    // If the decoder is initialized and fed input but never produces output, it's hung
+    // (e.g. DV profile 7 on PowerVR GPUs that accept the format but never decode).
+
+    private val decoderHangListener = object : AnalyticsListener {
+        override fun onVideoDecoderInitialized(
+            eventTime: AnalyticsListener.EventTime,
+            decoderName: String,
+            initializationDurationMs: Long
+        ) {
+            decoderInitName = decoderName
+            firstFrameRendered = false
+            Log.d(TAG, "Decoder initialized: $decoderName (${initializationDurationMs}ms)")
+            startDecoderHangCheck(decoderName)
+        }
+
+        override fun onRenderedFirstFrame(
+            eventTime: AnalyticsListener.EventTime,
+            output: Any,
+            renderTimeMs: Long
+        ) {
+            firstFrameRendered = true
+            cancelDecoderHangCheck()
+            Log.d(TAG, "First frame rendered — decoder OK")
+        }
+    }
+
+    private fun startDecoderHangCheck(decoderName: String) {
+        cancelDecoderHangCheck()
+        if (currentMediaUri == null) return
+        decoderHangRunnable = Runnable {
+            if (firstFrameRendered) return@Runnable
+            val uri = currentMediaUri ?: return@Runnable
+            val player = exoPlayer ?: return@Runnable
+
+            // Confirm via DecoderCounters: input queued but no output produced
+            val counters = player.videoDecoderCounters
+            val inputQueued = counters?.queuedInputBufferCount ?: 0
+            val outputTotal = (counters?.renderedOutputBufferCount ?: 0) +
+                    (counters?.skippedOutputBufferCount ?: 0) +
+                    (counters?.droppedBufferCount ?: 0)
+
+            if (inputQueued > 0 && outputTotal == 0) {
+                Log.w(TAG, "Decoder hang: $decoderName queued $inputQueued buffers, 0 output after ${DECODER_HANG_TIMEOUT_MS}ms")
+                stopFrameWatchdog()
+                cancelDecoderHangCheck()
+                delegate?.onFormatUnsupported(
+                    uri = uri,
+                    headers = currentHeaders,
+                    positionMs = effectivePosition,
+                    errorMessage = "Decoder hang: $decoderName accepted input but produced no output"
+                )
+            }
+        }
+        handler.postDelayed(decoderHangRunnable!!, DECODER_HANG_TIMEOUT_MS)
+    }
+
+    private fun cancelDecoderHangCheck() {
+        decoderHangRunnable?.let { handler.removeCallbacks(it) }
+        decoderHangRunnable = null
+    }
+
+    // Frame watchdog: detects when ExoPlayer plays audio but renders 0 video frames
+    // (common with HDR tunneling on unsupported devices — black screen, no error)
+
+    private fun startFrameWatchdog() {
+        stopFrameWatchdog()
+        Log.d(TAG, "Frame watchdog started (timeout=${WATCHDOG_TIMEOUT_MS}ms)")
+        frameWatchdogStartTime = System.currentTimeMillis()
+        frameWatchdogRunnable = object : Runnable {
+            override fun run() {
+                val player = exoPlayer ?: return
+                val renderedFrames = player.videoDecoderCounters?.renderedOutputBufferCount ?: 0
+
+                if (renderedFrames > 0) {
+                    Log.d(TAG, "Frame watchdog: $renderedFrames frames rendered, cleared")
+                    stopFrameWatchdog()
+                    return
+                }
+
+                val elapsed = System.currentTimeMillis() - frameWatchdogStartTime
+
+                // Check if we have a video track selected
+                val hasVideoTrack = player.currentTracks.groups.any {
+                    it.type == C.TRACK_TYPE_VIDEO && it.isSelected
+                }
+                val hasAnyVideoGroup = player.currentTracks.groups.any {
+                    it.type == C.TRACK_TYPE_VIDEO
+                }
+
+                // Secondary safety net: video track exists but was deselected (unsupported codec)
+                if (hasAnyVideoGroup && !hasVideoTrack) {
+                    Log.w(TAG, "Frame watchdog: video track deselected — triggering fallback")
+                    stopFrameWatchdog()
+                    val uri = currentMediaUri ?: return
+                    delegate?.onFormatUnsupported(
+                        uri = uri,
+                        headers = currentHeaders,
+                        positionMs = player.currentPosition,
+                        errorMessage = "Video track present but no decoder available"
+                    )
+                    return
+                }
+
+                if (elapsed >= WATCHDOG_TIMEOUT_MS && player.isPlaying && hasVideoTrack) {
+                    Log.w(TAG, "Frame watchdog: 0 frames rendered after ${elapsed}ms — triggering fallback")
+                    stopFrameWatchdog()
+                    val uri = currentMediaUri ?: return
+                    delegate?.onFormatUnsupported(
+                        uri = uri,
+                        headers = currentHeaders,
+                        positionMs = player.currentPosition,
+                        errorMessage = "Black screen detected: 0 video frames rendered after ${elapsed}ms"
+                    )
+                    return
+                }
+
+                handler.postDelayed(this, WATCHDOG_CHECK_INTERVAL_MS)
+            }
+        }
+        handler.postDelayed(frameWatchdogRunnable!!, WATCHDOG_CHECK_INTERVAL_MS)
+    }
+
+    private fun stopFrameWatchdog() {
+        frameWatchdogRunnable?.let { handler.removeCallbacks(it) }
+        frameWatchdogRunnable = null
+    }
+
     // Public API
 
     fun open(uri: String, headers: Map<String, String>?, startPositionMs: Long, autoPlay: Boolean, isLive: Boolean = false) {
         if (!isInitialized) return
 
+        stopFrameWatchdog()
+        cancelDecoderHangCheck()
+
         currentMediaUri = uri
         currentHeaders = headers
+        pendingStartPositionMs = startPositionMs
         externalSubtitles.clear()
+
+        // Apply auth/custom headers to the shared Cronet DataSource for this session
+        httpDataSourceFactory?.setDefaultRequestProperties(
+            headers?.takeIf { it.isNotEmpty() } ?: emptyMap()
+        )
 
         if (isLive) {
             // Live MKV streams lack Cues (seek index). FLAG_DISABLE_SEEK_FOR_CUES tells
             // MatroskaExtractor to not seek for them, treating the stream as unseekable
             // so data flows immediately without hanging.
-            val dataSourceFactory = if (!headers.isNullOrEmpty()) {
-                DefaultDataSource.Factory(activity,
-                    androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                        .setDefaultRequestProperties(headers))
-            } else {
-                DefaultDataSource.Factory(activity)
-            }
-
             val extractorsFactory = androidx.media3.extractor.ExtractorsFactory {
                 arrayOf(MatroskaExtractor(MatroskaExtractor.FLAG_DISABLE_SEEK_FOR_CUES))
             }
 
-            val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory)
+            val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory!!, extractorsFactory)
                 .createMediaSource(MediaItem.fromUri(uri))
 
             exoPlayer?.apply {
@@ -710,18 +915,7 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
             return
         }
 
-        val mediaItemBuilder = MediaItem.Builder()
-            .setUri(uri)
-
-        // Add headers if provided
-        if (!headers.isNullOrEmpty()) {
-            val dataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                .setDefaultRequestProperties(headers)
-            // Note: For proper header support, we'd need to configure this at player level
-            // For now, headers are handled via URL parameters if needed
-        }
-
-        val mediaItem = mediaItemBuilder.build()
+        val mediaItem = MediaItem.Builder().setUri(uri).build()
 
         exoPlayer?.apply {
             setMediaItem(mediaItem, startPositionMs)
@@ -741,6 +935,8 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     }
 
     fun stop() {
+        stopFrameWatchdog()
+        cancelDecoderHangCheck()
         exoPlayer?.stop()
         setVisible(false)
     }
@@ -886,7 +1082,9 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     }
 
     fun setVisible(visible: Boolean) {
+        if (disposing) return
         activity.runOnUiThread {
+            if (disposing) return@runOnUiThread
             surfaceContainer?.visibility = if (visible) View.VISIBLE else View.INVISIBLE
             // subtitleView is inside surfaceContainer, inherits visibility
             Log.d(TAG, "setVisible($visible)")
@@ -961,10 +1159,13 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     }
 
     fun onPipModeChanged(isInPipMode: Boolean) {
+        if (disposing) return
         activity.runOnUiThread {
+            if (disposing) return@runOnUiThread
             // Force recalculation of surface size based on new container dimensions
             // Use a slight delay to allow the window to resize first
             handler.postDelayed({
+                if (disposing) return@postDelayed
                 val videoSize = exoPlayer?.videoSize
                 if (videoSize != null && videoSize.width > 0 && videoSize.height > 0) {
                     updateSurfaceViewSize(videoSize.width, videoSize.height, videoSize.pixelWidthHeightRatio)
@@ -1256,9 +1457,15 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     // Cleanup
 
     fun dispose() {
+        if (disposing) return
+        disposing = true
+        check(Looper.myLooper() == Looper.getMainLooper())
         Log.d(TAG, "Disposing")
 
+        stopFrameWatchdog()
+        cancelDecoderHangCheck()
         stopPositionUpdates()
+        handler.removeCallbacksAndMessages(null)
         clearVideoFrameRate()
         abandonAudioFocus()
         audioManager = null
@@ -1268,27 +1475,39 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
         exoPlayer?.release()
         exoPlayer = null
         trackSelector = null
+        httpDataSourceFactory = null
+        dataSourceFactory = null
         assHandler = null
 
-        surfaceView?.holder?.removeCallback(surfaceCallback)
-        overlayLayoutListener?.let { listener ->
-            val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
-            contentView.viewTreeObserver.removeOnGlobalLayoutListener(listener)
-        }
-
-        // Post view removal to next frame to avoid SurfaceControl race on render thread
-        val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
+        // Capture locals for deferred cleanup
+        val cb = surfaceCallback
+        val sv = surfaceView
         val container = surfaceContainer
         val subtitle = subtitleView
-        contentView.post {
-            container?.let { contentView.removeView(it) }
-            subtitle?.let { contentView.removeView(it) }
-        }
+        val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
+
+        // Synchronous ownership invalidation — stale code can no longer reach surface state
         surfaceContainer = null
         surfaceView = null
         subtitleView = null
 
+        overlayLayoutListener?.let { listener ->
+            contentView.viewTreeObserver.removeOnGlobalLayoutListener(listener)
+        }
+        overlayLayoutListener = null
+
         isInitialized = false
+
+        // Deferred view removal only — uses captured locals. postAtFrontOfQueue orders removal
+        // before queued initialize messages.
+        Handler(Looper.getMainLooper()).postAtFrontOfQueue {
+            sv?.holder?.removeCallback(cb)
+            if (container?.parent != null) {
+                contentView.removeView(container)
+            }
+            subtitle?.let { if (it.parent != null) contentView.removeView(it) }
+        }
+
         Log.d(TAG, "Disposed")
     }
 }

@@ -28,6 +28,7 @@ import 'providers/download_provider.dart';
 import 'providers/offline_mode_provider.dart';
 import 'providers/offline_watch_provider.dart';
 import 'providers/shader_provider.dart';
+import 'utils/snackbar_helper.dart';
 
 import 'services/multi_server_manager.dart';
 import 'services/offline_watch_sync_service.dart';
@@ -49,6 +50,10 @@ import 'i18n/strings.g.dart';
 import 'focus/input_mode_tracker.dart';
 import 'focus/key_event_utils.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+/// Git commit hash from build (--dart-define=GIT_COMMIT=xxx). Empty when not set.
+const String gitCommit = String.fromEnvironment('GIT_COMMIT');
 
 // Workaround for Flutter bug #177992: iPadOS 26.1+ misinterprets fake touch events
 // at (0,0) as barrier taps, causing modals to dismiss immediately.
@@ -114,6 +119,11 @@ void main() async {
   // Initialize logger level based on debug setting
   final debugEnabled = settings.getEnableDebugLogging();
   setLoggerLevel(debugEnabled);
+
+  // Log app version and git commit at startup
+  final packageInfo = await PackageInfo.fromPlatform();
+  final commitSuffix = gitCommit.isNotEmpty ? ' (${gitCommit.length >= 7 ? gitCommit.substring(0, 7) : gitCommit})' : '';
+  appLogger.i('Finzy v${packageInfo.version}+${packageInfo.buildNumber}$commitSuffix');
 
   // Initialize download storage service with settings
   await DownloadStorageService.instance.initialize(settings);
@@ -339,6 +349,13 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
                 navigatorKey: navigatorKey,
                 navigatorObservers: [routeObserver, BackKeySuppressorObserver()],
                 home: const OrientationAwareSetup(),
+                builder: (context, child) => ScaffoldMessenger(
+                  key: rootScaffoldMessengerKey,
+                  child: Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: child ?? const SizedBox.shrink(),
+                  ),
+                ),
                 ),
               ),
             ),

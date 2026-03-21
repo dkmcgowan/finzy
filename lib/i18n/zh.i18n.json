@@ -20,6 +20,7 @@
     "invalidPassword": "用户名或密码错误。",
     "notAuthorized": "未授权。请重新登录。",
     "serverUnreachable": "无法连接服务器。请检查 URL 和网络连接。",
+    "serverError": "服务器错误。请稍后重试。",
     "scanQRToSignIn": "扫描二维码登录",
     "waitingForAuth": "等待验证中...\n请在你的浏览器中完成登录。",
     "useBrowser": "使用浏览器"
@@ -109,6 +110,8 @@
     "episodeThumbnail": "剧集缩略图",
     "episodeThumbnailDescription": "显示16:9剧集截图缩略图",
     "timeFormat": "时间格式",
+    "system": "系统",
+    "systemDescription": "跟随系统时间格式设置",
     "twelveHour": "12小时制",
     "twentyFourHour": "24小时制",
     "twelveHourDescription": "例如 1:00 PM",
@@ -162,6 +165,8 @@
     "liveTvQuality": "直播电视画质",
     "liveTvQualityDescription": "限制直播电视的转码画质。不限制则使用服务器默认。",
     "liveTvQualityNone": "不限制",
+    "streamingQuality": "流媒体画质",
+    "streamingQualityDescription": "限制VOD转码画质。自动由服务器决定。",
     "hardwareDecoding": "硬件解码",
     "hardwareDecodingDescription": "如果可用，使用硬件加速",
     "bufferSize": "缓冲区大小",
@@ -477,7 +482,8 @@
     "noItemsAvailable": "没有可用的项目",
     "failedToCreatePlayQueueNoItems": "创建播放队列失败 - 没有项目",
     "failedPlayback": "无法${action}: ${error}",
-    "switchingToCompatiblePlayer": "正在切换到兼容的播放器..."
+    "switchingToCompatiblePlayer": "正在切换到兼容的播放器...",
+    "qualityRevertedOnError": "因播放错误已恢复为之前的画质。"
   },
   "subtitlingStyling": {
     "stylingOptions": "样式选项",

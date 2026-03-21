@@ -20,6 +20,7 @@
     "invalidPassword": "Ongeldige gebruikersnaam of wachtwoord.",
     "notAuthorized": "Niet geautoriseerd. Log opnieuw in.",
     "serverUnreachable": "Kan server niet bereiken. Controleer de URL en uw verbinding.",
+    "serverError": "Serverfout. Probeer het later opnieuw.",
     "scanQRToSignIn": "Scan deze QR-code om in te loggen",
     "waitingForAuth": "Wachten op authenticatie...\nVoltooi het inloggen in je browser.",
     "useBrowser": "Gebruik browser"
@@ -109,6 +110,8 @@
     "episodeThumbnail": "Aflevering miniatuur",
     "episodeThumbnailDescription": "Toon 16:9 aflevering miniaturen",
     "timeFormat": "Tijdnotatie",
+    "system": "Systeem",
+    "systemDescription": "Volg systeeminstelling voor tijdnotatie",
     "twelveHour": "12-uurs",
     "twentyFourHour": "24-uurs",
     "twelveHourDescription": "bijv. 1:00 PM",
@@ -162,6 +165,8 @@
     "liveTvQuality": "Live TV-kwaliteit",
     "liveTvQualityDescription": "Beperk transcoderingskwaliteit voor Live TV. Geen limiet gebruikt serverstandaard.",
     "liveTvQualityNone": "Geen limiet",
+    "streamingQuality": "Streamingkwaliteit",
+    "streamingQualityDescription": "Beperk transcoderingskwaliteit voor VOD. Auto laat de server beslissen.",
     "hardwareDecoding": "Hardware decodering",
     "hardwareDecodingDescription": "Gebruik hardware versnelling indien beschikbaar",
     "bufferSize": "Buffer grootte",
@@ -477,7 +482,8 @@
     "noItemsAvailable": "Geen items beschikbaar",
     "failedToCreatePlayQueueNoItems": "Kan afspeelwachtrij niet maken - geen items",
     "failedPlayback": "Afspelen van ${action} mislukt: ${error}",
-    "switchingToCompatiblePlayer": "Overschakelen naar compatibele speler..."
+    "switchingToCompatiblePlayer": "Overschakelen naar compatibele speler...",
+    "qualityRevertedOnError": "Teruggezet naar vorige kwaliteit vanwege afspeelfout."
   },
   "subtitlingStyling": {
     "stylingOptions": "Opmaak opties",

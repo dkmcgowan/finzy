@@ -912,13 +912,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       if (savedSortData != null) {
         final sortKey = savedSortData['key'] as String?;
         if (sortKey != null) {
-          savedSort = sortOptions.firstWhere((s) => s.key == sortKey, orElse: () => sortOptions.first);
+          savedSort = sortOptions.where((s) => s.key == sortKey).firstOrNull ?? sortOptions.firstOrNull;
           descending = (savedSortData['descending'] as bool?) ?? false;
         } else {
-          savedSort = sortOptions.first;
+          savedSort = sortOptions.firstOrNull;
         }
       } else {
-        savedSort = sortOptions.first;
+        savedSort = sortOptions.firstOrNull;
       }
 
       _updateState(() {
@@ -1300,7 +1300,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         );
       }
       // Mobile: show dropdown so user can switch libraries
-      return _buildLibraryDropdownTitle(visibleLibraries);
+      return _buildLibraryDropdownTitle(visibleLibraries, selectedLibrary);
     }
 
     if (PlatformDetector.shouldUseSideNavigation(context)) {
@@ -1348,14 +1348,17 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       return Row(mainAxisSize: MainAxisSize.min, children: chips);
     }
 
-    return _buildLibraryDropdownTitle(visibleLibraries);
+    return _buildLibraryDropdownTitle(visibleLibraries, selectedLibrary);
   }
 
-  Widget _buildLibraryDropdownTitle(List<MediaLibrary> visibleLibraries) {
-    final selectedLibrary = visibleLibraries.firstWhere(
-      (lib) => lib.globalKey == _selectedLibraryGlobalKey,
-      orElse: () => visibleLibraries.first,
-    );
+  Widget _buildLibraryDropdownTitle(List<MediaLibrary> visibleLibraries, MediaLibrary? selectedLibrary) {
+    final displayLibrary = selectedLibrary ?? visibleLibraries.firstOrNull;
+    if (displayLibrary == null) {
+      return Text(
+        t.libraries.title,
+        style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
+      );
+    }
 
     return Semantics(
       label: t.libraries.selectLibrary,
@@ -1374,16 +1377,16 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppIcon(ContentTypeHelper.getLibraryIcon(selectedLibrary.type), fill: 1, size: 20),
+            AppIcon(ContentTypeHelper.getLibraryIcon(displayLibrary.type), fill: 1, size: 20),
             const SizedBox(width: 8),
-            if (_hasMultipleServers(visibleLibraries) && selectedLibrary.serverName != null)
+            if (_hasMultipleServers(visibleLibraries) && displayLibrary.serverName != null)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(selectedLibrary.title, style: Theme.of(context).textTheme.titleMedium),
+                  Text(displayLibrary.title, style: Theme.of(context).textTheme.titleMedium),
                   Text(
-                    selectedLibrary.serverName!,
+                    displayLibrary.serverName!,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                     ),
@@ -1391,7 +1394,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                 ],
               )
             else
-              Text(selectedLibrary.title, style: Theme.of(context).textTheme.titleLarge),
+              Text(displayLibrary.title, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(width: 4),
             const AppIcon(Symbols.arrow_drop_down_rounded, fill: 1, size: 24),
           ],
@@ -1475,7 +1478,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     );
     MediaLibrary? selectedLibrary;
     if (_selectedLibraryGlobalKey != null) {
-      selectedLibrary = visibleLibraries.where((l) => l.globalKey == _selectedLibraryGlobalKey).firstOrNull;
+      selectedLibrary = librariesProvider.libraries.where((l) => l.globalKey == _selectedLibraryGlobalKey).firstOrNull;
     }
 
     return OverlaySheetHost(

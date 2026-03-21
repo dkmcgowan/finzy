@@ -20,9 +20,11 @@ import '../i18n/strings.g.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/auth_button_style.dart';
 import '../utils/error_message_utils.dart';
+import '../utils/desktop_window_padding.dart';
 import '../utils/platform_detector.dart';
 import '../focus/focusable_wrapper.dart';
 import 'main_screen.dart';
+import 'settings/settings_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -48,14 +50,46 @@ class _AuthScreenState extends State<AuthScreen> {
   final _jellyfinUsernameController = TextEditingController();
   final _jellyfinPasswordController = TextEditingController();
 
-  /// Focus nodes for TV D-pad navigation and Enter key handling
-  final FocusNode _serverUrlFocusNode = FocusNode();
+  /// Focus nodes for D-pad/keyboard navigation
+  final FocusNode _serverUrlFocusNode = FocusNode(debugLabel: 'serverUrl');
   final FocusNode _usernameFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
+  late final FocusNode _settingsFocusNode;
+  late final FocusNode _connectFocusNode;
 
   @override
   void initState() {
     super.initState();
+    _settingsFocusNode = FocusNode(
+      debugLabel: 'settings',
+      onKeyEvent: (node, event) {
+        if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _serverUrlFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          _connectFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
+    _connectFocusNode = FocusNode(
+      debugLabel: 'connect',
+      onKeyEvent: (node, event) {
+        if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _serverUrlFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          _settingsFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
   }
 
   @override
@@ -64,6 +98,8 @@ class _AuthScreenState extends State<AuthScreen> {
     _serverUrlFocusNode.dispose();
     _usernameFocusNode.dispose();
     _passwordFocusNode.dispose();
+    _settingsFocusNode.dispose();
+    _connectFocusNode.dispose();
     _jellyfinUrlController.dispose();
     _jellyfinUsernameController.dispose();
     _jellyfinPasswordController.dispose();
@@ -391,7 +427,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                   ],
                 )
-              : SingleChildScrollView(
+              :               SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -456,69 +492,116 @@ class _AuthScreenState extends State<AuthScreen> {
           : null,
     );
 
-    final connectButton = ElevatedButton(
-      onPressed: _isAuthenticating ? null : _jellyfinConnectToServer,
-      style: authPillButtonStyle(context),
-      child: _isAuthenticating
-          ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
-          : const Text('Connect'),
-    );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Focus(
-          onKeyEvent: (node, event) {
-            if (!event.isActionable) return KeyEventResult.ignored;
-            if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-              node.focusInDirection(TraversalDirection.down);
-              return KeyEventResult.handled;
-            }
-            return KeyEventResult.ignored;
-          },
-          child: TextFormField(
-            focusNode: _serverUrlFocusNode,
-            autofocus: true,
-            controller: _jellyfinUrlController,
-            decoration: decoration,
-            cursorColor: isTV ? theme.colorScheme.primary : null,
-            cursorWidth: isTV ? 3 : 2.0,
-            keyboardType: TextInputType.url,
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) {
-              final url = _jellyfinUrlController.text.trim();
-              if (url.isEmpty) {
-                _serverUrlFocusNode.requestFocus();
-                return;
-              }
-              _jellyfinConnectToServer();
-            },
+    void openSettings() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SideNavigationScope(
+            child: const SettingsScreen(),
           ),
         ),
-        const SizedBox(height: 24),
-        isTV
-            ? Focus(
-                onKeyEvent: (node, event) {
-                  if (!event.isActionable) return KeyEventResult.ignored;
-                  if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                    _serverUrlFocusNode.requestFocus();
-                    return KeyEventResult.handled;
-                  }
-                  return KeyEventResult.ignored;
-                },
-                child: connectButton,
-              )
-            : connectButton,
-        if (_errorMessage != null) ...[
-          const SizedBox(height: 16),
-          Text(
-            _errorMessage!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-            textAlign: TextAlign.center,
+      ).then((_) {
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _serverUrlFocusNode.requestFocus();
+          });
+        }
+      });
+    }
+
+    final connectRow = FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(2),
+            child: IconButton(
+              focusNode: _settingsFocusNode,
+              onPressed: openSettings,
+              icon: const Icon(Symbols.settings_rounded, size: 20),
+              tooltip: t.common.settings,
+              style: IconButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(48, 48),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: FocusTraversalOrder(
+              order: const NumericFocusOrder(1),
+              child: SizedBox(
+                height: 48,
+                child: ElevatedButton(
+                  focusNode: _connectFocusNode,
+                  onPressed: _isAuthenticating ? null : _jellyfinConnectToServer,
+                  style: authPillButtonStyle(context),
+                  child: _isAuthenticating
+                      ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Connect'),
+                ),
+              ),
+            ),
           ),
         ],
-      ],
+      ),
+    );
+
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(0),
+            child: Focus(
+              onKeyEvent: (node, event) {
+                if (!event.isActionable) return KeyEventResult.ignored;
+                if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                  node.focusInDirection(TraversalDirection.down);
+                  return KeyEventResult.handled;
+                }
+                return KeyEventResult.ignored;
+              },
+              child: TextFormField(
+                focusNode: _serverUrlFocusNode,
+                autofocus: true,
+                controller: _jellyfinUrlController,
+                decoration: decoration,
+                cursorColor: isTV ? theme.colorScheme.primary : null,
+                cursorWidth: isTV ? 3 : 2.0,
+                keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) {
+                  final url = _jellyfinUrlController.text.trim();
+                  if (url.isEmpty) {
+                    _serverUrlFocusNode.requestFocus();
+                    return;
+                  }
+                  _jellyfinConnectToServer();
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(1),
+            child: connectRow,
+          ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ],
+      ),
     );
   }
 

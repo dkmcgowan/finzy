@@ -109,6 +109,7 @@ class _TranslationsAuthKo implements TranslationsAuthEn {
 	@override String get invalidPassword => '사용자 이름 또는 비밀번호가 올바르지 않습니다.';
 	@override String get notAuthorized => '권한이 없습니다. 다시 로그인해 주세요.';
 	@override String get serverUnreachable => '서버에 연결할 수 없습니다. URL과 연결을 확인해 주세요.';
+	@override String get serverError => '서버 오류입니다. 나중에 다시 시도해 주세요.';
 	@override String get scanQRToSignIn => 'QR 코드를 스캔하여 로그인';
 	@override String get waitingForAuth => '인증 대기 중... 브라우저에서 로그인을 완료해 주세요.';
 	@override String get useBrowser => '브라우저 사용';
@@ -226,6 +227,8 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get episodeThumbnail => '에피소드 썸네일';
 	@override String get episodeThumbnailDescription => '16:9 에피소드 스크린샷 썸네일 표시';
 	@override String get timeFormat => '시간 형식';
+	@override String get system => '시스템';
+	@override String get systemDescription => '시스템 시간 형식 설정 따르기';
 	@override String get twelveHour => '12시간';
 	@override String get twentyFourHour => '24시간';
 	@override String get twelveHourDescription => '예: 1:00 PM';
@@ -279,6 +282,8 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get liveTvQuality => '라이브 TV 품질';
 	@override String get liveTvQualityDescription => '라이브 TV의 트랜스코딩 품질을 제한합니다. 제한 없음은 서버 기본값을 사용합니다.';
 	@override String get liveTvQualityNone => '제한 없음';
+	@override String get streamingQuality => '스트리밍 품질';
+	@override String get streamingQualityDescription => 'VOD 트랜스코딩 품질 제한. 자동은 서버가 결정합니다.';
 	@override String get hardwareDecoding => '하드웨어 디코딩';
 	@override String get hardwareDecodingDescription => '가능한 경우 하드웨어 가속을 사용합니다';
 	@override String get bufferSize => '버퍼 크기';
@@ -631,6 +636,7 @@ class _TranslationsMessagesKo implements TranslationsMessagesEn {
 	@override String get failedToCreatePlayQueueNoItems => '재생 대기열 생성 실패 - 항목 없음';
 	@override String failedPlayback({required Object action, required Object error}) => '${action}을(를) 수행할 수 없습니다: ${error}';
 	@override String get switchingToCompatiblePlayer => '호환되는 플레이어로 전환 중...';
+	@override String get qualityRevertedOnError => '재생 오류로 이전 품질로 되돌렸습니다.';
 }
 
 // Path: subtitlingStyling
@@ -1341,6 +1347,7 @@ extension on TranslationsKo {
 			'auth.invalidPassword' => '사용자 이름 또는 비밀번호가 올바르지 않습니다.',
 			'auth.notAuthorized' => '권한이 없습니다. 다시 로그인해 주세요.',
 			'auth.serverUnreachable' => '서버에 연결할 수 없습니다. URL과 연결을 확인해 주세요.',
+			'auth.serverError' => '서버 오류입니다. 나중에 다시 시도해 주세요.',
 			'auth.scanQRToSignIn' => 'QR 코드를 스캔하여 로그인',
 			'auth.waitingForAuth' => '인증 대기 중... 브라우저에서 로그인을 완료해 주세요.',
 			'auth.useBrowser' => '브라우저 사용',
@@ -1422,6 +1429,8 @@ extension on TranslationsKo {
 			'settings.episodeThumbnail' => '에피소드 썸네일',
 			'settings.episodeThumbnailDescription' => '16:9 에피소드 스크린샷 썸네일 표시',
 			'settings.timeFormat' => '시간 형식',
+			'settings.system' => '시스템',
+			'settings.systemDescription' => '시스템 시간 형식 설정 따르기',
 			'settings.twelveHour' => '12시간',
 			'settings.twentyFourHour' => '24시간',
 			'settings.twelveHourDescription' => '예: 1:00 PM',
@@ -1475,6 +1484,8 @@ extension on TranslationsKo {
 			'settings.liveTvQuality' => '라이브 TV 품질',
 			'settings.liveTvQualityDescription' => '라이브 TV의 트랜스코딩 품질을 제한합니다. 제한 없음은 서버 기본값을 사용합니다.',
 			'settings.liveTvQualityNone' => '제한 없음',
+			'settings.streamingQuality' => '스트리밍 품질',
+			'settings.streamingQualityDescription' => 'VOD 트랜스코딩 품질 제한. 자동은 서버가 결정합니다.',
 			'settings.hardwareDecoding' => '하드웨어 디코딩',
 			'settings.hardwareDecodingDescription' => '가능한 경우 하드웨어 가속을 사용합니다',
 			'settings.bufferSize' => '버퍼 크기',
@@ -1765,6 +1776,7 @@ extension on TranslationsKo {
 			'messages.failedToCreatePlayQueueNoItems' => '재생 대기열 생성 실패 - 항목 없음',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => '${action}을(를) 수행할 수 없습니다: ${error}',
 			'messages.switchingToCompatiblePlayer' => '호환되는 플레이어로 전환 중...',
+			'messages.qualityRevertedOnError' => '재생 오류로 이전 품질로 되돌렸습니다.',
 			'subtitlingStyling.stylingOptions' => '스타일 옵션',
 			'subtitlingStyling.fontSize' => '글자 크기',
 			'subtitlingStyling.textColor' => '텍스트 색상',
@@ -1829,14 +1841,14 @@ extension on TranslationsKo {
 			'errors.invalidToken' => '토큰이 유효하지 않습니다',
 			'errors.failedToVerifyToken' => ({required Object error}) => '토큰을 확인할 수 없습니다: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => '${displayName}으로 전환할 수 없습니다',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.title' => '미디어 라이브러리',
 			'libraries.scanLibraryFiles' => '미디어 라이브러리 파일 스캔',
 			'libraries.scanLibrary' => '미디어 라이브러리 스캔',
 			'libraries.analyze' => '분석',
 			'libraries.analyzeLibrary' => '미디어 라이브러리 분석',
 			'libraries.refreshMetadata' => '메타데이터 새로 고침',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.emptyTrash' => '휴지통 비우기',
 			'libraries.emptyingTrash' => ({required Object title}) => '「${title}」의 휴지통을 비우고 있습니다...',
 			'libraries.trashEmptied' => ({required Object title}) => '「${title}」의 휴지통을 비웠습니다',

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter/services.dart';
 
 import '../../utils/app_logger.dart';
+import '../font_loader.dart';
 import '../models.dart';
 import 'player.dart';
 import 'player_state.dart';
@@ -49,7 +50,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
   @protected
   bool initialized = false;
 
-  /// Whether the player has been disposed.
+  @override
   bool get disposed => _disposed;
 
   /// The method channel for platform communication.
@@ -102,7 +103,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
   Future<void> observeProperty(String name, String format) async {
     final propId = _nextPropId++;
     _propIdToName[propId] = name;
-    await methodChannel.invokeMethod('observeProperty', {
+    await invoke('observeProperty', {
       'name': name,
       'format': format,
       'id': propId,
@@ -159,6 +160,10 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
             final pos = Duration(milliseconds: _positionMs);
             _state = _state.copyWith(position: pos);
             positionController.add(pos);
+            // Log every ~5s to avoid spam
+            if (_positionMs % 5000 < 300) {
+              appLogger.d('[PlaybackDebug] player time-pos emitted: ${pos.inSeconds}s (${pos.inMilliseconds}ms)');
+            }
           }
         }
         break;
@@ -169,6 +174,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
           final duration = Duration(milliseconds: durationMs);
           _state = _state.copyWith(duration: duration);
           durationController.add(duration);
+          appLogger.d('[PlaybackDebug] duration emitted: ${duration.inSeconds}s (${durationMs}ms)');
         }
         break;
 
@@ -268,7 +274,16 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     if (_disposed) return;
     switch (name) {
       case 'end-file':
-        final reason = data?['reason']?.toString();
+        final rawReason = data?['reason'];
+        final reason = switch (rawReason) {
+          0 => 'eof',
+          2 => 'stop',
+          3 => 'quit',
+          4 => 'error',
+          5 => 'redirect',
+          String s => s,
+          _ => null,
+        };
         if (reason == 'eof') {
           _state = _state.copyWith(completed: true);
           completedController.add(true);
@@ -381,11 +396,11 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     _state = update(_state);
   }
 
-  /// Throws if the player has been disposed.
-  void checkDisposed() {
-    if (_disposed) {
-      throw StateError('Player has been disposed');
-    }
+  /// Safe method channel invocation — no-ops if player is disposed.
+  @protected
+  Future<T?> invoke<T>(String method, [dynamic args]) async {
+    if (_disposed) return null;
+    return methodChannel.invokeMethod<T>(method, args);
   }
 
   // ============================================
@@ -394,7 +409,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
 
   @override
   Future<void> playOrPause() async {
-    checkDisposed();
+    if (_disposed) return;
     if (_state.playing) {
       await pause();
     } else {
@@ -404,9 +419,9 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
 
   @override
   Future<bool> setVisible(bool visible) async {
-    checkDisposed();
+    if (_disposed) return false;
     try {
-      await methodChannel.invokeMethod('setVisible', {'visible': visible});
+      await invoke('setVisible', {'visible': visible});
       return true;
     } catch (e) {
       errorController.add('Failed to set visibility: $e');
@@ -449,6 +464,28 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
   Future<void> setLogLevel(String level) async {}
 
   // ============================================
+  // Subtitle Fonts
+  // ============================================
+
+  @override
+  Future<void> configureSubtitleFonts() async {
+    try {
+      final fontDir = await SubtitleFontLoader.loadSubtitleFont();
+      if (fontDir != null) {
+        await setProperty('sub-fonts-dir', fontDir);
+        await setProperty('sub-font', SubtitleFontLoader.fontName);
+      }
+    } catch (e) {
+      // Font configuration is not critical - continue without it
+      logController.add(PlayerLog(
+        prefix: 'fonts',
+        level: PlayerLogLevel.warn,
+        text: 'Failed to configure subtitle fonts: $e',
+      ));
+    }
+  }
+
+  // ============================================
   // Lifecycle
   // ============================================
 
@@ -459,7 +496,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
 
     await _eventSubscription?.cancel();
     await _logSubscription?.cancel();
-    await methodChannel.invokeMethod('dispose');
+    await methodChannel.invokeMethod('dispose'); // Direct call — already guarded by _disposed check above
     await closeStreamControllers();
   }
 }

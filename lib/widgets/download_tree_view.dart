@@ -248,8 +248,8 @@ class _DownloadTreeViewState extends State<DownloadTreeView> {
 
       // Sort seasons by season number
       seasons.sort((a, b) {
-        final aSeasonNum = widget.metadata[a.children.first.key]?.parentIndex ?? 0;
-        final bSeasonNum = widget.metadata[b.children.first.key]?.parentIndex ?? 0;
+        final aSeasonNum = a.children.isNotEmpty ? (widget.metadata[a.children.first.key]?.parentIndex ?? 0) : 0;
+        final bSeasonNum = b.children.isNotEmpty ? (widget.metadata[b.children.first.key]?.parentIndex ?? 0) : 0;
         return aSeasonNum.compareTo(bSeasonNum);
       });
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../mpv/mpv.dart';
+import '../../../utils/app_logger.dart';
 import '../../../widgets/overlay_sheet.dart';
 import '../../../widgets/scroll_to_index_list_view.dart';
 import 'base_video_control_sheet.dart';
@@ -77,6 +78,10 @@ class _TrackSelectionSheetState<T> extends State<TrackSelectionSheet<T>> {
         final currentTrack = selectedSnapshot.data ?? widget.player.state.track;
         final selectedTrack = widget.getCurrentTrack(currentTrack);
         final isOffSelected = TrackSelectionHelper.isOffSelected(selectedTrack, widget.isOffTrack);
+        if (widget.title.toLowerCase().contains('subtitle')) {
+          final selId = selectedTrack != null ? TrackSelectionHelper.getTrackId(selectedTrack as T) : 'null';
+          appLogger.d('[Sub] sheet: selected=$selId isOff=$isOffSelected extraCount=${(widget.extraTracks ?? []).length}');
+        }
         final extraTracks = widget.extraTracks ?? [];
         final itemCount = availableTracks.length + (widget.showOffOption ? 1 : 0) + extraTracks.length;
 
@@ -121,13 +126,17 @@ class _TrackSelectionSheetState<T> extends State<TrackSelectionSheet<T>> {
               );
             }
 
-            // Extra track (e.g. external subtitle)
+            // Extra track (e.g. external subtitle) - match selection by URI since player may use different id
             final extraIndex = trackIndex - availableTracks.length;
             final extraTrack = extraTracks[extraIndex];
+            final extraUri = extraTrack is SubtitleTrack ? extraTrack.uri : null;
+            final selectedUri = selectedTrack is SubtitleTrack ? selectedTrack.uri : null;
+            final isExtraSelected = extraUri != null && selectedUri != null && extraUri == selectedUri;
             return TrackSelectionHelper.buildTrackTile<T>(
               label: widget.buildLabel(extraTrack, availableTracks.length + extraIndex),
-              isSelected: false,
+              isSelected: isExtraSelected,
               onTap: () {
+                appLogger.d('[Sub] sheet: extra track tapped title=${extraTrack is SubtitleTrack ? extraTrack.title : ""}');
                 widget.onExtraTrackSelected?.call(extraTrack);
                 OverlaySheetController.of(context).close();
               },
@@ -142,6 +151,9 @@ class _TrackSelectionSheetState<T> extends State<TrackSelectionSheet<T>> {
     return TrackSelectionHelper.buildOffTile<T>(
       isSelected: isOffSelected,
       onTap: () {
+        if (widget.title.toLowerCase().contains('subtitle')) {
+          appLogger.d('[Sub] sheet: Off tapped');
+        }
         if (widget.createOffTrack != null) {
           final offTrack = widget.createOffTrack!();
           widget.setTrack(offTrack);

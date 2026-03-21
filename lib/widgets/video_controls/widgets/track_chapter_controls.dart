@@ -16,6 +16,7 @@ import '../sheets/audio_track_sheet.dart';
 import '../sheets/chapter_sheet.dart';
 import '../sheets/subtitle_track_sheet.dart';
 import '../sheets/version_sheet.dart';
+import '../../../services/settings_service.dart';
 import '../sheets/video_settings_sheet.dart';
 import '../../../services/shader_service.dart';
 import '../helpers/track_filter_helper.dart';
@@ -71,7 +72,7 @@ class TrackChapterControls extends StatelessWidget {
   final VoidCallback? onToggleAmbientLighting;
 
   /// Called when streaming or Live TV quality changes; caller should restart playback.
-  final VoidCallback? onQualityChanged;
+  final void Function({PlaybackMode? previousPlaybackMode, int? previousLiveTvBitrate})? onQualityChanged;
 
   /// List of FocusNodes for the buttons (passed from parent for navigation)
   final List<FocusNode>? focusNodes;
@@ -87,6 +88,9 @@ class TrackChapterControls extends StatelessWidget {
 
   /// Whether this is a live TV stream (hides speed settings).
   final bool isLive;
+
+  /// For transcode: seeks require reload. When set, ChapterSheet uses this instead of player.seek.
+  final Future<void> Function(Duration moviePosition)? onTranscodeSeek;
 
   const TrackChapterControls({
     super.key,
@@ -125,6 +129,7 @@ class TrackChapterControls extends StatelessWidget {
     this.isAmbientLightingEnabled = false,
     this.onToggleAmbientLighting,
     this.onQualityChanged,
+    this.onTranscodeSeek,
   });
 
   /// Handle key event for button navigation
@@ -326,6 +331,7 @@ class TrackChapterControls extends StatelessWidget {
                     chapters: chapters,
                     chaptersLoaded: chaptersLoaded,
                     serverId: serverId,
+                    onTranscodeSeek: onTranscodeSeek,
                   ),
                 ).whenComplete(() {
                   onStartAutoHide?.call();
@@ -485,8 +491,10 @@ class TrackChapterControls extends StatelessWidget {
   }
 
   bool _hasSubtitles(Tracks? tracks) {
-    if (tracks == null) return false;
-    return TrackFilterHelper.hasTracks<SubtitleTrack>(tracks.subtitle);
+    // Show button when player has embedded tracks OR we have server subtitles to load on demand
+    if (tracks == null) return availableExternalSubtitles.isNotEmpty;
+    return TrackFilterHelper.hasTracks<SubtitleTrack>(tracks.subtitle) ||
+        availableExternalSubtitles.isNotEmpty;
   }
 
   IconData _getBoxFitIcon(int mode) {

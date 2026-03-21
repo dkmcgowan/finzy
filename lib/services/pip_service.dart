@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:finzy/i18n/strings.g.dart';
@@ -5,13 +7,17 @@ import 'package:finzy/i18n/strings.g.dart';
 class PipService {
   static const MethodChannel _channel = MethodChannel('app.finzy/pip');
 
+  /// PiP is only supported on Android, iOS, and macOS
+  static bool get _isAvailable => Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+
   // Singleton instance
   static final PipService _instance = PipService._internal();
   factory PipService() => _instance;
 
   PipService._internal() {
-    // Listen for callbacks from native Android
-    _channel.setMethodCallHandler(_handleMethodCall);
+    if (_isAvailable) {
+      _channel.setMethodCallHandler(_handleMethodCall);
+    }
   }
 
   /// ValueNotifier for PiP state - widgets can listen to this
@@ -27,10 +33,14 @@ class PipService {
   }
 
   static Future<bool> isSupported() async {
+    if (!_isAvailable) return false;
     return await _channel.invokeMethod<bool>('isSupported') ?? false;
   }
 
   static Future<(bool success, String? error)> enter({int? width, int? height}) async {
+    if (!_isAvailable) {
+      return (false, t.videoControls.pipErrors.notSupported);
+    }
     final result = await _channel.invokeMethod<Map>('enter', {'width': width, 'height': height});
     if (result == null) {
       return (false, t.videoControls.pipErrors.unknown(error: 'No response'));

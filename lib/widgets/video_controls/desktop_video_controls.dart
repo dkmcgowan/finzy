@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
@@ -11,10 +12,13 @@ import '../../models/media_info.dart';
 import '../../models/media_version.dart';
 import '../../models/media_metadata.dart';
 import '../../services/fullscreen_state_manager.dart';
+import '../../utils/app_logger.dart';
 import '../../utils/desktop_window_padding.dart';
+import '../../providers/settings_provider.dart';
 import '../../utils/formatters.dart';
 import '../../i18n/strings.g.dart';
 import '../../focus/focusable_wrapper.dart';
+import '../../services/settings_service.dart';
 import '../../services/shader_service.dart';
 import 'widgets/first_frame_guard.dart';
 import 'widgets/play_pause_stream_builder.dart';
@@ -90,6 +94,9 @@ class DesktopVideoControls extends StatefulWidget {
   /// Optional callback that returns a thumbnail URL for a given timestamp.
   final String Function(Duration time)? thumbnailUrlBuilder;
 
+  /// For transcode streams: playback start position in ms (player reports from stream start).
+  final int? positionOffsetMs;
+
   /// Whether this is a live TV stream
   final bool isLive;
 
@@ -103,7 +110,10 @@ class DesktopVideoControls extends StatefulWidget {
   final VoidCallback? onToggleAmbientLighting;
 
   /// Called when streaming or Live TV quality changes; caller should restart playback.
-  final VoidCallback? onQualityChanged;
+  final void Function({PlaybackMode? previousPlaybackMode, int? previousLiveTvBitrate})? onQualityChanged;
+
+  /// For transcode: seeks require reload. When set, ChapterSheet uses this instead of player.seek.
+  final Future<void> Function(Duration moviePosition)? onTranscodeSeek;
 
   const DesktopVideoControls({
     super.key,
@@ -151,11 +161,13 @@ class DesktopVideoControls extends StatefulWidget {
     this.shaderService,
     this.onShaderChanged,
     this.thumbnailUrlBuilder,
+    this.positionOffsetMs,
     this.isLive = false,
     this.liveChannelName,
     this.isAmbientLightingEnabled = false,
     this.onToggleAmbientLighting,
     this.onQualityChanged,
+    this.onTranscodeSeek,
   });
 
   @override
@@ -481,6 +493,9 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
 
   Widget _buildBottomControlsContent(BuildContext _, {required bool hasFrame}) {
     final canInteract = widget.canControl && hasFrame;
+    if (!widget.canControl) {
+      appLogger.d('[PlaybackDebug] DesktopVideoControls: canControl=false (seek buttons disabled)');
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
@@ -502,6 +517,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
               fallbackDuration: widget.metadata.duration != null
                   ? Duration(milliseconds: widget.metadata.duration!)
                   : null,
+              positionOffsetMs: widget.positionOffsetMs,
             ),
             const SizedBox(height: 4),
           ],
@@ -632,7 +648,8 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                               final rate = rateSnap.data ?? 1.0;
                               if (remaining.inSeconds <= 0) return const SizedBox.shrink();
 
-                              final text = t.videoControls.endsAt(time: formatFinishTime(remaining, rate: rate));
+                              final use24h = context.read<SettingsProvider>().use24HourTime(context);
+                              final text = t.videoControls.endsAt(time: formatFinishTime(remaining, rate: rate, use24Hour: use24h));
                               const style = TextStyle(color: Colors.white70, fontSize: 13);
 
                               return LayoutBuilder(
@@ -702,6 +719,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                 isAmbientLightingEnabled: widget.isAmbientLightingEnabled,
                 onToggleAmbientLighting: widget.onToggleAmbientLighting,
                 onQualityChanged: widget.onQualityChanged,
+                onTranscodeSeek: widget.onTranscodeSeek,
               ),
             ],
           ),

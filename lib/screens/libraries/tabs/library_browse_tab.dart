@@ -314,17 +314,19 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     });
 
     try {
-      // Load storage, filters, and sorts in parallel so browse appears faster
+      // Load storage, filters, sorts, and server display preferences in parallel
       final results = await Future.wait([
         StorageService.getInstance(),
         client.getLibraryFilters(widget.library.key, libraryType: widget.library.type),
         client.getLibrarySorts(widget.library.key, libraryType: widget.library.type),
+        client.getDisplayPreferences(widget.library.key),
       ]);
       final storage = results[0] as StorageService;
       final filters = results[1] as List<LibraryFilter>;
       final sorts = results[2] as List<LibrarySort>;
+      final serverPrefs = results[3] as Map<String, dynamic>?;
 
-      // Load saved preferences
+      // Load saved preferences (server display prefs override local when available)
       final savedFilters = storage.getLibraryFilters(sectionId: widget.library.globalKey);
       final savedSort = storage.getLibrarySort(widget.library.globalKey);
 
@@ -338,15 +340,16 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
         _selectedFilters = Map.from(savedFilters);
         _selectedGrouping = storage.getLibraryGrouping(widget.library.globalKey) ?? _getDefaultGrouping();
 
-        // Restore sort
-        if (savedSort != null) {
-          final sortKey = savedSort['key'] as String?;
-          if (sortKey != null) {
-            final sort = sorts.where((s) => s.key == sortKey).firstOrNull;
-            if (sort != null) {
-              _selectedSort = sort;
-              _isSortDescending = (savedSort['descending'] as bool?) ?? false;
-            }
+        // Restore sort: prefer server display preferences, then local storage
+        final sortKey = serverPrefs?['SortBy'] as String? ?? savedSort?['key'] as String?;
+        final sortOrder = serverPrefs?['SortOrder'] as String?;
+        final savedDesc = (savedSort?['descending'] as bool?) ?? false;
+        final isDescending = sortOrder == 'Descending' || savedDesc;
+        if (sortKey != null) {
+          final sort = sorts.where((s) => s.key == sortKey).firstOrNull;
+          if (sort != null) {
+            _selectedSort = sort;
+            _isSortDescending = isDescending;
           }
         }
       });
@@ -618,6 +621,13 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
           StorageService.getInstance().then((storage) {
             storage.saveLibrarySort(widget.library.globalKey, sort.key, descending: descending);
           });
+          // Sync to server for cross-client display preferences
+          final c = getClientForLibrary();
+          c.updateDisplayPreferences(
+            widget.library.key,
+            sortBy: sort.key,
+            sortOrder: descending ? 'Descending' : 'Ascending',
+          );
           _loadItems();
         },
         onClear: () {
@@ -629,6 +639,9 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
           StorageService.getInstance().then((storage) {
             storage.clearLibrarySort(widget.library.globalKey);
           });
+          // Sync clear to server (use default sort)
+          final c = getClientForLibrary();
+          c.updateDisplayPreferences(widget.library.key, sortBy: 'SortName', sortOrder: 'Ascending');
           _loadItems();
         },
       ),

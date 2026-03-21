@@ -109,40 +109,46 @@ class _TimelineSliderState extends State<TimelineSlider> {
 
     // Center tooltip on cursor, clamped so it stays within the slider bounds
     final left = (pixelX - tooltipWidth / 2).clamp(0.0, sliderWidth - tooltipWidth);
+    final timestampBadge = Container(
+      width: 64.0,
+      height: 26,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.5),
+        borderRadius: const BorderRadius.all(Radius.circular(4)),
+      ),
+      child: Text(
+        formatDurationTimestamp(time),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          height: 1.0,
+          fontFeatures: [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
     return Positioned(
       left: left,
       top: tooltipTop,
       child: IgnorePointer(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hasThumbnail)
-              _ThumbnailContainer(
-                url: thumbnailUrl,
-                width: _thumbWidth,
-                height: _thumbHeight,
-              ),
-            if (hasThumbnail) const SizedBox(height: 4),
-            Container(
-              width: 64.0,
-              height: 26,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
-                borderRadius: const BorderRadius.all(Radius.circular(4)),
-              ),
-              child: Text(
-                formatDurationTimestamp(time),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  height: 1.0,
-                  fontFeatures: [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-          ],
-        ),
+        child: hasThumbnail
+            ? Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  _ThumbnailContainer(
+                    url: thumbnailUrl,
+                    width: _thumbWidth,
+                    height: _thumbHeight,
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Center(child: timestampBadge),
+                  ),
+                ],
+              )
+            : timestampBadge,
       ),
     );
   }
@@ -185,29 +191,33 @@ class _TimelineSliderState extends State<TimelineSlider> {
           clipBehavior: Clip.none,
           alignment: Alignment.center,
           children: [
-            // Chapter markers layer
+            // Chapter markers layer (IgnorePointer so it doesn't block slider interaction)
             if (widget.chaptersLoaded && widget.chapters.isNotEmpty && widget.duration.inMilliseconds > 0)
               Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Row(
+                child: IgnorePointer(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
                     children:
                         widget.chapters.map((chapter) {
                           final chapterPosition = (chapter.startTimeOffset ?? 0) / widget.duration.inMilliseconds;
                           return Expanded(flex: (chapterPosition * 1000).toInt(), child: const SizedBox());
-                        }).toList()..add(
-                          Expanded(
-                            flex:
-                                1000 -
-                                widget.chapters.fold<int>(
-                                  0,
-                                  (sum, chapter) =>
-                                      sum +
-                                      ((chapter.startTimeOffset ?? 0) / widget.duration.inMilliseconds * 1000).toInt(),
-                                ),
-                            child: const SizedBox(),
+                        }).toList()
+                          ..add(
+                            Expanded(
+                              flex:
+                                  1000 -
+                                  widget.chapters.fold<int>(
+                                    0,
+                                    (sum, chapter) =>
+                                        sum +
+                                        ((chapter.startTimeOffset ?? 0) / widget.duration.inMilliseconds * 1000)
+                                            .toInt(),
+                                  ),
+                              child: const SizedBox(),
+                            ),
                           ),
-                        ),
+                    ),
                   ),
                 ),
               ),

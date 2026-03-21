@@ -92,7 +92,8 @@ class VideoSettingsSheet extends StatefulWidget {
   final VoidCallback? onToggleAmbientLighting;
 
   /// Called when streaming quality changes (VOD) or Live TV quality changes; caller should restart playback.
-  final VoidCallback? onQualityChanged;
+  /// Passes previous values for revert-on-failure.
+  final void Function({PlaybackMode? previousPlaybackMode, int? previousLiveTvBitrate})? onQualityChanged;
 
   const VideoSettingsSheet({
     super.key,
@@ -491,7 +492,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
               onTap: () async {
                 final settings = await SettingsService.getInstance();
                 await settings.setPlaybackMode(mode);
-                widget.onQualityChanged?.call();
+                widget.onQualityChanged?.call(previousPlaybackMode: currentMode);
                 if (context.mounted) OverlaySheetController.of(context).close();
               },
             );
@@ -555,7 +556,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
               onTap: () async {
                 final settings = await SettingsService.getInstance();
                 await settings.setLiveTvMaxStreamingBitrate(bitrate);
-                widget.onQualityChanged?.call();
+                widget.onQualityChanged?.call(previousLiveTvBitrate: currentBitrate);
                 if (context.mounted) OverlaySheetController.of(context).close();
               },
             );

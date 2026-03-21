@@ -73,7 +73,14 @@ class SettingsProvider extends ChangeNotifier {
 
   TimeFormat get timeFormat => _timeFormat;
 
-  bool get use24HourTime => _timeFormat == TimeFormat.twentyFourHour;
+  /// Whether to use 24-hour time format. When [TimeFormat.system], uses [BuildContext] to read
+  /// [MediaQuery.alwaysUse24HourFormatOf]. Pass [context] when format is system.
+  bool use24HourTime(BuildContext? context) {
+    if (_timeFormat == TimeFormat.system && context != null) {
+      return MediaQuery.alwaysUse24HourFormatOf(context);
+    }
+    return _timeFormat == TimeFormat.twentyFourHour;
+  }
 
   bool get showHeroSection => _showHeroSection;
 
@@ -270,6 +277,8 @@ class SettingsProvider extends ChangeNotifier {
 
   String get timeFormatDisplayName {
     switch (_timeFormat) {
+      case TimeFormat.system:
+        return t.settings.system;
       case TimeFormat.twelveHour:
         return t.settings.twelveHour;
       case TimeFormat.twentyFourHour:

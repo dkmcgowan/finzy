@@ -3,7 +3,9 @@ import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../i18n/strings.g.dart';
+import '../../main.dart' show gitCommit;
 import '../../utils/app_logger.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
@@ -90,9 +92,12 @@ class _LogsScreenState extends State<LogsScreen> {
     return buffer.toString();
   }
 
-  void _copyAllLogs() {
-    Clipboard.setData(ClipboardData(text: _formatAllLogs()));
-    showSuccessSnackBar(context, t.messages.logsCopied);
+  Future<void> _copyAllLogs() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final commitSuffix = gitCommit.isNotEmpty ? ' ${gitCommit.length >= 7 ? gitCommit.substring(0, 7) : gitCommit}' : '';
+    final header = '${t.app.title} v${packageInfo.version} (${packageInfo.buildNumber})$commitSuffix\n\n';
+    Clipboard.setData(ClipboardData(text: header + _formatAllLogs()));
+    if (mounted) showSuccessSnackBar(context, t.messages.logsCopied);
   }
 
   Color _getLevelColor(Level level) {

@@ -109,6 +109,7 @@ class _TranslationsAuthSv implements TranslationsAuthEn {
 	@override String get invalidPassword => 'Ogiltigt användarnamn eller lösenord.';
 	@override String get notAuthorized => 'Ej behörig. Logga in igen.';
 	@override String get serverUnreachable => 'Kunde inte nå servern. Kontrollera URL:en och din anslutning.';
+	@override String get serverError => 'Serverfel. Försök igen senare.';
 	@override String get scanQRToSignIn => 'Skanna QR-koden för att logga in';
 	@override String get waitingForAuth => 'Väntar på autentisering...\nVänligen slutför inloggning i din webbläsare.';
 	@override String get useBrowser => 'Använd webbläsare';
@@ -226,6 +227,8 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get episodeThumbnail => 'Avsnittsminiatyr';
 	@override String get episodeThumbnailDescription => 'Visa 16:9 skärmbild från avsnittet';
 	@override String get timeFormat => 'Tidsformat';
+	@override String get system => 'System';
+	@override String get systemDescription => 'Följ systemets tidsformat';
 	@override String get twelveHour => '12-timmar';
 	@override String get twentyFourHour => '24-timmar';
 	@override String get twelveHourDescription => 't.ex. 1:00 PM';
@@ -279,6 +282,8 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get liveTvQuality => 'Live TV-kvalitet';
 	@override String get liveTvQualityDescription => 'Begränsa transkodningskvalitet för Live TV. Ingen gräns använder serverstandard.';
 	@override String get liveTvQualityNone => 'Ingen gräns';
+	@override String get streamingQuality => 'Streamingkvalitet';
+	@override String get streamingQualityDescription => 'Begränsa transkodningskvalitet för VOD. Auto låter servern bestämma.';
 	@override String get hardwareDecoding => 'Hårdvaruavkodning';
 	@override String get hardwareDecodingDescription => 'Använd hårdvaruacceleration när tillgängligt';
 	@override String get bufferSize => 'Bufferstorlek';
@@ -631,6 +636,7 @@ class _TranslationsMessagesSv implements TranslationsMessagesEn {
 	@override String get failedToCreatePlayQueueNoItems => 'Det gick inte att skapa uppspelningskö – inga objekt';
 	@override String failedPlayback({required Object action, required Object error}) => 'Kunde inte ${action}: ${error}';
 	@override String get switchingToCompatiblePlayer => 'Byter till kompatibel spelare...';
+	@override String get qualityRevertedOnError => 'Återställd till föregående kvalitet på grund av uppspelningsfel.';
 }
 
 // Path: subtitlingStyling
@@ -1341,6 +1347,7 @@ extension on TranslationsSv {
 			'auth.invalidPassword' => 'Ogiltigt användarnamn eller lösenord.',
 			'auth.notAuthorized' => 'Ej behörig. Logga in igen.',
 			'auth.serverUnreachable' => 'Kunde inte nå servern. Kontrollera URL:en och din anslutning.',
+			'auth.serverError' => 'Serverfel. Försök igen senare.',
 			'auth.scanQRToSignIn' => 'Skanna QR-koden för att logga in',
 			'auth.waitingForAuth' => 'Väntar på autentisering...\nVänligen slutför inloggning i din webbläsare.',
 			'auth.useBrowser' => 'Använd webbläsare',
@@ -1422,6 +1429,8 @@ extension on TranslationsSv {
 			'settings.episodeThumbnail' => 'Avsnittsminiatyr',
 			'settings.episodeThumbnailDescription' => 'Visa 16:9 skärmbild från avsnittet',
 			'settings.timeFormat' => 'Tidsformat',
+			'settings.system' => 'System',
+			'settings.systemDescription' => 'Följ systemets tidsformat',
 			'settings.twelveHour' => '12-timmar',
 			'settings.twentyFourHour' => '24-timmar',
 			'settings.twelveHourDescription' => 't.ex. 1:00 PM',
@@ -1475,6 +1484,8 @@ extension on TranslationsSv {
 			'settings.liveTvQuality' => 'Live TV-kvalitet',
 			'settings.liveTvQualityDescription' => 'Begränsa transkodningskvalitet för Live TV. Ingen gräns använder serverstandard.',
 			'settings.liveTvQualityNone' => 'Ingen gräns',
+			'settings.streamingQuality' => 'Streamingkvalitet',
+			'settings.streamingQualityDescription' => 'Begränsa transkodningskvalitet för VOD. Auto låter servern bestämma.',
 			'settings.hardwareDecoding' => 'Hårdvaruavkodning',
 			'settings.hardwareDecodingDescription' => 'Använd hårdvaruacceleration när tillgängligt',
 			'settings.bufferSize' => 'Bufferstorlek',
@@ -1765,6 +1776,7 @@ extension on TranslationsSv {
 			'messages.failedToCreatePlayQueueNoItems' => 'Det gick inte att skapa uppspelningskö – inga objekt',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => 'Kunde inte ${action}: ${error}',
 			'messages.switchingToCompatiblePlayer' => 'Byter till kompatibel spelare...',
+			'messages.qualityRevertedOnError' => 'Återställd till föregående kvalitet på grund av uppspelningsfel.',
 			'subtitlingStyling.stylingOptions' => 'Stilalternativ',
 			'subtitlingStyling.fontSize' => 'Teckenstorlek',
 			'subtitlingStyling.textColor' => 'Textfärg',
@@ -1829,14 +1841,14 @@ extension on TranslationsSv {
 			'errors.invalidToken' => 'Ogiltig token',
 			'errors.failedToVerifyToken' => ({required Object error}) => 'Misslyckades att verifiera token: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => 'Misslyckades att byta till ${displayName}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.title' => 'Bibliotek',
 			'libraries.scanLibraryFiles' => 'Skanna biblioteksfiler',
 			'libraries.scanLibrary' => 'Skanna bibliotek',
 			'libraries.analyze' => 'Analysera',
 			'libraries.analyzeLibrary' => 'Analysera bibliotek',
 			'libraries.refreshMetadata' => 'Uppdatera metadata',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.emptyTrash' => 'Töm papperskorg',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Tömmer papperskorg för "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Papperskorg tömd för "${title}"',

@@ -110,7 +110,8 @@ class PlaybackInitializationService {
             startPositionMs: startMs,
           );
 
-          final externalSubtitles = enableExternalSubtitles ? _buildExternalSubtitles(playbackData.mediaInfo) : <SubtitleTrack>[];
+          // Always build server subtitle options (embedded + sidecar) so user can select them.
+          final externalSubtitles = _buildExternalSubtitles(playbackData.mediaInfo);
 
           return PlaybackInitializationResult(
             availableVersions: playbackData.availableVersions,
@@ -118,6 +119,8 @@ class PlaybackInitializationService {
             mediaInfo: playbackData.mediaInfo,
             externalSubtitles: externalSubtitles,
             isOffline: true,
+            playSessionId: playbackData.playSessionId,
+            mediaSourceId: playbackData.mediaSourceId,
           );
         } catch (e) {
           // If we can't fetch media info (e.g., no network), use offline-only mode
@@ -150,7 +153,10 @@ class PlaybackInitializationService {
         );
       }
 
-      final externalSubtitles = enableExternalSubtitles ? _buildExternalSubtitles(playbackData.mediaInfo) : <SubtitleTrack>[];
+      // Always build server subtitle options (embedded + sidecar) so user can select them.
+      // They load on demand when selected; enableExternalSubtitles was gating this but server
+      // subtitles (e.g. The Matrix) weren't showing when player has no embedded tracks.
+      final externalSubtitles = _buildExternalSubtitles(playbackData.mediaInfo);
 
       return PlaybackInitializationResult(
         availableVersions: playbackData.availableVersions,
@@ -158,6 +164,9 @@ class PlaybackInitializationService {
         mediaInfo: playbackData.mediaInfo,
         externalSubtitles: externalSubtitles,
         isOffline: false,
+        isTranscode: playbackData.isTranscode,
+        playSessionId: playbackData.playSessionId,
+        mediaSourceId: playbackData.mediaSourceId,
       );
     } catch (e, st) {
       if (e is PlaybackException) {
@@ -221,12 +230,24 @@ class PlaybackInitializationResult {
   final List<SubtitleTrack> externalSubtitles;
   final bool isOffline;
 
+  /// True when using TranscodingUrl (player reports position from stream start).
+  final bool isTranscode;
+
+  /// PlaySessionId from PlaybackInfo; for playback reporting (Start, Progress, Stopped).
+  final String? playSessionId;
+
+  /// MediaSourceId of the chosen source; for playback reporting.
+  final String? mediaSourceId;
+
   PlaybackInitializationResult({
     required this.availableVersions,
     this.videoUrl,
     this.mediaInfo,
     this.externalSubtitles = const [],
     this.isOffline = false,
+    this.isTranscode = false,
+    this.playSessionId,
+    this.mediaSourceId,
   });
 }
 

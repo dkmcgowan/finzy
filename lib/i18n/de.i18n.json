@@ -20,6 +20,7 @@
     "invalidPassword": "Ungültiger Benutzername oder Passwort.",
     "notAuthorized": "Nicht autorisiert. Bitte erneut anmelden.",
     "serverUnreachable": "Server nicht erreichbar. URL und Verbindung prüfen.",
+    "serverError": "Serverfehler. Bitte versuchen Sie es später erneut.",
     "scanQRToSignIn": "QR-Code scannen zum Anmelden",
     "waitingForAuth": "Warte auf Authentifizierung...\nBitte Anmeldung im Browser abschließen.",
     "useBrowser": "Browser verwenden"
@@ -109,6 +110,8 @@
     "episodeThumbnail": "Episoden-Miniatur",
     "episodeThumbnailDescription": "Zeige 16:9 Episoden-Vorschaubilder",
     "timeFormat": "Zeitformat",
+    "system": "System",
+    "systemDescription": "Systemeinstellung für Zeitformat folgen",
     "twelveHour": "12-Stunden",
     "twentyFourHour": "24-Stunden",
     "twelveHourDescription": "z.B. 1:00 PM",
@@ -162,6 +165,8 @@
     "liveTvQuality": "Live-TV-Qualität",
     "liveTvQualityDescription": "Transcodierungsqualität für Live-TV begrenzen. Kein Limit nutzt Server-Standard.",
     "liveTvQualityNone": "Kein Limit",
+    "streamingQuality": "Streaming-Qualität",
+    "streamingQualityDescription": "Transcodierungsqualität für VOD begrenzen. Auto lässt den Server entscheiden.",
     "hardwareDecoding": "Hardware-Decodierung",
     "hardwareDecodingDescription": "Hardwarebeschleunigung verwenden, sofern verfügbar",
     "bufferSize": "Puffergröße",
@@ -477,7 +482,8 @@
     "noItemsAvailable": "Keine Elemente verfügbar",
     "failedToCreatePlayQueueNoItems": "Wiedergabewarteschlange konnte nicht erstellt werden – keine Elemente",
     "failedPlayback": "Wiedergabe für ${action} fehlgeschlagen: ${error}",
-    "switchingToCompatiblePlayer": "Wechsle zu kompatiblem Player..."
+    "switchingToCompatiblePlayer": "Wechsle zu kompatiblem Player...",
+    "qualityRevertedOnError": "Auf vorherige Qualität zurückgesetzt wegen Wiedergabefehler."
   },
   "subtitlingStyling": {
     "stylingOptions": "Stiloptionen",

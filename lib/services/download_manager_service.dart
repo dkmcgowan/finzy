@@ -270,6 +270,13 @@ class DownloadManagerService {
   // Keys currently being paused — prevents holding queue from promoting them
   final Set<String> _pausingKeys = {};
 
+  // Keys whose completion callback is in-flight — prevents orphan scan from re-queuing them
+  final Set<String> _completingKeys = {};
+
+  // App-level auto-retry timers for downloads that exhausted native retries.
+  // Keyed by globalKey; each timer fires a fresh re-enqueue after a delay.
+  final Map<String, Timer> _autoRetryTimers = {};
+
   // Prevents concurrent _processQueue calls
   bool _isProcessingQueue = false;
   bool _disposed = false;
@@ -290,11 +297,17 @@ class DownloadManagerService {
     final settings = await SettingsService.getInstance();
     if (!settings.getDownloadOnWifiOnly()) return false;
 
-    final connectivity = await Connectivity().checkConnectivity();
-    // Block if on cellular and NOT on WiFi (allow if both are available)
-    return connectivity.contains(ConnectivityResult.mobile) &&
-        !connectivity.contains(ConnectivityResult.wifi) &&
-        !connectivity.contains(ConnectivityResult.ethernet);
+    try {
+      final connectivity = await Connectivity().checkConnectivity();
+      // Block if on cellular and NOT on WiFi (allow if both are available)
+      return connectivity.contains(ConnectivityResult.mobile) &&
+          !connectivity.contains(ConnectivityResult.wifi) &&
+          !connectivity.contains(ConnectivityResult.ethernet);
+    } catch (e) {
+      // connectivity_plus can throw on Windows/Linux; allow download when unknown
+      appLogger.d('Connectivity check failed for cellular block: $e');
+      return false;
+    }
   }
 
   /// Future that completes when interrupted download recovery finishes.
@@ -330,6 +343,8 @@ class DownloadManagerService {
 
     // Track tasks for persistence across app restarts
     await FileDownloader().trackTasks();
+    // Deliver status updates from iOS background-to-foreground transitions
+    await FileDownloader().resumeFromBackground();
 
     _fileDownloaderInitialized = true;
   }
@@ -352,6 +367,12 @@ class DownloadManagerService {
 
       for (final item in allDownloads) {
         if (item.status == DownloadStatus.downloading.index) {
+          // Skip items whose completion callback is already in-flight (race with trackTasks)
+          if (_completingKeys.contains(item.globalKey)) {
+            appLogger.d('Skipping orphan check for ${item.globalKey}: completion in progress');
+            continue;
+          }
+
           // Video already downloaded but post-processing didn't complete
           if (item.videoFilePath != null) {
             appLogger.i('Download ${item.globalKey} has video but incomplete post-processing, completing');
@@ -532,6 +553,14 @@ class DownloadManagerService {
   /// Resolve metadata, video URL, and file path, then enqueue a background download task.
   Future<void> _prepareAndEnqueueDownload(String globalKey, JellyfinClient client, DownloadQueueItem queueItem) async {
     try {
+      // Guard: don't re-enqueue an item that's already completed or was deleted
+      final existing = await _database.getDownloadedMedia(globalKey);
+      if (existing == null || existing.status == DownloadStatus.completed.index) {
+        appLogger.d('Skipping enqueue for $globalKey: already completed or deleted');
+        await _database.removeFromQueue(globalKey);
+        return;
+      }
+
       appLogger.i('Preparing download for $globalKey');
 
       final parsed = parseGlobalKey(globalKey);
@@ -605,7 +634,7 @@ class DownloadManagerService {
           group: _downloadGroup,
           updates: Updates.statusAndProgress,
           requiresWiFi: requiresWiFi,
-          retries: 3,
+          retries: 5,
           headers: client.requestHeaders,
           metaData: globalKey,
           displayName: displayName,
@@ -674,7 +703,7 @@ class DownloadManagerService {
           group: _downloadGroup,
           updates: Updates.statusAndProgress,
           requiresWiFi: requiresWiFi,
-          retries: 3,
+          retries: 5,
           allowPause: !isTranscode,
           headers: client.requestHeaders,
           metaData: globalKey,
@@ -990,23 +1019,11 @@ class DownloadManagerService {
         case TaskStatus.failed:
           _onDownloadFailed(globalKey, update.exception?.description ?? 'Download failed');
         case TaskStatus.notFound:
-          _onDownloadFailed(globalKey, 'File not found (404)');
+          _onDownloadPermanentlyFailed(globalKey, 'File not found (404)');
         case TaskStatus.canceled:
-          if (_pausingKeys.contains(globalKey)) {
-            // Expected cancel from holding-queue promotion during pause — ignore
-            break;
-          }
+          if (_pausingKeys.contains(globalKey)) break;
           _stopTranscodePoll(globalKey);
-          final ctx = _pendingDownloadContext.remove(globalKey);
-          if (ctx != null) {
-            // Context still present → OS cancelled the task, not user code
-            // (user-initiated pause/cancel/delete removes context before cancellation completes)
-            appLogger.w('Download cancelled by system for $globalKey, re-queuing');
-            _database.updateBgTaskId(globalKey, null);
-            _transitionStatus(globalKey, DownloadStatus.queued);
-            _database.addToQueue(mediaGlobalKey: globalKey);
-            if (_lastClient != null) _processQueue(_lastClient!);
-          }
+          _onDownloadCanceled(globalKey);
         case TaskStatus.paused:
           appLogger.d('Download paused by system for $globalKey');
         case TaskStatus.waitingToRetry:
@@ -1024,25 +1041,126 @@ class DownloadManagerService {
     }
   }
 
-  /// Handle a permanently failed download
+  /// Handle a system-initiated cancel — re-queue unless already completed.
+  Future<void> _onDownloadCanceled(String globalKey) async {
+    final ctx = _pendingDownloadContext.remove(globalKey);
+    if (ctx == null) return;
+    if (_completingKeys.contains(globalKey)) return;
+
+    final existing = await _database.getDownloadedMedia(globalKey);
+    if (existing?.status == DownloadStatus.completed.index) return;
+
+    appLogger.w('Download cancelled by system for $globalKey, re-queuing');
+    await _database.updateBgTaskId(globalKey, null);
+    await _transitionStatus(globalKey, DownloadStatus.queued);
+    await _database.addToQueue(mediaGlobalKey: globalKey);
+    if (_lastClient != null) _processQueue(_lastClient!);
+  }
+
+  /// Handle a failed download — auto-retry if retries remain, otherwise permanently fail.
+  /// Native retries (Range-based resume) are already exhausted at this point.
   Future<void> _onDownloadFailed(String globalKey, String errorMessage) async {
+    if (_completingKeys.contains(globalKey)) {
+      appLogger.d('Ignoring failure event for $globalKey: completion in progress');
+      return;
+    }
     _stopTranscodePoll(globalKey);
     _pendingDownloadContext.remove(globalKey);
-    appLogger.e('Download failed for $globalKey: $errorMessage');
+
+    final existing = await _database.getDownloadedMedia(globalKey);
+    if (existing?.status == DownloadStatus.completed.index) {
+      appLogger.d('Ignoring stale failure for completed download $globalKey');
+      return;
+    }
+    final retryCount = existing?.retryCount ?? 0;
+
+    if (retryCount < 3 && _lastClient != null) {
+      // App-level auto-retry: schedule a fresh download after a delay.
+      // Each new task gets 5 native retries with Range-based resume.
+      appLogger.w(
+        'Download failed for $globalKey (attempt ${retryCount + 1}/3), '
+        'scheduling auto-retry in 30s: $errorMessage',
+      );
+      await _transitionStatus(globalKey, DownloadStatus.failed, errorMessage: errorMessage);
+      await _database.updateDownloadError(globalKey, errorMessage);
+      await _database.removeFromQueue(globalKey);
+      _autoRetryTimers[globalKey]?.cancel();
+      _autoRetryTimers[globalKey] = Timer(const Duration(seconds: 30), () {
+        _autoRetryTimers.remove(globalKey);
+        _performAutoRetry(globalKey);
+      });
+
+      // Advance the queue while we wait for the retry timer
+      if (_lastClient != null) _processQueue(_lastClient!);
+    } else {
+      await _onDownloadPermanentlyFailed(globalKey, errorMessage);
+    }
+  }
+
+  /// Handle a non-retryable failure (e.g. 404) — fail immediately without auto-retry.
+  Future<void> _onDownloadPermanentlyFailed(String globalKey, String errorMessage) async {
+    if (_completingKeys.contains(globalKey)) {
+      appLogger.d('Ignoring permanent failure event for $globalKey: completion in progress');
+      return;
+    }
+    _stopTranscodePoll(globalKey);
+    _pendingDownloadContext.remove(globalKey);
+
+    final existing = await _database.getDownloadedMedia(globalKey);
+    if (existing?.status == DownloadStatus.completed.index) {
+      appLogger.d('Ignoring stale permanent failure for completed download $globalKey');
+      return;
+    }
+
+    appLogger.e('Download permanently failed for $globalKey: $errorMessage');
     await _transitionStatus(globalKey, DownloadStatus.failed, errorMessage: errorMessage);
     await _database.updateDownloadError(globalKey, errorMessage);
     await _database.removeFromQueue(globalKey);
 
-    // Try to enqueue more items from the queue
     if (_lastClient != null) _processQueue(_lastClient!);
+  }
+
+  /// Execute an app-level auto-retry: transition back to queued and re-enqueue.
+  Future<void> _performAutoRetry(String globalKey) async {
+    if (_disposed) return;
+    final client = _lastClient;
+    if (client == null) {
+      appLogger.w('Cannot auto-retry $globalKey: no client available');
+      return;
+    }
+
+    final existing = await _database.getDownloadedMedia(globalKey);
+    if (existing == null || existing.status != DownloadStatus.failed.index) {
+      // Download was cancelled/deleted/retried by user during the delay
+      return;
+    }
+
+    appLogger.i('Auto-retrying download for $globalKey');
+    await _database.updateBgTaskId(globalKey, null);
+    await _transitionStatus(globalKey, DownloadStatus.queued);
+    await _database.addToQueue(mediaGlobalKey: globalKey);
+    _processQueue(client);
   }
 
   /// Handle a completed video download — store path, download supplementary content, mark done.
   Future<void> _onDownloadComplete(String globalKey, Task task) async {
+    // Prevent duplicate concurrent completions (e.g. trackTasks replaying events)
+    if (_completingKeys.contains(globalKey)) {
+      appLogger.d('Already processing completion for $globalKey, skipping');
+      return;
+    }
+    _completingKeys.add(globalKey);
     try {
       // Flush any pending debounced progress write before completing
       _progressDebounceTimers.remove(globalKey)?.cancel();
       _stopTranscodePoll(globalKey);
+
+      // Fresh DB check — bail if already completed (guards against race with orphan scan)
+      final existingCheck = await _database.getDownloadedMedia(globalKey);
+      if (existingCheck?.status == DownloadStatus.completed.index) {
+        appLogger.d('Download already completed for $globalKey, skipping');
+        return;
+      }
 
       final ctx = _pendingDownloadContext.remove(globalKey);
 
@@ -1140,6 +1258,7 @@ class DownloadManagerService {
       await _database.updateDownloadError(globalKey, 'Post-processing failed: $e');
       await _database.removeFromQueue(globalKey);
     } finally {
+      _completingKeys.remove(globalKey);
       // Always advance the queue, even after errors
       if (_lastClient != null) _processQueue(_lastClient!);
     }
@@ -1477,6 +1596,7 @@ class DownloadManagerService {
 
   /// Retry a failed download
   Future<void> retryDownload(String globalKey, JellyfinClient client) async {
+    _autoRetryTimers.remove(globalKey)?.cancel();
     await _database.clearDownloadError(globalKey);
     await _database.updateBgTaskId(globalKey, null);
     await _transitionStatus(globalKey, DownloadStatus.queued);
@@ -1487,6 +1607,7 @@ class DownloadManagerService {
   /// Cancel a download
   /// Removes the record and any partial files so the movie page shows "Download" again.
   Future<void> cancelDownload(String globalKey) async {
+    _autoRetryTimers.remove(globalKey)?.cancel();
     final cancelToken = _dioTranscodeCancelTokens.remove(globalKey);
     if (cancelToken != null) {
       cancelToken.cancel('User cancelled');
@@ -1514,6 +1635,7 @@ class DownloadManagerService {
 
   /// Delete a downloaded item and its files
   Future<void> deleteDownload(String globalKey) async {
+    _autoRetryTimers.remove(globalKey)?.cancel();
     // Cancel if actively downloading (Dio or background_downloader)
     final cancelToken = _dioTranscodeCancelTokens.remove(globalKey);
     if (cancelToken != null) cancelToken.cancel('User deleted');
@@ -2021,6 +2143,10 @@ class DownloadManagerService {
       timer.cancel();
     }
     _progressDebounceTimers.clear();
+    for (final timer in _autoRetryTimers.values) {
+      timer.cancel();
+    }
+    _autoRetryTimers.clear();
     for (final timer in _transcodePollTimers.values) {
       timer.cancel();
     }

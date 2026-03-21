@@ -109,6 +109,7 @@ class _TranslationsAuthNl implements TranslationsAuthEn {
 	@override String get invalidPassword => 'Ongeldige gebruikersnaam of wachtwoord.';
 	@override String get notAuthorized => 'Niet geautoriseerd. Log opnieuw in.';
 	@override String get serverUnreachable => 'Kan server niet bereiken. Controleer de URL en uw verbinding.';
+	@override String get serverError => 'Serverfout. Probeer het later opnieuw.';
 	@override String get scanQRToSignIn => 'Scan deze QR-code om in te loggen';
 	@override String get waitingForAuth => 'Wachten op authenticatie...\nVoltooi het inloggen in je browser.';
 	@override String get useBrowser => 'Gebruik browser';
@@ -226,6 +227,8 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get episodeThumbnail => 'Aflevering miniatuur';
 	@override String get episodeThumbnailDescription => 'Toon 16:9 aflevering miniaturen';
 	@override String get timeFormat => 'Tijdnotatie';
+	@override String get system => 'Systeem';
+	@override String get systemDescription => 'Volg systeeminstelling voor tijdnotatie';
 	@override String get twelveHour => '12-uurs';
 	@override String get twentyFourHour => '24-uurs';
 	@override String get twelveHourDescription => 'bijv. 1:00 PM';
@@ -279,6 +282,8 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get liveTvQuality => 'Live TV-kwaliteit';
 	@override String get liveTvQualityDescription => 'Beperk transcoderingskwaliteit voor Live TV. Geen limiet gebruikt serverstandaard.';
 	@override String get liveTvQualityNone => 'Geen limiet';
+	@override String get streamingQuality => 'Streamingkwaliteit';
+	@override String get streamingQualityDescription => 'Beperk transcoderingskwaliteit voor VOD. Auto laat de server beslissen.';
 	@override String get hardwareDecoding => 'Hardware decodering';
 	@override String get hardwareDecodingDescription => 'Gebruik hardware versnelling indien beschikbaar';
 	@override String get bufferSize => 'Buffer grootte';
@@ -631,6 +636,7 @@ class _TranslationsMessagesNl implements TranslationsMessagesEn {
 	@override String get failedToCreatePlayQueueNoItems => 'Kan afspeelwachtrij niet maken - geen items';
 	@override String failedPlayback({required Object action, required Object error}) => 'Afspelen van ${action} mislukt: ${error}';
 	@override String get switchingToCompatiblePlayer => 'Overschakelen naar compatibele speler...';
+	@override String get qualityRevertedOnError => 'Teruggezet naar vorige kwaliteit vanwege afspeelfout.';
 }
 
 // Path: subtitlingStyling
@@ -1341,6 +1347,7 @@ extension on TranslationsNl {
 			'auth.invalidPassword' => 'Ongeldige gebruikersnaam of wachtwoord.',
 			'auth.notAuthorized' => 'Niet geautoriseerd. Log opnieuw in.',
 			'auth.serverUnreachable' => 'Kan server niet bereiken. Controleer de URL en uw verbinding.',
+			'auth.serverError' => 'Serverfout. Probeer het later opnieuw.',
 			'auth.scanQRToSignIn' => 'Scan deze QR-code om in te loggen',
 			'auth.waitingForAuth' => 'Wachten op authenticatie...\nVoltooi het inloggen in je browser.',
 			'auth.useBrowser' => 'Gebruik browser',
@@ -1422,6 +1429,8 @@ extension on TranslationsNl {
 			'settings.episodeThumbnail' => 'Aflevering miniatuur',
 			'settings.episodeThumbnailDescription' => 'Toon 16:9 aflevering miniaturen',
 			'settings.timeFormat' => 'Tijdnotatie',
+			'settings.system' => 'Systeem',
+			'settings.systemDescription' => 'Volg systeeminstelling voor tijdnotatie',
 			'settings.twelveHour' => '12-uurs',
 			'settings.twentyFourHour' => '24-uurs',
 			'settings.twelveHourDescription' => 'bijv. 1:00 PM',
@@ -1475,6 +1484,8 @@ extension on TranslationsNl {
 			'settings.liveTvQuality' => 'Live TV-kwaliteit',
 			'settings.liveTvQualityDescription' => 'Beperk transcoderingskwaliteit voor Live TV. Geen limiet gebruikt serverstandaard.',
 			'settings.liveTvQualityNone' => 'Geen limiet',
+			'settings.streamingQuality' => 'Streamingkwaliteit',
+			'settings.streamingQualityDescription' => 'Beperk transcoderingskwaliteit voor VOD. Auto laat de server beslissen.',
 			'settings.hardwareDecoding' => 'Hardware decodering',
 			'settings.hardwareDecodingDescription' => 'Gebruik hardware versnelling indien beschikbaar',
 			'settings.bufferSize' => 'Buffer grootte',
@@ -1765,6 +1776,7 @@ extension on TranslationsNl {
 			'messages.failedToCreatePlayQueueNoItems' => 'Kan afspeelwachtrij niet maken - geen items',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => 'Afspelen van ${action} mislukt: ${error}',
 			'messages.switchingToCompatiblePlayer' => 'Overschakelen naar compatibele speler...',
+			'messages.qualityRevertedOnError' => 'Teruggezet naar vorige kwaliteit vanwege afspeelfout.',
 			'subtitlingStyling.stylingOptions' => 'Opmaak opties',
 			'subtitlingStyling.fontSize' => 'Lettergrootte',
 			'subtitlingStyling.textColor' => 'Tekstkleur',
@@ -1829,14 +1841,14 @@ extension on TranslationsNl {
 			'errors.invalidToken' => 'Ongeldig token',
 			'errors.failedToVerifyToken' => ({required Object error}) => 'Kon token niet verifiëren: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => 'Kon niet wisselen naar ${displayName}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.title' => 'Bibliotheken',
 			'libraries.scanLibraryFiles' => 'Scan bibliotheek bestanden',
 			'libraries.scanLibrary' => 'Scan bibliotheek',
 			'libraries.analyze' => 'Analyseren',
 			'libraries.analyzeLibrary' => 'Analyseer bibliotheek',
 			'libraries.refreshMetadata' => 'Vernieuw metadata',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.emptyTrash' => 'Prullenbak legen',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Prullenbak legen voor "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Prullenbak geleegd voor "${title}"',

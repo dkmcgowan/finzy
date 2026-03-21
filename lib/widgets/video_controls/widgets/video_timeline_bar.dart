@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../mpv/mpv.dart';
 import '../../../models/media_info.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../utils/formatters.dart';
 import 'timeline_slider.dart';
 
@@ -43,6 +45,10 @@ class VideoTimelineBar extends StatelessWidget {
   /// the timeline scale so the progress bar doesn't jump.
   final Duration? fallbackDuration;
 
+  /// For transcode streams, the player reports position from stream start (0).
+  /// Pass the playback start position in ms so we display and seek correctly.
+  final int? positionOffsetMs;
+
   const VideoTimelineBar({
     super.key,
     required this.player,
@@ -58,6 +64,7 @@ class VideoTimelineBar extends StatelessWidget {
     this.showFinishTime = false,
     this.thumbnailUrlBuilder,
     this.fallbackDuration,
+    this.positionOffsetMs,
   });
 
   @override
@@ -70,7 +77,7 @@ class VideoTimelineBar extends StatelessWidget {
           stream: player.streams.duration,
           initialData: player.state.duration,
           builder: (context, durationSnapshot) {
-            final position = positionSnapshot.data ?? Duration.zero;
+            final rawPosition = positionSnapshot.data ?? Duration.zero;
             final playerDuration = durationSnapshot.data ?? Duration.zero;
             // Use fallback when player duration is zero or smaller (e.g. HLS buffer growth)
             final duration = (fallbackDuration != null &&
@@ -78,6 +85,10 @@ class VideoTimelineBar extends StatelessWidget {
                         playerDuration.inMilliseconds < fallbackDuration!.inMilliseconds))
                 ? fallbackDuration!
                 : playerDuration;
+            // Transcode streams report position from stream start (0); add offset for display
+            final position = positionOffsetMs != null && rawPosition.inMilliseconds < positionOffsetMs!
+                ? Duration(milliseconds: positionOffsetMs! + rawPosition.inMilliseconds)
+                : rawPosition;
             final remaining = position - duration; // We want this to be negative
 
             return horizontalLayout
@@ -129,10 +140,27 @@ class VideoTimelineBar extends StatelessWidget {
       initialData: player.state.rate,
       builder: (context, rateSnap) {
         final rate = rateSnap.data ?? 1.0;
-        final text = '${formatDurationTimestamp(remaining)} · ${formatFinishTime(remaining.abs(), rate: rate)}';
+        final use24h = context.read<SettingsProvider>().use24HourTime(context);
+        final text = '${formatDurationTimestamp(remaining)} · ${formatFinishTime(remaining.abs(), rate: rate, use24Hour: use24h)}';
         return Text(text, style: const TextStyle(color: Colors.white, fontSize: 14));
       },
     );
+  }
+
+  /// Pass target (movie) position to parent. For direct play, parent uses player.seek().
+  /// For transcode, parent uses seek-via-reload with this as the new start position.
+  void _handleSeek(Duration targetPosition, Duration duration) {
+    final clamped = Duration(
+      milliseconds: targetPosition.inMilliseconds.clamp(0, duration.inMilliseconds),
+    );
+    onSeek(clamped);
+  }
+
+  void _handleSeekEnd(Duration targetPosition, Duration duration) {
+    final clamped = Duration(
+      milliseconds: targetPosition.inMilliseconds.clamp(0, duration.inMilliseconds),
+    );
+    onSeekEnd(clamped);
   }
 
   Widget _buildSlider(Duration position, Duration duration) {
@@ -141,8 +169,8 @@ class VideoTimelineBar extends StatelessWidget {
       duration: duration,
       chapters: chapters,
       chaptersLoaded: chaptersLoaded,
-      onSeek: onSeek,
-      onSeekEnd: onSeekEnd,
+      onSeek: (pos) => _handleSeek(pos, duration),
+      onSeekEnd: (pos) => _handleSeekEnd(pos, duration),
       focusNode: focusNode,
       onKeyEvent: onKeyEvent,
       onFocusChange: onFocusChange,

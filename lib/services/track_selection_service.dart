@@ -39,9 +39,12 @@ SubtitleTrack? findMpvTrackForServerSubtitle(MediaSubtitleTrack serverTrack, Lis
 
     int score = 0;
 
-    // Language match is most important (+10)
+    // Language match is most important (+10, +1 bonus for exact code match)
     if (_languagesMatch(mpvTrack.language, serverTrack.languageCode)) {
       score += 10;
+      if (_languageCodesExactMatch(mpvTrack.language, serverTrack.languageCode)) {
+        score += 1;
+      }
     }
 
     // Codec match (+5)
@@ -94,9 +97,12 @@ MediaSubtitleTrack? findServerTrackForMpvSubtitle(SubtitleTrack mpvTrack, List<M
 
     int score = 0;
 
-    // Language match is most important (+10)
+    // Language match is most important (+10, +1 bonus for exact code match)
     if (_languagesMatch(mpvTrack.language, serverTrack.languageCode)) {
       score += 10;
+      if (_languageCodesExactMatch(mpvTrack.language, serverTrack.languageCode)) {
+        score += 1;
+      }
     }
 
     // Codec match (+5)
@@ -134,9 +140,12 @@ AudioTrack? findMpvTrackForServerAudio(MediaAudioTrack serverTrack, List<AudioTr
   for (final mpvTrack in mpvTracks) {
     int score = 0;
 
-    // Language match is most important (+10)
+    // Language match is most important (+10, +1 bonus for exact code match)
     if (_languagesMatch(mpvTrack.language, serverTrack.languageCode)) {
       score += 10;
+      if (_languageCodesExactMatch(mpvTrack.language, serverTrack.languageCode)) {
+        score += 1;
+      }
     }
 
     // Codec match (+5)
@@ -176,9 +185,12 @@ MediaAudioTrack? findServerTrackForMpvAudio(AudioTrack mpvTrack, List<MediaAudio
   for (final serverTrack in serverTracks) {
     int score = 0;
 
-    // Language match is most important (+10)
+    // Language match is most important (+10, +1 bonus for exact code match)
     if (_languagesMatch(mpvTrack.language, serverTrack.languageCode)) {
       score += 10;
+      if (_languageCodesExactMatch(mpvTrack.language, serverTrack.languageCode)) {
+        score += 1;
+      }
     }
 
     // Codec match (+5)
@@ -206,6 +218,12 @@ MediaAudioTrack? findServerTrackForMpvAudio(AudioTrack mpvTrack, List<MediaAudio
 
   // Require at least language match for a valid match
   return bestScore >= 10 ? bestMatch : null;
+}
+
+/// Check if two language codes match exactly (after normalizing case and stripping region suffixes)
+bool _languageCodesExactMatch(String? a, String? b) {
+  if (a == null || b == null) return false;
+  return a.toLowerCase().split('-').first == b.toLowerCase().split('-').first;
 }
 
 /// Check if two language codes refer to the same language
@@ -702,9 +720,11 @@ class TrackSelectionService {
       final serverSelectedTrack = mediaInfo!.subtitleTracks.where((t) => t.selected).firstOrNull;
 
       if (serverSelectedTrack != null) {
+        appLogger.d('[Sub] mediaInfo has serverSelected subtitle: ${serverSelectedTrack.displayTitle ?? serverSelectedTrack.language ?? "track"}');
         final matchedMpvTrack = findMpvTrackForServerSubtitle(serverSelectedTrack, availableTracks);
 
         if (matchedMpvTrack != null) {
+          appLogger.d('[Sub] matched MPV track for server-selected, will use serverSelected priority');
           return TrackSelectionResult(matchedMpvTrack, TrackSelectionPriority.serverSelected);
         }
       }
@@ -741,6 +761,7 @@ class TrackSelectionService {
     if (availableTracks.isNotEmpty) {
       final defaultTrack = availableTracks.firstWhere((t) => t.isDefault, orElse: () => availableTracks.first);
       if (defaultTrack.isDefault) {
+        appLogger.d('[Sub] using defaultTrack from MPV: ${defaultTrack.title ?? defaultTrack.id}');
         return TrackSelectionResult(defaultTrack, TrackSelectionPriority.defaultTrack);
       }
     }
@@ -760,9 +781,12 @@ class TrackSelectionService {
     // Wait for tracks to be loaded
     int attempts = 0;
     while (player.state.tracks.audio.isEmpty && player.state.tracks.subtitle.isEmpty && attempts < 100) {
+      if (player.disposed) return;
       await Future.delayed(const Duration(milliseconds: 100));
       attempts++;
     }
+
+    if (player.disposed) return;
 
     // Get real tracks (excluding auto and no)
     final realAudioTracks = player.state.tracks.audio.where((t) => t.id != 'auto' && t.id != 'no').toList();
@@ -790,7 +814,7 @@ class TrackSelectionService {
     final subtitleName = selectedSubtitleTrack.id == 'no'
         ? 'OFF'
         : (selectedSubtitleTrack.title ?? selectedSubtitleTrack.language ?? 'Track ${selectedSubtitleTrack.id}');
-    appLogger.d('Subtitle: $subtitleName [${subtitleResult.priority.name}]');
+    appLogger.d('[Sub] applied: $subtitleName priority=${subtitleResult.priority.name}');
     player.selectSubtitleTrack(selectedSubtitleTrack);
 
     // Notify callback if this was user's navigation preference (Priority 1)

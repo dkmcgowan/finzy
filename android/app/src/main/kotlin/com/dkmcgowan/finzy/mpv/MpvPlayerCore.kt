@@ -42,6 +42,7 @@ class MpvPlayerCore(private val activity: Activity) :
         private const val SHORT_VIDEO_LENGTH_MS = 300000L // 5 minutes
     }
 
+    private var disposing = false
     private var surfaceView: SurfaceView? = null
     private var surfaceContainer: android.widget.FrameLayout? = null
     private var overlayLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? =
@@ -86,7 +87,7 @@ class MpvPlayerCore(private val activity: Activity) :
                 // Pause playback on permanent focus loss
                 if (isInitialized) {
                     try {
-                        val isPaused = MPVLib.getPropertyBoolean("pause")
+                        val isPaused = MPVLib.getPropertyBoolean("pause") == true
                         wasPlayingBeforeFocusLoss = !isPaused
                         if (!isPaused) {
                             MPVLib.setPropertyBoolean("pause", true)
@@ -102,7 +103,7 @@ class MpvPlayerCore(private val activity: Activity) :
                 // Pause playback, remember to resume
                 if (isInitialized) {
                     try {
-                        val isPaused = MPVLib.getPropertyBoolean("pause")
+                        val isPaused = MPVLib.getPropertyBoolean("pause") == true
                         wasPlayingBeforeFocusLoss = !isPaused
                         if (!isPaused) {
                             MPVLib.setPropertyBoolean("pause", true)
@@ -119,7 +120,7 @@ class MpvPlayerCore(private val activity: Activity) :
                 hasAudioFocus = false
                 if (isInitialized) {
                     try {
-                        val isPaused = MPVLib.getPropertyBoolean("pause")
+                        val isPaused = MPVLib.getPropertyBoolean("pause") == true
                         wasPlayingBeforeFocusLoss = !isPaused
                         if (!isPaused) {
                             MPVLib.setPropertyBoolean("pause", true)
@@ -133,8 +134,10 @@ class MpvPlayerCore(private val activity: Activity) :
     }
 
     private fun ensureFlutterOverlayOnTop() {
+        if (disposing) return
         val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
         contentView.post {
+            if (disposing || !isInitialized) return@post
             var flutterContainer: ViewGroup? = null
 
             // First pass: look for FlutterView by name (debug builds)
@@ -279,7 +282,7 @@ class MpvPlayerCore(private val activity: Activity) :
         // hwdec is set from Flutter via setProperty based on user preference
 
         // Audio configuration
-        MPVLib.setOptionString("ao", "audiotrack")
+        MPVLib.setOptionString("ao", "audiotrack,opensles")
     }
 
     // Audio Focus
@@ -401,16 +404,24 @@ class MpvPlayerCore(private val activity: Activity) :
     }
 
     override fun event(eventId: Int) {
-        val eventName = when (eventId) {
-            MPVLib.MPV_EVENT_FILE_LOADED -> "file-loaded"
-            MPVLib.MPV_EVENT_END_FILE -> "end-file"
-            MPVLib.MPV_EVENT_PLAYBACK_RESTART -> "playback-restart"
-            else -> null
-        }
-        eventName?.let { name ->
-            activity.runOnUiThread {
-                delegate?.onEvent(name, null)
+        if (disposing) return
+        when (eventId) {
+            MPVLib.MPV_EVENT_END_FILE -> {
+                val eofReached = try { MPVLib.getPropertyBoolean("eof-reached") } catch (_: Exception) { false }
+                val data: Map<String, Any>? = if (eofReached) {
+                    mapOf("reason" to 0) // EOF
+                } else {
+                    null // Could be stop, quit, or error — no way to distinguish from JNI
+                }
+                activity.runOnUiThread { delegate?.onEvent("end-file", data) }
             }
+            MPVLib.MPV_EVENT_FILE_LOADED -> {
+                activity.runOnUiThread { delegate?.onEvent("file-loaded", null) }
+            }
+            MPVLib.MPV_EVENT_PLAYBACK_RESTART -> {
+                activity.runOnUiThread { delegate?.onEvent("playback-restart", null) }
+            }
+            else -> { }
         }
     }
 
@@ -465,6 +476,80 @@ class MpvPlayerCore(private val activity: Activity) :
         MPVLib.observeProperty(name, mpvFormat)
     }
 
+    /**
+     * Get an MPV property asynchronously off the UI thread.
+     * This prevents ANR when mpv_get_property blocks waiting for internal locks.
+     */
+    fun getPropertyAsync(name: String, result: MethodChannel.Result) {
+        if (!isInitialized) {
+            result.success(null)
+            return
+        }
+        commandExecutor.execute {
+            try {
+                val value = MPVLib.getPropertyString(name)
+                activity.runOnUiThread { result.success(value) }
+            } catch (e: Exception) {
+                activity.runOnUiThread { result.success(null) }
+            }
+        }
+    }
+
+    /**
+     * Set an MPV property asynchronously off the UI thread.
+     * This prevents ANR when mpv_set_property blocks waiting for internal locks.
+     */
+    fun setPropertyAsync(name: String, value: String, result: MethodChannel.Result) {
+        if (!isInitialized) {
+            result.success(null)
+            return
+        }
+        commandExecutor.execute {
+            try {
+                MPVLib.setPropertyString(name, value)
+                activity.runOnUiThread { result.success(null) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Async setProperty failed: ${e.message}", e)
+                activity.runOnUiThread { result.success(null) }
+            }
+        }
+    }
+
+    /**
+     * Observe an MPV property asynchronously off the UI thread.
+     * This prevents ANR when mpv_observe_property blocks waiting for internal locks.
+     */
+    fun observePropertyAsync(name: String, format: String, result: MethodChannel.Result) {
+        if (!isInitialized) {
+            result.success(null)
+            return
+        }
+        val mpvFormat = when (format) {
+            "double" -> MPVLib.MPV_FORMAT_DOUBLE
+            "flag" -> MPVLib.MPV_FORMAT_FLAG
+            "string" -> MPVLib.MPV_FORMAT_STRING
+            "node" -> MPVLib.MPV_FORMAT_NODE
+            else -> MPVLib.MPV_FORMAT_NONE
+        }
+        commandExecutor.execute {
+            try {
+                MPVLib.observeProperty(name, mpvFormat)
+                activity.runOnUiThread { result.success(null) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Async observeProperty failed: ${e.message}", e)
+                activity.runOnUiThread { result.success(null) }
+            }
+        }
+    }
+
+    /**
+     * Run a block on the command executor (background thread).
+     * Used by the plugin for I/O operations that shouldn't block the main thread.
+     */
+    fun runOnExecutor(block: () -> Unit) {
+        commandExecutor.execute(block)
+    }
+
     fun command(args: Array<String>) {
         if (!isInitialized || args.isEmpty()) return
         MPVLib.command(args)
@@ -497,10 +582,9 @@ class MpvPlayerCore(private val activity: Activity) :
     }
 
     fun setVisible(visible: Boolean) {
+        if (disposing) return
         activity.runOnUiThread {
-            // Set visibility on the container, not the SurfaceView directly.
-            // This allows the SurfaceView surface to be created even when hidden,
-            // which is required with RenderMode.texture (TextureView mode).
+            if (disposing) return@runOnUiThread
             surfaceContainer?.visibility = if (visible) View.VISIBLE else View.INVISIBLE
             Log.d(TAG, "setVisible($visible)")
         }
@@ -570,7 +654,7 @@ class MpvPlayerCore(private val activity: Activity) :
                 // Mode switch may pause playback (HDMI), wait and resume
                 handler.postDelayed({
                     try {
-                        val isPaused = MPVLib.getPropertyBoolean("pause")
+                        val isPaused = MPVLib.getPropertyBoolean("pause") == true
                         if (isPaused) {
                             Log.d(TAG, "Display changed, resuming playback")
                             MPVLib.setPropertyBoolean("pause", false)
@@ -701,11 +785,18 @@ class MpvPlayerCore(private val activity: Activity) :
 
     // Cleanup
 
-    fun dispose() {
+    fun dispose(onComplete: (() -> Unit)? = null) {
+        if (disposing) {
+            onComplete?.invoke()
+            return
+        }
+        disposing = true
+        check(Looper.myLooper() == Looper.getMainLooper())
         Log.d(TAG, "Disposing")
 
         // Shutdown command executor
         commandExecutor.shutdown()
+        handler.removeCallbacksAndMessages(null)
 
         // Clean up frame rate listener
         clearVideoFrameRate()
@@ -717,24 +808,46 @@ class MpvPlayerCore(private val activity: Activity) :
         MPVLib.removeObserver(this)
         MPVLib.removeLogObserver(this)
 
-        surfaceView?.holder?.removeCallback(this)
-        overlayLayoutListener?.let { listener ->
-            val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
-            contentView.viewTreeObserver.removeOnGlobalLayoutListener(listener)
-        }
-
-        // Post view removal to next frame to avoid SurfaceControl race on render thread
-        val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
+        // Capture locals for deferred cleanup
+        val sv = surfaceView
         val container = surfaceContainer
-        contentView.post {
-            container?.let { contentView.removeView(it) }
-        }
+        val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
+
+        // Synchronous ownership invalidation — stale code can no longer reach surface state
         surfaceContainer = null
         surfaceView = null
 
-        MPVLib.destroy()
+        overlayLayoutListener?.let { listener ->
+            contentView.viewTreeObserver.removeOnGlobalLayoutListener(listener)
+        }
+        overlayLayoutListener = null
+
+        // Deferred view removal only — uses captured locals. postAtFrontOfQueue orders removal
+        // before queued initialize messages.
+        Handler(Looper.getMainLooper()).postAtFrontOfQueue {
+            sv?.holder?.removeCallback(this)
+            if (container?.parent != null) {
+                contentView.removeView(container)
+            }
+        }
+
+        val wasInitialized = isInitialized
         isInitialized = false
 
-        Log.d(TAG, "Disposed")
+        // Run native destroy on background thread to avoid ANR.
+        // The completion callback is posted to the main thread so the caller can defer
+        // result.success() until native resources are fully released.
+        if (wasInitialized) {
+            Thread {
+                try {
+                    MPVLib.destroy()
+                    Log.d(TAG, "Disposed (native)")
+                } finally {
+                    onComplete?.let { Handler(Looper.getMainLooper()).post(it) }
+                }
+            }.start()
+        } else {
+            onComplete?.invoke()
+        }
     }
 }

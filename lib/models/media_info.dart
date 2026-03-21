@@ -105,6 +105,10 @@ class MediaSubtitleTrack with TrackLabelBuilder {
   final bool forced;
   final String? key;
 
+  /// Server-provided URL (relative path like /Videos/.../Stream.srt).
+  /// When present, use this instead of building from key (jellyfin-web parity).
+  final String? deliveryUrl;
+
   MediaSubtitleTrack({
     required this.id,
     this.index,
@@ -116,6 +120,7 @@ class MediaSubtitleTrack with TrackLabelBuilder {
     required this.selected,
     required this.forced,
     this.key,
+    this.deliveryUrl,
   });
 
   String get label {
@@ -124,21 +129,33 @@ class MediaSubtitleTrack with TrackLabelBuilder {
     return buildLabel(additionalParts);
   }
 
-  /// Returns true if this subtitle track is an external file (sidecar subtitle)
-  /// External subtitles have a key property that points to a subtitle stream endpoint
-  bool get isExternal => key != null && key!.isNotEmpty;
+  /// Returns true if this subtitle track can be fetched (has key or deliveryUrl)
+  bool get isExternal => (key != null && key!.isNotEmpty) || (deliveryUrl != null && deliveryUrl!.isNotEmpty);
 
   /// Constructs the full URL for fetching external subtitle files
   /// Returns null if this is not an external subtitle
   String? getSubtitleUrl(String baseUrl, String token) {
     if (!isExternal) return null;
 
-    // Determine file extension based on codec
-    final ext = CodecUtils.getSubtitleExtension(codec);
     final base = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
+    final auth = 'ApiKey=${Uri.encodeComponent(token)}';
 
-    // Construct URL with authentication
-    return '$base$key.$ext?ApiKey=${Uri.encodeComponent(token)}';
+    // Prefer server DeliveryUrl when available (correct format, jellyfin-web parity)
+    final url = deliveryUrl;
+    if (url != null && url.isNotEmpty) {
+      // Already absolute URL (IsExternalUrl case)
+      if (url.contains('://')) {
+        final separator = url.contains('?') ? '&' : '?';
+        return '$url$separator$auth';
+      }
+      final path = url.startsWith('/') ? url : '/$url';
+      final separator = path.contains('?') ? '&' : '?';
+      return '$base${path.substring(1)}$separator$auth';
+    }
+
+    // Fallback: build from key
+    final ext = CodecUtils.getSubtitleExtension(codec);
+    return '$base$key.$ext?$auth';
   }
 }
 

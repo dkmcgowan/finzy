@@ -5,10 +5,11 @@
 class CodecUtils {
   CodecUtils._();
 
-  /// Maps server subtitle codec names to file extensions.
+  /// Maps server subtitle codec names to API format for Jellyfin's subtitle stream endpoint.
   ///
-  /// Returns the appropriate file extension for a given subtitle codec.
-  /// Defaults to 'srt' for unknown or null codecs.
+  /// Uses format the server can deliver. For embedded formats (DVDSUB, PGS) the server
+  /// converts to SRT; requesting .sub/.sup returns 404 (jellyfin-web parity).
+  /// Subrip uses 'srt' not 'subrip' per Jellyfin API (issue #7958).
   static String getSubtitleExtension(String? codec) {
     if (codec == null) return 'srt';
 
@@ -27,10 +28,12 @@ class CodecUtils {
         return 'srt';
       case 'pgs':
       case 'hdmv_pgs_subtitle':
-        return 'sup';
+        // Server converts PGS to SRT for streaming
+        return 'srt';
       case 'dvd_subtitle':
       case 'dvdsub':
-        return 'sub';
+        // Server converts DVDSUB to SRT for streaming; .sub returns 404
+        return 'srt';
       default:
         return 'srt';
     }

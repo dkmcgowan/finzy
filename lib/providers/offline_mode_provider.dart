@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/multi_server_manager.dart';
+import '../utils/app_logger.dart';
 
 /// Tracks offline mode status based on network connectivity and server reachability.
 class OfflineModeProvider extends ChangeNotifier {
@@ -40,8 +42,17 @@ class OfflineModeProvider extends ChangeNotifier {
 
   /// Updates network and server connection flags
   Future<void> _updateConnectionFlags() async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    _hasNetworkConnection = !connectivityResult.contains(ConnectivityResult.none);
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      _hasNetworkConnection = !connectivityResult.contains(ConnectivityResult.none);
+    } on PlatformException catch (e) {
+      // connectivity_plus can throw on Windows/Linux (e.g. no NetworkManager)
+      appLogger.d('Connectivity check failed, assuming network available: $e');
+      _hasNetworkConnection = true;
+    } catch (e) {
+      appLogger.d('Connectivity check failed, assuming network available: $e');
+      _hasNetworkConnection = true;
+    }
     _hasServerConnection = _serverManager.onlineServerIds.isNotEmpty;
   }
 
@@ -54,14 +65,27 @@ class OfflineModeProvider extends ChangeNotifier {
     await _updateConnectionFlags();
 
     // Monitor connectivity changes
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
-      final wasOffline = isOffline;
-      _hasNetworkConnection = !results.contains(ConnectivityResult.none);
-
-      if (wasOffline != isOffline) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
+      (results) {
+        try {
+          final wasOffline = isOffline;
+          _hasNetworkConnection = !results.contains(ConnectivityResult.none);
+          if (wasOffline != isOffline) {
+            notifyListeners();
+          }
+        } catch (e, stack) {
+          appLogger.w('Connectivity listener error, assuming network available', error: e, stackTrace: stack);
+          _hasNetworkConnection = true;
+          notifyListeners();
+        }
+      },
+      onError: (error, stack) {
+        // e.g. DBusServiceUnknownException on Linux without NetworkManager
+        appLogger.w('Connectivity stream error, assuming network available', error: error, stackTrace: stack);
+        _hasNetworkConnection = true;
         notifyListeners();
-      }
-    });
+      },
+    );
 
     // Monitor server status from MultiServerManager
     _serverStatusSubscription = _serverManager.statusStream.listen((statusMap) {
@@ -106,11 +130,20 @@ class OfflineModeProvider extends ChangeNotifier {
     _forcedOfflinePollTimer?.cancel();
     _forcedOfflinePollTimer = Timer.periodic(_forcedOfflinePollInterval, (_) async {
       if (!_isForcedOffline) return;
-      final result = await Connectivity().checkConnectivity();
-      final hasNetwork = !result.contains(ConnectivityResult.none);
-      if (_connectionAvailableWhenForced != hasNetwork) {
-        _connectionAvailableWhenForced = hasNetwork;
-        notifyListeners();
+      try {
+        final result = await Connectivity().checkConnectivity();
+        final hasNetwork = !result.contains(ConnectivityResult.none);
+        if (_connectionAvailableWhenForced != hasNetwork) {
+          _connectionAvailableWhenForced = hasNetwork;
+          notifyListeners();
+        }
+      } catch (e) {
+        appLogger.d('Forced-offline connectivity poll failed: $e');
+        // Assume network available on error
+        if (!_connectionAvailableWhenForced) {
+          _connectionAvailableWhenForced = true;
+          notifyListeners();
+        }
       }
     });
   }

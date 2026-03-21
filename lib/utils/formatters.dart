@@ -177,12 +177,11 @@ DurationLocale _getDurationLocale() {
 }
 
 /// Formats the clock time at which media will finish playing, given the remaining duration.
-/// Returns a localized time string like "6:12 PM" or "18:12" depending on locale.
-String formatFinishTime(Duration remaining, {double rate = 1.0}) {
+/// Returns a localized time string like "6:12 PM" or "18:12" depending on [use24Hour].
+String formatFinishTime(Duration remaining, {double rate = 1.0, bool use24Hour = false}) {
   final adjustedRemaining = remaining * (1.0 / rate);
   final finishTime = DateTime.now().add(adjustedRemaining);
-  final formatter = DateFormat.jm(LocaleSettings.currentLocale.languageCode);
-  return formatter.format(finishTime);
+  return formatGuideTime(finishTime, use24Hour: use24Hour);
 }
 
 /// Formats a DateTime's time component as either 12-hour (e.g. "1:00 PM") or 24-hour (e.g. "13:00").

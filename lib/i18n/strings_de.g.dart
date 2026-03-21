@@ -109,6 +109,7 @@ class _TranslationsAuthDe implements TranslationsAuthEn {
 	@override String get invalidPassword => 'Ungültiger Benutzername oder Passwort.';
 	@override String get notAuthorized => 'Nicht autorisiert. Bitte erneut anmelden.';
 	@override String get serverUnreachable => 'Server nicht erreichbar. URL und Verbindung prüfen.';
+	@override String get serverError => 'Serverfehler. Bitte versuchen Sie es später erneut.';
 	@override String get scanQRToSignIn => 'QR-Code scannen zum Anmelden';
 	@override String get waitingForAuth => 'Warte auf Authentifizierung...\nBitte Anmeldung im Browser abschließen.';
 	@override String get useBrowser => 'Browser verwenden';
@@ -226,6 +227,8 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get episodeThumbnail => 'Episoden-Miniatur';
 	@override String get episodeThumbnailDescription => 'Zeige 16:9 Episoden-Vorschaubilder';
 	@override String get timeFormat => 'Zeitformat';
+	@override String get system => 'System';
+	@override String get systemDescription => 'Systemeinstellung für Zeitformat folgen';
 	@override String get twelveHour => '12-Stunden';
 	@override String get twentyFourHour => '24-Stunden';
 	@override String get twelveHourDescription => 'z.B. 1:00 PM';
@@ -279,6 +282,8 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get liveTvQuality => 'Live-TV-Qualität';
 	@override String get liveTvQualityDescription => 'Transcodierungsqualität für Live-TV begrenzen. Kein Limit nutzt Server-Standard.';
 	@override String get liveTvQualityNone => 'Kein Limit';
+	@override String get streamingQuality => 'Streaming-Qualität';
+	@override String get streamingQualityDescription => 'Transcodierungsqualität für VOD begrenzen. Auto lässt den Server entscheiden.';
 	@override String get hardwareDecoding => 'Hardware-Decodierung';
 	@override String get hardwareDecodingDescription => 'Hardwarebeschleunigung verwenden, sofern verfügbar';
 	@override String get bufferSize => 'Puffergröße';
@@ -631,6 +636,7 @@ class _TranslationsMessagesDe implements TranslationsMessagesEn {
 	@override String get failedToCreatePlayQueueNoItems => 'Wiedergabewarteschlange konnte nicht erstellt werden – keine Elemente';
 	@override String failedPlayback({required Object action, required Object error}) => 'Wiedergabe für ${action} fehlgeschlagen: ${error}';
 	@override String get switchingToCompatiblePlayer => 'Wechsle zu kompatiblem Player...';
+	@override String get qualityRevertedOnError => 'Auf vorherige Qualität zurückgesetzt wegen Wiedergabefehler.';
 }
 
 // Path: subtitlingStyling
@@ -1341,6 +1347,7 @@ extension on TranslationsDe {
 			'auth.invalidPassword' => 'Ungültiger Benutzername oder Passwort.',
 			'auth.notAuthorized' => 'Nicht autorisiert. Bitte erneut anmelden.',
 			'auth.serverUnreachable' => 'Server nicht erreichbar. URL und Verbindung prüfen.',
+			'auth.serverError' => 'Serverfehler. Bitte versuchen Sie es später erneut.',
 			'auth.scanQRToSignIn' => 'QR-Code scannen zum Anmelden',
 			'auth.waitingForAuth' => 'Warte auf Authentifizierung...\nBitte Anmeldung im Browser abschließen.',
 			'auth.useBrowser' => 'Browser verwenden',
@@ -1422,6 +1429,8 @@ extension on TranslationsDe {
 			'settings.episodeThumbnail' => 'Episoden-Miniatur',
 			'settings.episodeThumbnailDescription' => 'Zeige 16:9 Episoden-Vorschaubilder',
 			'settings.timeFormat' => 'Zeitformat',
+			'settings.system' => 'System',
+			'settings.systemDescription' => 'Systemeinstellung für Zeitformat folgen',
 			'settings.twelveHour' => '12-Stunden',
 			'settings.twentyFourHour' => '24-Stunden',
 			'settings.twelveHourDescription' => 'z.B. 1:00 PM',
@@ -1475,6 +1484,8 @@ extension on TranslationsDe {
 			'settings.liveTvQuality' => 'Live-TV-Qualität',
 			'settings.liveTvQualityDescription' => 'Transcodierungsqualität für Live-TV begrenzen. Kein Limit nutzt Server-Standard.',
 			'settings.liveTvQualityNone' => 'Kein Limit',
+			'settings.streamingQuality' => 'Streaming-Qualität',
+			'settings.streamingQualityDescription' => 'Transcodierungsqualität für VOD begrenzen. Auto lässt den Server entscheiden.',
 			'settings.hardwareDecoding' => 'Hardware-Decodierung',
 			'settings.hardwareDecodingDescription' => 'Hardwarebeschleunigung verwenden, sofern verfügbar',
 			'settings.bufferSize' => 'Puffergröße',
@@ -1765,6 +1776,7 @@ extension on TranslationsDe {
 			'messages.failedToCreatePlayQueueNoItems' => 'Wiedergabewarteschlange konnte nicht erstellt werden – keine Elemente',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => 'Wiedergabe für ${action} fehlgeschlagen: ${error}',
 			'messages.switchingToCompatiblePlayer' => 'Wechsle zu kompatiblem Player...',
+			'messages.qualityRevertedOnError' => 'Auf vorherige Qualität zurückgesetzt wegen Wiedergabefehler.',
 			'subtitlingStyling.stylingOptions' => 'Stiloptionen',
 			'subtitlingStyling.fontSize' => 'Schriftgröße',
 			'subtitlingStyling.textColor' => 'Textfarbe',
@@ -1829,14 +1841,14 @@ extension on TranslationsDe {
 			'errors.invalidToken' => 'Ungültiges Token',
 			'errors.failedToVerifyToken' => ({required Object error}) => 'Token-Verifizierung fehlgeschlagen: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => 'Profilwechsel zu ${displayName} fehlgeschlagen',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.title' => 'Mediatheken',
 			'libraries.scanLibraryFiles' => 'Mediatheksdateien scannen',
 			'libraries.scanLibrary' => 'Mediathek scannen',
 			'libraries.analyze' => 'Analysieren',
 			'libraries.analyzeLibrary' => 'Mediathek analysieren',
 			'libraries.refreshMetadata' => 'Metadaten aktualisieren',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.emptyTrash' => 'Papierkorb leeren',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Papierkorb für „${title}“ wird geleert...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Papierkorb für „${title}“ geleert',

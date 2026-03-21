@@ -34,7 +34,8 @@ This document lists feature gaps between Finzy and Jellyfin (web + API). It serv
 
 - **Playback info:** `POST /Items/{itemId}/PlaybackInfo` for transcoding/direct play
 - **Live stream open:** `POST /LiveStreams/Open` when required
-- **Progress reporting:** `POST /Sessions/Playing/Progress`, `/Sessions/Playing/Stopped`
+- **Playback reporting:** `POST /Sessions/Playing` (start), `POST /Sessions/Playing/Progress`, `POST /Sessions/Playing/Stopped` (jellyfin-web parity)
+- **Stop transcoding:** `DELETE /Videos/ActiveEncodings` when exiting transcoded playback
 - **Mark watched/unwatched:** `POST /Users/{userId}/PlayedItems/{id}`, `DELETE`
 - **User rating:** `POST /Users/{userId}/Items/{id}/Rating`
 - **Delete item:** `DELETE /Items/{itemId}` (when user has permission)
@@ -57,6 +58,11 @@ This document lists feature gaps between Finzy and Jellyfin (web + API). It serv
 ### Sessions
 
 - **List sessions:** `GET /Sessions` (used for remote control UI)
+- **Session capabilities:** `POST /Sessions/Capabilities/Full` on connect (jellyfin-web parity)
+
+### Display Preferences
+
+- **Library sort sync:** `GET/POST /DisplayPreferences/{displayPreferencesId}` — Sort order syncs to server; server prefs override local on load.
 
 ---
 
@@ -101,23 +107,41 @@ This document lists feature gaps between Finzy and Jellyfin (web + API). It serv
 - **API:** `GET /Items/{itemId}/RemoteSearch/Subtitles/{language}`, `POST /Items/{itemId}/RemoteSearch/Subtitles/{subtitleId}`
 - Search for subtitles from providers like OpenSubtitles and download them to the server for an item. Currently the app can select existing subtitle tracks during playback, but cannot search for or add new ones.
 
-### Theme Music / Theme Videos
-
-- **Effort:** Low
-- **API:** `GET /Items/{id}/ThemeMedia`, `GET /Items/{id}/ThemeSongs`, `GET /Items/{id}/ThemeVideos`
-- Play series or movie theme music on detail pages. Jellyfin stores theme songs and theme videos per item.
-
 ### Upcoming Episodes
 
 - **Effort:** Low
 - **API:** `GET /Shows/Upcoming`
 - View upcoming new episodes across all shows. Complements the existing Next Up feature which tracks unwatched episodes.
 
-### Display Preferences Sync
+### Theme Music / Theme Videos (metadata)
 
 - **Effort:** Low
-- **API:** `GET/POST /DisplayPreferences/{displayPreferencesId}`
-- Save library sort order, filter, and view mode preferences to the server so they persist across clients.
+- **API:** `GET /Items/{id}/ThemeMedia`, `GET /Items/{id}/ThemeSongs`, `GET /Items/{id}/ThemeVideos`
+- Play series or movie theme music on detail pages.
+
+### Special Features & Intros (metadata)
+
+- **Effort:** Low
+- **API:** `GET /Items/{itemId}/SpecialFeatures`, `GET /Items/{itemId}/Intros`
+- Special features (behind-the-scenes, deleted scenes) and skippable intros for series.
+
+### Critic Reviews (metadata)
+
+- **Effort:** Low
+- **API:** `GET /Items/{itemId}/CriticReviews`
+- Rotten Tomatoes / external critic reviews on item detail.
+
+### Playlist Item Reorder
+
+- **Effort:** Low
+- **API:** `POST /Playlists/{playlistId}/Items/{itemId}/Move/{newIndex}`
+- Drag-and-drop reorder within playlists.
+
+### Crash Reporting / Error Monitoring
+
+- **Effort:** Low–Medium
+- **Options:** Sentry (SaaS), Glitchtip (self-hosted, Sentry-compatible), or similar
+- Capture production crashes with stack traces, device info, and breadcrumbs to improve debugging and fix issues faster. Plezy uses Sentry; Finzy currently has no crash reporting. Consider gating behind a build flag or opt-in for privacy.
 
 ## Not Adding
 
@@ -182,35 +206,17 @@ This document lists feature gaps between Finzy and Jellyfin (web + API). It serv
 
 These Jellyfin API features exist but are not yet in FEATURES.md. Decide whether to add to Planned/Later or explicitly reject.
 
-### Session Capabilities Reporting
-
-- **API:** `POST /Sessions/Capabilities`, `POST /Sessions/Capabilities/Full`
-- Report client capabilities (supported commands, transcoding profiles, etc.) so the server and other clients know what this app can do. Jellyfin web posts these on connect.
-- **Suggested:** Low effort; consider adding for better server/client interoperability.
-
 ### Special Features & Intros
 
 - **API:** `GET /Items/{itemId}/SpecialFeatures`, `GET /Items/{itemId}/Intros`
 - Special features (behind-the-scenes, deleted scenes, etc.) and skippable intros for series.
 - **Suggested:** Low effort; intros are useful for series binge-watching. Add to Later or Planned.
 
-### Critic Reviews
-
-- **API:** `GET /Items/{itemId}/CriticReviews`
-- Rotten Tomatoes / external critic reviews displayed on item detail in jellyfin-web.
-- **Suggested:** Low effort; nice-to-have for detail pages. Add to Later or Not Adding.
-
 ### Forgot Password
 
 - **API:** `POST /Users/ForgotPassword`, `POST /Users/ForgotPassword/Pin`
 - Initiate password reset or PIN recovery by email (server must have email configured).
 - **Suggested:** Low effort; consider if change-password is in scope. Add to Later or Not Adding.
-
-### Playlist Item Reorder
-
-- **API:** `POST /Playlists/{playlistId}/Items/{itemId}/Move/{newIndex}`
-- Reorder items within a playlist. Jellyfin web supports drag-and-drop reorder.
-- **Suggested:** Low effort; add to Later if playlist UX is important.
 
 ### Items/Suggestions
 
@@ -248,9 +254,9 @@ For completeness, key API areas from [api.jellyfin.org](https://api.jellyfin.org
 | `/Users/*` | Auth, Views, PlayedItems, FavoriteItems — Password/ForgotPassword = see above |
 | `/Items/*` | Implemented: query, metadata, Similar, LocalTrailers, PlaybackInfo, ThemeMedia, Intros, SpecialFeatures, CriticReviews = gaps |
 | `/Library/*` | Refresh implemented — VirtualFolders = admin, Not Adding |
-| `/Sessions/*` | Progress, Stopped, list — Capabilities, Command, Playing = Planned (Remote Control) |
+| `/Sessions/*` | Progress, Start, Stopped, Capabilities, list — Command, Playing = Planned (Remote Control) |
 | `/SyncPlay/*` | Planned |
-| `/DisplayPreferences/*` | Later |
+| `/DisplayPreferences/*` | Implemented (library sort sync) |
 | `/Playlists/*` | CRUD implemented — Move items = gap |
 | `/Collections/*` | Implemented |
 | `/LiveTv/*` | Implemented |
@@ -258,4 +264,3 @@ For completeness, key API areas from [api.jellyfin.org](https://api.jellyfin.org
 | `/Notifications/*` | Not in OpenAPI stable (likely WebSocket/plugin; jellyfin-web uses it) — Not Adding |
 | `/Plugins/*`, `/Packages/*` | Admin — Not Adding |
 | `/Devices/*`, `/Auth/Keys/*` | Admin — Not Adding |
-| `/DisplayPreferences/*` | Later |

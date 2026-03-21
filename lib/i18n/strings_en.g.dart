@@ -149,6 +149,9 @@ class TranslationsAuthEn {
 	/// en: 'Could not reach server. Check the URL and your connection.'
 	String get serverUnreachable => 'Could not reach server. Check the URL and your connection.';
 
+	/// en: 'Server error. Please try again later.'
+	String get serverError => 'Server error. Please try again later.';
+
 	/// en: 'Scan this QR code to sign in'
 	String get scanQRToSignIn => 'Scan this QR code to sign in';
 
@@ -428,6 +431,12 @@ class TranslationsSettingsEn {
 	/// en: 'Time Format'
 	String get timeFormat => 'Time Format';
 
+	/// en: 'System'
+	String get system => 'System';
+
+	/// en: 'Follow system time format setting'
+	String get systemDescription => 'Follow system time format setting';
+
 	/// en: '12-hour'
 	String get twelveHour => '12-hour';
 
@@ -586,6 +595,12 @@ class TranslationsSettingsEn {
 
 	/// en: 'No limit'
 	String get liveTvQualityNone => 'No limit';
+
+	/// en: 'Streaming Quality'
+	String get streamingQuality => 'Streaming Quality';
+
+	/// en: 'Limit transcoding quality for VOD. Auto lets the server decide.'
+	String get streamingQualityDescription => 'Limit transcoding quality for VOD. Auto lets the server decide.';
 
 	/// en: 'Hardware Decoding'
 	String get hardwareDecoding => 'Hardware Decoding';
@@ -1456,6 +1471,9 @@ class TranslationsMessagesEn {
 
 	/// en: 'Switching to compatible player...'
 	String get switchingToCompatiblePlayer => 'Switching to compatible player...';
+
+	/// en: 'Reverted to previous quality due to playback error.'
+	String get qualityRevertedOnError => 'Reverted to previous quality due to playback error.';
 }
 
 // Path: subtitlingStyling
@@ -3018,6 +3036,7 @@ extension on Translations {
 			'auth.invalidPassword' => 'Invalid username or password.',
 			'auth.notAuthorized' => 'Not authorized. Please sign in again.',
 			'auth.serverUnreachable' => 'Could not reach server. Check the URL and your connection.',
+			'auth.serverError' => 'Server error. Please try again later.',
 			'auth.scanQRToSignIn' => 'Scan this QR code to sign in',
 			'auth.waitingForAuth' => 'Waiting for authentication...\nPlease complete sign-in in your browser.',
 			'auth.useBrowser' => 'Use browser',
@@ -3099,6 +3118,8 @@ extension on Translations {
 			'settings.episodeThumbnail' => 'Episode Thumbnail',
 			'settings.episodeThumbnailDescription' => 'Show 16:9 episode screenshot thumbnails',
 			'settings.timeFormat' => 'Time Format',
+			'settings.system' => 'System',
+			'settings.systemDescription' => 'Follow system time format setting',
 			'settings.twelveHour' => '12-hour',
 			'settings.twentyFourHour' => '24-hour',
 			'settings.twelveHourDescription' => 'e.g. 1:00 PM',
@@ -3152,6 +3173,8 @@ extension on Translations {
 			'settings.liveTvQuality' => 'Live TV Quality',
 			'settings.liveTvQualityDescription' => 'Limit transcoding quality for Live TV. No limit uses server default.',
 			'settings.liveTvQualityNone' => 'No limit',
+			'settings.streamingQuality' => 'Streaming Quality',
+			'settings.streamingQualityDescription' => 'Limit transcoding quality for VOD. Auto lets the server decide.',
 			'settings.hardwareDecoding' => 'Hardware Decoding',
 			'settings.hardwareDecodingDescription' => 'Use hardware acceleration when available',
 			'settings.bufferSize' => 'Buffer Size',
@@ -3441,6 +3464,7 @@ extension on Translations {
 			'messages.failedToCreatePlayQueueNoItems' => 'Failed to create play queue - no items',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => 'Failed to ${action}: ${error}',
 			'messages.switchingToCompatiblePlayer' => 'Switching to compatible player...',
+			'messages.qualityRevertedOnError' => 'Reverted to previous quality due to playback error.',
 			'subtitlingStyling.stylingOptions' => 'Styling Options',
 			'subtitlingStyling.fontSize' => 'Font Size',
 			'subtitlingStyling.textColor' => 'Text Color',
@@ -3506,14 +3530,14 @@ extension on Translations {
 			'errors.failedToVerifyToken' => ({required Object error}) => 'Failed to verify token: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => 'Failed to switch to ${displayName}',
 			'libraries.title' => 'Libraries',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.scanLibraryFiles' => 'Scan Library Files',
 			'libraries.scanLibrary' => 'Scan Library',
 			'libraries.analyze' => 'Analyze',
 			'libraries.analyzeLibrary' => 'Analyze Library',
 			'libraries.refreshMetadata' => 'Refresh Metadata',
 			'libraries.emptyTrash' => 'Empty Trash',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.emptyingTrash' => ({required Object title}) => 'Emptying trash for "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Trash emptied for "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Failed to empty trash: ${error}',

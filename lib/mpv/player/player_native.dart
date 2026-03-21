@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 
 import '../../utils/app_logger.dart';
 import '../../utils/error_message_utils.dart';
-import '../font_loader.dart';
 import '../models.dart';
 import 'player_base.dart';
 
@@ -52,9 +51,6 @@ class PlayerNative extends PlayerBase {
         throw Exception('Failed to initialize player');
       }
 
-      // Configure subtitle fonts for libass support
-      await _configureSubtitleFonts();
-
       // Subscribe to MPV properties
       await observeProperty('time-pos', 'double');
       await observeProperty('duration', 'double');
@@ -75,24 +71,6 @@ class PlayerNative extends PlayerBase {
     }
   }
 
-  /// Configures subtitle fonts for libass support.
-  /// Provides a comprehensive Unicode font (Go Noto) with CJK coverage to ensure
-  /// proper rendering of non-Latin characters in subtitles.
-  Future<void> _configureSubtitleFonts() async {
-    try {
-      final fontDir = await SubtitleFontLoader.loadSubtitleFont();
-      if (fontDir != null) {
-        // Configure MPV to use the extracted font for libass
-        await setProperty('config', 'yes');
-        await setProperty('sub-fonts-dir', fontDir);
-        await setProperty('sub-font', SubtitleFontLoader.fontName);
-      }
-    } catch (e) {
-      // Font configuration is not critical - continue without it
-      errorController.add('Failed to configure subtitle fonts: $e');
-    }
-  }
-
   // ============================================
   // Playback Control
   // ============================================
@@ -101,7 +79,7 @@ class PlayerNative extends PlayerBase {
   /// Returns null if the call fails.
   Future<int?> _openContentFd(String contentUri) async {
     try {
-      return await methodChannel.invokeMethod<int>('openContentFd', {'uri': contentUri});
+      return await invoke<int>('openContentFd', {'uri': contentUri});
     } catch (e) {
       return null;
     }
@@ -109,7 +87,7 @@ class PlayerNative extends PlayerBase {
 
   @override
   Future<void> open(Media media, {bool play = true, bool isLive = false}) async {
-    checkDisposed();
+    if (disposed) return;
     await _ensureInitialized();
 
     // Show the video layer
@@ -149,26 +127,26 @@ class PlayerNative extends PlayerBase {
 
   @override
   Future<void> play() async {
-    checkDisposed();
+    if (disposed) return;
     await setProperty('pause', 'no');
   }
 
   @override
   Future<void> pause() async {
-    checkDisposed();
+    if (disposed) return;
     await setProperty('pause', 'yes');
   }
 
   @override
   Future<void> stop() async {
-    checkDisposed();
+    if (disposed) return;
     await command(['stop']);
-    await methodChannel.invokeMethod('setVisible', {'visible': false});
+    await invoke('setVisible', {'visible': false});
   }
 
   @override
   Future<void> seek(Duration position) async {
-    checkDisposed();
+    if (disposed) return;
     await command(['seek', (position.inMilliseconds / 1000.0).toString(), 'absolute']);
   }
 
@@ -178,19 +156,20 @@ class PlayerNative extends PlayerBase {
 
   @override
   Future<void> selectAudioTrack(AudioTrack track) async {
-    checkDisposed();
+    if (disposed) return;
     await setProperty('aid', track.id);
   }
 
   @override
   Future<void> selectSubtitleTrack(SubtitleTrack track) async {
-    checkDisposed();
+    if (disposed) return;
+    appLogger.d('[Sub] selectSubtitleTrack: id=${track.id} title=${track.title}');
     await setProperty('sid', track.id);
   }
 
   @override
   Future<void> addSubtitleTrack({required String uri, String? title, String? language, bool select = false}) async {
-    checkDisposed();
+    if (disposed) return;
     final args = ['sub-add', uri, select ? 'select' : 'auto'];
     if (title != null) args.add('title=$title');
     if (language != null) args.add('lang=$language');
@@ -203,19 +182,19 @@ class PlayerNative extends PlayerBase {
 
   @override
   Future<void> setVolume(double volume) async {
-    checkDisposed();
+    if (disposed) return;
     await setProperty('volume', volume.toString());
   }
 
   @override
   Future<void> setRate(double rate) async {
-    checkDisposed();
+    if (disposed) return;
     await setProperty('speed', rate.toString());
   }
 
   @override
   Future<void> setAudioDevice(AudioDevice device) async {
-    checkDisposed();
+    if (disposed) return;
     await setProperty('audio-device', device.name);
   }
 
@@ -225,23 +204,23 @@ class PlayerNative extends PlayerBase {
 
   @override
   Future<void> setProperty(String name, String value) async {
-    checkDisposed();
+    if (disposed) return;
     await _ensureInitialized();
-    await methodChannel.invokeMethod('setProperty', {'name': name, 'value': value});
+    await invoke('setProperty', {'name': name, 'value': value});
   }
 
   @override
   Future<String?> getProperty(String name) async {
-    checkDisposed();
+    if (disposed) return null;
     await _ensureInitialized();
-    return await methodChannel.invokeMethod<String>('getProperty', {'name': name});
+    return await invoke<String>('getProperty', {'name': name});
   }
 
   @override
   Future<void> command(List<String> args) async {
-    checkDisposed();
+    if (disposed) return;
     await _ensureInitialized();
-    await methodChannel.invokeMethod('command', {'args': args});
+    await invoke('command', {'args': args});
   }
 
   // ============================================
@@ -250,9 +229,9 @@ class PlayerNative extends PlayerBase {
 
   @override
   Future<void> setLogLevel(String level) async {
-    checkDisposed();
+    if (disposed) return;
     await _ensureInitialized();
-    await methodChannel.invokeMethod('setLogLevel', {'level': level});
+    await invoke('setLogLevel', {'level': level});
   }
 
   // ============================================
@@ -261,7 +240,7 @@ class PlayerNative extends PlayerBase {
 
   @override
   Future<void> setAudioPassthrough(bool enabled) async {
-    checkDisposed();
+    if (disposed) return;
     if (enabled) {
       await setProperty('audio-spdif', 'ac3,eac3,dts,dts-hd,truehd');
       await setProperty('audio-exclusive', 'yes');
@@ -277,48 +256,37 @@ class PlayerNative extends PlayerBase {
 
   @override
   Future<void> updateFrame() async {
-    checkDisposed();
-    if (!initialized) return;
+    if (disposed || !initialized) return;
     // Only iOS and macOS use Metal layer that needs frame updates
     if (Platform.isIOS || Platform.isMacOS) {
-      await methodChannel.invokeMethod('updateFrame');
+      await invoke('updateFrame');
     }
   }
 
   @override
   Future<void> setVideoFrameRate(double fps, int durationMs) async {
-    checkDisposed();
-    if (!Platform.isAndroid) return;
-    if (!initialized) return;
-
-    await methodChannel.invokeMethod('setVideoFrameRate', {'fps': fps, 'duration': durationMs});
+    if (disposed || !Platform.isAndroid || !initialized) return;
+    await invoke('setVideoFrameRate', {'fps': fps, 'duration': durationMs});
   }
 
   @override
   Future<void> clearVideoFrameRate() async {
-    checkDisposed();
-    if (!Platform.isAndroid) return;
-    if (!initialized) return;
-
-    await methodChannel.invokeMethod('clearVideoFrameRate');
+    if (disposed || !Platform.isAndroid || !initialized) return;
+    await invoke('clearVideoFrameRate');
   }
 
   @override
   Future<bool> requestAudioFocus() async {
-    checkDisposed();
+    if (disposed) return false;
     if (!Platform.isAndroid) return true;
     if (!initialized) return false;
-
-    final result = await methodChannel.invokeMethod<bool>('requestAudioFocus');
+    final result = await invoke<bool>('requestAudioFocus');
     return result ?? false;
   }
 
   @override
   Future<void> abandonAudioFocus() async {
-    checkDisposed();
-    if (!Platform.isAndroid) return;
-    if (!initialized) return;
-
-    await methodChannel.invokeMethod('abandonAudioFocus');
+    if (disposed || !Platform.isAndroid || !initialized) return;
+    await invoke('abandonAudioFocus');
   }
 }

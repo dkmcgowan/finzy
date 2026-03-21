@@ -20,6 +20,7 @@
     "invalidPassword": "Nom d'utilisateur ou mot de passe incorrect.",
     "notAuthorized": "Non autorisé. Veuillez vous reconnecter.",
     "serverUnreachable": "Impossible de joindre le serveur. Vérifiez l'URL et votre connexion.",
+    "serverError": "Erreur du serveur. Veuillez réessayer plus tard.",
     "scanQRToSignIn": "Scannez ce QR code pour vous connecter",
     "waitingForAuth": "En attente d'authentification...\nVeuillez vous connecter dans votre navigateur.",
     "useBrowser": "Utiliser le navigateur"
@@ -109,6 +110,8 @@
     "episodeThumbnail": "Mignature d'épisode",
     "episodeThumbnailDescription": "Afficher les vignettes des captures d'écran des épisodes au format 16:9",
     "timeFormat": "Format de l'heure",
+    "system": "Système",
+    "systemDescription": "Suivre le format d'heure du système",
     "twelveHour": "12 heures",
     "twentyFourHour": "24 heures",
     "twelveHourDescription": "ex. 1:00 PM",
@@ -162,6 +165,8 @@
     "liveTvQuality": "Qualité TV en direct",
     "liveTvQualityDescription": "Limiter la qualité de transcodification pour la TV en direct. Pas de limite utilise la valeur par défaut du serveur.",
     "liveTvQualityNone": "Pas de limite",
+    "streamingQuality": "Qualité de streaming",
+    "streamingQualityDescription": "Limiter la qualité de transcodification pour la VOD. Auto laisse le serveur décider.",
     "hardwareDecoding": "Décodage matériel",
     "hardwareDecodingDescription": "Utilisez l'accélération matérielle lorsqu'elle est disponible.",
     "bufferSize": "Taille du Buffer",
@@ -477,7 +482,8 @@
     "noItemsAvailable": "Aucun élément disponible",
     "failedToCreatePlayQueueNoItems": "Échec de la création de la file d'attente de lecture - aucun élément",
     "failedPlayback": "Echec de ${action}: ${error}",
-    "switchingToCompatiblePlayer": "Passage au lecteur compatible..."
+    "switchingToCompatiblePlayer": "Passage au lecteur compatible...",
+    "qualityRevertedOnError": "Retour à la qualité précédente en raison d'une erreur de lecture."
   },
   "subtitlingStyling": {
     "stylingOptions": "Options de style",

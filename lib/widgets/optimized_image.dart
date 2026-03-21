@@ -364,11 +364,16 @@ class OptimizedImage extends StatelessWidget {
   }
 
   Widget _buildPlaceholder(BuildContext _) {
-    return SkeletonLoader(
+    final content = SkeletonLoader(
       child: fallbackIcon != null
           ? Center(child: AppIcon(fallbackIcon!, fill: 1, size: 40, color: Colors.white54))
           : null,
     );
+    // Prevent layout shift when dimensions are known
+    if (width != null && height != null) {
+      return SizedBox(width: width, height: height, child: content);
+    }
+    return content;
   }
 
   Widget _buildErrorWidget(BuildContext context, dynamic _) {

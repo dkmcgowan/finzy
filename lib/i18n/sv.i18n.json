@@ -20,6 +20,7 @@
     "invalidPassword": "Ogiltigt användarnamn eller lösenord.",
     "notAuthorized": "Ej behörig. Logga in igen.",
     "serverUnreachable": "Kunde inte nå servern. Kontrollera URL:en och din anslutning.",
+    "serverError": "Serverfel. Försök igen senare.",
     "scanQRToSignIn": "Skanna QR-koden för att logga in",
     "waitingForAuth": "Väntar på autentisering...\nVänligen slutför inloggning i din webbläsare.",
     "useBrowser": "Använd webbläsare"
@@ -109,6 +110,8 @@
     "episodeThumbnail": "Avsnittsminiatyr",
     "episodeThumbnailDescription": "Visa 16:9 skärmbild från avsnittet",
     "timeFormat": "Tidsformat",
+    "system": "System",
+    "systemDescription": "Följ systemets tidsformat",
     "twelveHour": "12-timmar",
     "twentyFourHour": "24-timmar",
     "twelveHourDescription": "t.ex. 1:00 PM",
@@ -162,6 +165,8 @@
     "liveTvQuality": "Live TV-kvalitet",
     "liveTvQualityDescription": "Begränsa transkodningskvalitet för Live TV. Ingen gräns använder serverstandard.",
     "liveTvQualityNone": "Ingen gräns",
+    "streamingQuality": "Streamingkvalitet",
+    "streamingQualityDescription": "Begränsa transkodningskvalitet för VOD. Auto låter servern bestämma.",
     "hardwareDecoding": "Hårdvaruavkodning",
     "hardwareDecodingDescription": "Använd hårdvaruacceleration när tillgängligt",
     "bufferSize": "Bufferstorlek",
@@ -477,7 +482,8 @@
     "noItemsAvailable": "Inga objekt tillgängliga",
     "failedToCreatePlayQueueNoItems": "Det gick inte att skapa uppspelningskö – inga objekt",
     "failedPlayback": "Kunde inte ${action}: ${error}",
-    "switchingToCompatiblePlayer": "Byter till kompatibel spelare..."
+    "switchingToCompatiblePlayer": "Byter till kompatibel spelare...",
+    "qualityRevertedOnError": "Återställd till föregående kvalitet på grund av uppspelningsfel."
   },
   "subtitlingStyling": {
     "stylingOptions": "Stilalternativ",

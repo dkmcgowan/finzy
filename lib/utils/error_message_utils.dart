@@ -48,6 +48,7 @@ String mapAuthErrorToMessage(Object error, [StackTrace? stackTrace]) {
         final status = error.response?.statusCode;
         if (status == 401) return t.auth.invalidPassword;
         if (status == 403) return t.auth.notAuthorized;
+        if (status != null && status >= 500) return t.auth.serverError;
         break;
       default:
         break;

@@ -78,8 +78,35 @@ class JellyfinClient {
     _offlineMode = offline;
   }
 
-  /// Fetch and cache the current user's policy permissions.
-  /// Call once after login / server connection.
+  /// Report client capabilities to the server (jellyfin-web parity).
+  /// Call after connect so server and other clients know what this device supports.
+  Future<void> reportCapabilities() async {
+    if (_offlineMode) return;
+    try {
+      final profile = _buildDeviceProfile(useExoPlayer: false);
+      await _dio.post(
+        '/Sessions/Capabilities/Full',
+        data: {
+          'PlayableMediaTypes': ['Video', 'Audio'],
+          'SupportedCommands': [
+            'VolumeUp', 'VolumeDown', 'Mute', 'Unmute',
+            'SetVolume', 'SetAudioStreamIndex', 'SetSubtitleStreamIndex',
+            'Play', 'Playstate', 'PlayNext', 'PlayPrevious', 'Seek',
+            'DisplayContent', 'GoToHome', 'GoToSettings',
+            'NavigateUp', 'NavigateDown', 'NavigateLeft', 'NavigateRight',
+            'Select', 'Back', 'ToggleContextMenu', 'TakeScreenshot',
+          ],
+          'SupportsMediaControl': true,
+          'SupportsPersistentIdentifier': true,
+          'DeviceProfile': profile,
+        },
+      );
+      appLogger.d('Reported session capabilities');
+    } catch (e) {
+      appLogger.d('reportCapabilities failed (non-critical)', error: e);
+    }
+  }
+
   /// Fetch and cache the current user's policy permissions.
   /// Call once after login / server connection.
   /// Throws on 401 so the caller can treat it as a failed connection.
@@ -980,10 +1007,27 @@ class JellyfinClient {
         _ => _bitrate4M,
       };
 
+  /// SubtitleProfiles: Embed = we can read from container (avoids SubtitleCodecNotSupported
+  /// transcode). External = we can load via URL. MPV supports all common embedded formats.
   static const List<Map<String, dynamic>> _subtitleProfiles = [
+    // Embedded: MPV reads these from MKV/MP4 - prevents server from transcoding to burn in
+    {'Format': 'subrip', 'Method': 'Embed'},
+    {'Format': 'srt', 'Method': 'Embed'},
+    {'Format': 'ass', 'Method': 'Embed'},
+    {'Format': 'ssa', 'Method': 'Embed'},
+    {'Format': 'vtt', 'Method': 'Embed'},
+    {'Format': 'webvtt', 'Method': 'Embed'},
+    {'Format': 'pgs', 'Method': 'Embed'},
+    {'Format': 'pgssub', 'Method': 'Embed'},
+    {'Format': 'dvd_subtitle', 'Method': 'Embed'},
+    {'Format': 'dvdsub', 'Method': 'Embed'},
+    {'Format': 'dvb_subtitle', 'Method': 'Embed'},
+    {'Format': 'mov_text', 'Method': 'Embed'},
+    // External: fetch via URL when user selects
     {'Format': 'vtt', 'Method': 'External'},
     {'Format': 'ass', 'Method': 'External'},
     {'Format': 'ssa', 'Method': 'External'},
+    {'Format': 'srt', 'Method': 'External'},
   ];
 
   /// Device profile for MPV (iOS, macOS, Windows, Linux, Android when ExoPlayer disabled).
@@ -1078,7 +1122,8 @@ class JellyfinClient {
   /// When [forceDirectPlay] is true, disables transcoding so server returns DirectStreamUrl when possible.
   /// When [pickOptimalFromMultiple] is true and server returns multiple sources, picks best (DirectPlay > DirectStream > Transcode).
   /// If forceDirectPlay returns null, retries with auto (server decides) to match official clients.
-  Future<String?> _getVideoUrlFromPlaybackInfo(
+  /// Returns (url, isTranscode, playSessionId, mediaSourceId) for playback reporting.
+  Future<(String, bool, String?, String?)?> _getVideoUrlFromPlaybackInfo(
     String itemId,
     int mediaIndex,
     List<dynamic> mediaSources,
@@ -1093,7 +1138,7 @@ class JellyfinClient {
     int? audioStreamIndex,
     int? subtitleStreamIndex,
   }) async {
-    Future<String?> tryPlaybackInfo(bool directPlay, bool transcode) async {
+    Future<(String, bool, String?, String?)?> tryPlaybackInfo(bool directPlay, bool transcode) async {
       try {
         final mediaSourceId = source['Id'] as String?;
         // Test: omit MediaSourceId when it equals itemId (jellyfin-web #6395 fix - server
@@ -1124,7 +1169,7 @@ class JellyfinClient {
         if (maxStreamingBitrate != null && maxStreamingBitrate > 0) {
           body['MaxStreamingBitrate'] = maxStreamingBitrate;
         }
-        appLogger.d('PlaybackInfo request: itemId=$itemId mediaSourceId=${includeMediaSourceId ? mediaSourceId : "omitted (was same as itemId)"} directPlay=$directPlay transcode=$transcode maxBitrate=${maxStreamingBitrate ?? "none"} DeviceProfile=${useExoPlayer ? "Finzy ExoPlayer" : "Finzy"}');
+        appLogger.d('PlaybackInfo request: itemId=$itemId mediaSourceId=${includeMediaSourceId ? mediaSourceId : "omitted (was same as itemId)"} directPlay=$directPlay transcode=$transcode maxBitrate=${maxStreamingBitrate ?? "none"} DeviceProfile=${useExoPlayer ? "Finzy ExoPlayer" : "Finzy"} AlwaysBurnInSubtitle=$alwaysBurnInSubtitleWhenTranscoding SubtitleStreamIndex=$subtitleStreamIndex AudioStreamIndex=$audioStreamIndex');
         final response = await _dio.post<Map<String, dynamic>>(
           '/Items/$itemId/PlaybackInfo',
           data: body,
@@ -1189,14 +1234,16 @@ class JellyfinClient {
           if (sourceId.isNotEmpty) url = '$url&mediaSourceId=$sourceId';
           urlSource = 'stream (generic fallback)';
         }
-        appLogger.d('PlaybackInfo: chose $urlSource (directUrl=${directUrl != null && directUrl.isNotEmpty}, transcodeUrl=${transcodeUrl != null && transcodeUrl.isNotEmpty}, supportsDirect=$supportsDirect, container=$container) maxStreamingBitrate=${maxStreamingBitrate ?? "none"}');
+        appLogger.d('PlaybackInfo: chose $urlSource isTranscode=${urlSource.startsWith("Transcod")} (directUrl=${directUrl != null && directUrl.isNotEmpty}, transcodeUrl=${transcodeUrl != null && transcodeUrl.isNotEmpty}, supportsDirect=$supportsDirect, container=$container) maxStreamingBitrate=${maxStreamingBitrate ?? "none"}');
         if (!url.startsWith('http')) {
           url = '${config.baseUrl}${url.startsWith('/') ? url : '/$url'}';
           if (!url.contains('api_key=')) {
             url = url.contains('?') ? '$url&api_key=${config.token}' : '$url?api_key=${config.token}';
           }
         }
-        return url;
+        final isTranscode = urlSource.startsWith('Transcod');
+        final playSessionId = data['PlaySessionId'] as String?;
+        return (url, isTranscode, playSessionId, sourceId.isNotEmpty ? sourceId : null);
       } catch (e) {
         appLogger.w('PlaybackInfo failed for $itemId', error: e);
         return null;
@@ -1206,12 +1253,12 @@ class JellyfinClient {
     try {
       final enableDirect = forceDirectPlay ? true : !forceTranscode;
       final enableTranscode = forceDirectPlay ? false : true;
-      var url = await tryPlaybackInfo(enableDirect, enableTranscode);
-      if (url == null && forceDirectPlay) {
+      var result = await tryPlaybackInfo(enableDirect, enableTranscode);
+      if (result == null && forceDirectPlay) {
         appLogger.d('PlaybackInfo: force direct play returned null, retrying with auto (server decides)');
-        url = await tryPlaybackInfo(true, true);
+        result = await tryPlaybackInfo(true, true);
       }
-      return url;
+      return result;
     } catch (e) {
       appLogger.w('PlaybackInfo failed for $itemId', error: e);
       return null;
@@ -1226,6 +1273,9 @@ class JellyfinClient {
     int? startPositionMs,
   }) async {
     String? videoUrl;
+    bool isTranscode = false;
+    String? playSessionId;
+    String? mediaSourceId;
     MediaInfo? mediaInfo;
     final versions = <MediaVersion>[];
     final markers = <Marker>[];
@@ -1242,7 +1292,7 @@ class JellyfinClient {
           if (mediaSources != null && mediaSources.isNotEmpty) {
             final idx = mediaIndex.clamp(0, mediaSources.length - 1);
             final source = mediaSources[idx] as Map<String, dynamic>;
-            final mediaSourceId = source['Id'] as String? ?? '';
+            final sourceId = source['Id'] as String? ?? '';
 
             final startTimeTicks = startPositionMs != null && startPositionMs > 0
                 ? startPositionMs * 10000
@@ -1258,7 +1308,7 @@ class JellyfinClient {
             if (downloadQuality != null) {
               if (downloadQuality == DownloadQuality.original) {
                 appLogger.d('Download: original quality, using PlaybackInfo (force direct play)');
-                videoUrl = await _getVideoUrlFromPlaybackInfo(
+                final r = await _getVideoUrlFromPlaybackInfo(
                   itemId,
                   mediaIndex,
                   mediaSources,
@@ -1269,13 +1319,19 @@ class JellyfinClient {
                   pickOptimalFromMultiple: mediaSources.length > 1 && mediaIndex == 0,
                   useExoPlayer: useExoPlayer,
                   audioStreamIndex: defaultIndices.audio,
-                  subtitleStreamIndex: defaultIndices.subtitle,
+                  subtitleStreamIndex: null, // Client handles subtitles for direct
                 );
+                if (r != null) {
+                  videoUrl = r.$1;
+                  isTranscode = r.$2;
+                  playSessionId = r.$3;
+                  mediaSourceId = r.$4;
+                }
               } else {
                 // Transcode: use PlaybackInfo with MaxStreamingBitrate (same as streaming)
                 final bitrate = _bitrateForDownloadQuality(downloadQuality);
                 appLogger.d('Download: quality=${downloadQuality.name} maxStreamingBitrate=$bitrate');
-                videoUrl = await _getVideoUrlFromPlaybackInfo(
+                final r = await _getVideoUrlFromPlaybackInfo(
                   itemId,
                   mediaIndex,
                   mediaSources,
@@ -1289,10 +1345,16 @@ class JellyfinClient {
                   audioStreamIndex: defaultIndices.audio,
                   subtitleStreamIndex: defaultIndices.subtitle,
                 );
+                if (r != null) {
+                  videoUrl = r.$1;
+                  isTranscode = r.$2;
+                  playSessionId = r.$3;
+                  mediaSourceId = r.$4;
+                }
               }
             } else if (playbackMode == PlaybackMode.directPlay) {
               appLogger.d('Playback: directPlay mode, using PlaybackInfo (force direct play)');
-              videoUrl = await _getVideoUrlFromPlaybackInfo(
+              final r = await _getVideoUrlFromPlaybackInfo(
                 itemId,
                 mediaIndex,
                 mediaSources,
@@ -1303,14 +1365,20 @@ class JellyfinClient {
                 pickOptimalFromMultiple: mediaSources.length > 1 && mediaIndex == 0,
                 useExoPlayer: useExoPlayer,
                 audioStreamIndex: defaultIndices.audio,
-                subtitleStreamIndex: defaultIndices.subtitle,
+                subtitleStreamIndex: null, // Client handles subtitles for direct play
               );
+              if (r != null) {
+                videoUrl = r.$1;
+                isTranscode = r.$2;
+                playSessionId = r.$3;
+                mediaSourceId = r.$4;
+              }
             } else if (playbackMode != null && _isTranscodeMode(playbackMode)) {
               // Transcode: use PlaybackInfo with MaxStreamingBitrate (Jellyfin ignores
               // maxWidth/maxHeight on direct stream URLs; bitrate forces proper transcode)
               final bitrate = _bitrateForPlaybackMode(playbackMode);
               appLogger.d('Playback: transcode mode=${playbackMode.name} maxStreamingBitrate=$bitrate');
-              videoUrl = await _getVideoUrlFromPlaybackInfo(
+              final r = await _getVideoUrlFromPlaybackInfo(
                 itemId,
                 mediaIndex,
                 mediaSources,
@@ -1324,10 +1392,17 @@ class JellyfinClient {
                 audioStreamIndex: defaultIndices.audio,
                 subtitleStreamIndex: defaultIndices.subtitle,
               );
+              if (r != null) {
+                videoUrl = r.$1;
+                isTranscode = r.$2;
+                playSessionId = r.$3;
+                mediaSourceId = r.$4;
+              }
             } else {
               // Auto (or null): use PlaybackInfo (server decides)
+              // Don't pass subtitleStreamIndex - let client handle subtitle selection for direct stream
               appLogger.d('Playback: auto mode, using PlaybackInfo (server decides)');
-              videoUrl = await _getVideoUrlFromPlaybackInfo(
+              final r = await _getVideoUrlFromPlaybackInfo(
                 itemId,
                 mediaIndex,
                 mediaSources,
@@ -1337,8 +1412,14 @@ class JellyfinClient {
                 pickOptimalFromMultiple: mediaSources.length > 1 && mediaIndex == 0,
                 useExoPlayer: useExoPlayer,
                 audioStreamIndex: defaultIndices.audio,
-                subtitleStreamIndex: defaultIndices.subtitle,
+                subtitleStreamIndex: null,
               );
+              if (r != null) {
+                videoUrl = r.$1;
+                isTranscode = r.$2;
+                playSessionId = r.$3;
+                mediaSourceId = r.$4;
+              }
             }
 
             if (videoUrl != null) {
@@ -1367,10 +1448,14 @@ class JellyfinClient {
                 audioIdx++;
               } else if (type == 'Subtitle') {
                 final streamIndex = _toInt(m['Index']) ?? subIdx;
-                // Build Jellyfin subtitle URL path so getSubtitleUrl can build full URL.
-                // GET /Videos/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.{format}
-                final subtitleKey = mediaSourceId.isNotEmpty
-                    ? 'Videos/$itemId/$mediaSourceId/Subtitles/$streamIndex/Stream'
+                // Use DeliveryUrl from server when available (jellyfin-web parity).
+                // Fallback: build path for GET /Videos/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.{format}
+                final deliveryUrl = m['DeliveryUrl'] as String?;
+                final effectiveMediaSourceId = mediaSourceId ?? sourceId;
+                final subtitleKey = deliveryUrl == null || deliveryUrl.isEmpty
+                    ? (effectiveMediaSourceId.isNotEmpty
+                        ? 'Videos/$itemId/$effectiveMediaSourceId/Subtitles/$streamIndex/Stream'
+                        : null)
                     : null;
                 subtitleTracks.add(MediaSubtitleTrack(
                   id: subIdx,
@@ -1383,6 +1468,7 @@ class JellyfinClient {
                   selected: m['IsDefault'] == true,
                   forced: m['IsForced'] == true,
                   key: subtitleKey,
+                  deliveryUrl: deliveryUrl?.isNotEmpty == true ? deliveryUrl : null,
                 ));
                 subIdx++;
               }
@@ -1416,6 +1502,7 @@ class JellyfinClient {
         if (e is _PlaybackInfoException) {
           return VideoPlaybackData(
             videoUrl: null,
+            isTranscode: false,
             mediaInfo: mediaInfo,
             availableVersions: versions,
             markers: markers,
@@ -1428,10 +1515,59 @@ class JellyfinClient {
 
     return VideoPlaybackData(
       videoUrl: videoUrl,
+      isTranscode: isTranscode,
       mediaInfo: mediaInfo,
       availableVersions: versions,
       markers: markers,
+      playSessionId: playSessionId,
+      mediaSourceId: mediaSourceId,
     );
+  }
+
+  /// Get display preferences for a view (e.g. library). Returns null when offline or on error.
+  Future<Map<String, dynamic>?> getDisplayPreferences(String displayPreferencesId) async {
+    if (_offlineMode) return null;
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/DisplayPreferences/$displayPreferencesId',
+        queryParameters: {
+          'userId': config.userId,
+          'client': 'Finzy',
+        },
+      );
+      return response.data;
+    } catch (e) {
+      appLogger.d('getDisplayPreferences failed for $displayPreferencesId', error: e);
+      return null;
+    }
+  }
+
+  /// Update display preferences for a view. Syncs sort/view to server for cross-client consistency.
+  Future<void> updateDisplayPreferences(
+    String displayPreferencesId, {
+    String? sortBy,
+    String? sortOrder,
+    String? viewMode,
+  }) async {
+    if (_offlineMode) return;
+    try {
+      final data = <String, dynamic>{};
+      if (sortBy != null) data['SortBy'] = sortBy;
+      if (sortOrder != null) data['SortOrder'] = sortOrder;
+      if (viewMode != null) data['ViewMode'] = viewMode;
+      if (data.isEmpty) return;
+      await _dio.post(
+        '/DisplayPreferences/$displayPreferencesId',
+        queryParameters: {
+          'userId': config.userId,
+          'client': 'Finzy',
+        },
+        data: data,
+      );
+      appLogger.d('Updated display preferences for $displayPreferencesId');
+    } catch (e) {
+      appLogger.d('updateDisplayPreferences failed (non-critical)', error: e);
+    }
   }
 
   Future<FileInfo?> getFileInfo(String itemId) async {
@@ -1540,22 +1676,91 @@ class JellyfinClient {
     }
   }
 
+  /// Report playback start (jellyfin-web parity). Call when playback begins.
+  Future<void> reportPlaybackStart({
+    required String itemId,
+    required int positionMs,
+    required String playMethod,
+    String? mediaSourceId,
+    String? playSessionId,
+  }) async {
+    if (_offlineMode) return;
+    try {
+      final data = <String, dynamic>{
+        'ItemId': itemId,
+        'PositionTicks': positionMs * 10000,
+        'PlayMethod': playMethod,
+      };
+      if (mediaSourceId != null && mediaSourceId.isNotEmpty) data['MediaSourceId'] = mediaSourceId;
+      if (playSessionId != null && playSessionId.isNotEmpty) data['PlaySessionId'] = playSessionId;
+      await _dio.post('/Sessions/Playing', data: data);
+      appLogger.d('[PlaybackDebug] reportPlaybackStart: itemId=$itemId position=${positionMs}ms');
+    } catch (e) {
+      appLogger.d('reportPlaybackStart failed (non-critical)', error: e);
+    }
+  }
+
+  /// Report playback stopped (jellyfin-web parity). Call when playback ends.
+  Future<void> reportPlaybackStopped({
+    required String itemId,
+    required int positionMs,
+    int? durationMs,
+    String? mediaSourceId,
+    String? playSessionId,
+  }) async {
+    if (_offlineMode) return;
+    try {
+      final data = <String, dynamic>{
+        'ItemId': itemId,
+        'PositionTicks': positionMs * 10000,
+      };
+      if (durationMs != null) data['PlaybackDurationTicks'] = durationMs * 10000;
+      if (mediaSourceId != null && mediaSourceId.isNotEmpty) data['MediaSourceId'] = mediaSourceId;
+      if (playSessionId != null && playSessionId.isNotEmpty) data['PlaySessionId'] = playSessionId;
+      await _dio.post('/Sessions/Playing/Stopped', data: data);
+      appLogger.d('[PlaybackDebug] reportPlaybackStopped: itemId=$itemId position=${positionMs}ms');
+    } catch (e) {
+      appLogger.d('reportPlaybackStopped failed (non-critical)', error: e);
+    }
+  }
+
+  /// Stop active transcoding sessions for the given PlaySessionId.
+  /// Frees server resources when user exits transcoded playback.
+  Future<void> stopActiveEncodings(String playSessionId) async {
+    if (_offlineMode) return;
+    try {
+      await _dio.delete(
+        '/Videos/ActiveEncodings',
+        queryParameters: {'DeviceId': config.deviceId, 'PlaySessionId': playSessionId},
+      );
+      appLogger.d('[PlaybackDebug] stopActiveEncodings: playSessionId=$playSessionId');
+    } catch (e) {
+      appLogger.d('stopActiveEncodings failed (non-critical)', error: e);
+    }
+  }
+
   Future<void> updateProgress(
     String itemId, {
     required int time,
     required String state,
     int? duration,
+    String? mediaSourceId,
+    String? playSessionId,
   }) async {
-    if (_offlineMode) return;
-    await _dio.post(
-      '/Sessions/Playing/Progress',
-      data: {
-        'ItemId': itemId,
-        'PositionTicks': time * 10000,
-        'IsPaused': state == 'paused',
-        if (duration != null) 'PlaybackDurationTicks': duration * 10000,
-      },
+    appLogger.d(
+      '[PlaybackDebug] JellyfinClient.updateProgress: itemId=$itemId state=$state '
+      'time=${time}ms duration=$duration',
     );
+    if (_offlineMode) return;
+    final data = <String, dynamic>{
+      'ItemId': itemId,
+      'PositionTicks': time * 10000,
+      'IsPaused': state == 'paused',
+      if (duration != null) 'PlaybackDurationTicks': duration * 10000,
+    };
+    if (mediaSourceId != null && mediaSourceId.isNotEmpty) data['MediaSourceId'] = mediaSourceId;
+    if (playSessionId != null && playSessionId.isNotEmpty) data['PlaySessionId'] = playSessionId;
+    await _dio.post('/Sessions/Playing/Progress', data: data);
   }
 
   /// Authorize a Quick Connect code from another device.

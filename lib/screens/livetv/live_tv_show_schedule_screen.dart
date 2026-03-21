@@ -218,7 +218,7 @@ class _ScheduleListTile extends StatelessWidget {
         ? 'S${program.parentIndex} · E${program.index} — ${program.title}'
         : program.title;
 
-    final use24Hour = context.read<SettingsProvider>().use24HourTime;
+    final use24Hour = context.read<SettingsProvider>().use24HourTime(context);
     final timeInfo = _formatTimeInfo(use24Hour);
     final subtitle = [
       timeInfo,

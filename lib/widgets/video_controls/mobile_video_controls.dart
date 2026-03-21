@@ -44,6 +44,9 @@ class MobileVideoControls extends StatelessWidget {
   /// Optional callback that returns a thumbnail URL for a given timestamp.
   final String Function(Duration time)? thumbnailUrlBuilder;
 
+  /// For transcode streams: playback start position in ms (player reports from stream start).
+  final int? positionOffsetMs;
+
   /// Whether this is a live TV stream
   final bool isLive;
 
@@ -70,6 +73,7 @@ class MobileVideoControls extends StatelessWidget {
     this.canControl = true,
     this.hasFirstFrame,
     this.thumbnailUrlBuilder,
+    this.positionOffsetMs,
     this.isLive = false,
     this.liveChannelName,
   });
@@ -205,6 +209,7 @@ class MobileVideoControls extends StatelessWidget {
           fallbackDuration: metadata.duration != null
               ? Duration(milliseconds: metadata.duration!)
               : null,
+          positionOffsetMs: positionOffsetMs,
         ),
       ),
     );

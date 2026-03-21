@@ -387,13 +387,12 @@ class OfflineWatchSyncService extends ChangeNotifier {
         break;
 
       case 'progress':
-        // First, update the timeline with current position
+        // Report playback stopped (final position) - we don't have playSessionId for offline sync
         if (action.resumePositionMs != null && action.duration != null) {
-          await client.updateProgress(
-            action.itemId,
-            time: action.resumePositionMs!,
-            state: 'stopped', // Use 'stopped' since we're syncing after the fact
-            duration: action.duration,
+          await client.reportPlaybackStopped(
+            itemId: action.itemId,
+            positionMs: action.resumePositionMs!,
+            durationMs: action.duration,
           );
         }
 

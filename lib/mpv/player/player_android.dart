@@ -9,6 +9,16 @@ import 'player_base.dart';
 /// Provides hardware-accelerated playback with ASS subtitle support via libass-android.
 class PlayerAndroid extends PlayerBase {
   static const _methodChannel = MethodChannel('com.finzy/exo_player');
+
+  /// Get approximate heap size limit in MB for OOM prevention (Android only).
+  static Future<int> getHeapSize() async {
+    try {
+      final r = await _methodChannel.invokeMethod<int>('getHeapSize');
+      return r ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
   static const _eventChannel = EventChannel('com.finzy/exo_player/events');
 
   int? _bufferSizeBytes;
@@ -83,13 +93,13 @@ class PlayerAndroid extends PlayerBase {
 
   @override
   Future<void> open(Media media, {bool play = true, bool isLive = false}) async {
-    checkDisposed();
+    if (disposed) return;
     await _ensureInitialized();
 
     // Show the video layer
     await setVisible(true);
 
-    await methodChannel.invokeMethod('open', {
+    await invoke('open', {
       'uri': media.uri,
       'headers': media.headers,
       'startPositionMs': media.start?.inMilliseconds ?? 0,
@@ -100,27 +110,23 @@ class PlayerAndroid extends PlayerBase {
 
   @override
   Future<void> play() async {
-    checkDisposed();
-    await methodChannel.invokeMethod('play');
+    await invoke('play');
   }
 
   @override
   Future<void> pause() async {
-    checkDisposed();
-    await methodChannel.invokeMethod('pause');
+    await invoke('pause');
   }
 
   @override
   Future<void> stop() async {
-    checkDisposed();
-    await methodChannel.invokeMethod('stop');
+    await invoke('stop');
     await setVisible(false);
   }
 
   @override
   Future<void> seek(Duration position) async {
-    checkDisposed();
-    await methodChannel.invokeMethod('seek', {'positionMs': position.inMilliseconds});
+    await invoke('seek', {'positionMs': position.inMilliseconds});
   }
 
   // ============================================
@@ -129,20 +135,17 @@ class PlayerAndroid extends PlayerBase {
 
   @override
   Future<void> selectAudioTrack(AudioTrack track) async {
-    checkDisposed();
-    await methodChannel.invokeMethod('selectAudioTrack', {'trackId': track.id});
+    await invoke('selectAudioTrack', {'trackId': track.id});
   }
 
   @override
   Future<void> selectSubtitleTrack(SubtitleTrack track) async {
-    checkDisposed();
-    await methodChannel.invokeMethod('selectSubtitleTrack', {'trackId': track.id});
+    await invoke('selectSubtitleTrack', {'trackId': track.id});
   }
 
   @override
   Future<void> addSubtitleTrack({required String uri, String? title, String? language, bool select = false}) async {
-    checkDisposed();
-    await methodChannel.invokeMethod('addSubtitleTrack', {
+    await invoke('addSubtitleTrack', {
       'uri': uri,
       'title': title,
       'language': language,
@@ -156,14 +159,12 @@ class PlayerAndroid extends PlayerBase {
 
   @override
   Future<void> setVolume(double volume) async {
-    checkDisposed();
-    await methodChannel.invokeMethod('setVolume', {'volume': volume});
+    await invoke('setVolume', {'volume': volume});
   }
 
   @override
   Future<void> setRate(double rate) async {
-    checkDisposed();
-    await methodChannel.invokeMethod('setRate', {'rate': rate});
+    await invoke('setRate', {'rate': rate});
   }
 
   // ============================================
@@ -172,7 +173,7 @@ class PlayerAndroid extends PlayerBase {
 
   @override
   Future<void> setProperty(String name, String value) async {
-    checkDisposed();
+    if (disposed) return;
     // ExoPlayer doesn't use MPV properties, but we handle common ones
     switch (name) {
       case 'pause':
@@ -191,13 +192,18 @@ class PlayerAndroid extends PlayerBase {
       case 'demuxer-max-bytes':
         _bufferSizeBytes = int.tryParse(value);
         break;
-      // Other properties are no-ops for ExoPlayer
+      case 'demuxer-max-back-bytes':
+        // No-op for ExoPlayer (buffer set in initialize)
+        break;
+      default:
+        // Forward unknown properties to Kotlin for MPV fallback
+        await invoke('setMpvProperty', {'name': name, 'value': value});
     }
   }
 
   @override
   Future<String?> getProperty(String name) async {
-    checkDisposed();
+    if (disposed) return null;
     // Return state-based values for common properties
     switch (name) {
       case 'pause':
@@ -229,9 +235,8 @@ class PlayerAndroid extends PlayerBase {
   /// Get all playback stats from ExoPlayer.
   /// Returns a map with video/audio codec info, buffer state, and performance metrics.
   Future<Map<String, dynamic>> getStats() async {
-    checkDisposed();
     try {
-      final result = await methodChannel.invokeMethod<Map>('getStats');
+      final result = await invoke<Map>('getStats');
       return Map<String, dynamic>.from(result ?? {});
     } catch (e) {
       return {};
@@ -240,9 +245,8 @@ class PlayerAndroid extends PlayerBase {
 
   /// Get the current player type ('exoplayer' or 'mpv' if fallback is active).
   Future<String> getPlayerType() async {
-    checkDisposed();
     try {
-      final result = await methodChannel.invokeMethod<String>('getPlayerType');
+      final result = await invoke<String>('getPlayerType');
       return result ?? 'unknown';
     } catch (e) {
       return 'unknown';
@@ -251,7 +255,7 @@ class PlayerAndroid extends PlayerBase {
 
   @override
   Future<void> command(List<String> args) async {
-    checkDisposed();
+    if (disposed) return;
     // Handle MPV commands by translating to ExoPlayer equivalents
     if (args.isEmpty) return;
 
@@ -302,9 +306,8 @@ class PlayerAndroid extends PlayerBase {
     required int bgOpacity,
     int subtitlePosition = 100,
   }) async {
-    checkDisposed();
-    if (!initialized) return;
-    await methodChannel.invokeMethod('setSubtitleStyle', {
+    if (disposed || !initialized) return;
+    await invoke('setSubtitleStyle', {
       'fontSize': fontSize,
       'textColor': textColor,
       'borderSize': borderSize,
@@ -321,18 +324,14 @@ class PlayerAndroid extends PlayerBase {
 
   @override
   Future<void> setVideoFrameRate(double fps, int durationMs) async {
-    checkDisposed();
-    if (!initialized) return;
-
-    await methodChannel.invokeMethod('setVideoFrameRate', {'fps': fps, 'duration': durationMs});
+    if (disposed || !initialized) return;
+    await invoke('setVideoFrameRate', {'fps': fps, 'duration': durationMs});
   }
 
   @override
   Future<void> clearVideoFrameRate() async {
-    checkDisposed();
-    if (!initialized) return;
-
-    await methodChannel.invokeMethod('clearVideoFrameRate');
+    if (disposed || !initialized) return;
+    await invoke('clearVideoFrameRate');
   }
 
   // ============================================
@@ -341,18 +340,14 @@ class PlayerAndroid extends PlayerBase {
 
   @override
   Future<bool> requestAudioFocus() async {
-    checkDisposed();
-    if (!initialized) return false;
-
-    final result = await methodChannel.invokeMethod<bool>('requestAudioFocus');
+    if (disposed || !initialized) return false;
+    final result = await invoke<bool>('requestAudioFocus');
     return result ?? false;
   }
 
   @override
   Future<void> abandonAudioFocus() async {
-    checkDisposed();
-    if (!initialized) return;
-
-    await methodChannel.invokeMethod('abandonAudioFocus');
+    if (disposed || !initialized) return;
+    await invoke('abandonAudioFocus');
   }
 }

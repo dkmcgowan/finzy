@@ -60,10 +60,24 @@ class DesktopAppBarSections {
           label: MaterialLocalizations.of(context).backButtonTooltip,
           button: true,
           excludeSemantics: true,
-          child: IconButton(
-            icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
-            onPressed: () => Navigator.of(context).pop(),
-            tooltip: null,
+          child: Material(
+            color: Colors.transparent,
+            clipBehavior: Clip.antiAlias,
+            shape: const CircleBorder(),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: IconButton(
+                icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+                onPressed: () => Navigator.of(context).pop(),
+                tooltip: null,
+                style: IconButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(48, 48),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
           ),
         );
       }
@@ -196,10 +210,24 @@ class DesktopTopBar extends StatelessWidget {
               label: MaterialLocalizations.of(context).backButtonTooltip,
               button: true,
               excludeSemantics: true,
-              child: IconButton(
-                icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
-                onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
-                tooltip: null,
+              child: Material(
+                color: Colors.transparent,
+                clipBehavior: Clip.antiAlias,
+                shape: const CircleBorder(),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: IconButton(
+                    icon: const AppIcon(Symbols.arrow_back_rounded, fill: 1),
+                    onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
+                    tooltip: null,
+                    style: IconButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(48, 48),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
               ),
             );
           }

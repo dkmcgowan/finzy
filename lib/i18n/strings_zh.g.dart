@@ -109,6 +109,7 @@ class _TranslationsAuthZh implements TranslationsAuthEn {
 	@override String get invalidPassword => '用户名或密码错误。';
 	@override String get notAuthorized => '未授权。请重新登录。';
 	@override String get serverUnreachable => '无法连接服务器。请检查 URL 和网络连接。';
+	@override String get serverError => '服务器错误。请稍后重试。';
 	@override String get scanQRToSignIn => '扫描二维码登录';
 	@override String get waitingForAuth => '等待验证中...\n请在你的浏览器中完成登录。';
 	@override String get useBrowser => '使用浏览器';
@@ -226,6 +227,8 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get episodeThumbnail => '剧集缩略图';
 	@override String get episodeThumbnailDescription => '显示16:9剧集截图缩略图';
 	@override String get timeFormat => '时间格式';
+	@override String get system => '系统';
+	@override String get systemDescription => '跟随系统时间格式设置';
 	@override String get twelveHour => '12小时制';
 	@override String get twentyFourHour => '24小时制';
 	@override String get twelveHourDescription => '例如 1:00 PM';
@@ -279,6 +282,8 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get liveTvQuality => '直播电视画质';
 	@override String get liveTvQualityDescription => '限制直播电视的转码画质。不限制则使用服务器默认。';
 	@override String get liveTvQualityNone => '不限制';
+	@override String get streamingQuality => '流媒体画质';
+	@override String get streamingQualityDescription => '限制VOD转码画质。自动由服务器决定。';
 	@override String get hardwareDecoding => '硬件解码';
 	@override String get hardwareDecodingDescription => '如果可用，使用硬件加速';
 	@override String get bufferSize => '缓冲区大小';
@@ -631,6 +636,7 @@ class _TranslationsMessagesZh implements TranslationsMessagesEn {
 	@override String get failedToCreatePlayQueueNoItems => '创建播放队列失败 - 没有项目';
 	@override String failedPlayback({required Object action, required Object error}) => '无法${action}: ${error}';
 	@override String get switchingToCompatiblePlayer => '正在切换到兼容的播放器...';
+	@override String get qualityRevertedOnError => '因播放错误已恢复为之前的画质。';
 }
 
 // Path: subtitlingStyling
@@ -1341,6 +1347,7 @@ extension on TranslationsZh {
 			'auth.invalidPassword' => '用户名或密码错误。',
 			'auth.notAuthorized' => '未授权。请重新登录。',
 			'auth.serverUnreachable' => '无法连接服务器。请检查 URL 和网络连接。',
+			'auth.serverError' => '服务器错误。请稍后重试。',
 			'auth.scanQRToSignIn' => '扫描二维码登录',
 			'auth.waitingForAuth' => '等待验证中...\n请在你的浏览器中完成登录。',
 			'auth.useBrowser' => '使用浏览器',
@@ -1422,6 +1429,8 @@ extension on TranslationsZh {
 			'settings.episodeThumbnail' => '剧集缩略图',
 			'settings.episodeThumbnailDescription' => '显示16:9剧集截图缩略图',
 			'settings.timeFormat' => '时间格式',
+			'settings.system' => '系统',
+			'settings.systemDescription' => '跟随系统时间格式设置',
 			'settings.twelveHour' => '12小时制',
 			'settings.twentyFourHour' => '24小时制',
 			'settings.twelveHourDescription' => '例如 1:00 PM',
@@ -1475,6 +1484,8 @@ extension on TranslationsZh {
 			'settings.liveTvQuality' => '直播电视画质',
 			'settings.liveTvQualityDescription' => '限制直播电视的转码画质。不限制则使用服务器默认。',
 			'settings.liveTvQualityNone' => '不限制',
+			'settings.streamingQuality' => '流媒体画质',
+			'settings.streamingQualityDescription' => '限制VOD转码画质。自动由服务器决定。',
 			'settings.hardwareDecoding' => '硬件解码',
 			'settings.hardwareDecodingDescription' => '如果可用，使用硬件加速',
 			'settings.bufferSize' => '缓冲区大小',
@@ -1765,6 +1776,7 @@ extension on TranslationsZh {
 			'messages.failedToCreatePlayQueueNoItems' => '创建播放队列失败 - 没有项目',
 			'messages.failedPlayback' => ({required Object action, required Object error}) => '无法${action}: ${error}',
 			'messages.switchingToCompatiblePlayer' => '正在切换到兼容的播放器...',
+			'messages.qualityRevertedOnError' => '因播放错误已恢复为之前的画质。',
 			'subtitlingStyling.stylingOptions' => '样式选项',
 			'subtitlingStyling.fontSize' => '字号',
 			'subtitlingStyling.textColor' => '文本颜色',
@@ -1829,14 +1841,14 @@ extension on TranslationsZh {
 			'errors.invalidToken' => '令牌无效',
 			'errors.failedToVerifyToken' => ({required Object error}) => '无法验证令牌: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => '无法切换到 ${displayName}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.title' => '媒体库',
 			'libraries.scanLibraryFiles' => '扫描媒体库文件',
 			'libraries.scanLibrary' => '扫描媒体库',
 			'libraries.analyze' => '分析',
 			'libraries.analyzeLibrary' => '分析媒体库',
 			'libraries.refreshMetadata' => '刷新元数据',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.emptyTrash' => '清空回收站',
 			'libraries.emptyingTrash' => ({required Object title}) => '正在清空 “${title}” 的回收站...',
 			'libraries.trashEmptied' => ({required Object title}) => '已清空 “${title}” 的回收站',
