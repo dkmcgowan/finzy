@@ -4,7 +4,6 @@ Server URL: https://demo.jellyfin.org/stable
 Username: demo
 Password: (leave blank - no password)
 
-- On first launch you will see the server setup screen with a Server URL field, enter the server URL above, then tap Connect.
-- Then tap Manual login (do not select a user from the grid).
-- Enter username "demo" and leave the password blank, tap Sign in!
-- Then browse sample movies and shows to play videos.
+- On first launch enter the server URL above, tap Connect.
+- Tap the Demo tile (no password needed - tapping the tile logs you in).
+- Browse sample movies and shows to play videos.
