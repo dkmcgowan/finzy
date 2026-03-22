@@ -1,0 +1,24 @@
+PackageIdentifier: dkmcgowan.finzy
+PackageVersion: 0.3.0
+Platform:
+  - Windows.Desktop
+MinimumOSVersion: 10.0.0.0
+InstallerType: inno
+Scope: user
+UpgradeBehavior: install
+ReleaseNotesUrl: https://github.com/dkmcgowan/finzy/releases
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/dkmcgowan/finzy/releases/download/0.3.0/finzy-windows-installer.exe
+    InstallerSha256: 175b09d0570b711b487e9e04ae8706401680f24c606cd9f08c8031840a34a4ef
+    InstallerSwitches:
+      Silent: /VERYSILENT
+      SilentWithProgress: /SILENT
+  - Architecture: arm64
+    InstallerUrl: https://github.com/dkmcgowan/finzy/releases/download/0.3.0/finzy-windows-installer.exe
+    InstallerSha256: 175b09d0570b711b487e9e04ae8706401680f24c606cd9f08c8031840a34a4ef
+    InstallerSwitches:
+      Silent: /VERYSILENT
+      SilentWithProgress: /SILENT
+ManifestType: installer
+ManifestVersion: 1.6.0
