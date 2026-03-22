@@ -38,6 +38,9 @@ jobs:
           curl -L -o finzy-windows-arm64.msix \
             "https://github.com/${{ github.repository }}/releases/download/$VERSION/finzy-windows-arm64.msix"
 
+      - name: Install libsecret for MSStore CLI (Linux credential store)
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-0
+
       - name: Setup Microsoft Store Developer CLI
         uses: microsoft/microsoft-store-apppublisher@v1.3
 
