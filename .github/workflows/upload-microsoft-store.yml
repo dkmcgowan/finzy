@@ -59,6 +59,5 @@ jobs:
               --sellerId "${{ secrets.MICROSOFT_STORE_SELLER_ID }}" \
               --clientId "${{ secrets.MICROSOFT_STORE_CLIENT_ID }}" \
               --clientSecret "${{ secrets.MICROSOFT_STORE_CLIENT_SECRET }}"
-            # -nc = noCommit: leave as draft for manual review before Submit for certification
-            msstore publish . -i msix-packages -id "${{ secrets.MICROSOFT_STORE_PRODUCT_ID }}" -nc
+            msstore publish . -i msix-packages -id "${{ secrets.MICROSOFT_STORE_PRODUCT_ID }}"
           '
