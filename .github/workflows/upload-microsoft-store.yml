@@ -49,9 +49,8 @@ jobs:
 
       - name: Configure and publish MSIX (Secret Service requires dbus-run-session on headless Linux)
         run: |
-          mkdir -p msix-x64 msix-arm64
-          mv finzy-windows-x64.msix msix-x64/
-          mv finzy-windows-arm64.msix msix-arm64/
+          mkdir -p msix-packages
+          mv finzy-windows-x64.msix finzy-windows-arm64.msix msix-packages/
           dbus-run-session -- bash -e -c '
             printf "\n" | gnome-keyring-daemon --unlock
             sleep 2
@@ -60,6 +59,5 @@ jobs:
               --sellerId "${{ secrets.MICROSOFT_STORE_SELLER_ID }}" \
               --clientId "${{ secrets.MICROSOFT_STORE_CLIENT_ID }}" \
               --clientSecret "${{ secrets.MICROSOFT_STORE_CLIENT_SECRET }}"
-            msstore publish . -i msix-x64 -id "${{ secrets.MICROSOFT_STORE_PRODUCT_ID }}"
-            msstore publish . -i msix-arm64 -id "${{ secrets.MICROSOFT_STORE_PRODUCT_ID }}" || true
+            msstore publish . -i msix-packages -id "${{ secrets.MICROSOFT_STORE_PRODUCT_ID }}"
           '
