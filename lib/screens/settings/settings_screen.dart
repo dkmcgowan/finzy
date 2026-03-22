@@ -20,6 +20,7 @@ import '../../i18n/strings.g.dart';
 import '../../models/media_library.dart';
 import '../main_screen.dart';
 import '../../mixins/refreshable.dart';
+import '../../mixins/tab_visibility_aware.dart';
 import '../../providers/hidden_libraries_provider.dart';
 import '../../providers/libraries_provider.dart';
 import '../../providers/multi_server_provider.dart';
@@ -65,7 +66,7 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
+class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabVisibilityAware {
   late settings.SettingsService _settingsService;
   late final FocusMemoryTracker _focusTracker;
 
@@ -244,6 +245,14 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab {
           420000 => t.settings.quality420kbps,
           _ => t.settings.liveTvQualityNone,
         };
+
+  @override
+  void onTabShown({bool scrollToTop = true}) {
+    _loadSettings();
+  }
+
+  @override
+  void onTabHidden() {}
 
   @override
   void focusActiveTabIfReady() {

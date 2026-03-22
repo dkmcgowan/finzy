@@ -838,8 +838,11 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       }
     }
 
-    // Restore focus when switching to Settings tab (works in both online and offline mode)
+    // Restore focus and refresh settings when switching to Settings tab (works in both online and offline mode)
     if (index == settingsIndex && previousIndex != settingsIndex) {
+      if (_settingsKey.currentState case final TabVisibilityAware aware) {
+        aware.onTabShown();
+      }
       if (_settingsKey.currentState case final FocusableTab focusable) {
         focusable.focusActiveTabIfReady();
       }
