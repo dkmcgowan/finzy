@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 import '../models/hotkey_model.dart';
 import 'package:finzy/utils/app_logger.dart';
@@ -143,7 +142,6 @@ class SettingsService extends BaseSharedPreferencesService {
   static const String _keyReduceAnimations = 'performance_reduce_animations'; // Legacy, migrated to _keyAnimationsEnabled
   static const String _keyAnimationsEnabled = 'appearance_animations_enabled';
   static const String _keyGridPreload = 'performance_grid_preload';
-  static const String _keyHideSupportDevelopment = 'hide_support_development';
 
   SettingsService._();
 
@@ -378,15 +376,6 @@ class SettingsService extends BaseSharedPreferencesService {
 
   GridPreloadLevel getGridPreload() {
     return _getEnumValue(_keyGridPreload, GridPreloadLevel.values, GridPreloadLevel.medium);
-  }
-
-  // Advanced: Hide Support Development section (default: off)
-  Future<void> setHideSupportDevelopment(bool enabled) async {
-    await prefs.setBool(_keyHideSupportDevelopment, enabled);
-  }
-
-  bool getHideSupportDevelopment() {
-    return prefs.getBool(_keyHideSupportDevelopment) ?? (Platform.isAndroid || Platform.isIOS);
   }
 
   // Show Hero Section
@@ -1482,7 +1471,6 @@ class SettingsService extends BaseSharedPreferencesService {
       prefs.remove(_keyReduceAnimations),
       prefs.remove(_keyAnimationsEnabled),
       prefs.remove(_keyGridPreload),
-      prefs.remove(_keyHideSupportDevelopment),
     ]);
   }
 

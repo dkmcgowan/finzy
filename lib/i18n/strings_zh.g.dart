@@ -132,12 +132,12 @@ class _TranslationsCommonZh implements TranslationsCommonEn {
 	@override String get confirm => '确认';
 	@override String get retry => '重试';
 	@override String get logout => '登出';
-	@override String get quickConnect => 'Quick Connect';
-	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
-	@override String get quickConnectCode => 'Quick Connect Code';
-	@override String get authorize => 'Authorize';
-	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
-	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
+	@override String get quickConnect => '快速连接';
+	@override String get quickConnectDescription => '使用快速连接登录时，请在用于登录的设备上选择“快速连接”按钮，然后在下方输入显示的代码。';
+	@override String get quickConnectCode => '快速连接代码';
+	@override String get authorize => '授权';
+	@override String get quickConnectSuccess => '快速连接已成功授权';
+	@override String get quickConnectError => '快速连接代码授权失败';
 	@override String get unknown => '未知';
 	@override String get refresh => '刷新';
 	@override String get yes => '是';
@@ -159,7 +159,7 @@ class _TranslationsCommonZh implements TranslationsCommonEn {
 	@override String get settings => '设置';
 	@override String get mute => '静音';
 	@override String get ok => '确定';
-	@override String get none => 'None';
+	@override String get none => '无';
 	@override String get loading => '加载中...';
 	@override String get reconnect => '重新连接';
 	@override String get goOffline => '进入离线模式';
@@ -211,9 +211,6 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => '设置';
-	@override String get supportOptionalCaption => '可选——应用保持免费';
-	@override String get supportTierSupport => '支持开发';
-	@override String get supportTipThankYou => '感谢你的支持！';
 	@override String get language => '语言';
 	@override String get theme => '主题';
 	@override String get appearance => '外观';
@@ -277,7 +274,7 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get mpvDescription => '功能更多的高级播放器，支持 ASS 字幕';
 	@override String get liveTvPlayer => '直播电视播放器';
 	@override String get liveTvPlayerDescription => '直播电视推荐使用 MPV。ExoPlayer 在某些设备上可能有问题。';
-	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvMpv => 'MPV（推荐）';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get liveTvQuality => '直播电视画质';
 	@override String get liveTvQualityDescription => '限制直播电视的转码画质。不限制则使用服务器默认。';
@@ -327,14 +324,14 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get autoSkip => '自动跳过';
 	@override String get autoSkipIntro => '自动跳过片头';
 	@override String get autoSkipIntroDescription => '几秒钟后自动跳过片头标记';
-	@override String get enableExternalSubtitles => 'Enable External Subtitles';
-	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get enableExternalSubtitles => '启用外部字幕';
+	@override String get enableExternalSubtitlesDescription => '在播放器中显示外部字幕选项；选择后才会加载。';
 	@override String get alwaysBurnInSubtitleWhenTranscoding => '转码时烧录字幕';
 	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => '转码时将所选字幕烧录到视频中。与 jellyfin-web 相同。';
 	@override String get enableTrickplay => 'Enable trickplay thumbnails';
-	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
-	@override String get enableChapterImages => 'Enable Chapter Images';
-	@override String get enableChapterImagesDescription => 'Show thumbnail images for chapters in the chapter list.';
+	@override String get enableTrickplayDescription => '拖动时间轴时显示预览缩略图。需要服务器上有 Trickplay 数据。';
+	@override String get enableChapterImages => '启用章节图像';
+	@override String get enableChapterImagesDescription => '在章节列表中显示章节缩略图。';
 	@override String get autoSkipOutro => '自动跳过片尾';
 	@override String get autoSkipOutroDescription => '自动跳过片尾片段';
 	@override String get autoSkipRecap => '自动跳过回顾';
@@ -345,8 +342,8 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => '自动跳过广告片段';
 	@override String get autoSkipDelay => '自动跳过延迟';
 	@override String autoSkipDelayDescription({required Object seconds}) => '自动跳过前等待 ${seconds} 秒';
-	@override String get showDownloads => 'Show Downloads';
-	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
+	@override String get showDownloads => '启用下载';
+	@override String get showDownloadsDescription => '允许下载电影和节目以供离线观看。';
 	@override String get downloads => '下载';
 	@override String get downloadLocationDescription => '选择下载内容的存储位置';
 	@override String get downloadLocationDefault => '默认（应用存储）';
@@ -370,7 +367,7 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get playbackModeAuto => '自动';
 	@override String get playbackModeAutoDirect => '自动 - Direct';
 	@override String get playbackModeDirectPlayDescription => '使用原文件。';
-	@override String get playbackModeDirectPlay => 'Direct';
+	@override String get playbackModeDirectPlay => '直接播放';
 	@override String get quality15Mbps => '15 Mbps';
 	@override String get quality10Mbps => '10 Mbps';
 	@override String get quality8Mbps => '8 Mbps';
@@ -404,8 +401,6 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get performanceLarge => '大';
 	@override String get performanceLow => '低';
 	@override String get performanceHigh => '高';
-	@override String get hideSupportDevelopment => '隐藏支持开发';
-	@override String get hideSupportDevelopmentDescription => '在设置中隐藏支持开发部分';
 }
 
 // Path: search
@@ -566,6 +561,7 @@ class _TranslationsVideoControlsZh implements TranslationsVideoControlsEn {
 	@override String get unmuteButton => '取消静音';
 	@override String get settingsButton => '视频设置';
 	@override String get audioTrackButton => '音轨';
+	@override String get tracksButton => '音频和字幕';
 	@override String get subtitlesButton => '字幕';
 	@override String get chaptersButton => '章节';
 	@override String get versionsButton => '视频版本';
@@ -653,7 +649,7 @@ class _TranslationsSubtitlingStylingZh implements TranslationsSubtitlingStylingE
 	@override String get borderColor => '边框颜色';
 	@override String get backgroundOpacity => '背景不透明度';
 	@override String get backgroundColor => '背景颜色';
-	@override String get position => 'Position';
+	@override String get position => '位置';
 }
 
 // Path: mpvConfig
@@ -715,8 +711,8 @@ class _TranslationsDiscoverZh implements TranslationsDiscoverEn {
 	@override String get overview => '概述';
 	@override String get cast => '演员表';
 	@override String get moreLikeThis => '相似推荐';
-	@override String get moviesAndShows => 'Movies & Shows';
-	@override String get noItemsFound => 'No items found on this server';
+	@override String get moviesAndShows => '电影和节目';
+	@override String get noItemsFound => '此服务器上未找到任何项目';
 	@override String get extras => '预告片与花絮';
 	@override String get seasons => '季数';
 	@override String get studio => '制作公司';
@@ -888,7 +884,7 @@ class _TranslationsLiveTvZh implements TranslationsLiveTvEn {
 	@override String get recordings => '录制';
 	@override String get subscriptions => '录制规则';
 	@override String get scheduled => '已计划';
-	@override String get seriesTimers => 'Series Timers';
+	@override String get seriesTimers => '系列定时器';
 	@override String get noChannels => '没有可用的频道';
 	@override String get dvr => 'DVR';
 	@override String get noDvr => '没有服务器配置了DVR';
@@ -902,26 +898,26 @@ class _TranslationsLiveTvZh implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => '确定要删除此录制规则吗？';
 	@override String get subscriptionDeleted => '录制规则已删除';
 	@override String get noPrograms => '没有可用的节目数据';
-	@override String get noRecordings => 'No recordings';
-	@override String get noScheduled => 'No scheduled recordings';
-	@override String get noSubscriptions => 'No series timers';
-	@override String get cancelTimer => 'Cancel Recording';
-	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
-	@override String get timerCancelled => 'Recording cancelled';
+	@override String get noRecordings => '无录制';
+	@override String get noScheduled => '无预约录制';
+	@override String get noSubscriptions => '无系列定时器';
+	@override String get cancelTimer => '取消录制';
+	@override String get cancelTimerConfirm => '确定要取消此预约录制吗？';
+	@override String get timerCancelled => '录制已取消';
 	@override String get editSeriesTimer => '编辑';
-	@override String get deleteSeriesTimer => 'Delete Series Timer';
-	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
-	@override String get seriesTimerDeleted => 'Series timer deleted';
-	@override String get seriesTimerUpdated => 'Series timer updated';
-	@override String get recordNewOnly => 'Record new episodes only';
-	@override String get keepUpTo => 'Keep up to';
-	@override String get keepAll => 'Keep all';
+	@override String get deleteSeriesTimer => '删除系列定时器';
+	@override String get deleteSeriesTimerConfirm => '确定要删除此系列定时器吗？所有关联的预约录制也将被移除。';
+	@override String get seriesTimerDeleted => '系列定时器已删除';
+	@override String get seriesTimerUpdated => '系列定时器已更新';
+	@override String get recordNewOnly => '仅录制新剧集';
+	@override String get keepUpTo => '最多保留';
+	@override String get keepAll => '全部保留';
 	@override String keepEpisodes({required Object count}) => '${count} episodes';
-	@override String get prePadding => 'Start recording early';
-	@override String get postPadding => 'Continue recording after';
+	@override String get prePadding => '提前开始录制';
+	@override String get postPadding => '结束后继续录制';
 	@override String minutes({required Object count}) => '${count} min';
-	@override String get days => 'Days';
-	@override String get priority => 'Priority';
+	@override String get days => '天';
+	@override String get priority => '优先级';
 	@override String channelNumber({required Object number}) => '频道 ${number}';
 	@override String get live => '直播';
 	@override String get hd => '高清';
@@ -937,21 +933,21 @@ class _TranslationsLiveTvZh implements TranslationsLiveTvEn {
 	@override String get daytime => '白天';
 	@override String get evening => '晚上';
 	@override String get lateNight => '深夜';
-	@override String get programs => 'Programs';
-	@override String get onNow => 'On Now';
-	@override String get upcomingShows => 'Shows';
-	@override String get upcomingMovies => 'Movies';
-	@override String get upcomingSports => 'Sports';
-	@override String get forKids => 'For Kids';
-	@override String get upcomingNews => 'News';
+	@override String get programs => '节目';
+	@override String get onNow => '正在播出';
+	@override String get upcomingShows => '剧集';
+	@override String get upcomingMovies => '电影';
+	@override String get upcomingSports => '体育';
+	@override String get forKids => '儿童';
+	@override String get upcomingNews => '新闻';
 	@override String get watchChannel => '观看频道';
-	@override String get recentlyAdded => 'Recently Added';
-	@override String get recordingScheduled => 'Recording scheduled';
-	@override String get seriesRecordingScheduled => 'Series recording scheduled';
-	@override String get recordingFailed => 'Failed to schedule recording';
-	@override String get cancelSeries => 'Cancel Series';
-	@override String get stopRecording => 'Stop Recording';
-	@override String get doNotRecord => 'Do Not Record';
+	@override String get recentlyAdded => '最近添加';
+	@override String get recordingScheduled => '已预约录制';
+	@override String get seriesRecordingScheduled => '已预约系列录制';
+	@override String get recordingFailed => '预约录制失败';
+	@override String get cancelSeries => '取消系列';
+	@override String get stopRecording => '停止录制';
+	@override String get doNotRecord => '不录制';
 }
 
 // Path: downloads
@@ -1072,7 +1068,7 @@ class _TranslationsCompanionRemoteZh implements TranslationsCompanionRemoteEn {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Companion Remote';
+	@override String get title => '伴侣遥控器';
 	@override String get connectToDevice => '连接到设备';
 	@override String get hostRemoteSession => '创建远程会话';
 	@override String get controlThisDevice => '使用手机控制此设备';
@@ -1134,13 +1130,13 @@ class _TranslationsSearchCategoriesZh implements TranslationsSearchCategoriesEn 
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
-	@override String get movies => 'Movies';
-	@override String get shows => 'Shows';
-	@override String get episodes => 'Episodes';
-	@override String get people => 'People';
-	@override String get collections => 'Collections';
-	@override String get programs => 'Programs';
-	@override String get channels => 'Channels';
+	@override String get movies => '电影';
+	@override String get shows => '节目';
+	@override String get episodes => '剧集';
+	@override String get people => '人物';
+	@override String get collections => '合集';
+	@override String get programs => '节目';
+	@override String get channels => '频道';
 }
 
 // Path: hotkeys.actions
@@ -1361,12 +1357,12 @@ extension on TranslationsZh {
 			'common.confirm' => '确认',
 			'common.retry' => '重试',
 			'common.logout' => '登出',
-			'common.quickConnect' => 'Quick Connect',
-			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
-			'common.quickConnectCode' => 'Quick Connect Code',
-			'common.authorize' => 'Authorize',
-			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
-			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
+			'common.quickConnect' => '快速连接',
+			'common.quickConnectDescription' => '使用快速连接登录时，请在用于登录的设备上选择“快速连接”按钮，然后在下方输入显示的代码。',
+			'common.quickConnectCode' => '快速连接代码',
+			'common.authorize' => '授权',
+			'common.quickConnectSuccess' => '快速连接已成功授权',
+			'common.quickConnectError' => '快速连接代码授权失败',
 			'common.unknown' => '未知',
 			'common.refresh' => '刷新',
 			'common.yes' => '是',
@@ -1388,7 +1384,7 @@ extension on TranslationsZh {
 			'common.settings' => '设置',
 			'common.mute' => '静音',
 			'common.ok' => '确定',
-			'common.none' => 'None',
+			'common.none' => '无',
 			'common.loading' => '加载中...',
 			'common.reconnect' => '重新连接',
 			'common.goOffline' => '进入离线模式',
@@ -1413,9 +1409,6 @@ extension on TranslationsZh {
 			'update.latestVersion' => '已安装的版本是可用的最新版本',
 			'update.checkFailed' => '无法检查更新',
 			'settings.title' => '设置',
-			'settings.supportOptionalCaption' => '可选——应用保持免费',
-			'settings.supportTierSupport' => '支持开发',
-			'settings.supportTipThankYou' => '感谢你的支持！',
 			'settings.language' => '语言',
 			'settings.theme' => '主题',
 			'settings.appearance' => '外观',
@@ -1479,7 +1472,7 @@ extension on TranslationsZh {
 			'settings.mpvDescription' => '功能更多的高级播放器，支持 ASS 字幕',
 			'settings.liveTvPlayer' => '直播电视播放器',
 			'settings.liveTvPlayerDescription' => '直播电视推荐使用 MPV。ExoPlayer 在某些设备上可能有问题。',
-			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvMpv' => 'MPV（推荐）',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.liveTvQuality' => '直播电视画质',
 			'settings.liveTvQualityDescription' => '限制直播电视的转码画质。不限制则使用服务器默认。',
@@ -1529,14 +1522,14 @@ extension on TranslationsZh {
 			'settings.autoSkip' => '自动跳过',
 			'settings.autoSkipIntro' => '自动跳过片头',
 			'settings.autoSkipIntroDescription' => '几秒钟后自动跳过片头标记',
-			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
-			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.enableExternalSubtitles' => '启用外部字幕',
+			'settings.enableExternalSubtitlesDescription' => '在播放器中显示外部字幕选项；选择后才会加载。',
 			'settings.alwaysBurnInSubtitleWhenTranscoding' => '转码时烧录字幕',
 			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => '转码时将所选字幕烧录到视频中。与 jellyfin-web 相同。',
 			'settings.enableTrickplay' => 'Enable trickplay thumbnails',
-			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
-			'settings.enableChapterImages' => 'Enable Chapter Images',
-			'settings.enableChapterImagesDescription' => 'Show thumbnail images for chapters in the chapter list.',
+			'settings.enableTrickplayDescription' => '拖动时间轴时显示预览缩略图。需要服务器上有 Trickplay 数据。',
+			'settings.enableChapterImages' => '启用章节图像',
+			'settings.enableChapterImagesDescription' => '在章节列表中显示章节缩略图。',
 			'settings.autoSkipOutro' => '自动跳过片尾',
 			'settings.autoSkipOutroDescription' => '自动跳过片尾片段',
 			'settings.autoSkipRecap' => '自动跳过回顾',
@@ -1547,8 +1540,8 @@ extension on TranslationsZh {
 			'settings.autoSkipCommercialDescription' => '自动跳过广告片段',
 			'settings.autoSkipDelay' => '自动跳过延迟',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => '自动跳过前等待 ${seconds} 秒',
-			'settings.showDownloads' => 'Show Downloads',
-			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
+			'settings.showDownloads' => '启用下载',
+			'settings.showDownloadsDescription' => '允许下载电影和节目以供离线观看。',
 			'settings.downloads' => '下载',
 			'settings.downloadLocationDescription' => '选择下载内容的存储位置',
 			'settings.downloadLocationDefault' => '默认（应用存储）',
@@ -1572,7 +1565,7 @@ extension on TranslationsZh {
 			'settings.playbackModeAuto' => '自动',
 			'settings.playbackModeAutoDirect' => '自动 - Direct',
 			'settings.playbackModeDirectPlayDescription' => '使用原文件。',
-			'settings.playbackModeDirectPlay' => 'Direct',
+			'settings.playbackModeDirectPlay' => '直接播放',
 			'settings.quality15Mbps' => '15 Mbps',
 			'settings.quality10Mbps' => '10 Mbps',
 			'settings.quality8Mbps' => '8 Mbps',
@@ -1606,19 +1599,17 @@ extension on TranslationsZh {
 			'settings.performanceLarge' => '大',
 			'settings.performanceLow' => '低',
 			'settings.performanceHigh' => '高',
-			'settings.hideSupportDevelopment' => '隐藏支持开发',
-			'settings.hideSupportDevelopmentDescription' => '在设置中隐藏支持开发部分',
 			'search.hint' => '搜索电影、系列、音乐...',
 			'search.tryDifferentTerm' => '尝试不同的搜索词',
 			'search.searchYourMedia' => '搜索媒体',
 			'search.enterTitleActorOrKeyword' => '输入标题、演员或关键词',
-			'search.categories.movies' => 'Movies',
-			'search.categories.shows' => 'Shows',
-			'search.categories.episodes' => 'Episodes',
-			'search.categories.people' => 'People',
-			'search.categories.collections' => 'Collections',
-			'search.categories.programs' => 'Programs',
-			'search.categories.channels' => 'Channels',
+			'search.categories.movies' => '电影',
+			'search.categories.shows' => '节目',
+			'search.categories.episodes' => '剧集',
+			'search.categories.people' => '人物',
+			'search.categories.collections' => '合集',
+			'search.categories.programs' => '节目',
+			'search.categories.channels' => '频道',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => '为 ${actionName} 设置快捷键',
 			'hotkeys.clearShortcut' => '清除快捷键',
 			'hotkeys.actions.playPause' => '播放/暂停',
@@ -1720,6 +1711,7 @@ extension on TranslationsZh {
 			'videoControls.unmuteButton' => '取消静音',
 			'videoControls.settingsButton' => '视频设置',
 			'videoControls.audioTrackButton' => '音轨',
+			'videoControls.tracksButton' => '音频和字幕',
 			'videoControls.subtitlesButton' => '字幕',
 			'videoControls.chaptersButton' => '章节',
 			'videoControls.versionsButton' => '视频版本',
@@ -1784,7 +1776,7 @@ extension on TranslationsZh {
 			'subtitlingStyling.borderColor' => '边框颜色',
 			'subtitlingStyling.backgroundOpacity' => '背景不透明度',
 			'subtitlingStyling.backgroundColor' => '背景颜色',
-			'subtitlingStyling.position' => 'Position',
+			'subtitlingStyling.position' => '位置',
 			'mpvConfig.title' => 'MPV 配置',
 			'mpvConfig.description' => '高级视频播放器设置',
 			'mpvConfig.properties' => '属性',
@@ -1819,8 +1811,8 @@ extension on TranslationsZh {
 			'discover.overview' => '概述',
 			'discover.cast' => '演员表',
 			'discover.moreLikeThis' => '相似推荐',
-			'discover.moviesAndShows' => 'Movies & Shows',
-			'discover.noItemsFound' => 'No items found on this server',
+			'discover.moviesAndShows' => '电影和节目',
+			'discover.noItemsFound' => '此服务器上未找到任何项目',
 			'discover.extras' => '预告片与花絮',
 			'discover.seasons' => '季数',
 			'discover.studio' => '制作公司',
@@ -1841,12 +1833,12 @@ extension on TranslationsZh {
 			'errors.invalidToken' => '令牌无效',
 			'errors.failedToVerifyToken' => ({required Object error}) => '无法验证令牌: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => '无法切换到 ${displayName}',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.title' => '媒体库',
 			'libraries.scanLibraryFiles' => '扫描媒体库文件',
 			'libraries.scanLibrary' => '扫描媒体库',
 			'libraries.analyze' => '分析',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzeLibrary' => '分析媒体库',
 			'libraries.refreshMetadata' => '刷新元数据',
 			'libraries.emptyTrash' => '清空回收站',
@@ -1925,7 +1917,7 @@ extension on TranslationsZh {
 			'liveTv.recordings' => '录制',
 			'liveTv.subscriptions' => '录制规则',
 			'liveTv.scheduled' => '已计划',
-			'liveTv.seriesTimers' => 'Series Timers',
+			'liveTv.seriesTimers' => '系列定时器',
 			'liveTv.noChannels' => '没有可用的频道',
 			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => '没有服务器配置了DVR',
@@ -1939,26 +1931,26 @@ extension on TranslationsZh {
 			'liveTv.deleteSubscriptionConfirm' => '确定要删除此录制规则吗？',
 			'liveTv.subscriptionDeleted' => '录制规则已删除',
 			'liveTv.noPrograms' => '没有可用的节目数据',
-			'liveTv.noRecordings' => 'No recordings',
-			'liveTv.noScheduled' => 'No scheduled recordings',
-			'liveTv.noSubscriptions' => 'No series timers',
-			'liveTv.cancelTimer' => 'Cancel Recording',
-			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
-			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.noRecordings' => '无录制',
+			'liveTv.noScheduled' => '无预约录制',
+			'liveTv.noSubscriptions' => '无系列定时器',
+			'liveTv.cancelTimer' => '取消录制',
+			'liveTv.cancelTimerConfirm' => '确定要取消此预约录制吗？',
+			'liveTv.timerCancelled' => '录制已取消',
 			'liveTv.editSeriesTimer' => '编辑',
-			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
-			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
-			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
-			'liveTv.seriesTimerUpdated' => 'Series timer updated',
-			'liveTv.recordNewOnly' => 'Record new episodes only',
-			'liveTv.keepUpTo' => 'Keep up to',
-			'liveTv.keepAll' => 'Keep all',
+			'liveTv.deleteSeriesTimer' => '删除系列定时器',
+			'liveTv.deleteSeriesTimerConfirm' => '确定要删除此系列定时器吗？所有关联的预约录制也将被移除。',
+			'liveTv.seriesTimerDeleted' => '系列定时器已删除',
+			'liveTv.seriesTimerUpdated' => '系列定时器已更新',
+			'liveTv.recordNewOnly' => '仅录制新剧集',
+			'liveTv.keepUpTo' => '最多保留',
+			'liveTv.keepAll' => '全部保留',
 			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
-			'liveTv.prePadding' => 'Start recording early',
-			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.prePadding' => '提前开始录制',
+			'liveTv.postPadding' => '结束后继续录制',
 			'liveTv.minutes' => ({required Object count}) => '${count} min',
-			'liveTv.days' => 'Days',
-			'liveTv.priority' => 'Priority',
+			'liveTv.days' => '天',
+			'liveTv.priority' => '优先级',
 			'liveTv.channelNumber' => ({required Object number}) => '频道 ${number}',
 			'liveTv.live' => '直播',
 			'liveTv.hd' => '高清',
@@ -1974,21 +1966,21 @@ extension on TranslationsZh {
 			'liveTv.daytime' => '白天',
 			'liveTv.evening' => '晚上',
 			'liveTv.lateNight' => '深夜',
-			'liveTv.programs' => 'Programs',
-			'liveTv.onNow' => 'On Now',
-			'liveTv.upcomingShows' => 'Shows',
-			'liveTv.upcomingMovies' => 'Movies',
-			'liveTv.upcomingSports' => 'Sports',
-			'liveTv.forKids' => 'For Kids',
-			'liveTv.upcomingNews' => 'News',
+			'liveTv.programs' => '节目',
+			'liveTv.onNow' => '正在播出',
+			'liveTv.upcomingShows' => '剧集',
+			'liveTv.upcomingMovies' => '电影',
+			'liveTv.upcomingSports' => '体育',
+			'liveTv.forKids' => '儿童',
+			'liveTv.upcomingNews' => '新闻',
 			'liveTv.watchChannel' => '观看频道',
-			'liveTv.recentlyAdded' => 'Recently Added',
-			'liveTv.recordingScheduled' => 'Recording scheduled',
-			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
-			'liveTv.recordingFailed' => 'Failed to schedule recording',
-			'liveTv.cancelSeries' => 'Cancel Series',
-			'liveTv.stopRecording' => 'Stop Recording',
-			'liveTv.doNotRecord' => 'Do Not Record',
+			'liveTv.recentlyAdded' => '最近添加',
+			'liveTv.recordingScheduled' => '已预约录制',
+			'liveTv.seriesRecordingScheduled' => '已预约系列录制',
+			'liveTv.recordingFailed' => '预约录制失败',
+			'liveTv.cancelSeries' => '取消系列',
+			'liveTv.stopRecording' => '停止录制',
+			'liveTv.doNotRecord' => '不录制',
 			'downloads.title' => '下载',
 			'downloads.manage' => '管理',
 			'downloads.tvShows' => '电视剧',
@@ -2064,7 +2056,7 @@ extension on TranslationsZh {
 			'shaders.qualityFast' => '快速',
 			'shaders.qualityHQ' => '高质量',
 			'shaders.mode' => '模式',
-			'companionRemote.title' => 'Companion Remote',
+			'companionRemote.title' => '伴侣遥控器',
 			'companionRemote.connectToDevice' => '连接到设备',
 			'companionRemote.hostRemoteSession' => '创建远程会话',
 			'companionRemote.controlThisDevice' => '使用手机控制此设备',

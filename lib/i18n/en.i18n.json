@@ -94,9 +94,6 @@
   },
   "settings": {
     "title": "Settings",
-    "supportOptionalCaption": "Optional — app stays free",
-    "supportTierSupport": "Support development",
-    "supportTipThankYou": "Thank you for your support!",
     "language": "Language",
     "theme": "Theme",
     "appearance": "Appearance",
@@ -285,9 +282,7 @@
     "performanceMedium": "Medium",
     "performanceLarge": "Large",
     "performanceLow": "Low",
-    "performanceHigh": "High",
-    "hideSupportDevelopment": "Hide Support Development",
-    "hideSupportDevelopmentDescription": "Hide the Support Development section in Settings"
+    "performanceHigh": "High"
   },
   "search": {
     "hint": "Search movies, shows, music...",
@@ -420,6 +415,7 @@
     "unmuteButton": "Unmute",
     "settingsButton": "Playback settings",
     "audioTrackButton": "Audio tracks",
+    "tracksButton": "Audio & Subtitles",
     "subtitlesButton": "Subtitles",
     "chaptersButton": "Chapters",
     "versionsButton": "Video versions",

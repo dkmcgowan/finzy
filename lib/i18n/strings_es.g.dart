@@ -133,11 +133,11 @@ class _TranslationsCommonEs implements TranslationsCommonEn {
 	@override String get retry => 'Reintentar';
 	@override String get logout => 'Cerrar sesión';
 	@override String get quickConnect => 'Quick Connect';
-	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
-	@override String get quickConnectCode => 'Quick Connect Code';
-	@override String get authorize => 'Authorize';
-	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
-	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
+	@override String get quickConnectDescription => 'Para iniciar sesión con Quick Connect, pulsa el botón «Quick Connect» en el dispositivo desde el que inicias sesión e introduce el código que aparece abajo.';
+	@override String get quickConnectCode => 'Código Quick Connect';
+	@override String get authorize => 'Autorizar';
+	@override String get quickConnectSuccess => 'Quick Connect autorizado correctamente';
+	@override String get quickConnectError => 'No se pudo autorizar el código Quick Connect';
 	@override String get unknown => 'Desconocido';
 	@override String get refresh => 'Actualizar';
 	@override String get yes => 'Sí';
@@ -159,7 +159,7 @@ class _TranslationsCommonEs implements TranslationsCommonEn {
 	@override String get settings => 'Ajustes';
 	@override String get mute => 'Silencio';
 	@override String get ok => 'OK';
-	@override String get none => 'None';
+	@override String get none => 'Ninguno';
 	@override String get loading => 'Cargando...';
 	@override String get reconnect => 'Reconectar';
 	@override String get goOffline => 'Ir sin conexión';
@@ -183,7 +183,7 @@ class _TranslationsScreensEs implements TranslationsScreensEn {
 	@override String get switchProfile => 'Cambiar Perfil';
 	@override String get subtitleStyling => 'Estilo de Subtítulos';
 	@override String get mpvConfig => 'Configuración de MPV';
-	@override String get logs => 'Logs';
+	@override String get logs => 'Registros';
 }
 
 // Path: update
@@ -211,9 +211,6 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Configuración';
-	@override String get supportOptionalCaption => 'Opcional — la app sigue siendo gratis';
-	@override String get supportTierSupport => 'Apoyar el desarrollo';
-	@override String get supportTipThankYou => '¡Gracias por tu apoyo!';
 	@override String get language => 'Idioma';
 	@override String get theme => 'Tema';
 	@override String get appearance => 'Apariencia';
@@ -277,7 +274,7 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get mpvDescription => 'Reproductor avanzado con más funciones y soporte de subtítulos ASS';
 	@override String get liveTvPlayer => 'Reproductor de TV en vivo';
 	@override String get liveTvPlayerDescription => 'MPV recomendado para TV en vivo. ExoPlayer puede tener problemas en algunos dispositivos.';
-	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvMpv => 'MPV (recomendado)';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get liveTvQuality => 'Calidad de TV en vivo';
 	@override String get liveTvQualityDescription => 'Limitar la calidad de transcodificación para TV en vivo. Sin límite usa el predeterminado del servidor.';
@@ -327,14 +324,14 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get autoSkip => 'Salto automático';
 	@override String get autoSkipIntro => 'Saltar Intro automáticamente';
 	@override String get autoSkipIntroDescription => 'Saltar automáticamente los marcadores de intro después de unos segundos';
-	@override String get enableExternalSubtitles => 'Enable External Subtitles';
-	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get enableExternalSubtitles => 'Activar subtítulos externos';
+	@override String get enableExternalSubtitlesDescription => 'Muestra opciones de subtítulos externos en el reproductor; se cargan al seleccionar una.';
 	@override String get alwaysBurnInSubtitleWhenTranscoding => 'Quemar subtítulos al transcodificar';
 	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => 'Al transcodificar, quemar el subtítulo seleccionado en el video. Igual que jellyfin-web.';
-	@override String get enableTrickplay => 'Enable Trickplay Thumbnails';
-	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
-	@override String get enableChapterImages => 'Enable Chapter Images';
-	@override String get enableChapterImagesDescription => 'Show thumbnail images for chapters in the chapter list.';
+	@override String get enableTrickplay => 'Activar miniaturas Trickplay';
+	@override String get enableTrickplayDescription => 'Muestra miniaturas en la línea de tiempo al buscar. Requiere datos Trickplay en el servidor.';
+	@override String get enableChapterImages => 'Activar imágenes de capítulos';
+	@override String get enableChapterImagesDescription => 'Muestra miniaturas de capítulos en la lista de capítulos.';
 	@override String get autoSkipOutro => 'Saltar Outro Automáticamente';
 	@override String get autoSkipOutroDescription => 'Saltar automáticamente los segmentos de outro';
 	@override String get autoSkipRecap => 'Saltar Resumen Automáticamente';
@@ -345,8 +342,8 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => 'Saltar automáticamente los segmentos de anuncios';
 	@override String get autoSkipDelay => 'Retraso de Salto automático';
 	@override String autoSkipDelayDescription({required Object seconds}) => 'Esperar ${seconds} segundos antes de saltar automáticamente';
-	@override String get showDownloads => 'Show Downloads';
-	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
+	@override String get showDownloads => 'Activar descargas';
+	@override String get showDownloadsDescription => 'Permite descargar películas y series para ver sin conexión.';
 	@override String get downloads => 'Descargas';
 	@override String get downloadLocationDescription => 'Elegir dónde almacenar el contenido descargado';
 	@override String get downloadLocationDefault => 'Predeterminado (Almacenamiento de la App)';
@@ -368,9 +365,9 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get downloadQualityOriginalDescription => 'Usa el archivo original.';
 	@override String get playbackModeAutoDescription => 'Deja que el servidor decida.';
 	@override String get playbackModeAuto => 'Auto';
-	@override String get playbackModeAutoDirect => 'Auto - Direct';
+	@override String get playbackModeAutoDirect => 'Auto - Directo';
 	@override String get playbackModeDirectPlayDescription => 'Usa el archivo original.';
-	@override String get playbackModeDirectPlay => 'Direct';
+	@override String get playbackModeDirectPlay => 'Directo';
 	@override String get quality15Mbps => '15 Mbps';
 	@override String get quality10Mbps => '10 Mbps';
 	@override String get quality8Mbps => '8 Mbps';
@@ -404,8 +401,6 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get performanceLarge => 'Grande';
 	@override String get performanceLow => 'Bajo';
 	@override String get performanceHigh => 'Alto';
-	@override String get hideSupportDevelopment => 'Ocultar Apoyar el desarrollo';
-	@override String get hideSupportDevelopmentDescription => 'Ocultar la sección Apoyar el desarrollo en Ajustes';
 }
 
 // Path: search
@@ -544,7 +539,7 @@ class _TranslationsVideoControlsEs implements TranslationsVideoControlsEn {
 	@override String playsLater({required Object label}) => '${label} se reproduce más tarde';
 	@override String playsEarlier({required Object label}) => '${label} se reproduce antes';
 	@override String get noOffset => 'Sin desfase';
-	@override String get letterbox => 'Letterbox';
+	@override String get letterbox => 'Bandas negras';
 	@override String get fillScreen => 'Llenar pantalla';
 	@override String get stretch => 'Estirar';
 	@override String get lockRotation => 'Bloquear rotación';
@@ -566,6 +561,7 @@ class _TranslationsVideoControlsEs implements TranslationsVideoControlsEn {
 	@override String get unmuteButton => 'Activar sonido';
 	@override String get settingsButton => 'Ajustes de video';
 	@override String get audioTrackButton => 'Pistas de audio';
+	@override String get tracksButton => 'Audio y Subtítulos';
 	@override String get subtitlesButton => 'Subtítulos';
 	@override String get chaptersButton => 'Capítulos';
 	@override String get versionsButton => 'Versiones de video';
@@ -653,7 +649,7 @@ class _TranslationsSubtitlingStylingEs implements TranslationsSubtitlingStylingE
 	@override String get borderColor => 'Color de Borde';
 	@override String get backgroundOpacity => 'Opacidad de Fondo';
 	@override String get backgroundColor => 'Color de Fondo';
-	@override String get position => 'Position';
+	@override String get position => 'Posición';
 }
 
 // Path: mpvConfig
@@ -715,8 +711,8 @@ class _TranslationsDiscoverEs implements TranslationsDiscoverEn {
 	@override String get overview => 'Resumen';
 	@override String get cast => 'Reparto';
 	@override String get moreLikeThis => 'Más como esto';
-	@override String get moviesAndShows => 'Movies & Shows';
-	@override String get noItemsFound => 'No items found on this server';
+	@override String get moviesAndShows => 'Películas y series';
+	@override String get noItemsFound => 'No se encontraron elementos en este servidor';
 	@override String get extras => 'Tráilers y Extras';
 	@override String get seasons => 'Temporadas';
 	@override String get studio => 'Estudio';
@@ -888,7 +884,7 @@ class _TranslationsLiveTvEs implements TranslationsLiveTvEn {
 	@override String get recordings => 'Grabaciones';
 	@override String get subscriptions => 'Reglas de grabación';
 	@override String get scheduled => 'Programadas';
-	@override String get seriesTimers => 'Series Timers';
+	@override String get seriesTimers => 'Temporizadores de série';
 	@override String get noChannels => 'No hay canales disponibles';
 	@override String get dvr => 'DVR';
 	@override String get noDvr => 'No hay DVR configurado en ningún servidor';
@@ -902,26 +898,26 @@ class _TranslationsLiveTvEs implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => '¿Estás seguro de que quieres eliminar esta regla de grabación?';
 	@override String get subscriptionDeleted => 'Regla de grabación eliminada';
 	@override String get noPrograms => 'No hay datos de programación disponibles';
-	@override String get noRecordings => 'No recordings';
-	@override String get noScheduled => 'No scheduled recordings';
-	@override String get noSubscriptions => 'No series timers';
-	@override String get cancelTimer => 'Cancel Recording';
-	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
-	@override String get timerCancelled => 'Recording cancelled';
+	@override String get noRecordings => 'Sin grabaciones';
+	@override String get noScheduled => 'Sin grabaciones programadas';
+	@override String get noSubscriptions => 'Sin temporizadores de serie';
+	@override String get cancelTimer => 'Cancelar grabación';
+	@override String get cancelTimerConfirm => '¿Seguro que quieres cancelar esta grabación programada?';
+	@override String get timerCancelled => 'Grabación cancelada';
 	@override String get editSeriesTimer => 'Editar';
-	@override String get deleteSeriesTimer => 'Delete Series Timer';
-	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
-	@override String get seriesTimerDeleted => 'Series timer deleted';
-	@override String get seriesTimerUpdated => 'Series timer updated';
-	@override String get recordNewOnly => 'Record new episodes only';
-	@override String get keepUpTo => 'Keep up to';
-	@override String get keepAll => 'Keep all';
+	@override String get deleteSeriesTimer => 'Eliminar temporizador de serie';
+	@override String get deleteSeriesTimerConfirm => '¿Seguro que quieres eliminar este temporizador de serie? También se eliminarán todas las grabaciones programadas asociadas.';
+	@override String get seriesTimerDeleted => 'Temporizador de serie eliminado';
+	@override String get seriesTimerUpdated => 'Temporizador de serie actualizado';
+	@override String get recordNewOnly => 'Grabar solo episodios nuevos';
+	@override String get keepUpTo => 'Conservar hasta';
+	@override String get keepAll => 'Conservar todo';
 	@override String keepEpisodes({required Object count}) => '${count} episodes';
-	@override String get prePadding => 'Start recording early';
-	@override String get postPadding => 'Continue recording after';
+	@override String get prePadding => 'Empezar a grabar antes';
+	@override String get postPadding => 'Seguir grabando después';
 	@override String minutes({required Object count}) => '${count} min';
-	@override String get days => 'Days';
-	@override String get priority => 'Priority';
+	@override String get days => 'Días';
+	@override String get priority => 'Prioridad';
 	@override String channelNumber({required Object number}) => 'Canal ${number}';
 	@override String get live => 'EN VIVO';
 	@override String get hd => 'HD';
@@ -937,21 +933,21 @@ class _TranslationsLiveTvEs implements TranslationsLiveTvEn {
 	@override String get daytime => 'Día';
 	@override String get evening => 'Noche';
 	@override String get lateNight => 'Trasnoche';
-	@override String get programs => 'Programs';
-	@override String get onNow => 'On Now';
-	@override String get upcomingShows => 'Shows';
-	@override String get upcomingMovies => 'Movies';
-	@override String get upcomingSports => 'Sports';
-	@override String get forKids => 'For Kids';
-	@override String get upcomingNews => 'News';
+	@override String get programs => 'Programas';
+	@override String get onNow => 'En emisión';
+	@override String get upcomingShows => 'Series';
+	@override String get upcomingMovies => 'Películas';
+	@override String get upcomingSports => 'Deportes';
+	@override String get forKids => 'Para niños';
+	@override String get upcomingNews => 'Noticias';
 	@override String get watchChannel => 'Ver canal';
-	@override String get recentlyAdded => 'Recently Added';
-	@override String get recordingScheduled => 'Recording scheduled';
-	@override String get seriesRecordingScheduled => 'Series recording scheduled';
-	@override String get recordingFailed => 'Failed to schedule recording';
-	@override String get cancelSeries => 'Cancel Series';
-	@override String get stopRecording => 'Stop Recording';
-	@override String get doNotRecord => 'Do Not Record';
+	@override String get recentlyAdded => 'Añadido recientemente';
+	@override String get recordingScheduled => 'Grabación programada';
+	@override String get seriesRecordingScheduled => 'Grabación de serie programada';
+	@override String get recordingFailed => 'No se pudo programar la grabación';
+	@override String get cancelSeries => 'Cancelar serie';
+	@override String get stopRecording => 'Detener grabación';
+	@override String get doNotRecord => 'No grabar';
 }
 
 // Path: collections
@@ -1057,7 +1053,7 @@ class _TranslationsShadersEs implements TranslationsShadersEn {
 	final TranslationsEs _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Shaders';
+	@override String get title => 'Sombreadores';
 	@override String get noShaderDescription => 'Sin mejora de video';
 	@override String get nvscalerDescription => 'Escalado de imagen NVIDIA para un video más nítido';
 	@override String get qualityFast => 'Rápido';
@@ -1072,7 +1068,7 @@ class _TranslationsCompanionRemoteEs implements TranslationsCompanionRemoteEn {
 	final TranslationsEs _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Companion Remote';
+	@override String get title => 'Control remoto compañero';
 	@override String get connectToDevice => 'Conectar a dispositivo';
 	@override String get hostRemoteSession => 'Iniciar sesión remota';
 	@override String get controlThisDevice => 'Controla este dispositivo con tu teléfono';
@@ -1134,13 +1130,13 @@ class _TranslationsSearchCategoriesEs implements TranslationsSearchCategoriesEn 
 	final TranslationsEs _root; // ignore: unused_field
 
 	// Translations
-	@override String get movies => 'Movies';
-	@override String get shows => 'Shows';
-	@override String get episodes => 'Episodes';
-	@override String get people => 'People';
-	@override String get collections => 'Collections';
-	@override String get programs => 'Programs';
-	@override String get channels => 'Channels';
+	@override String get movies => 'Películas';
+	@override String get shows => 'Series';
+	@override String get episodes => 'Episodios';
+	@override String get people => 'Personas';
+	@override String get collections => 'Colecciones';
+	@override String get programs => 'Programas';
+	@override String get channels => 'Canales';
 }
 
 // Path: hotkeys.actions
@@ -1362,11 +1358,11 @@ extension on TranslationsEs {
 			'common.retry' => 'Reintentar',
 			'common.logout' => 'Cerrar sesión',
 			'common.quickConnect' => 'Quick Connect',
-			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
-			'common.quickConnectCode' => 'Quick Connect Code',
-			'common.authorize' => 'Authorize',
-			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
-			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
+			'common.quickConnectDescription' => 'Para iniciar sesión con Quick Connect, pulsa el botón «Quick Connect» en el dispositivo desde el que inicias sesión e introduce el código que aparece abajo.',
+			'common.quickConnectCode' => 'Código Quick Connect',
+			'common.authorize' => 'Autorizar',
+			'common.quickConnectSuccess' => 'Quick Connect autorizado correctamente',
+			'common.quickConnectError' => 'No se pudo autorizar el código Quick Connect',
 			'common.unknown' => 'Desconocido',
 			'common.refresh' => 'Actualizar',
 			'common.yes' => 'Sí',
@@ -1388,7 +1384,7 @@ extension on TranslationsEs {
 			'common.settings' => 'Ajustes',
 			'common.mute' => 'Silencio',
 			'common.ok' => 'OK',
-			'common.none' => 'None',
+			'common.none' => 'Ninguno',
 			'common.loading' => 'Cargando...',
 			'common.reconnect' => 'Reconectar',
 			'common.goOffline' => 'Ir sin conexión',
@@ -1403,7 +1399,7 @@ extension on TranslationsEs {
 			'screens.switchProfile' => 'Cambiar Perfil',
 			'screens.subtitleStyling' => 'Estilo de Subtítulos',
 			'screens.mpvConfig' => 'Configuración de MPV',
-			'screens.logs' => 'Logs',
+			'screens.logs' => 'Registros',
 			'update.available' => 'Actualización disponible',
 			'update.versionAvailable' => ({required Object version}) => 'Versión ${version} disponible',
 			'update.currentVersion' => ({required Object version}) => 'Actual: ${version}',
@@ -1413,9 +1409,6 @@ extension on TranslationsEs {
 			'update.latestVersion' => 'Ya estás en la última versión',
 			'update.checkFailed' => 'Error al buscar actualizaciones',
 			'settings.title' => 'Configuración',
-			'settings.supportOptionalCaption' => 'Opcional — la app sigue siendo gratis',
-			'settings.supportTierSupport' => 'Apoyar el desarrollo',
-			'settings.supportTipThankYou' => '¡Gracias por tu apoyo!',
 			'settings.language' => 'Idioma',
 			'settings.theme' => 'Tema',
 			'settings.appearance' => 'Apariencia',
@@ -1479,7 +1472,7 @@ extension on TranslationsEs {
 			'settings.mpvDescription' => 'Reproductor avanzado con más funciones y soporte de subtítulos ASS',
 			'settings.liveTvPlayer' => 'Reproductor de TV en vivo',
 			'settings.liveTvPlayerDescription' => 'MPV recomendado para TV en vivo. ExoPlayer puede tener problemas en algunos dispositivos.',
-			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvMpv' => 'MPV (recomendado)',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.liveTvQuality' => 'Calidad de TV en vivo',
 			'settings.liveTvQualityDescription' => 'Limitar la calidad de transcodificación para TV en vivo. Sin límite usa el predeterminado del servidor.',
@@ -1529,14 +1522,14 @@ extension on TranslationsEs {
 			'settings.autoSkip' => 'Salto automático',
 			'settings.autoSkipIntro' => 'Saltar Intro automáticamente',
 			'settings.autoSkipIntroDescription' => 'Saltar automáticamente los marcadores de intro después de unos segundos',
-			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
-			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.enableExternalSubtitles' => 'Activar subtítulos externos',
+			'settings.enableExternalSubtitlesDescription' => 'Muestra opciones de subtítulos externos en el reproductor; se cargan al seleccionar una.',
 			'settings.alwaysBurnInSubtitleWhenTranscoding' => 'Quemar subtítulos al transcodificar',
 			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => 'Al transcodificar, quemar el subtítulo seleccionado en el video. Igual que jellyfin-web.',
-			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
-			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
-			'settings.enableChapterImages' => 'Enable Chapter Images',
-			'settings.enableChapterImagesDescription' => 'Show thumbnail images for chapters in the chapter list.',
+			'settings.enableTrickplay' => 'Activar miniaturas Trickplay',
+			'settings.enableTrickplayDescription' => 'Muestra miniaturas en la línea de tiempo al buscar. Requiere datos Trickplay en el servidor.',
+			'settings.enableChapterImages' => 'Activar imágenes de capítulos',
+			'settings.enableChapterImagesDescription' => 'Muestra miniaturas de capítulos en la lista de capítulos.',
 			'settings.autoSkipOutro' => 'Saltar Outro Automáticamente',
 			'settings.autoSkipOutroDescription' => 'Saltar automáticamente los segmentos de outro',
 			'settings.autoSkipRecap' => 'Saltar Resumen Automáticamente',
@@ -1547,8 +1540,8 @@ extension on TranslationsEs {
 			'settings.autoSkipCommercialDescription' => 'Saltar automáticamente los segmentos de anuncios',
 			'settings.autoSkipDelay' => 'Retraso de Salto automático',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => 'Esperar ${seconds} segundos antes de saltar automáticamente',
-			'settings.showDownloads' => 'Show Downloads',
-			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
+			'settings.showDownloads' => 'Activar descargas',
+			'settings.showDownloadsDescription' => 'Permite descargar películas y series para ver sin conexión.',
 			'settings.downloads' => 'Descargas',
 			'settings.downloadLocationDescription' => 'Elegir dónde almacenar el contenido descargado',
 			'settings.downloadLocationDefault' => 'Predeterminado (Almacenamiento de la App)',
@@ -1570,9 +1563,9 @@ extension on TranslationsEs {
 			'settings.downloadQualityOriginalDescription' => 'Usa el archivo original.',
 			'settings.playbackModeAutoDescription' => 'Deja que el servidor decida.',
 			'settings.playbackModeAuto' => 'Auto',
-			'settings.playbackModeAutoDirect' => 'Auto - Direct',
+			'settings.playbackModeAutoDirect' => 'Auto - Directo',
 			'settings.playbackModeDirectPlayDescription' => 'Usa el archivo original.',
-			'settings.playbackModeDirectPlay' => 'Direct',
+			'settings.playbackModeDirectPlay' => 'Directo',
 			'settings.quality15Mbps' => '15 Mbps',
 			'settings.quality10Mbps' => '10 Mbps',
 			'settings.quality8Mbps' => '8 Mbps',
@@ -1606,19 +1599,17 @@ extension on TranslationsEs {
 			'settings.performanceLarge' => 'Grande',
 			'settings.performanceLow' => 'Bajo',
 			'settings.performanceHigh' => 'Alto',
-			'settings.hideSupportDevelopment' => 'Ocultar Apoyar el desarrollo',
-			'settings.hideSupportDevelopmentDescription' => 'Ocultar la sección Apoyar el desarrollo en Ajustes',
 			'search.hint' => 'Buscar películas, series, música...',
 			'search.tryDifferentTerm' => 'Prueba con un término de búsqueda diferente',
 			'search.searchYourMedia' => 'Busca en tu contenido',
 			'search.enterTitleActorOrKeyword' => 'Introduce un título, actor o palabra clave',
-			'search.categories.movies' => 'Movies',
-			'search.categories.shows' => 'Shows',
-			'search.categories.episodes' => 'Episodes',
-			'search.categories.people' => 'People',
-			'search.categories.collections' => 'Collections',
-			'search.categories.programs' => 'Programs',
-			'search.categories.channels' => 'Channels',
+			'search.categories.movies' => 'Películas',
+			'search.categories.shows' => 'Series',
+			'search.categories.episodes' => 'Episodios',
+			'search.categories.people' => 'Personas',
+			'search.categories.collections' => 'Colecciones',
+			'search.categories.programs' => 'Programas',
+			'search.categories.channels' => 'Canales',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => 'Establecer atajo para ${actionName}',
 			'hotkeys.clearShortcut' => 'Borrar atajo',
 			'hotkeys.actions.playPause' => 'Reproducir/Pausar',
@@ -1698,7 +1689,7 @@ extension on TranslationsEs {
 			'videoControls.playsLater' => ({required Object label}) => '${label} se reproduce más tarde',
 			'videoControls.playsEarlier' => ({required Object label}) => '${label} se reproduce antes',
 			'videoControls.noOffset' => 'Sin desfase',
-			'videoControls.letterbox' => 'Letterbox',
+			'videoControls.letterbox' => 'Bandas negras',
 			'videoControls.fillScreen' => 'Llenar pantalla',
 			'videoControls.stretch' => 'Estirar',
 			'videoControls.lockRotation' => 'Bloquear rotación',
@@ -1720,6 +1711,7 @@ extension on TranslationsEs {
 			'videoControls.unmuteButton' => 'Activar sonido',
 			'videoControls.settingsButton' => 'Ajustes de video',
 			'videoControls.audioTrackButton' => 'Pistas de audio',
+			'videoControls.tracksButton' => 'Audio y Subtítulos',
 			'videoControls.subtitlesButton' => 'Subtítulos',
 			'videoControls.chaptersButton' => 'Capítulos',
 			'videoControls.versionsButton' => 'Versiones de video',
@@ -1784,7 +1776,7 @@ extension on TranslationsEs {
 			'subtitlingStyling.borderColor' => 'Color de Borde',
 			'subtitlingStyling.backgroundOpacity' => 'Opacidad de Fondo',
 			'subtitlingStyling.backgroundColor' => 'Color de Fondo',
-			'subtitlingStyling.position' => 'Position',
+			'subtitlingStyling.position' => 'Posición',
 			'mpvConfig.title' => 'Configuración de MPV',
 			'mpvConfig.description' => 'Ajustes avanzados del reproductor de video',
 			'mpvConfig.properties' => 'Propiedades',
@@ -1819,8 +1811,8 @@ extension on TranslationsEs {
 			'discover.overview' => 'Resumen',
 			'discover.cast' => 'Reparto',
 			'discover.moreLikeThis' => 'Más como esto',
-			'discover.moviesAndShows' => 'Movies & Shows',
-			'discover.noItemsFound' => 'No items found on this server',
+			'discover.moviesAndShows' => 'Películas y series',
+			'discover.noItemsFound' => 'No se encontraron elementos en este servidor',
 			'discover.extras' => 'Tráilers y Extras',
 			'discover.seasons' => 'Temporadas',
 			'discover.studio' => 'Estudio',
@@ -1841,12 +1833,12 @@ extension on TranslationsEs {
 			'errors.invalidToken' => 'Token no válido',
 			'errors.failedToVerifyToken' => ({required Object error}) => 'Error al verificar el token: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => 'Error al cambiar al perfil ${displayName}',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.title' => 'Bibliotecas',
 			'libraries.scanLibraryFiles' => 'Escanear Archivos de la Biblioteca',
 			'libraries.scanLibrary' => 'Escanear Biblioteca',
 			'libraries.analyze' => 'Analizar',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzeLibrary' => 'Analizar Biblioteca',
 			'libraries.refreshMetadata' => 'Actualizar Metadatos',
 			'libraries.emptyTrash' => 'Vaciar Papelera',
@@ -1925,7 +1917,7 @@ extension on TranslationsEs {
 			'liveTv.recordings' => 'Grabaciones',
 			'liveTv.subscriptions' => 'Reglas de grabación',
 			'liveTv.scheduled' => 'Programadas',
-			'liveTv.seriesTimers' => 'Series Timers',
+			'liveTv.seriesTimers' => 'Temporizadores de série',
 			'liveTv.noChannels' => 'No hay canales disponibles',
 			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => 'No hay DVR configurado en ningún servidor',
@@ -1939,26 +1931,26 @@ extension on TranslationsEs {
 			'liveTv.deleteSubscriptionConfirm' => '¿Estás seguro de que quieres eliminar esta regla de grabación?',
 			'liveTv.subscriptionDeleted' => 'Regla de grabación eliminada',
 			'liveTv.noPrograms' => 'No hay datos de programación disponibles',
-			'liveTv.noRecordings' => 'No recordings',
-			'liveTv.noScheduled' => 'No scheduled recordings',
-			'liveTv.noSubscriptions' => 'No series timers',
-			'liveTv.cancelTimer' => 'Cancel Recording',
-			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
-			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.noRecordings' => 'Sin grabaciones',
+			'liveTv.noScheduled' => 'Sin grabaciones programadas',
+			'liveTv.noSubscriptions' => 'Sin temporizadores de serie',
+			'liveTv.cancelTimer' => 'Cancelar grabación',
+			'liveTv.cancelTimerConfirm' => '¿Seguro que quieres cancelar esta grabación programada?',
+			'liveTv.timerCancelled' => 'Grabación cancelada',
 			'liveTv.editSeriesTimer' => 'Editar',
-			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
-			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
-			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
-			'liveTv.seriesTimerUpdated' => 'Series timer updated',
-			'liveTv.recordNewOnly' => 'Record new episodes only',
-			'liveTv.keepUpTo' => 'Keep up to',
-			'liveTv.keepAll' => 'Keep all',
+			'liveTv.deleteSeriesTimer' => 'Eliminar temporizador de serie',
+			'liveTv.deleteSeriesTimerConfirm' => '¿Seguro que quieres eliminar este temporizador de serie? También se eliminarán todas las grabaciones programadas asociadas.',
+			'liveTv.seriesTimerDeleted' => 'Temporizador de serie eliminado',
+			'liveTv.seriesTimerUpdated' => 'Temporizador de serie actualizado',
+			'liveTv.recordNewOnly' => 'Grabar solo episodios nuevos',
+			'liveTv.keepUpTo' => 'Conservar hasta',
+			'liveTv.keepAll' => 'Conservar todo',
 			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
-			'liveTv.prePadding' => 'Start recording early',
-			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.prePadding' => 'Empezar a grabar antes',
+			'liveTv.postPadding' => 'Seguir grabando después',
 			'liveTv.minutes' => ({required Object count}) => '${count} min',
-			'liveTv.days' => 'Days',
-			'liveTv.priority' => 'Priority',
+			'liveTv.days' => 'Días',
+			'liveTv.priority' => 'Prioridad',
 			'liveTv.channelNumber' => ({required Object number}) => 'Canal ${number}',
 			'liveTv.live' => 'EN VIVO',
 			'liveTv.hd' => 'HD',
@@ -1974,21 +1966,21 @@ extension on TranslationsEs {
 			'liveTv.daytime' => 'Día',
 			'liveTv.evening' => 'Noche',
 			'liveTv.lateNight' => 'Trasnoche',
-			'liveTv.programs' => 'Programs',
-			'liveTv.onNow' => 'On Now',
-			'liveTv.upcomingShows' => 'Shows',
-			'liveTv.upcomingMovies' => 'Movies',
-			'liveTv.upcomingSports' => 'Sports',
-			'liveTv.forKids' => 'For Kids',
-			'liveTv.upcomingNews' => 'News',
+			'liveTv.programs' => 'Programas',
+			'liveTv.onNow' => 'En emisión',
+			'liveTv.upcomingShows' => 'Series',
+			'liveTv.upcomingMovies' => 'Películas',
+			'liveTv.upcomingSports' => 'Deportes',
+			'liveTv.forKids' => 'Para niños',
+			'liveTv.upcomingNews' => 'Noticias',
 			'liveTv.watchChannel' => 'Ver canal',
-			'liveTv.recentlyAdded' => 'Recently Added',
-			'liveTv.recordingScheduled' => 'Recording scheduled',
-			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
-			'liveTv.recordingFailed' => 'Failed to schedule recording',
-			'liveTv.cancelSeries' => 'Cancel Series',
-			'liveTv.stopRecording' => 'Stop Recording',
-			'liveTv.doNotRecord' => 'Do Not Record',
+			'liveTv.recentlyAdded' => 'Añadido recientemente',
+			'liveTv.recordingScheduled' => 'Grabación programada',
+			'liveTv.seriesRecordingScheduled' => 'Grabación de serie programada',
+			'liveTv.recordingFailed' => 'No se pudo programar la grabación',
+			'liveTv.cancelSeries' => 'Cancelar serie',
+			'liveTv.stopRecording' => 'Detener grabación',
+			'liveTv.doNotRecord' => 'No grabar',
 			'collections.title' => 'Colecciones',
 			'collections.collection' => 'Colección',
 			'collections.addToCollection' => 'Añadir a colección',
@@ -2058,13 +2050,13 @@ extension on TranslationsEs {
 			'downloads.pauseAll' => 'Pausar todo',
 			'downloads.resumeAll' => 'Reanudar todo',
 			'downloads.deleteAll' => 'Eliminar todo',
-			'shaders.title' => 'Shaders',
+			'shaders.title' => 'Sombreadores',
 			'shaders.noShaderDescription' => 'Sin mejora de video',
 			'shaders.nvscalerDescription' => 'Escalado de imagen NVIDIA para un video más nítido',
 			'shaders.qualityFast' => 'Rápido',
 			'shaders.qualityHQ' => 'Alta Calidad',
 			'shaders.mode' => 'Modo',
-			'companionRemote.title' => 'Companion Remote',
+			'companionRemote.title' => 'Control remoto compañero',
 			'companionRemote.connectToDevice' => 'Conectar a dispositivo',
 			'companionRemote.hostRemoteSession' => 'Iniciar sesión remota',
 			'companionRemote.controlThisDevice' => 'Controla este dispositivo con tu teléfono',

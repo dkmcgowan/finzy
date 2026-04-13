@@ -133,11 +133,11 @@ class _TranslationsCommonNl implements TranslationsCommonEn {
 	@override String get retry => 'Opnieuw proberen';
 	@override String get logout => 'Uitloggen';
 	@override String get quickConnect => 'Quick Connect';
-	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
-	@override String get quickConnectCode => 'Quick Connect Code';
-	@override String get authorize => 'Authorize';
-	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
-	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
+	@override String get quickConnectDescription => 'Om in te loggen met Quick Connect, tik je op het apparaat waar je mee inlogt op de knop ‘Quick Connect’ en voer je de getoonde code hieronder in.';
+	@override String get quickConnectCode => 'Quick Connect-code';
+	@override String get authorize => 'Autoriseren';
+	@override String get quickConnectSuccess => 'Quick Connect succesvol geautoriseerd';
+	@override String get quickConnectError => 'Quick Connect-code autoriseren mislukt';
 	@override String get unknown => 'Onbekend';
 	@override String get refresh => 'Vernieuwen';
 	@override String get yes => 'Ja';
@@ -159,7 +159,7 @@ class _TranslationsCommonNl implements TranslationsCommonEn {
 	@override String get settings => 'Instellingen';
 	@override String get mute => 'Dempen';
 	@override String get ok => 'OK';
-	@override String get none => 'None';
+	@override String get none => 'Geen';
 	@override String get loading => 'Laden...';
 	@override String get reconnect => 'Opnieuw verbinden';
 	@override String get goOffline => 'Offline gaan';
@@ -211,9 +211,6 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Instellingen';
-	@override String get supportOptionalCaption => 'Optioneel — app blijft gratis';
-	@override String get supportTierSupport => 'Ondersteun ontwikkeling';
-	@override String get supportTipThankYou => 'Bedankt voor je steun!';
 	@override String get language => 'Taal';
 	@override String get theme => 'Thema';
 	@override String get appearance => 'Uiterlijk';
@@ -277,7 +274,7 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get mpvDescription => 'Geavanceerde speler met meer functies en ASS-ondertitelondersteuning';
 	@override String get liveTvPlayer => 'Live TV-speler';
 	@override String get liveTvPlayerDescription => 'MPV aanbevolen voor Live TV. ExoPlayer kan problemen veroorzaken op sommige apparaten.';
-	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvMpv => 'MPV (aanbevolen)';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get liveTvQuality => 'Live TV-kwaliteit';
 	@override String get liveTvQualityDescription => 'Beperk transcoderingskwaliteit voor Live TV. Geen limiet gebruikt serverstandaard.';
@@ -327,14 +324,14 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get autoSkip => 'Automatisch Overslaan';
 	@override String get autoSkipIntro => 'Intro Automatisch Overslaan';
 	@override String get autoSkipIntroDescription => 'Intro-markeringen na enkele seconden automatisch overslaan';
-	@override String get enableExternalSubtitles => 'Enable External Subtitles';
-	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get enableExternalSubtitles => 'Externe ondertitels inschakelen';
+	@override String get enableExternalSubtitlesDescription => 'Toont externe ondertitelopties in de speler; ze worden geladen wanneer je er een kiest.';
 	@override String get alwaysBurnInSubtitleWhenTranscoding => 'Ondertitels inbranden bij transcoderen';
 	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => 'Bij transcoderen de geselecteerde ondertitel in de video inbranden. Gelijk aan jellyfin-web.';
-	@override String get enableTrickplay => 'Enable Trickplay Thumbnails';
-	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
-	@override String get enableChapterImages => 'Enable Chapter Images';
-	@override String get enableChapterImagesDescription => 'Show thumbnail images for chapters in the chapter list.';
+	@override String get enableTrickplay => 'Trickplay-miniaturen inschakelen';
+	@override String get enableTrickplayDescription => 'Toont tijdlijnvoorbeelden tijdens zoeken. Vereist trickplay-gegevens op de server.';
+	@override String get enableChapterImages => 'Hoofdstukafbeeldingen inschakelen';
+	@override String get enableChapterImagesDescription => 'Toont miniatuurafbeeldingen voor hoofdstukken in de hoofdstukkenlijst.';
 	@override String get autoSkipOutro => 'Outro Automatisch Overslaan';
 	@override String get autoSkipOutroDescription => 'Outro-fragmenten automatisch overslaan';
 	@override String get autoSkipRecap => 'Samenvatting Automatisch Overslaan';
@@ -345,8 +342,8 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => 'Reclamefragmenten automatisch overslaan';
 	@override String get autoSkipDelay => 'Vertraging Automatisch Overslaan';
 	@override String autoSkipDelayDescription({required Object seconds}) => '${seconds} seconden wachten voor automatisch overslaan';
-	@override String get showDownloads => 'Show Downloads';
-	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
+	@override String get showDownloads => 'Downloads inschakelen';
+	@override String get showDownloadsDescription => 'Maakt het mogelijk om films en series te downloaden voor offline kijken.';
 	@override String get downloads => 'Downloads';
 	@override String get downloadLocationDescription => 'Kies waar gedownloade content wordt opgeslagen';
 	@override String get downloadLocationDefault => 'Standaard (App-opslag)';
@@ -404,8 +401,6 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get performanceLarge => 'Groot';
 	@override String get performanceLow => 'Laag';
 	@override String get performanceHigh => 'Hoog';
-	@override String get hideSupportDevelopment => 'Ondersteun ontwikkeling verbergen';
-	@override String get hideSupportDevelopmentDescription => 'Verberg de sectie Ondersteun ontwikkeling in Instellingen';
 }
 
 // Path: search
@@ -475,7 +470,7 @@ class _TranslationsFileInfoNl implements TranslationsFileInfoEn {
 	@override String get container => 'Container';
 	@override String get duration => 'Duur';
 	@override String get optimizedForStreaming => 'Geoptimaliseerd voor streaming';
-	@override String get has64bitOffsets => '64-bit Offsets';
+	@override String get has64bitOffsets => '64-bits offsets';
 }
 
 // Path: mediaMenu
@@ -566,6 +561,7 @@ class _TranslationsVideoControlsNl implements TranslationsVideoControlsEn {
 	@override String get unmuteButton => 'Dempen opheffen';
 	@override String get settingsButton => 'Video-instellingen';
 	@override String get audioTrackButton => 'Audiosporen';
+	@override String get tracksButton => 'Audio en Ondertitels';
 	@override String get subtitlesButton => 'Ondertitels';
 	@override String get chaptersButton => 'Hoofdstukken';
 	@override String get versionsButton => 'Videoversies';
@@ -653,7 +649,7 @@ class _TranslationsSubtitlingStylingNl implements TranslationsSubtitlingStylingE
 	@override String get borderColor => 'Randkleur';
 	@override String get backgroundOpacity => 'Achtergrond transparantie';
 	@override String get backgroundColor => 'Achtergrondkleur';
-	@override String get position => 'Position';
+	@override String get position => 'Positie';
 }
 
 // Path: mpvConfig
@@ -715,8 +711,8 @@ class _TranslationsDiscoverNl implements TranslationsDiscoverEn {
 	@override String get overview => 'Overzicht';
 	@override String get cast => 'Acteurs';
 	@override String get moreLikeThis => 'Vergelijkbaar';
-	@override String get moviesAndShows => 'Movies & Shows';
-	@override String get noItemsFound => 'No items found on this server';
+	@override String get moviesAndShows => 'Films en series';
+	@override String get noItemsFound => 'Geen items gevonden op deze server';
 	@override String get extras => 'Trailers & Extra\'s';
 	@override String get seasons => 'Seizoenen';
 	@override String get studio => 'Studio';
@@ -872,7 +868,7 @@ class _TranslationsNavigationNl implements TranslationsNavigationEn {
 	// Translations
 	@override String get libraries => 'Bibliotheken';
 	@override String get downloads => 'Downloads';
-	@override String get liveTv => 'Live TV';
+	@override String get liveTv => 'Live tv';
 }
 
 // Path: liveTv
@@ -882,13 +878,13 @@ class _TranslationsLiveTvNl implements TranslationsLiveTvEn {
 	final TranslationsNl _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Live TV';
+	@override String get title => 'Live tv';
 	@override String get channels => 'Zenders';
 	@override String get guide => 'Gids';
 	@override String get recordings => 'Opnames';
 	@override String get subscriptions => 'Opnameregels';
 	@override String get scheduled => 'Gepland';
-	@override String get seriesTimers => 'Series Timers';
+	@override String get seriesTimers => 'Serietimers';
 	@override String get noChannels => 'Geen zenders beschikbaar';
 	@override String get dvr => 'DVR';
 	@override String get noDvr => 'Geen DVR geconfigureerd op een server';
@@ -902,26 +898,26 @@ class _TranslationsLiveTvNl implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => 'Weet je zeker dat je deze opnameregel wilt verwijderen?';
 	@override String get subscriptionDeleted => 'Opnameregel verwijderd';
 	@override String get noPrograms => 'Geen programmagegevens beschikbaar';
-	@override String get noRecordings => 'No recordings';
-	@override String get noScheduled => 'No scheduled recordings';
-	@override String get noSubscriptions => 'No series timers';
-	@override String get cancelTimer => 'Cancel Recording';
-	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
-	@override String get timerCancelled => 'Recording cancelled';
+	@override String get noRecordings => 'Geen opnames';
+	@override String get noScheduled => 'Geen geplande opnames';
+	@override String get noSubscriptions => 'Geen serietimers';
+	@override String get cancelTimer => 'Opname annuleren';
+	@override String get cancelTimerConfirm => 'Weet je zeker dat je deze geplande opname wilt annuleren?';
+	@override String get timerCancelled => 'Opname geannuleerd';
 	@override String get editSeriesTimer => 'Bewerken';
-	@override String get deleteSeriesTimer => 'Delete Series Timer';
-	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
-	@override String get seriesTimerDeleted => 'Series timer deleted';
-	@override String get seriesTimerUpdated => 'Series timer updated';
-	@override String get recordNewOnly => 'Record new episodes only';
-	@override String get keepUpTo => 'Keep up to';
-	@override String get keepAll => 'Keep all';
+	@override String get deleteSeriesTimer => 'Serietimer verwijderen';
+	@override String get deleteSeriesTimerConfirm => 'Weet je zeker dat je deze serietimer wilt verwijderen? Alle bijbehorende geplande opnames worden ook verwijderd.';
+	@override String get seriesTimerDeleted => 'Serietimer verwijderd';
+	@override String get seriesTimerUpdated => 'Serietimer bijgewerkt';
+	@override String get recordNewOnly => 'Alleen nieuwe afleveringen opnemen';
+	@override String get keepUpTo => 'Bewaar tot';
+	@override String get keepAll => 'Alles bewaren';
 	@override String keepEpisodes({required Object count}) => '${count} episodes';
-	@override String get prePadding => 'Start recording early';
-	@override String get postPadding => 'Continue recording after';
+	@override String get prePadding => 'Vroeger beginnen met opnemen';
+	@override String get postPadding => 'Door opnemen na afloop';
 	@override String minutes({required Object count}) => '${count} min';
-	@override String get days => 'Days';
-	@override String get priority => 'Priority';
+	@override String get days => 'Dagen';
+	@override String get priority => 'Prioriteit';
 	@override String channelNumber({required Object number}) => 'Kanaal ${number}';
 	@override String get live => 'LIVE';
 	@override String get hd => 'HD';
@@ -937,21 +933,21 @@ class _TranslationsLiveTvNl implements TranslationsLiveTvEn {
 	@override String get daytime => 'Overdag';
 	@override String get evening => 'Avond';
 	@override String get lateNight => 'Late avond';
-	@override String get programs => 'Programs';
-	@override String get onNow => 'On Now';
-	@override String get upcomingShows => 'Shows';
-	@override String get upcomingMovies => 'Movies';
-	@override String get upcomingSports => 'Sports';
-	@override String get forKids => 'For Kids';
-	@override String get upcomingNews => 'News';
+	@override String get programs => 'Programma’s';
+	@override String get onNow => 'Nu live';
+	@override String get upcomingShows => 'Series';
+	@override String get upcomingMovies => 'Films';
+	@override String get upcomingSports => 'Sport';
+	@override String get forKids => 'Voor kinderen';
+	@override String get upcomingNews => 'Nieuws';
 	@override String get watchChannel => 'Kanaal bekijken';
-	@override String get recentlyAdded => 'Recently Added';
-	@override String get recordingScheduled => 'Recording scheduled';
-	@override String get seriesRecordingScheduled => 'Series recording scheduled';
-	@override String get recordingFailed => 'Failed to schedule recording';
-	@override String get cancelSeries => 'Cancel Series';
-	@override String get stopRecording => 'Stop Recording';
-	@override String get doNotRecord => 'Do Not Record';
+	@override String get recentlyAdded => 'Recent toegevoegd';
+	@override String get recordingScheduled => 'Opname gepland';
+	@override String get seriesRecordingScheduled => 'Serie-opname gepland';
+	@override String get recordingFailed => 'Opname plannen mislukt';
+	@override String get cancelSeries => 'Serie annuleren';
+	@override String get stopRecording => 'Opname stoppen';
+	@override String get doNotRecord => 'Niet opnemen';
 }
 
 // Path: downloads
@@ -967,7 +963,7 @@ class _TranslationsDownloadsNl implements TranslationsDownloadsEn {
 	@override String get movies => 'Films';
 	@override String get noDownloads => 'Nog geen downloads';
 	@override String get noDownloadsDescription => 'Gedownloade content verschijnt hier voor offline weergave';
-	@override String get downloadNow => 'Download';
+	@override String get downloadNow => 'Downloaden';
 	@override String get deleteDownload => 'Download verwijderen';
 	@override String get retryDownload => 'Download opnieuw proberen';
 	@override String get downloadQueued => 'Download in wachtrij';
@@ -998,7 +994,7 @@ class _TranslationsPlaylistsNl implements TranslationsPlaylistsEn {
 	@override String get removeItem => 'Verwijderen uit afspeellijst';
 	@override String get smartPlaylist => 'Slimme afspeellijst';
 	@override String itemCount({required Object count}) => '${count} items';
-	@override String get oneItem => '1 item';
+	@override String get oneItem => '1 onderdeel';
 	@override String get emptyPlaylist => 'Deze afspeellijst is leeg';
 	@override String get deleteConfirm => 'Afspeellijst verwijderen?';
 	@override String deleteMessage({required Object name}) => 'Weet je zeker dat je "${name}" wilt verwijderen?';
@@ -1072,7 +1068,7 @@ class _TranslationsCompanionRemoteNl implements TranslationsCompanionRemoteEn {
 	final TranslationsNl _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Companion Remote';
+	@override String get title => 'Companion-afstandsbediening';
 	@override String get connectToDevice => 'Verbinden met apparaat';
 	@override String get hostRemoteSession => 'Externe sessie hosten';
 	@override String get controlThisDevice => 'Bedien dit apparaat met je telefoon';
@@ -1134,13 +1130,13 @@ class _TranslationsSearchCategoriesNl implements TranslationsSearchCategoriesEn 
 	final TranslationsNl _root; // ignore: unused_field
 
 	// Translations
-	@override String get movies => 'Movies';
-	@override String get shows => 'Shows';
-	@override String get episodes => 'Episodes';
-	@override String get people => 'People';
-	@override String get collections => 'Collections';
-	@override String get programs => 'Programs';
-	@override String get channels => 'Channels';
+	@override String get movies => 'Films';
+	@override String get shows => 'Series';
+	@override String get episodes => 'Afleveringen';
+	@override String get people => 'Personen';
+	@override String get collections => 'Collecties';
+	@override String get programs => 'Programma’s';
+	@override String get channels => 'Kanalen';
 }
 
 // Path: hotkeys.actions
@@ -1362,11 +1358,11 @@ extension on TranslationsNl {
 			'common.retry' => 'Opnieuw proberen',
 			'common.logout' => 'Uitloggen',
 			'common.quickConnect' => 'Quick Connect',
-			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
-			'common.quickConnectCode' => 'Quick Connect Code',
-			'common.authorize' => 'Authorize',
-			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
-			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
+			'common.quickConnectDescription' => 'Om in te loggen met Quick Connect, tik je op het apparaat waar je mee inlogt op de knop ‘Quick Connect’ en voer je de getoonde code hieronder in.',
+			'common.quickConnectCode' => 'Quick Connect-code',
+			'common.authorize' => 'Autoriseren',
+			'common.quickConnectSuccess' => 'Quick Connect succesvol geautoriseerd',
+			'common.quickConnectError' => 'Quick Connect-code autoriseren mislukt',
 			'common.unknown' => 'Onbekend',
 			'common.refresh' => 'Vernieuwen',
 			'common.yes' => 'Ja',
@@ -1388,7 +1384,7 @@ extension on TranslationsNl {
 			'common.settings' => 'Instellingen',
 			'common.mute' => 'Dempen',
 			'common.ok' => 'OK',
-			'common.none' => 'None',
+			'common.none' => 'Geen',
 			'common.loading' => 'Laden...',
 			'common.reconnect' => 'Opnieuw verbinden',
 			'common.goOffline' => 'Offline gaan',
@@ -1413,9 +1409,6 @@ extension on TranslationsNl {
 			'update.latestVersion' => 'Je hebt de nieuwste versie',
 			'update.checkFailed' => 'Kon niet controleren op updates',
 			'settings.title' => 'Instellingen',
-			'settings.supportOptionalCaption' => 'Optioneel — app blijft gratis',
-			'settings.supportTierSupport' => 'Ondersteun ontwikkeling',
-			'settings.supportTipThankYou' => 'Bedankt voor je steun!',
 			'settings.language' => 'Taal',
 			'settings.theme' => 'Thema',
 			'settings.appearance' => 'Uiterlijk',
@@ -1479,7 +1472,7 @@ extension on TranslationsNl {
 			'settings.mpvDescription' => 'Geavanceerde speler met meer functies en ASS-ondertitelondersteuning',
 			'settings.liveTvPlayer' => 'Live TV-speler',
 			'settings.liveTvPlayerDescription' => 'MPV aanbevolen voor Live TV. ExoPlayer kan problemen veroorzaken op sommige apparaten.',
-			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvMpv' => 'MPV (aanbevolen)',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.liveTvQuality' => 'Live TV-kwaliteit',
 			'settings.liveTvQualityDescription' => 'Beperk transcoderingskwaliteit voor Live TV. Geen limiet gebruikt serverstandaard.',
@@ -1529,14 +1522,14 @@ extension on TranslationsNl {
 			'settings.autoSkip' => 'Automatisch Overslaan',
 			'settings.autoSkipIntro' => 'Intro Automatisch Overslaan',
 			'settings.autoSkipIntroDescription' => 'Intro-markeringen na enkele seconden automatisch overslaan',
-			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
-			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.enableExternalSubtitles' => 'Externe ondertitels inschakelen',
+			'settings.enableExternalSubtitlesDescription' => 'Toont externe ondertitelopties in de speler; ze worden geladen wanneer je er een kiest.',
 			'settings.alwaysBurnInSubtitleWhenTranscoding' => 'Ondertitels inbranden bij transcoderen',
 			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => 'Bij transcoderen de geselecteerde ondertitel in de video inbranden. Gelijk aan jellyfin-web.',
-			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
-			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
-			'settings.enableChapterImages' => 'Enable Chapter Images',
-			'settings.enableChapterImagesDescription' => 'Show thumbnail images for chapters in the chapter list.',
+			'settings.enableTrickplay' => 'Trickplay-miniaturen inschakelen',
+			'settings.enableTrickplayDescription' => 'Toont tijdlijnvoorbeelden tijdens zoeken. Vereist trickplay-gegevens op de server.',
+			'settings.enableChapterImages' => 'Hoofdstukafbeeldingen inschakelen',
+			'settings.enableChapterImagesDescription' => 'Toont miniatuurafbeeldingen voor hoofdstukken in de hoofdstukkenlijst.',
 			'settings.autoSkipOutro' => 'Outro Automatisch Overslaan',
 			'settings.autoSkipOutroDescription' => 'Outro-fragmenten automatisch overslaan',
 			'settings.autoSkipRecap' => 'Samenvatting Automatisch Overslaan',
@@ -1547,8 +1540,8 @@ extension on TranslationsNl {
 			'settings.autoSkipCommercialDescription' => 'Reclamefragmenten automatisch overslaan',
 			'settings.autoSkipDelay' => 'Vertraging Automatisch Overslaan',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => '${seconds} seconden wachten voor automatisch overslaan',
-			'settings.showDownloads' => 'Show Downloads',
-			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
+			'settings.showDownloads' => 'Downloads inschakelen',
+			'settings.showDownloadsDescription' => 'Maakt het mogelijk om films en series te downloaden voor offline kijken.',
 			'settings.downloads' => 'Downloads',
 			'settings.downloadLocationDescription' => 'Kies waar gedownloade content wordt opgeslagen',
 			'settings.downloadLocationDefault' => 'Standaard (App-opslag)',
@@ -1606,19 +1599,17 @@ extension on TranslationsNl {
 			'settings.performanceLarge' => 'Groot',
 			'settings.performanceLow' => 'Laag',
 			'settings.performanceHigh' => 'Hoog',
-			'settings.hideSupportDevelopment' => 'Ondersteun ontwikkeling verbergen',
-			'settings.hideSupportDevelopmentDescription' => 'Verberg de sectie Ondersteun ontwikkeling in Instellingen',
 			'search.hint' => 'Zoek films, series, muziek...',
 			'search.tryDifferentTerm' => 'Probeer een andere zoekterm',
 			'search.searchYourMedia' => 'Zoek in je media',
 			'search.enterTitleActorOrKeyword' => 'Voer een titel, acteur of trefwoord in',
-			'search.categories.movies' => 'Movies',
-			'search.categories.shows' => 'Shows',
-			'search.categories.episodes' => 'Episodes',
-			'search.categories.people' => 'People',
-			'search.categories.collections' => 'Collections',
-			'search.categories.programs' => 'Programs',
-			'search.categories.channels' => 'Channels',
+			'search.categories.movies' => 'Films',
+			'search.categories.shows' => 'Series',
+			'search.categories.episodes' => 'Afleveringen',
+			'search.categories.people' => 'Personen',
+			'search.categories.collections' => 'Collecties',
+			'search.categories.programs' => 'Programma’s',
+			'search.categories.channels' => 'Kanalen',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => 'Stel sneltoets in voor ${actionName}',
 			'hotkeys.clearShortcut' => 'Wis sneltoets',
 			'hotkeys.actions.playPause' => 'Afspelen/Pauzeren',
@@ -1665,7 +1656,7 @@ extension on TranslationsNl {
 			'fileInfo.container' => 'Container',
 			'fileInfo.duration' => 'Duur',
 			'fileInfo.optimizedForStreaming' => 'Geoptimaliseerd voor streaming',
-			'fileInfo.has64bitOffsets' => '64-bit Offsets',
+			'fileInfo.has64bitOffsets' => '64-bits offsets',
 			'mediaMenu.markAsWatched' => 'Markeer als gekeken',
 			'mediaMenu.markAsUnwatched' => 'Markeer als ongekeken',
 			'mediaMenu.goToSeries' => 'Ga naar serie',
@@ -1720,6 +1711,7 @@ extension on TranslationsNl {
 			'videoControls.unmuteButton' => 'Dempen opheffen',
 			'videoControls.settingsButton' => 'Video-instellingen',
 			'videoControls.audioTrackButton' => 'Audiosporen',
+			'videoControls.tracksButton' => 'Audio en Ondertitels',
 			'videoControls.subtitlesButton' => 'Ondertitels',
 			'videoControls.chaptersButton' => 'Hoofdstukken',
 			'videoControls.versionsButton' => 'Videoversies',
@@ -1784,7 +1776,7 @@ extension on TranslationsNl {
 			'subtitlingStyling.borderColor' => 'Randkleur',
 			'subtitlingStyling.backgroundOpacity' => 'Achtergrond transparantie',
 			'subtitlingStyling.backgroundColor' => 'Achtergrondkleur',
-			'subtitlingStyling.position' => 'Position',
+			'subtitlingStyling.position' => 'Positie',
 			'mpvConfig.title' => 'MPV-configuratie',
 			'mpvConfig.description' => 'Geavanceerde videospeler-instellingen',
 			'mpvConfig.properties' => 'Eigenschappen',
@@ -1819,8 +1811,8 @@ extension on TranslationsNl {
 			'discover.overview' => 'Overzicht',
 			'discover.cast' => 'Acteurs',
 			'discover.moreLikeThis' => 'Vergelijkbaar',
-			'discover.moviesAndShows' => 'Movies & Shows',
-			'discover.noItemsFound' => 'No items found on this server',
+			'discover.moviesAndShows' => 'Films en series',
+			'discover.noItemsFound' => 'Geen items gevonden op deze server',
 			'discover.extras' => 'Trailers & Extra\'s',
 			'discover.seasons' => 'Seizoenen',
 			'discover.studio' => 'Studio',
@@ -1841,12 +1833,12 @@ extension on TranslationsNl {
 			'errors.invalidToken' => 'Ongeldig token',
 			'errors.failedToVerifyToken' => ({required Object error}) => 'Kon token niet verifiëren: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => 'Kon niet wisselen naar ${displayName}',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.title' => 'Bibliotheken',
 			'libraries.scanLibraryFiles' => 'Scan bibliotheek bestanden',
 			'libraries.scanLibrary' => 'Scan bibliotheek',
 			'libraries.analyze' => 'Analyseren',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzeLibrary' => 'Analyseer bibliotheek',
 			'libraries.refreshMetadata' => 'Vernieuw metadata',
 			'libraries.emptyTrash' => 'Prullenbak legen',
@@ -1918,14 +1910,14 @@ extension on TranslationsNl {
 			'licenses.licensesCount' => ({required Object count}) => '${count} licenties',
 			'navigation.libraries' => 'Bibliotheken',
 			'navigation.downloads' => 'Downloads',
-			'navigation.liveTv' => 'Live TV',
-			'liveTv.title' => 'Live TV',
+			'navigation.liveTv' => 'Live tv',
+			'liveTv.title' => 'Live tv',
 			'liveTv.channels' => 'Zenders',
 			'liveTv.guide' => 'Gids',
 			'liveTv.recordings' => 'Opnames',
 			'liveTv.subscriptions' => 'Opnameregels',
 			'liveTv.scheduled' => 'Gepland',
-			'liveTv.seriesTimers' => 'Series Timers',
+			'liveTv.seriesTimers' => 'Serietimers',
 			'liveTv.noChannels' => 'Geen zenders beschikbaar',
 			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => 'Geen DVR geconfigureerd op een server',
@@ -1939,26 +1931,26 @@ extension on TranslationsNl {
 			'liveTv.deleteSubscriptionConfirm' => 'Weet je zeker dat je deze opnameregel wilt verwijderen?',
 			'liveTv.subscriptionDeleted' => 'Opnameregel verwijderd',
 			'liveTv.noPrograms' => 'Geen programmagegevens beschikbaar',
-			'liveTv.noRecordings' => 'No recordings',
-			'liveTv.noScheduled' => 'No scheduled recordings',
-			'liveTv.noSubscriptions' => 'No series timers',
-			'liveTv.cancelTimer' => 'Cancel Recording',
-			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
-			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.noRecordings' => 'Geen opnames',
+			'liveTv.noScheduled' => 'Geen geplande opnames',
+			'liveTv.noSubscriptions' => 'Geen serietimers',
+			'liveTv.cancelTimer' => 'Opname annuleren',
+			'liveTv.cancelTimerConfirm' => 'Weet je zeker dat je deze geplande opname wilt annuleren?',
+			'liveTv.timerCancelled' => 'Opname geannuleerd',
 			'liveTv.editSeriesTimer' => 'Bewerken',
-			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
-			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
-			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
-			'liveTv.seriesTimerUpdated' => 'Series timer updated',
-			'liveTv.recordNewOnly' => 'Record new episodes only',
-			'liveTv.keepUpTo' => 'Keep up to',
-			'liveTv.keepAll' => 'Keep all',
+			'liveTv.deleteSeriesTimer' => 'Serietimer verwijderen',
+			'liveTv.deleteSeriesTimerConfirm' => 'Weet je zeker dat je deze serietimer wilt verwijderen? Alle bijbehorende geplande opnames worden ook verwijderd.',
+			'liveTv.seriesTimerDeleted' => 'Serietimer verwijderd',
+			'liveTv.seriesTimerUpdated' => 'Serietimer bijgewerkt',
+			'liveTv.recordNewOnly' => 'Alleen nieuwe afleveringen opnemen',
+			'liveTv.keepUpTo' => 'Bewaar tot',
+			'liveTv.keepAll' => 'Alles bewaren',
 			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
-			'liveTv.prePadding' => 'Start recording early',
-			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.prePadding' => 'Vroeger beginnen met opnemen',
+			'liveTv.postPadding' => 'Door opnemen na afloop',
 			'liveTv.minutes' => ({required Object count}) => '${count} min',
-			'liveTv.days' => 'Days',
-			'liveTv.priority' => 'Priority',
+			'liveTv.days' => 'Dagen',
+			'liveTv.priority' => 'Prioriteit',
 			'liveTv.channelNumber' => ({required Object number}) => 'Kanaal ${number}',
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
@@ -1974,28 +1966,28 @@ extension on TranslationsNl {
 			'liveTv.daytime' => 'Overdag',
 			'liveTv.evening' => 'Avond',
 			'liveTv.lateNight' => 'Late avond',
-			'liveTv.programs' => 'Programs',
-			'liveTv.onNow' => 'On Now',
-			'liveTv.upcomingShows' => 'Shows',
-			'liveTv.upcomingMovies' => 'Movies',
-			'liveTv.upcomingSports' => 'Sports',
-			'liveTv.forKids' => 'For Kids',
-			'liveTv.upcomingNews' => 'News',
+			'liveTv.programs' => 'Programma’s',
+			'liveTv.onNow' => 'Nu live',
+			'liveTv.upcomingShows' => 'Series',
+			'liveTv.upcomingMovies' => 'Films',
+			'liveTv.upcomingSports' => 'Sport',
+			'liveTv.forKids' => 'Voor kinderen',
+			'liveTv.upcomingNews' => 'Nieuws',
 			'liveTv.watchChannel' => 'Kanaal bekijken',
-			'liveTv.recentlyAdded' => 'Recently Added',
-			'liveTv.recordingScheduled' => 'Recording scheduled',
-			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
-			'liveTv.recordingFailed' => 'Failed to schedule recording',
-			'liveTv.cancelSeries' => 'Cancel Series',
-			'liveTv.stopRecording' => 'Stop Recording',
-			'liveTv.doNotRecord' => 'Do Not Record',
+			'liveTv.recentlyAdded' => 'Recent toegevoegd',
+			'liveTv.recordingScheduled' => 'Opname gepland',
+			'liveTv.seriesRecordingScheduled' => 'Serie-opname gepland',
+			'liveTv.recordingFailed' => 'Opname plannen mislukt',
+			'liveTv.cancelSeries' => 'Serie annuleren',
+			'liveTv.stopRecording' => 'Opname stoppen',
+			'liveTv.doNotRecord' => 'Niet opnemen',
 			'downloads.title' => 'Downloads',
 			'downloads.manage' => 'Beheren',
 			'downloads.tvShows' => 'Series',
 			'downloads.movies' => 'Films',
 			'downloads.noDownloads' => 'Nog geen downloads',
 			'downloads.noDownloadsDescription' => 'Gedownloade content verschijnt hier voor offline weergave',
-			'downloads.downloadNow' => 'Download',
+			'downloads.downloadNow' => 'Downloaden',
 			'downloads.deleteDownload' => 'Download verwijderen',
 			'downloads.retryDownload' => 'Download opnieuw proberen',
 			'downloads.downloadQueued' => 'Download in wachtrij',
@@ -2017,7 +2009,7 @@ extension on TranslationsNl {
 			'playlists.removeItem' => 'Verwijderen uit afspeellijst',
 			'playlists.smartPlaylist' => 'Slimme afspeellijst',
 			'playlists.itemCount' => ({required Object count}) => '${count} items',
-			'playlists.oneItem' => '1 item',
+			'playlists.oneItem' => '1 onderdeel',
 			'playlists.emptyPlaylist' => 'Deze afspeellijst is leeg',
 			'playlists.deleteConfirm' => 'Afspeellijst verwijderen?',
 			'playlists.deleteMessage' => ({required Object name}) => 'Weet je zeker dat je "${name}" wilt verwijderen?',
@@ -2064,7 +2056,7 @@ extension on TranslationsNl {
 			'shaders.qualityFast' => 'Snel',
 			'shaders.qualityHQ' => 'Hoge kwaliteit',
 			'shaders.mode' => 'Modus',
-			'companionRemote.title' => 'Companion Remote',
+			'companionRemote.title' => 'Companion-afstandsbediening',
 			'companionRemote.connectToDevice' => 'Verbinden met apparaat',
 			'companionRemote.hostRemoteSession' => 'Externe sessie hosten',
 			'companionRemote.controlThisDevice' => 'Bedien dit apparaat met je telefoon',

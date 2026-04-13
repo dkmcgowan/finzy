@@ -12,9 +12,8 @@ import '../../../services/sleep_timer_service.dart';
 import '../../../utils/platform_detector.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../widgets/overlay_sheet.dart';
-import '../sheets/audio_track_sheet.dart';
 import '../sheets/chapter_sheet.dart';
-import '../sheets/subtitle_track_sheet.dart';
+import '../sheets/track_sheet.dart';
 import '../sheets/version_sheet.dart';
 import '../../../services/settings_service.dart';
 import '../sheets/video_settings_sheet.dart';
@@ -251,53 +250,30 @@ class TrackChapterControls extends StatelessWidget {
         );
         buttonIndex++;
 
-        // Audio track button
-        if (_hasMultipleAudioTracks(tracks)) {
+        // Combined audio & subtitles (Plezy-style single entry point)
+        if (_shouldShowTracksButton(tracks)) {
           final currentIndex = buttonIndex;
+          final hasEmbeddedSubs =
+              tracks != null && TrackFilterHelper.hasTracks<SubtitleTrack>(tracks.subtitle);
+          final icon = (hasEmbeddedSubs || availableExternalSubtitles.isNotEmpty)
+              ? Symbols.subtitles_rounded
+              : Symbols.audiotrack_rounded;
           buttons.add(
             _buildTrackButton(
               buttonIndex: currentIndex,
-              icon: Symbols.audiotrack_rounded,
-              tooltip: t.videoControls.audioTrackButton,
-              semanticLabel: t.videoControls.audioTrackButton,
+              icon: icon,
+              tooltip: t.videoControls.tracksButton,
+              semanticLabel: t.videoControls.tracksButton,
               tracks: tracks,
               isMobile: isMobile,
               isDesktop: isDesktop,
               onPressed: () {
                 onCancelAutoHide?.call();
                 OverlaySheetController.of(context).show(
-                  builder: (_) => AudioTrackSheet(
+                  builder: (_) => TrackSheet(
                     player: player,
-                    onTrackChanged: onAudioTrackChanged,
-                  ),
-                ).whenComplete(() {
-                  onStartAutoHide?.call();
-                  _restoreFocusToTrackButton(focusNodes, currentIndex);
-                });
-              },
-            ),
-          );
-          buttonIndex++;
-        }
-
-        // Subtitles button
-        if (_hasSubtitles(tracks)) {
-          final currentIndex = buttonIndex;
-          buttons.add(
-            _buildTrackButton(
-              buttonIndex: currentIndex,
-              icon: Symbols.subtitles_rounded,
-              tooltip: t.videoControls.subtitlesButton,
-              semanticLabel: t.videoControls.subtitlesButton,
-              tracks: tracks,
-              isMobile: isMobile,
-              isDesktop: isDesktop,
-              onPressed: () {
-                onCancelAutoHide?.call();
-                OverlaySheetController.of(context).show(
-                  builder: (_) => SubtitleTrackSheet(
-                    player: player,
-                    onTrackChanged: onSubtitleTrackChanged,
+                    onAudioTrackChanged: onAudioTrackChanged,
+                    onSubtitleTrackChanged: onSubtitleTrackChanged,
                     availableExternalSubtitles: availableExternalSubtitles,
                     onExternalSubtitleSelected: onExternalSubtitleSelected,
                   ),
@@ -473,8 +449,7 @@ class TrackChapterControls extends StatelessWidget {
   /// Calculate total button count for navigation
   int _getButtonCount(Tracks? tracks, bool isMobile, bool isDesktop) {
     int count = 1; // Settings button always shown
-    if (_hasMultipleAudioTracks(tracks)) count++;
-    if (_hasSubtitles(tracks)) count++;
+    if (_shouldShowTracksButton(tracks)) count++;
     if (chapters.isNotEmpty) count++;
     if (availableVersions.length > 1 && onSwitchVersion != null) count++;
     if (onTogglePIPMode != null) count++;
@@ -485,16 +460,15 @@ class TrackChapterControls extends StatelessWidget {
     return count;
   }
 
-  bool _hasMultipleAudioTracks(Tracks? tracks) {
-    if (tracks == null) return false;
-    return TrackFilterHelper.hasMultipleTracks<AudioTrack>(tracks.audio);
-  }
-
-  bool _hasSubtitles(Tracks? tracks) {
-    // Show button when player has embedded tracks OR we have server subtitles to load on demand
-    if (tracks == null) return availableExternalSubtitles.isNotEmpty;
-    return TrackFilterHelper.hasTracks<SubtitleTrack>(tracks.subtitle) ||
+  /// Audio and/or subtitles: one control opens [TrackSheet] with both sections when applicable.
+  bool _shouldShowTracksButton(Tracks? tracks) {
+    if (tracks == null) {
+      return availableExternalSubtitles.isNotEmpty;
+    }
+    final hasAudio = TrackFilterHelper.hasTracks<AudioTrack>(tracks.audio);
+    final hasSubs = TrackFilterHelper.hasTracks<SubtitleTrack>(tracks.subtitle) ||
         availableExternalSubtitles.isNotEmpty;
+    return hasAudio || hasSubs;
   }
 
   IconData _getBoxFitIcon(int mode) {

@@ -132,12 +132,12 @@ class _TranslationsCommonKo implements TranslationsCommonEn {
 	@override String get confirm => '확인';
 	@override String get retry => '재시도';
 	@override String get logout => '로그아웃';
-	@override String get quickConnect => 'Quick Connect';
-	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
-	@override String get quickConnectCode => 'Quick Connect Code';
-	@override String get authorize => 'Authorize';
-	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
-	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
+	@override String get quickConnect => '퀵 커넥트';
+	@override String get quickConnectDescription => 'Quick Connect로 로그인하려면 로그인하는 기기에서 ‘Quick Connect’ 버튼을 누르고 아래에 표시된 코드를 입력하세요.';
+	@override String get quickConnectCode => '퀵 커넥트 코드';
+	@override String get authorize => '승인';
+	@override String get quickConnectSuccess => 'Quick Connect가 성공적으로 승인되었습니다';
+	@override String get quickConnectError => 'Quick Connect 코드 승인에 실패했습니다';
 	@override String get unknown => '알 수 없는';
 	@override String get refresh => '새로고침';
 	@override String get yes => '예';
@@ -159,7 +159,7 @@ class _TranslationsCommonKo implements TranslationsCommonEn {
 	@override String get settings => '설정';
 	@override String get mute => '음소거';
 	@override String get ok => '확인';
-	@override String get none => 'None';
+	@override String get none => '없음';
 	@override String get loading => '로딩 중...';
 	@override String get reconnect => '다시 연결';
 	@override String get goOffline => '오프라인으로 전환';
@@ -211,9 +211,6 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => '설정';
-	@override String get supportOptionalCaption => '선택 사항 — 앱은 계속 무료입니다';
-	@override String get supportTierSupport => '개발 지원하기';
-	@override String get supportTipThankYou => '후원해 주셔서 감사합니다!';
 	@override String get language => '언어';
 	@override String get theme => '테마';
 	@override String get appearance => '외관';
@@ -277,7 +274,7 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get mpvDescription => '더 많은 기능과 ASS 자막을 지원하는 고급 플레이어';
 	@override String get liveTvPlayer => '라이브 TV 플레이어';
 	@override String get liveTvPlayerDescription => '라이브 TV에는 MPV를 권장합니다. ExoPlayer는 일부 기기에서 문제가 있을 수 있습니다.';
-	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvMpv => 'MPV(권장)';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get liveTvQuality => '라이브 TV 품질';
 	@override String get liveTvQualityDescription => '라이브 TV의 트랜스코딩 품질을 제한합니다. 제한 없음은 서버 기본값을 사용합니다.';
@@ -327,14 +324,14 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get autoSkip => '자동 건너뛰기';
 	@override String get autoSkipIntro => '자동으로 오프닝 건너뛰기';
 	@override String get autoSkipIntroDescription => '몇 초 후 오프닝을 자동으로 건너뛰기';
-	@override String get enableExternalSubtitles => 'Enable External Subtitles';
-	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get enableExternalSubtitles => '외부 자막 사용';
+	@override String get enableExternalSubtitlesDescription => '플레이어에서 외부 자막 옵션을 표시하며, 선택 시 로드됩니다.';
 	@override String get alwaysBurnInSubtitleWhenTranscoding => '트랜스코딩 시 자막 굽기';
 	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => '트랜스코딩 시 선택한 자막을 비디오에 굽습니다. jellyfin-web과 동일합니다.';
-	@override String get enableTrickplay => 'Enable Trickplay Thumbnails';
-	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
-	@override String get enableChapterImages => 'Enable Chapter Images';
-	@override String get enableChapterImagesDescription => 'Show thumbnail images for chapters in the chapter list.';
+	@override String get enableTrickplay => '트릭플레이 썸네일 사용';
+	@override String get enableTrickplayDescription => '탐색 시 타임라인에 썸네일을 표시합니다. 서버에 트릭플레이 데이터가 있어야 합니다.';
+	@override String get enableChapterImages => '챕터 이미지 사용';
+	@override String get enableChapterImagesDescription => '챕터 목록에서 챕터 미리보기 썸네일을 표시합니다.';
 	@override String get autoSkipOutro => '자동으로 아웃트로 건너뛰기';
 	@override String get autoSkipOutroDescription => '아웃트로 세그먼트 자동 건너뛰기';
 	@override String get autoSkipRecap => '자동으로 요약 건너뛰기';
@@ -345,8 +342,8 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => '광고 세그먼트 자동 건너뛰기';
 	@override String get autoSkipDelay => '자동 건너뛰기 지연';
 	@override String autoSkipDelayDescription({required Object seconds}) => '자동 건너뛰기 전 ${seconds} 초 대기';
-	@override String get showDownloads => 'Show Downloads';
-	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
+	@override String get showDownloads => '다운로드 사용';
+	@override String get showDownloadsDescription => '영화와 시리즈를 다운로드해 오프라인으로 시청할 수 있게 합니다.';
 	@override String get downloads => '다운로드';
 	@override String get downloadLocationDescription => '다운로드 콘텐츠 저장 위치 선택';
 	@override String get downloadLocationDefault => '기본값 (앱 저장소)';
@@ -370,7 +367,7 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get playbackModeAuto => '자동';
 	@override String get playbackModeAutoDirect => '자동 - Direct';
 	@override String get playbackModeDirectPlayDescription => '원본 파일을 사용합니다.';
-	@override String get playbackModeDirectPlay => 'Direct';
+	@override String get playbackModeDirectPlay => '직접';
 	@override String get quality15Mbps => '15 Mbps';
 	@override String get quality10Mbps => '10 Mbps';
 	@override String get quality8Mbps => '8 Mbps';
@@ -404,8 +401,6 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get performanceLarge => '큼';
 	@override String get performanceLow => '낮음';
 	@override String get performanceHigh => '높음';
-	@override String get hideSupportDevelopment => '개발 지원 숨기기';
-	@override String get hideSupportDevelopmentDescription => '설정에서 개발 지원 섹션 숨기기';
 }
 
 // Path: search
@@ -566,6 +561,7 @@ class _TranslationsVideoControlsKo implements TranslationsVideoControlsEn {
 	@override String get unmuteButton => '음소거 해제';
 	@override String get settingsButton => '동영상 설정';
 	@override String get audioTrackButton => '음원 트랙';
+	@override String get tracksButton => '오디오 및 자막';
 	@override String get subtitlesButton => '자막';
 	@override String get chaptersButton => '챕터';
 	@override String get versionsButton => '동영상 버전';
@@ -653,7 +649,7 @@ class _TranslationsSubtitlingStylingKo implements TranslationsSubtitlingStylingE
 	@override String get borderColor => '테두리 색상';
 	@override String get backgroundOpacity => '배경 불투명도';
 	@override String get backgroundColor => '배경색';
-	@override String get position => 'Position';
+	@override String get position => '위치';
 }
 
 // Path: mpvConfig
@@ -715,8 +711,8 @@ class _TranslationsDiscoverKo implements TranslationsDiscoverEn {
 	@override String get overview => '개요';
 	@override String get cast => '출연진';
 	@override String get moreLikeThis => '비슷한 콘텐츠';
-	@override String get moviesAndShows => 'Movies & Shows';
-	@override String get noItemsFound => 'No items found on this server';
+	@override String get moviesAndShows => '영화 및 시리즈';
+	@override String get noItemsFound => '이 서버에서 항목을 찾을 수 없습니다';
 	@override String get extras => '예고편 및 부가영상';
 	@override String get seasons => '시즌 수';
 	@override String get studio => '제작사';
@@ -888,7 +884,7 @@ class _TranslationsLiveTvKo implements TranslationsLiveTvEn {
 	@override String get recordings => '녹화';
 	@override String get subscriptions => '녹화 규칙';
 	@override String get scheduled => '예약됨';
-	@override String get seriesTimers => 'Series Timers';
+	@override String get seriesTimers => '시리즈 타이머';
 	@override String get noChannels => '사용 가능한 채널이 없습니다';
 	@override String get dvr => 'DVR';
 	@override String get noDvr => '서버에 DVR이 구성되어 있지 않습니다';
@@ -902,26 +898,26 @@ class _TranslationsLiveTvKo implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => '이 녹화 규칙을 삭제하시겠습니까?';
 	@override String get subscriptionDeleted => '녹화 규칙이 삭제되었습니다';
 	@override String get noPrograms => '프로그램 데이터가 없습니다';
-	@override String get noRecordings => 'No recordings';
-	@override String get noScheduled => 'No scheduled recordings';
-	@override String get noSubscriptions => 'No series timers';
-	@override String get cancelTimer => 'Cancel Recording';
-	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
-	@override String get timerCancelled => 'Recording cancelled';
+	@override String get noRecordings => '녹화 없음';
+	@override String get noScheduled => '예약된 녹화 없음';
+	@override String get noSubscriptions => '시리즈 타이머 없음';
+	@override String get cancelTimer => '녹화 취소';
+	@override String get cancelTimerConfirm => '이 예약 녹화를 취소할까요?';
+	@override String get timerCancelled => '녹화 취소됨';
 	@override String get editSeriesTimer => '편집';
-	@override String get deleteSeriesTimer => 'Delete Series Timer';
-	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
-	@override String get seriesTimerDeleted => 'Series timer deleted';
-	@override String get seriesTimerUpdated => 'Series timer updated';
-	@override String get recordNewOnly => 'Record new episodes only';
-	@override String get keepUpTo => 'Keep up to';
-	@override String get keepAll => 'Keep all';
+	@override String get deleteSeriesTimer => '시리즈 타이머 삭제';
+	@override String get deleteSeriesTimerConfirm => '이 시리즈 타이머를 삭제할까요? 연결된 모든 예약 녹화도 제거됩니다.';
+	@override String get seriesTimerDeleted => '시리즈 타이머 삭제됨';
+	@override String get seriesTimerUpdated => '시리즈 타이머 업데이트됨';
+	@override String get recordNewOnly => '새 에피소드만 녹화';
+	@override String get keepUpTo => '최대 보관';
+	@override String get keepAll => '모두 보관';
 	@override String keepEpisodes({required Object count}) => '${count} episodes';
-	@override String get prePadding => 'Start recording early';
-	@override String get postPadding => 'Continue recording after';
+	@override String get prePadding => '시작 전에 녹화 시작';
+	@override String get postPadding => '종료 후 계속 녹화';
 	@override String minutes({required Object count}) => '${count} min';
-	@override String get days => 'Days';
-	@override String get priority => 'Priority';
+	@override String get days => '일';
+	@override String get priority => '우선순위';
 	@override String channelNumber({required Object number}) => '채널 ${number}';
 	@override String get live => '실시간';
 	@override String get hd => 'HD';
@@ -937,21 +933,21 @@ class _TranslationsLiveTvKo implements TranslationsLiveTvEn {
 	@override String get daytime => '낮';
 	@override String get evening => '저녁';
 	@override String get lateNight => '심야 방송';
-	@override String get programs => 'Programs';
-	@override String get onNow => 'On Now';
-	@override String get upcomingShows => 'Shows';
-	@override String get upcomingMovies => 'Movies';
-	@override String get upcomingSports => 'Sports';
-	@override String get forKids => 'For Kids';
-	@override String get upcomingNews => 'News';
+	@override String get programs => '프로그램';
+	@override String get onNow => '생방송';
+	@override String get upcomingShows => '시리즈';
+	@override String get upcomingMovies => '영화';
+	@override String get upcomingSports => '스포츠';
+	@override String get forKids => '어린이용';
+	@override String get upcomingNews => '뉴스';
 	@override String get watchChannel => '채널 시청';
-	@override String get recentlyAdded => 'Recently Added';
-	@override String get recordingScheduled => 'Recording scheduled';
-	@override String get seriesRecordingScheduled => 'Series recording scheduled';
-	@override String get recordingFailed => 'Failed to schedule recording';
-	@override String get cancelSeries => 'Cancel Series';
-	@override String get stopRecording => 'Stop Recording';
-	@override String get doNotRecord => 'Do Not Record';
+	@override String get recentlyAdded => '최근 추가';
+	@override String get recordingScheduled => '녹화 예약됨';
+	@override String get seriesRecordingScheduled => '시리즈 녹화 예약됨';
+	@override String get recordingFailed => '녹화 예약 실패';
+	@override String get cancelSeries => '시리즈 취소';
+	@override String get stopRecording => '녹화 중지';
+	@override String get doNotRecord => '녹화 안 함';
 }
 
 // Path: collections
@@ -1072,7 +1068,7 @@ class _TranslationsCompanionRemoteKo implements TranslationsCompanionRemoteEn {
 	final TranslationsKo _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Companion Remote';
+	@override String get title => '동반 리모컨';
 	@override String get connectToDevice => '기기에 연결';
 	@override String get hostRemoteSession => '원격 세션 호스트';
 	@override String get controlThisDevice => '휴대폰으로 이 기기를 제어하세요';
@@ -1134,13 +1130,13 @@ class _TranslationsSearchCategoriesKo implements TranslationsSearchCategoriesEn 
 	final TranslationsKo _root; // ignore: unused_field
 
 	// Translations
-	@override String get movies => 'Movies';
-	@override String get shows => 'Shows';
-	@override String get episodes => 'Episodes';
-	@override String get people => 'People';
-	@override String get collections => 'Collections';
-	@override String get programs => 'Programs';
-	@override String get channels => 'Channels';
+	@override String get movies => '영화';
+	@override String get shows => '시리즈';
+	@override String get episodes => '에피소드';
+	@override String get people => '인물';
+	@override String get collections => '컬렉션';
+	@override String get programs => '프로그램';
+	@override String get channels => '채널';
 }
 
 // Path: hotkeys.actions
@@ -1361,12 +1357,12 @@ extension on TranslationsKo {
 			'common.confirm' => '확인',
 			'common.retry' => '재시도',
 			'common.logout' => '로그아웃',
-			'common.quickConnect' => 'Quick Connect',
-			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
-			'common.quickConnectCode' => 'Quick Connect Code',
-			'common.authorize' => 'Authorize',
-			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
-			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
+			'common.quickConnect' => '퀵 커넥트',
+			'common.quickConnectDescription' => 'Quick Connect로 로그인하려면 로그인하는 기기에서 ‘Quick Connect’ 버튼을 누르고 아래에 표시된 코드를 입력하세요.',
+			'common.quickConnectCode' => '퀵 커넥트 코드',
+			'common.authorize' => '승인',
+			'common.quickConnectSuccess' => 'Quick Connect가 성공적으로 승인되었습니다',
+			'common.quickConnectError' => 'Quick Connect 코드 승인에 실패했습니다',
 			'common.unknown' => '알 수 없는',
 			'common.refresh' => '새로고침',
 			'common.yes' => '예',
@@ -1388,7 +1384,7 @@ extension on TranslationsKo {
 			'common.settings' => '설정',
 			'common.mute' => '음소거',
 			'common.ok' => '확인',
-			'common.none' => 'None',
+			'common.none' => '없음',
 			'common.loading' => '로딩 중...',
 			'common.reconnect' => '다시 연결',
 			'common.goOffline' => '오프라인으로 전환',
@@ -1413,9 +1409,6 @@ extension on TranslationsKo {
 			'update.latestVersion' => '최신 버전을 사용 중입니다',
 			'update.checkFailed' => '업데이트 확인 실패',
 			'settings.title' => '설정',
-			'settings.supportOptionalCaption' => '선택 사항 — 앱은 계속 무료입니다',
-			'settings.supportTierSupport' => '개발 지원하기',
-			'settings.supportTipThankYou' => '후원해 주셔서 감사합니다!',
 			'settings.language' => '언어',
 			'settings.theme' => '테마',
 			'settings.appearance' => '외관',
@@ -1479,7 +1472,7 @@ extension on TranslationsKo {
 			'settings.mpvDescription' => '더 많은 기능과 ASS 자막을 지원하는 고급 플레이어',
 			'settings.liveTvPlayer' => '라이브 TV 플레이어',
 			'settings.liveTvPlayerDescription' => '라이브 TV에는 MPV를 권장합니다. ExoPlayer는 일부 기기에서 문제가 있을 수 있습니다.',
-			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvMpv' => 'MPV(권장)',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.liveTvQuality' => '라이브 TV 품질',
 			'settings.liveTvQualityDescription' => '라이브 TV의 트랜스코딩 품질을 제한합니다. 제한 없음은 서버 기본값을 사용합니다.',
@@ -1529,14 +1522,14 @@ extension on TranslationsKo {
 			'settings.autoSkip' => '자동 건너뛰기',
 			'settings.autoSkipIntro' => '자동으로 오프닝 건너뛰기',
 			'settings.autoSkipIntroDescription' => '몇 초 후 오프닝을 자동으로 건너뛰기',
-			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
-			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.enableExternalSubtitles' => '외부 자막 사용',
+			'settings.enableExternalSubtitlesDescription' => '플레이어에서 외부 자막 옵션을 표시하며, 선택 시 로드됩니다.',
 			'settings.alwaysBurnInSubtitleWhenTranscoding' => '트랜스코딩 시 자막 굽기',
 			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => '트랜스코딩 시 선택한 자막을 비디오에 굽습니다. jellyfin-web과 동일합니다.',
-			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
-			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
-			'settings.enableChapterImages' => 'Enable Chapter Images',
-			'settings.enableChapterImagesDescription' => 'Show thumbnail images for chapters in the chapter list.',
+			'settings.enableTrickplay' => '트릭플레이 썸네일 사용',
+			'settings.enableTrickplayDescription' => '탐색 시 타임라인에 썸네일을 표시합니다. 서버에 트릭플레이 데이터가 있어야 합니다.',
+			'settings.enableChapterImages' => '챕터 이미지 사용',
+			'settings.enableChapterImagesDescription' => '챕터 목록에서 챕터 미리보기 썸네일을 표시합니다.',
 			'settings.autoSkipOutro' => '자동으로 아웃트로 건너뛰기',
 			'settings.autoSkipOutroDescription' => '아웃트로 세그먼트 자동 건너뛰기',
 			'settings.autoSkipRecap' => '자동으로 요약 건너뛰기',
@@ -1547,8 +1540,8 @@ extension on TranslationsKo {
 			'settings.autoSkipCommercialDescription' => '광고 세그먼트 자동 건너뛰기',
 			'settings.autoSkipDelay' => '자동 건너뛰기 지연',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => '자동 건너뛰기 전 ${seconds} 초 대기',
-			'settings.showDownloads' => 'Show Downloads',
-			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
+			'settings.showDownloads' => '다운로드 사용',
+			'settings.showDownloadsDescription' => '영화와 시리즈를 다운로드해 오프라인으로 시청할 수 있게 합니다.',
 			'settings.downloads' => '다운로드',
 			'settings.downloadLocationDescription' => '다운로드 콘텐츠 저장 위치 선택',
 			'settings.downloadLocationDefault' => '기본값 (앱 저장소)',
@@ -1572,7 +1565,7 @@ extension on TranslationsKo {
 			'settings.playbackModeAuto' => '자동',
 			'settings.playbackModeAutoDirect' => '자동 - Direct',
 			'settings.playbackModeDirectPlayDescription' => '원본 파일을 사용합니다.',
-			'settings.playbackModeDirectPlay' => 'Direct',
+			'settings.playbackModeDirectPlay' => '직접',
 			'settings.quality15Mbps' => '15 Mbps',
 			'settings.quality10Mbps' => '10 Mbps',
 			'settings.quality8Mbps' => '8 Mbps',
@@ -1606,19 +1599,17 @@ extension on TranslationsKo {
 			'settings.performanceLarge' => '큼',
 			'settings.performanceLow' => '낮음',
 			'settings.performanceHigh' => '높음',
-			'settings.hideSupportDevelopment' => '개발 지원 숨기기',
-			'settings.hideSupportDevelopmentDescription' => '설정에서 개발 지원 섹션 숨기기',
 			'search.hint' => '영화, 시리즈, 음악 등을 검색하세요...',
 			'search.tryDifferentTerm' => '다른 검색어를 시도해 보세요',
 			'search.searchYourMedia' => '미디어 검색',
 			'search.enterTitleActorOrKeyword' => '제목, 배우 또는 키워드를 입력하세요',
-			'search.categories.movies' => 'Movies',
-			'search.categories.shows' => 'Shows',
-			'search.categories.episodes' => 'Episodes',
-			'search.categories.people' => 'People',
-			'search.categories.collections' => 'Collections',
-			'search.categories.programs' => 'Programs',
-			'search.categories.channels' => 'Channels',
+			'search.categories.movies' => '영화',
+			'search.categories.shows' => '시리즈',
+			'search.categories.episodes' => '에피소드',
+			'search.categories.people' => '인물',
+			'search.categories.collections' => '컬렉션',
+			'search.categories.programs' => '프로그램',
+			'search.categories.channels' => '채널',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => '${actionName}에 대한 단축키 설정',
 			'hotkeys.clearShortcut' => '단축키 삭제',
 			'hotkeys.actions.playPause' => '재생/일시정지',
@@ -1720,6 +1711,7 @@ extension on TranslationsKo {
 			'videoControls.unmuteButton' => '음소거 해제',
 			'videoControls.settingsButton' => '동영상 설정',
 			'videoControls.audioTrackButton' => '음원 트랙',
+			'videoControls.tracksButton' => '오디오 및 자막',
 			'videoControls.subtitlesButton' => '자막',
 			'videoControls.chaptersButton' => '챕터',
 			'videoControls.versionsButton' => '동영상 버전',
@@ -1784,7 +1776,7 @@ extension on TranslationsKo {
 			'subtitlingStyling.borderColor' => '테두리 색상',
 			'subtitlingStyling.backgroundOpacity' => '배경 불투명도',
 			'subtitlingStyling.backgroundColor' => '배경색',
-			'subtitlingStyling.position' => 'Position',
+			'subtitlingStyling.position' => '위치',
 			'mpvConfig.title' => 'MPV 설정',
 			'mpvConfig.description' => '고급 비디오 플레이어 설정',
 			'mpvConfig.properties' => '속성',
@@ -1819,8 +1811,8 @@ extension on TranslationsKo {
 			'discover.overview' => '개요',
 			'discover.cast' => '출연진',
 			'discover.moreLikeThis' => '비슷한 콘텐츠',
-			'discover.moviesAndShows' => 'Movies & Shows',
-			'discover.noItemsFound' => 'No items found on this server',
+			'discover.moviesAndShows' => '영화 및 시리즈',
+			'discover.noItemsFound' => '이 서버에서 항목을 찾을 수 없습니다',
 			'discover.extras' => '예고편 및 부가영상',
 			'discover.seasons' => '시즌 수',
 			'discover.studio' => '제작사',
@@ -1841,12 +1833,12 @@ extension on TranslationsKo {
 			'errors.invalidToken' => '토큰이 유효하지 않습니다',
 			'errors.failedToVerifyToken' => ({required Object error}) => '토큰을 확인할 수 없습니다: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => '${displayName}으로 전환할 수 없습니다',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.title' => '미디어 라이브러리',
 			'libraries.scanLibraryFiles' => '미디어 라이브러리 파일 스캔',
 			'libraries.scanLibrary' => '미디어 라이브러리 스캔',
 			'libraries.analyze' => '분석',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzeLibrary' => '미디어 라이브러리 분석',
 			'libraries.refreshMetadata' => '메타데이터 새로 고침',
 			'libraries.emptyTrash' => '휴지통 비우기',
@@ -1925,7 +1917,7 @@ extension on TranslationsKo {
 			'liveTv.recordings' => '녹화',
 			'liveTv.subscriptions' => '녹화 규칙',
 			'liveTv.scheduled' => '예약됨',
-			'liveTv.seriesTimers' => 'Series Timers',
+			'liveTv.seriesTimers' => '시리즈 타이머',
 			'liveTv.noChannels' => '사용 가능한 채널이 없습니다',
 			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => '서버에 DVR이 구성되어 있지 않습니다',
@@ -1939,26 +1931,26 @@ extension on TranslationsKo {
 			'liveTv.deleteSubscriptionConfirm' => '이 녹화 규칙을 삭제하시겠습니까?',
 			'liveTv.subscriptionDeleted' => '녹화 규칙이 삭제되었습니다',
 			'liveTv.noPrograms' => '프로그램 데이터가 없습니다',
-			'liveTv.noRecordings' => 'No recordings',
-			'liveTv.noScheduled' => 'No scheduled recordings',
-			'liveTv.noSubscriptions' => 'No series timers',
-			'liveTv.cancelTimer' => 'Cancel Recording',
-			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
-			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.noRecordings' => '녹화 없음',
+			'liveTv.noScheduled' => '예약된 녹화 없음',
+			'liveTv.noSubscriptions' => '시리즈 타이머 없음',
+			'liveTv.cancelTimer' => '녹화 취소',
+			'liveTv.cancelTimerConfirm' => '이 예약 녹화를 취소할까요?',
+			'liveTv.timerCancelled' => '녹화 취소됨',
 			'liveTv.editSeriesTimer' => '편집',
-			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
-			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
-			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
-			'liveTv.seriesTimerUpdated' => 'Series timer updated',
-			'liveTv.recordNewOnly' => 'Record new episodes only',
-			'liveTv.keepUpTo' => 'Keep up to',
-			'liveTv.keepAll' => 'Keep all',
+			'liveTv.deleteSeriesTimer' => '시리즈 타이머 삭제',
+			'liveTv.deleteSeriesTimerConfirm' => '이 시리즈 타이머를 삭제할까요? 연결된 모든 예약 녹화도 제거됩니다.',
+			'liveTv.seriesTimerDeleted' => '시리즈 타이머 삭제됨',
+			'liveTv.seriesTimerUpdated' => '시리즈 타이머 업데이트됨',
+			'liveTv.recordNewOnly' => '새 에피소드만 녹화',
+			'liveTv.keepUpTo' => '최대 보관',
+			'liveTv.keepAll' => '모두 보관',
 			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
-			'liveTv.prePadding' => 'Start recording early',
-			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.prePadding' => '시작 전에 녹화 시작',
+			'liveTv.postPadding' => '종료 후 계속 녹화',
 			'liveTv.minutes' => ({required Object count}) => '${count} min',
-			'liveTv.days' => 'Days',
-			'liveTv.priority' => 'Priority',
+			'liveTv.days' => '일',
+			'liveTv.priority' => '우선순위',
 			'liveTv.channelNumber' => ({required Object number}) => '채널 ${number}',
 			'liveTv.live' => '실시간',
 			'liveTv.hd' => 'HD',
@@ -1974,21 +1966,21 @@ extension on TranslationsKo {
 			'liveTv.daytime' => '낮',
 			'liveTv.evening' => '저녁',
 			'liveTv.lateNight' => '심야 방송',
-			'liveTv.programs' => 'Programs',
-			'liveTv.onNow' => 'On Now',
-			'liveTv.upcomingShows' => 'Shows',
-			'liveTv.upcomingMovies' => 'Movies',
-			'liveTv.upcomingSports' => 'Sports',
-			'liveTv.forKids' => 'For Kids',
-			'liveTv.upcomingNews' => 'News',
+			'liveTv.programs' => '프로그램',
+			'liveTv.onNow' => '생방송',
+			'liveTv.upcomingShows' => '시리즈',
+			'liveTv.upcomingMovies' => '영화',
+			'liveTv.upcomingSports' => '스포츠',
+			'liveTv.forKids' => '어린이용',
+			'liveTv.upcomingNews' => '뉴스',
 			'liveTv.watchChannel' => '채널 시청',
-			'liveTv.recentlyAdded' => 'Recently Added',
-			'liveTv.recordingScheduled' => 'Recording scheduled',
-			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
-			'liveTv.recordingFailed' => 'Failed to schedule recording',
-			'liveTv.cancelSeries' => 'Cancel Series',
-			'liveTv.stopRecording' => 'Stop Recording',
-			'liveTv.doNotRecord' => 'Do Not Record',
+			'liveTv.recentlyAdded' => '최근 추가',
+			'liveTv.recordingScheduled' => '녹화 예약됨',
+			'liveTv.seriesRecordingScheduled' => '시리즈 녹화 예약됨',
+			'liveTv.recordingFailed' => '녹화 예약 실패',
+			'liveTv.cancelSeries' => '시리즈 취소',
+			'liveTv.stopRecording' => '녹화 중지',
+			'liveTv.doNotRecord' => '녹화 안 함',
 			'collections.title' => '컬렉션',
 			'collections.collection' => '컬렉션',
 			'collections.addToCollection' => '컬렉션에 추가',
@@ -2064,7 +2056,7 @@ extension on TranslationsKo {
 			'shaders.qualityFast' => '빠름',
 			'shaders.qualityHQ' => '고품질',
 			'shaders.mode' => '모드',
-			'companionRemote.title' => 'Companion Remote',
+			'companionRemote.title' => '동반 리모컨',
 			'companionRemote.connectToDevice' => '기기에 연결',
 			'companionRemote.hostRemoteSession' => '원격 세션 호스트',
 			'companionRemote.controlThisDevice' => '휴대폰으로 이 기기를 제어하세요',

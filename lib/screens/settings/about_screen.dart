@@ -6,8 +6,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../focus/focus_utils.dart';
-import '../../services/settings_service.dart';
-import '../../services/support_service.dart';
 import '../../services/update_service.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
@@ -24,8 +22,6 @@ class AboutScreen extends StatefulWidget {
 class _AboutScreenState extends State<AboutScreen> {
   String _appName = '';
   String _appVersion = '';
-  SettingsService? _settingsService;
-  bool _hideSupportDevelopment = false;
   bool _isCheckingForUpdate = false;
   final _contentKey = GlobalKey();
 
@@ -36,18 +32,11 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _loadData() async {
-    final results = await Future.wait([
-      PackageInfo.fromPlatform(),
-      SettingsService.getInstance(),
-    ]);
+    final packageInfo = await PackageInfo.fromPlatform();
     if (!mounted) return;
-    final packageInfo = results[0] as PackageInfo;
-    final settingsService = results[1] as SettingsService;
     setState(() {
       _appName = t.app.title;
       _appVersion = packageInfo.version;
-      _settingsService = settingsService;
-      _hideSupportDevelopment = settingsService.getHideSupportDevelopment();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -203,24 +192,6 @@ class _AboutScreenState extends State<AboutScreen> {
                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
                         : const AppIcon(Symbols.chevron_right_rounded, fill: 1),
                     onTap: _isCheckingForUpdate ? null : _checkForUpdates,
-                  ),
-                ),
-              ],
-
-              if (SupportService.instance.isAvailable &&
-                  (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) ...[
-                const SizedBox(height: 8),
-
-                Card(
-                  child: SwitchListTile(
-                    secondary: const AppIcon(Symbols.volunteer_activism_rounded, fill: 1),
-                    title: Text(t.settings.hideSupportDevelopment),
-                    subtitle: Text(t.settings.hideSupportDevelopmentDescription),
-                    value: _hideSupportDevelopment,
-                    onChanged: (value) async {
-                      setState(() => _hideSupportDevelopment = value);
-                      await _settingsService?.setHideSupportDevelopment(value);
-                    },
                   ),
                 ),
               ],

@@ -19,7 +19,6 @@ class SettingsProvider extends ChangeNotifier {
   PerformanceProfile _posterSize = PerformanceProfile.medium;
   bool _animationsEnabled = true;
   GridPreloadLevel _gridPreload = GridPreloadLevel.medium;
-  bool _hideSupportDevelopment = false;
   bool _showDownloads = true;
   bool _isInitialized = false;
   Future<void>? _initFuture;
@@ -50,7 +49,6 @@ class SettingsProvider extends ChangeNotifier {
     _posterSize = _settingsService!.getPosterSize();
     _animationsEnabled = _settingsService!.getAnimationsEnabled();
     _gridPreload = _settingsService!.getGridPreload();
-    _hideSupportDevelopment = _settingsService!.getHideSupportDevelopment();
     _showDownloads = _settingsService!.getShowDownloads();
     _isInitialized = true;
     notifyListeners();
@@ -103,8 +101,6 @@ class SettingsProvider extends ChangeNotifier {
   bool get disableAnimations => !_animationsEnabled;
 
   GridPreloadLevel get gridPreload => _gridPreload;
-
-  bool get hideSupportDevelopment => _hideSupportDevelopment;
 
   bool get showDownloads => _showDownloads;
 
@@ -240,15 +236,6 @@ class SettingsProvider extends ChangeNotifier {
     if (_gridPreload != value) {
       _gridPreload = value;
       await _settingsService!.setGridPreload(value);
-      notifyListeners();
-    }
-  }
-
-  Future<void> setHideSupportDevelopment(bool value) async {
-    if (!_isInitialized) await _initializeSettings();
-    if (_hideSupportDevelopment != value) {
-      _hideSupportDevelopment = value;
-      await _settingsService!.setHideSupportDevelopment(value);
       notifyListeners();
     }
   }

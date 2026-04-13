@@ -132,12 +132,12 @@ class _TranslationsCommonSv implements TranslationsCommonEn {
 	@override String get confirm => 'Bekräfta';
 	@override String get retry => 'Försök igen';
 	@override String get logout => 'Logga ut';
-	@override String get quickConnect => 'Quick Connect';
-	@override String get quickConnectDescription => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.';
-	@override String get quickConnectCode => 'Quick Connect Code';
-	@override String get authorize => 'Authorize';
-	@override String get quickConnectSuccess => 'Quick Connect authorized successfully';
-	@override String get quickConnectError => 'Failed to authorize Quick Connect code';
+	@override String get quickConnect => 'Snabbanslutning';
+	@override String get quickConnectDescription => 'För att logga in med Quick Connect trycker du på knappen «Quick Connect» på enheten du loggar in från och anger koden som visas nedan.';
+	@override String get quickConnectCode => 'Quick Connect-kod';
+	@override String get authorize => 'Godkänn';
+	@override String get quickConnectSuccess => 'Quick Connect har auktoriserats';
+	@override String get quickConnectError => 'Det gick inte att auktorisera Quick Connect-koden';
 	@override String get unknown => 'Okänd';
 	@override String get refresh => 'Uppdatera';
 	@override String get yes => 'Ja';
@@ -159,7 +159,7 @@ class _TranslationsCommonSv implements TranslationsCommonEn {
 	@override String get settings => 'Inställningar';
 	@override String get mute => 'Ljud av';
 	@override String get ok => 'OK';
-	@override String get none => 'None';
+	@override String get none => 'Ingen';
 	@override String get loading => 'Laddar...';
 	@override String get reconnect => 'Återanslut';
 	@override String get goOffline => 'Gå offline';
@@ -211,9 +211,6 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 
 	// Translations
 	@override String get title => 'Inställningar';
-	@override String get supportOptionalCaption => 'Frivilligt — appen förblir gratis';
-	@override String get supportTierSupport => 'Stöd utvecklingen';
-	@override String get supportTipThankYou => 'Tack för ditt stöd!';
 	@override String get language => 'Språk';
 	@override String get theme => 'Tema';
 	@override String get appearance => 'Utseende';
@@ -277,7 +274,7 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get mpvDescription => 'Avancerad spelare med fler funktioner och ASS-undertextstöd';
 	@override String get liveTvPlayer => 'Live TV-spelare';
 	@override String get liveTvPlayerDescription => 'MPV rekommenderas för Live TV. ExoPlayer kan ha problem på vissa enheter.';
-	@override String get liveTvMpv => 'MPV (Recommended)';
+	@override String get liveTvMpv => 'MPV (rekommenderas)';
 	@override String get liveTvExoPlayer => 'ExoPlayer';
 	@override String get liveTvQuality => 'Live TV-kvalitet';
 	@override String get liveTvQualityDescription => 'Begränsa transkodningskvalitet för Live TV. Ingen gräns använder serverstandard.';
@@ -327,14 +324,14 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get autoSkip => 'Auto Hoppa Över';
 	@override String get autoSkipIntro => 'Hoppa Över Intro Automatiskt';
 	@override String get autoSkipIntroDescription => 'Hoppa automatiskt över intro-markörer efter några sekunder';
-	@override String get enableExternalSubtitles => 'Enable External Subtitles';
-	@override String get enableExternalSubtitlesDescription => 'Show external subtitle options in the player; they load when you select one.';
+	@override String get enableExternalSubtitles => 'Aktivera externa undertexter';
+	@override String get enableExternalSubtitlesDescription => 'Visar externa undertextalternativ i spelaren; de laddas när du väljer en.';
 	@override String get alwaysBurnInSubtitleWhenTranscoding => 'Bränna in undertexter vid transkodning';
 	@override String get alwaysBurnInSubtitleWhenTranscodingDescription => 'Vid transkodning bränna in vald undertext i videon. Som jellyfin-web.';
-	@override String get enableTrickplay => 'Enable Trickplay Thumbnails';
-	@override String get enableTrickplayDescription => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.';
-	@override String get enableChapterImages => 'Enable Chapter Images';
-	@override String get enableChapterImagesDescription => 'Show thumbnail images for chapters in the chapter list.';
+	@override String get enableTrickplay => 'Aktivera trickplay-miniatyrer';
+	@override String get enableTrickplayDescription => 'Visar tidslinjeminiatyrer vid skrubbning. Kräver trickplay-data på servern.';
+	@override String get enableChapterImages => 'Aktivera kapitelbilder';
+	@override String get enableChapterImagesDescription => 'Visar miniatyrbilder för kapitel i kapitellistan.';
 	@override String get autoSkipOutro => 'Hoppa Över Outro Automatiskt';
 	@override String get autoSkipOutroDescription => 'Hoppa automatiskt över outro-segment';
 	@override String get autoSkipRecap => 'Hoppa Över Sammanfattning Automatiskt';
@@ -345,8 +342,8 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get autoSkipCommercialDescription => 'Hoppa automatiskt över reklamsegment';
 	@override String get autoSkipDelay => 'Fördröjning Auto Hoppa Över';
 	@override String autoSkipDelayDescription({required Object seconds}) => 'Vänta ${seconds} sekunder innan automatisk överhoppning';
-	@override String get showDownloads => 'Show Downloads';
-	@override String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
+	@override String get showDownloads => 'Aktivera nedladdningar';
+	@override String get showDownloadsDescription => 'Gör det möjligt att ladda ner filmer och serier för offlinevisning.';
 	@override String get downloads => 'Nedladdningar';
 	@override String get downloadLocationDescription => 'Välj var nedladdat innehåll ska lagras';
 	@override String get downloadLocationDefault => 'Standard (App-lagring)';
@@ -368,9 +365,9 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get downloadQualityOriginalDescription => 'Använder originalfilen.';
 	@override String get playbackModeAutoDescription => 'Låter servern bestämma.';
 	@override String get playbackModeAuto => 'Auto';
-	@override String get playbackModeAutoDirect => 'Auto - Direct';
+	@override String get playbackModeAutoDirect => 'Auto - Direkt';
 	@override String get playbackModeDirectPlayDescription => 'Använder originalfilen.';
-	@override String get playbackModeDirectPlay => 'Direct';
+	@override String get playbackModeDirectPlay => 'Direkt';
 	@override String get quality15Mbps => '15 Mbps';
 	@override String get quality10Mbps => '10 Mbps';
 	@override String get quality8Mbps => '8 Mbps';
@@ -404,8 +401,6 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get performanceLarge => 'Stor';
 	@override String get performanceLow => 'Låg';
 	@override String get performanceHigh => 'Hög';
-	@override String get hideSupportDevelopment => 'Dölj Stöd utvecklingen';
-	@override String get hideSupportDevelopmentDescription => 'Dölj avsnittet Stöd utvecklingen i Inställningar';
 }
 
 // Path: search
@@ -566,6 +561,7 @@ class _TranslationsVideoControlsSv implements TranslationsVideoControlsEn {
 	@override String get unmuteButton => 'Slå på ljud';
 	@override String get settingsButton => 'Videoinställningar';
 	@override String get audioTrackButton => 'Ljudspår';
+	@override String get tracksButton => 'Ljud och Undertexter';
 	@override String get subtitlesButton => 'Undertexter';
 	@override String get chaptersButton => 'Kapitel';
 	@override String get versionsButton => 'Videoversioner';
@@ -715,8 +711,8 @@ class _TranslationsDiscoverSv implements TranslationsDiscoverEn {
 	@override String get overview => 'Översikt';
 	@override String get cast => 'Rollbesättning';
 	@override String get moreLikeThis => 'Liknande';
-	@override String get moviesAndShows => 'Movies & Shows';
-	@override String get noItemsFound => 'No items found on this server';
+	@override String get moviesAndShows => 'Filmer och serier';
+	@override String get noItemsFound => 'Inga objekt hittades på den här servern';
 	@override String get extras => 'Trailers och Extra';
 	@override String get seasons => 'Säsonger';
 	@override String get studio => 'Studio';
@@ -888,7 +884,7 @@ class _TranslationsLiveTvSv implements TranslationsLiveTvEn {
 	@override String get recordings => 'Inspelningar';
 	@override String get subscriptions => 'Inspelningsregler';
 	@override String get scheduled => 'Schemalagda';
-	@override String get seriesTimers => 'Series Timers';
+	@override String get seriesTimers => 'Serietimers';
 	@override String get noChannels => 'Inga kanaler tillgängliga';
 	@override String get dvr => 'DVR';
 	@override String get noDvr => 'Ingen DVR konfigurerad på någon server';
@@ -902,26 +898,26 @@ class _TranslationsLiveTvSv implements TranslationsLiveTvEn {
 	@override String get deleteSubscriptionConfirm => 'Är du säker på att du vill ta bort denna inspelningsregel?';
 	@override String get subscriptionDeleted => 'Inspelningsregel borttagen';
 	@override String get noPrograms => 'Ingen programdata tillgänglig';
-	@override String get noRecordings => 'No recordings';
-	@override String get noScheduled => 'No scheduled recordings';
-	@override String get noSubscriptions => 'No series timers';
-	@override String get cancelTimer => 'Cancel Recording';
-	@override String get cancelTimerConfirm => 'Are you sure you want to cancel this scheduled recording?';
-	@override String get timerCancelled => 'Recording cancelled';
+	@override String get noRecordings => 'Inga inspelningar';
+	@override String get noScheduled => 'Inga schemalagda inspelningar';
+	@override String get noSubscriptions => 'Inga serietimers';
+	@override String get cancelTimer => 'Avbryt inspelning';
+	@override String get cancelTimerConfirm => 'Vill du verkligen avbryta den här schemalagda inspelningen?';
+	@override String get timerCancelled => 'Inspelning avbruten';
 	@override String get editSeriesTimer => 'Redigera';
-	@override String get deleteSeriesTimer => 'Delete Series Timer';
-	@override String get deleteSeriesTimerConfirm => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.';
-	@override String get seriesTimerDeleted => 'Series timer deleted';
-	@override String get seriesTimerUpdated => 'Series timer updated';
-	@override String get recordNewOnly => 'Record new episodes only';
-	@override String get keepUpTo => 'Keep up to';
-	@override String get keepAll => 'Keep all';
+	@override String get deleteSeriesTimer => 'Ta bort serietimer';
+	@override String get deleteSeriesTimerConfirm => 'Vill du verkligen ta bort den här serietimern? Alla associerade schemalagda inspelningar tas också bort.';
+	@override String get seriesTimerDeleted => 'Serietimer borttagen';
+	@override String get seriesTimerUpdated => 'Serietimer uppdaterad';
+	@override String get recordNewOnly => 'Spela in endast nya avsnitt';
+	@override String get keepUpTo => 'Behåll upp till';
+	@override String get keepAll => 'Behåll alla';
 	@override String keepEpisodes({required Object count}) => '${count} episodes';
-	@override String get prePadding => 'Start recording early';
-	@override String get postPadding => 'Continue recording after';
+	@override String get prePadding => 'Börja spela in i förväg';
+	@override String get postPadding => 'Fortsätt spela in efter';
 	@override String minutes({required Object count}) => '${count} min';
-	@override String get days => 'Days';
-	@override String get priority => 'Priority';
+	@override String get days => 'Dagar';
+	@override String get priority => 'Prioritet';
 	@override String channelNumber({required Object number}) => 'Kanal ${number}';
 	@override String get live => 'LIVE';
 	@override String get hd => 'HD';
@@ -937,21 +933,21 @@ class _TranslationsLiveTvSv implements TranslationsLiveTvEn {
 	@override String get daytime => 'Dagtid';
 	@override String get evening => 'Kväll';
 	@override String get lateNight => 'Sen kväll';
-	@override String get programs => 'Programs';
-	@override String get onNow => 'On Now';
-	@override String get upcomingShows => 'Shows';
-	@override String get upcomingMovies => 'Movies';
-	@override String get upcomingSports => 'Sports';
-	@override String get forKids => 'For Kids';
-	@override String get upcomingNews => 'News';
+	@override String get programs => 'Program';
+	@override String get onNow => 'Sänds nu';
+	@override String get upcomingShows => 'Serier';
+	@override String get upcomingMovies => 'Filmer';
+	@override String get upcomingSports => 'Sport';
+	@override String get forKids => 'För barn';
+	@override String get upcomingNews => 'Nyheter';
 	@override String get watchChannel => 'Titta på kanal';
-	@override String get recentlyAdded => 'Recently Added';
-	@override String get recordingScheduled => 'Recording scheduled';
-	@override String get seriesRecordingScheduled => 'Series recording scheduled';
-	@override String get recordingFailed => 'Failed to schedule recording';
-	@override String get cancelSeries => 'Cancel Series';
-	@override String get stopRecording => 'Stop Recording';
-	@override String get doNotRecord => 'Do Not Record';
+	@override String get recentlyAdded => 'Nyligen tillagt';
+	@override String get recordingScheduled => 'Inspelning schemalagd';
+	@override String get seriesRecordingScheduled => 'Serieinspelning schemalagd';
+	@override String get recordingFailed => 'Det gick inte att schemalägga inspelningen';
+	@override String get cancelSeries => 'Avbryt serie';
+	@override String get stopRecording => 'Stoppa inspelning';
+	@override String get doNotRecord => 'Spela inte in';
 }
 
 // Path: downloads
@@ -1057,7 +1053,7 @@ class _TranslationsShadersSv implements TranslationsShadersEn {
 	final TranslationsSv _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Shaders';
+	@override String get title => 'Shader';
 	@override String get noShaderDescription => 'Ingen videoförbättring';
 	@override String get nvscalerDescription => 'NVIDIA-bildskalning för skarpare video';
 	@override String get qualityFast => 'Snabb';
@@ -1072,7 +1068,7 @@ class _TranslationsCompanionRemoteSv implements TranslationsCompanionRemoteEn {
 	final TranslationsSv _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'Companion Remote';
+	@override String get title => 'Följande fjärrkontroll';
 	@override String get connectToDevice => 'Anslut till enhet';
 	@override String get hostRemoteSession => 'Starta fjärrsession';
 	@override String get controlThisDevice => 'Styr den här enheten med din telefon';
@@ -1134,13 +1130,13 @@ class _TranslationsSearchCategoriesSv implements TranslationsSearchCategoriesEn 
 	final TranslationsSv _root; // ignore: unused_field
 
 	// Translations
-	@override String get movies => 'Movies';
-	@override String get shows => 'Shows';
-	@override String get episodes => 'Episodes';
-	@override String get people => 'People';
-	@override String get collections => 'Collections';
-	@override String get programs => 'Programs';
-	@override String get channels => 'Channels';
+	@override String get movies => 'Filmer';
+	@override String get shows => 'Serier';
+	@override String get episodes => 'Avsnitt';
+	@override String get people => 'Personer';
+	@override String get collections => 'Samlingar';
+	@override String get programs => 'Program';
+	@override String get channels => 'Kanaler';
 }
 
 // Path: hotkeys.actions
@@ -1361,12 +1357,12 @@ extension on TranslationsSv {
 			'common.confirm' => 'Bekräfta',
 			'common.retry' => 'Försök igen',
 			'common.logout' => 'Logga ut',
-			'common.quickConnect' => 'Quick Connect',
-			'common.quickConnectDescription' => 'To sign in with Quick Connect, select the \'Quick Connect\' button on the device you are logging in from and enter the displayed code below.',
-			'common.quickConnectCode' => 'Quick Connect Code',
-			'common.authorize' => 'Authorize',
-			'common.quickConnectSuccess' => 'Quick Connect authorized successfully',
-			'common.quickConnectError' => 'Failed to authorize Quick Connect code',
+			'common.quickConnect' => 'Snabbanslutning',
+			'common.quickConnectDescription' => 'För att logga in med Quick Connect trycker du på knappen «Quick Connect» på enheten du loggar in från och anger koden som visas nedan.',
+			'common.quickConnectCode' => 'Quick Connect-kod',
+			'common.authorize' => 'Godkänn',
+			'common.quickConnectSuccess' => 'Quick Connect har auktoriserats',
+			'common.quickConnectError' => 'Det gick inte att auktorisera Quick Connect-koden',
 			'common.unknown' => 'Okänd',
 			'common.refresh' => 'Uppdatera',
 			'common.yes' => 'Ja',
@@ -1388,7 +1384,7 @@ extension on TranslationsSv {
 			'common.settings' => 'Inställningar',
 			'common.mute' => 'Ljud av',
 			'common.ok' => 'OK',
-			'common.none' => 'None',
+			'common.none' => 'Ingen',
 			'common.loading' => 'Laddar...',
 			'common.reconnect' => 'Återanslut',
 			'common.goOffline' => 'Gå offline',
@@ -1413,9 +1409,6 @@ extension on TranslationsSv {
 			'update.latestVersion' => 'Du har den senaste versionen',
 			'update.checkFailed' => 'Misslyckades att kontrollera uppdateringar',
 			'settings.title' => 'Inställningar',
-			'settings.supportOptionalCaption' => 'Frivilligt — appen förblir gratis',
-			'settings.supportTierSupport' => 'Stöd utvecklingen',
-			'settings.supportTipThankYou' => 'Tack för ditt stöd!',
 			'settings.language' => 'Språk',
 			'settings.theme' => 'Tema',
 			'settings.appearance' => 'Utseende',
@@ -1479,7 +1472,7 @@ extension on TranslationsSv {
 			'settings.mpvDescription' => 'Avancerad spelare med fler funktioner och ASS-undertextstöd',
 			'settings.liveTvPlayer' => 'Live TV-spelare',
 			'settings.liveTvPlayerDescription' => 'MPV rekommenderas för Live TV. ExoPlayer kan ha problem på vissa enheter.',
-			'settings.liveTvMpv' => 'MPV (Recommended)',
+			'settings.liveTvMpv' => 'MPV (rekommenderas)',
 			'settings.liveTvExoPlayer' => 'ExoPlayer',
 			'settings.liveTvQuality' => 'Live TV-kvalitet',
 			'settings.liveTvQualityDescription' => 'Begränsa transkodningskvalitet för Live TV. Ingen gräns använder serverstandard.',
@@ -1529,14 +1522,14 @@ extension on TranslationsSv {
 			'settings.autoSkip' => 'Auto Hoppa Över',
 			'settings.autoSkipIntro' => 'Hoppa Över Intro Automatiskt',
 			'settings.autoSkipIntroDescription' => 'Hoppa automatiskt över intro-markörer efter några sekunder',
-			'settings.enableExternalSubtitles' => 'Enable External Subtitles',
-			'settings.enableExternalSubtitlesDescription' => 'Show external subtitle options in the player; they load when you select one.',
+			'settings.enableExternalSubtitles' => 'Aktivera externa undertexter',
+			'settings.enableExternalSubtitlesDescription' => 'Visar externa undertextalternativ i spelaren; de laddas när du väljer en.',
 			'settings.alwaysBurnInSubtitleWhenTranscoding' => 'Bränna in undertexter vid transkodning',
 			'settings.alwaysBurnInSubtitleWhenTranscodingDescription' => 'Vid transkodning bränna in vald undertext i videon. Som jellyfin-web.',
-			'settings.enableTrickplay' => 'Enable Trickplay Thumbnails',
-			'settings.enableTrickplayDescription' => 'Show timeline scrub thumbnails when seeking. Requires trickplay data on the server.',
-			'settings.enableChapterImages' => 'Enable Chapter Images',
-			'settings.enableChapterImagesDescription' => 'Show thumbnail images for chapters in the chapter list.',
+			'settings.enableTrickplay' => 'Aktivera trickplay-miniatyrer',
+			'settings.enableTrickplayDescription' => 'Visar tidslinjeminiatyrer vid skrubbning. Kräver trickplay-data på servern.',
+			'settings.enableChapterImages' => 'Aktivera kapitelbilder',
+			'settings.enableChapterImagesDescription' => 'Visar miniatyrbilder för kapitel i kapitellistan.',
 			'settings.autoSkipOutro' => 'Hoppa Över Outro Automatiskt',
 			'settings.autoSkipOutroDescription' => 'Hoppa automatiskt över outro-segment',
 			'settings.autoSkipRecap' => 'Hoppa Över Sammanfattning Automatiskt',
@@ -1547,8 +1540,8 @@ extension on TranslationsSv {
 			'settings.autoSkipCommercialDescription' => 'Hoppa automatiskt över reklamsegment',
 			'settings.autoSkipDelay' => 'Fördröjning Auto Hoppa Över',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => 'Vänta ${seconds} sekunder innan automatisk överhoppning',
-			'settings.showDownloads' => 'Show Downloads',
-			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
+			'settings.showDownloads' => 'Aktivera nedladdningar',
+			'settings.showDownloadsDescription' => 'Gör det möjligt att ladda ner filmer och serier för offlinevisning.',
 			'settings.downloads' => 'Nedladdningar',
 			'settings.downloadLocationDescription' => 'Välj var nedladdat innehåll ska lagras',
 			'settings.downloadLocationDefault' => 'Standard (App-lagring)',
@@ -1570,9 +1563,9 @@ extension on TranslationsSv {
 			'settings.downloadQualityOriginalDescription' => 'Använder originalfilen.',
 			'settings.playbackModeAutoDescription' => 'Låter servern bestämma.',
 			'settings.playbackModeAuto' => 'Auto',
-			'settings.playbackModeAutoDirect' => 'Auto - Direct',
+			'settings.playbackModeAutoDirect' => 'Auto - Direkt',
 			'settings.playbackModeDirectPlayDescription' => 'Använder originalfilen.',
-			'settings.playbackModeDirectPlay' => 'Direct',
+			'settings.playbackModeDirectPlay' => 'Direkt',
 			'settings.quality15Mbps' => '15 Mbps',
 			'settings.quality10Mbps' => '10 Mbps',
 			'settings.quality8Mbps' => '8 Mbps',
@@ -1606,19 +1599,17 @@ extension on TranslationsSv {
 			'settings.performanceLarge' => 'Stor',
 			'settings.performanceLow' => 'Låg',
 			'settings.performanceHigh' => 'Hög',
-			'settings.hideSupportDevelopment' => 'Dölj Stöd utvecklingen',
-			'settings.hideSupportDevelopmentDescription' => 'Dölj avsnittet Stöd utvecklingen i Inställningar',
 			'search.hint' => 'Sök filmer, serier, musik...',
 			'search.tryDifferentTerm' => 'Prova en annan sökterm',
 			'search.searchYourMedia' => 'Sök i dina media',
 			'search.enterTitleActorOrKeyword' => 'Ange en titel, skådespelare eller nyckelord',
-			'search.categories.movies' => 'Movies',
-			'search.categories.shows' => 'Shows',
-			'search.categories.episodes' => 'Episodes',
-			'search.categories.people' => 'People',
-			'search.categories.collections' => 'Collections',
-			'search.categories.programs' => 'Programs',
-			'search.categories.channels' => 'Channels',
+			'search.categories.movies' => 'Filmer',
+			'search.categories.shows' => 'Serier',
+			'search.categories.episodes' => 'Avsnitt',
+			'search.categories.people' => 'Personer',
+			'search.categories.collections' => 'Samlingar',
+			'search.categories.programs' => 'Program',
+			'search.categories.channels' => 'Kanaler',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => 'Sätt genväg för ${actionName}',
 			'hotkeys.clearShortcut' => 'Rensa genväg',
 			'hotkeys.actions.playPause' => 'Spela/Pausa',
@@ -1720,6 +1711,7 @@ extension on TranslationsSv {
 			'videoControls.unmuteButton' => 'Slå på ljud',
 			'videoControls.settingsButton' => 'Videoinställningar',
 			'videoControls.audioTrackButton' => 'Ljudspår',
+			'videoControls.tracksButton' => 'Ljud och Undertexter',
 			'videoControls.subtitlesButton' => 'Undertexter',
 			'videoControls.chaptersButton' => 'Kapitel',
 			'videoControls.versionsButton' => 'Videoversioner',
@@ -1819,8 +1811,8 @@ extension on TranslationsSv {
 			'discover.overview' => 'Översikt',
 			'discover.cast' => 'Rollbesättning',
 			'discover.moreLikeThis' => 'Liknande',
-			'discover.moviesAndShows' => 'Movies & Shows',
-			'discover.noItemsFound' => 'No items found on this server',
+			'discover.moviesAndShows' => 'Filmer och serier',
+			'discover.noItemsFound' => 'Inga objekt hittades på den här servern',
 			'discover.extras' => 'Trailers och Extra',
 			'discover.seasons' => 'Säsonger',
 			'discover.studio' => 'Studio',
@@ -1841,12 +1833,12 @@ extension on TranslationsSv {
 			'errors.invalidToken' => 'Ogiltig token',
 			'errors.failedToVerifyToken' => ({required Object error}) => 'Misslyckades att verifiera token: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => 'Misslyckades att byta till ${displayName}',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.title' => 'Bibliotek',
 			'libraries.scanLibraryFiles' => 'Skanna biblioteksfiler',
 			'libraries.scanLibrary' => 'Skanna bibliotek',
 			'libraries.analyze' => 'Analysera',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzeLibrary' => 'Analysera bibliotek',
 			'libraries.refreshMetadata' => 'Uppdatera metadata',
 			'libraries.emptyTrash' => 'Töm papperskorg',
@@ -1925,7 +1917,7 @@ extension on TranslationsSv {
 			'liveTv.recordings' => 'Inspelningar',
 			'liveTv.subscriptions' => 'Inspelningsregler',
 			'liveTv.scheduled' => 'Schemalagda',
-			'liveTv.seriesTimers' => 'Series Timers',
+			'liveTv.seriesTimers' => 'Serietimers',
 			'liveTv.noChannels' => 'Inga kanaler tillgängliga',
 			'liveTv.dvr' => 'DVR',
 			'liveTv.noDvr' => 'Ingen DVR konfigurerad på någon server',
@@ -1939,26 +1931,26 @@ extension on TranslationsSv {
 			'liveTv.deleteSubscriptionConfirm' => 'Är du säker på att du vill ta bort denna inspelningsregel?',
 			'liveTv.subscriptionDeleted' => 'Inspelningsregel borttagen',
 			'liveTv.noPrograms' => 'Ingen programdata tillgänglig',
-			'liveTv.noRecordings' => 'No recordings',
-			'liveTv.noScheduled' => 'No scheduled recordings',
-			'liveTv.noSubscriptions' => 'No series timers',
-			'liveTv.cancelTimer' => 'Cancel Recording',
-			'liveTv.cancelTimerConfirm' => 'Are you sure you want to cancel this scheduled recording?',
-			'liveTv.timerCancelled' => 'Recording cancelled',
+			'liveTv.noRecordings' => 'Inga inspelningar',
+			'liveTv.noScheduled' => 'Inga schemalagda inspelningar',
+			'liveTv.noSubscriptions' => 'Inga serietimers',
+			'liveTv.cancelTimer' => 'Avbryt inspelning',
+			'liveTv.cancelTimerConfirm' => 'Vill du verkligen avbryta den här schemalagda inspelningen?',
+			'liveTv.timerCancelled' => 'Inspelning avbruten',
 			'liveTv.editSeriesTimer' => 'Redigera',
-			'liveTv.deleteSeriesTimer' => 'Delete Series Timer',
-			'liveTv.deleteSeriesTimerConfirm' => 'Are you sure you want to delete this series timer? All associated scheduled recordings will also be removed.',
-			'liveTv.seriesTimerDeleted' => 'Series timer deleted',
-			'liveTv.seriesTimerUpdated' => 'Series timer updated',
-			'liveTv.recordNewOnly' => 'Record new episodes only',
-			'liveTv.keepUpTo' => 'Keep up to',
-			'liveTv.keepAll' => 'Keep all',
+			'liveTv.deleteSeriesTimer' => 'Ta bort serietimer',
+			'liveTv.deleteSeriesTimerConfirm' => 'Vill du verkligen ta bort den här serietimern? Alla associerade schemalagda inspelningar tas också bort.',
+			'liveTv.seriesTimerDeleted' => 'Serietimer borttagen',
+			'liveTv.seriesTimerUpdated' => 'Serietimer uppdaterad',
+			'liveTv.recordNewOnly' => 'Spela in endast nya avsnitt',
+			'liveTv.keepUpTo' => 'Behåll upp till',
+			'liveTv.keepAll' => 'Behåll alla',
 			'liveTv.keepEpisodes' => ({required Object count}) => '${count} episodes',
-			'liveTv.prePadding' => 'Start recording early',
-			'liveTv.postPadding' => 'Continue recording after',
+			'liveTv.prePadding' => 'Börja spela in i förväg',
+			'liveTv.postPadding' => 'Fortsätt spela in efter',
 			'liveTv.minutes' => ({required Object count}) => '${count} min',
-			'liveTv.days' => 'Days',
-			'liveTv.priority' => 'Priority',
+			'liveTv.days' => 'Dagar',
+			'liveTv.priority' => 'Prioritet',
 			'liveTv.channelNumber' => ({required Object number}) => 'Kanal ${number}',
 			'liveTv.live' => 'LIVE',
 			'liveTv.hd' => 'HD',
@@ -1974,21 +1966,21 @@ extension on TranslationsSv {
 			'liveTv.daytime' => 'Dagtid',
 			'liveTv.evening' => 'Kväll',
 			'liveTv.lateNight' => 'Sen kväll',
-			'liveTv.programs' => 'Programs',
-			'liveTv.onNow' => 'On Now',
-			'liveTv.upcomingShows' => 'Shows',
-			'liveTv.upcomingMovies' => 'Movies',
-			'liveTv.upcomingSports' => 'Sports',
-			'liveTv.forKids' => 'For Kids',
-			'liveTv.upcomingNews' => 'News',
+			'liveTv.programs' => 'Program',
+			'liveTv.onNow' => 'Sänds nu',
+			'liveTv.upcomingShows' => 'Serier',
+			'liveTv.upcomingMovies' => 'Filmer',
+			'liveTv.upcomingSports' => 'Sport',
+			'liveTv.forKids' => 'För barn',
+			'liveTv.upcomingNews' => 'Nyheter',
 			'liveTv.watchChannel' => 'Titta på kanal',
-			'liveTv.recentlyAdded' => 'Recently Added',
-			'liveTv.recordingScheduled' => 'Recording scheduled',
-			'liveTv.seriesRecordingScheduled' => 'Series recording scheduled',
-			'liveTv.recordingFailed' => 'Failed to schedule recording',
-			'liveTv.cancelSeries' => 'Cancel Series',
-			'liveTv.stopRecording' => 'Stop Recording',
-			'liveTv.doNotRecord' => 'Do Not Record',
+			'liveTv.recentlyAdded' => 'Nyligen tillagt',
+			'liveTv.recordingScheduled' => 'Inspelning schemalagd',
+			'liveTv.seriesRecordingScheduled' => 'Serieinspelning schemalagd',
+			'liveTv.recordingFailed' => 'Det gick inte att schemalägga inspelningen',
+			'liveTv.cancelSeries' => 'Avbryt serie',
+			'liveTv.stopRecording' => 'Stoppa inspelning',
+			'liveTv.doNotRecord' => 'Spela inte in',
 			'downloads.title' => 'Nedladdningar',
 			'downloads.manage' => 'Hantera',
 			'downloads.tvShows' => 'TV-serier',
@@ -2058,13 +2050,13 @@ extension on TranslationsSv {
 			'collections.removedFromCollection' => 'Borttagen från samling',
 			'collections.removeFromCollectionFailed' => 'Misslyckades med att ta bort från samling',
 			'collections.removeFromCollectionError' => ({required Object error}) => 'Fel vid borttagning från samling: ${error}',
-			'shaders.title' => 'Shaders',
+			'shaders.title' => 'Shader',
 			'shaders.noShaderDescription' => 'Ingen videoförbättring',
 			'shaders.nvscalerDescription' => 'NVIDIA-bildskalning för skarpare video',
 			'shaders.qualityFast' => 'Snabb',
 			'shaders.qualityHQ' => 'Hög kvalitet',
 			'shaders.mode' => 'Läge',
-			'companionRemote.title' => 'Companion Remote',
+			'companionRemote.title' => 'Följande fjärrkontroll',
 			'companionRemote.connectToDevice' => 'Anslut till enhet',
 			'companionRemote.hostRemoteSession' => 'Starta fjärrsession',
 			'companionRemote.controlThisDevice' => 'Styr den här enheten med din telefon',

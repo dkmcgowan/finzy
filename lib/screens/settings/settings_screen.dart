@@ -49,7 +49,6 @@ import 'about_screen.dart';
 import 'logs_screen.dart';
 import 'mpv_config_screen.dart';
 import 'subtitle_styling_screen.dart';
-import '../../services/support_service.dart';
 
 /// Helper class for option selection dialog items
 class _DialogOption<T> {
@@ -129,7 +128,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
   static const _kViewLogs = 'view_logs';
   static const _kClearCache = 'clear_cache';
   static const _kResetSettings = 'reset_settings';
-  static const _kSupportDevelopment = 'support_development';
   static const _kLibrariesSection = 'libraries_section';
 
   static const _kImageQuality = 'image_quality';
@@ -169,7 +167,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
   bool _useExoPlayer = true; // Android only: ExoPlayer vs MPV
   bool _useExoPlayerForLiveTv = false; // Android only: Live TV player (default MPV)
   bool _confirmExitOnBack = true;
-  bool _hideSupportDevelopment = false;
 
   final _sectionNotifier = ValueNotifier<int>(0);
 
@@ -198,12 +195,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
     _focusTracker.dispose();
     super.dispose();
   }
-
-  bool get _showSupportDevelopment =>
-      SupportService.instance.isAvailable &&
-      !_hideSupportDevelopment &&
-      (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
-
 
   String get _downloadQualityLabel => switch (_downloadQuality) {
         settings.DownloadQuality.original => t.settings.downloadQualityOriginal,
@@ -259,8 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
   void focusActiveTabIfReady() {
     if (!InputModeTracker.isKeyboardMode(context)) return;
     // Always start at the top when returning to Settings (no focus memory)
-    final firstKey = _showSupportDevelopment ? _kSupportDevelopment : _kAppearance;
-    _focusTracker.get(firstKey).requestFocus();
+    _focusTracker.get(_kAppearance).requestFocus();
   }
 
   /// Navigate focus to the sidebar
@@ -314,7 +304,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
       _useExoPlayer = _settingsService.getUseExoPlayer();
       _useExoPlayerForLiveTv = _settingsService.getUseExoPlayerForLiveTv();
       _confirmExitOnBack = _settingsService.getConfirmExitOnBack();
-      _hideSupportDevelopment = _settingsService.getHideSupportDevelopment();
       _isLoading = false;
     });
   }
@@ -384,8 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         if (!InputModeTracker.isKeyboardMode(context)) return;
-        final firstKey = _showSupportDevelopment ? _kSupportDevelopment : _kAppearance;
-        _focusTracker.get(firstKey).requestFocus();
+        _focusTracker.get(_kAppearance).requestFocus();
       });
     }
 
@@ -416,15 +404,12 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
               padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  if (_showSupportDevelopment) ...[
-                    _buildSupportDevelopmentSection(),
-                  ],
                   _buildSectionNavTile(
                     _kAppearance,
                     t.settings.appearance,
                     Symbols.palette_rounded,
                     _buildAppearanceContent,
-                    autofocus: !_showSupportDevelopment,
+                    autofocus: true,
                     firstFocusNode: _focusTracker.get(_kTheme),
                   ),
                   _buildSectionNavTile(
@@ -455,6 +440,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
                     trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
                     onTap: () => _handleSwitchProfile(),
                   ),
+                  _buildSectionNavTile(_kAbout, t.settings.about, Symbols.info_rounded, null, directRoute: const AboutScreen()),
                   ListTile(
                     focusNode: _focusTracker.get(_kQuickConnect),
                     leading: const AppIcon(Symbols.qr_code_rounded, fill: 1),
@@ -463,11 +449,10 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
                   ),
                   ListTile(
                     focusNode: _focusTracker.get(_kLogout),
-                    leading: AppIcon(Symbols.logout_rounded, fill: 1, color: Theme.of(context).colorScheme.error),
-                    title: Text(t.common.logout, style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                    leading: const AppIcon(Symbols.logout_rounded, fill: 1),
+                    title: Text(t.common.logout),
                     onTap: () => _handleLogout(),
                   ),
-                  _buildSectionNavTile(_kAbout, t.settings.about, Symbols.info_rounded, null, directRoute: const AboutScreen()),
                 ]),
               ),
             ),
@@ -511,28 +496,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
         }
         if (mounted) _loadSettings();
       },
-    );
-  }
-
-  Widget _buildSupportDevelopmentSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          focusNode: _focusTracker.get(_kSupportDevelopment),
-          leading: const AppIcon(Symbols.volunteer_activism_rounded, fill: 1),
-          title: Text(t.settings.supportTierSupport),
-          trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-          onTap: () async {
-            final success = await SupportService.instance.openSupportLink();
-            if (mounted && success) {
-              showSuccessSnackBar(context, t.settings.supportTipThankYou);
-            }
-          },
-        ),
-        const Divider(height: 32),
-      ],
     );
   }
 

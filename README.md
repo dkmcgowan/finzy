@@ -4,7 +4,7 @@ A modern Jellyfin client for desktop and mobile. Built with Flutter for native p
 
 Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-platform Plex client built with Flutter, adapted for [Jellyfin](https://jellyfin.org) instead of Plex.
 
-**Support development** — If you enjoy Finzy, you can leave a tip via [PayPal](https://paypal.me/dkmcgowan). Optional and much appreciated. You can also find this in Settings → Support Development.
+**Support development** — If you enjoy Finzy, you can leave a tip via [PayPal](https://paypal.me/dkmcgowan). Optional and much appreciated.
 
 <p align="center">
   <img src="assets/screenshots/desktop-home.png" alt="Finzy Desktop Home Screen" width="800" />

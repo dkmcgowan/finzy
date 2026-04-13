@@ -383,15 +383,6 @@ class TranslationsSettingsEn {
 	/// en: 'Settings'
 	String get title => 'Settings';
 
-	/// en: 'Optional — app stays free'
-	String get supportOptionalCaption => 'Optional — app stays free';
-
-	/// en: 'Support development'
-	String get supportTierSupport => 'Support development';
-
-	/// en: 'Thank you for your support!'
-	String get supportTipThankYou => 'Thank you for your support!';
-
 	/// en: 'Language'
 	String get language => 'Language';
 
@@ -785,10 +776,10 @@ class TranslationsSettingsEn {
 	/// en: 'Wait ${seconds} seconds before auto-skipping'
 	String autoSkipDelayDescription({required Object seconds}) => 'Wait ${seconds} seconds before auto-skipping';
 
-	/// en: 'Show Downloads'
+	/// en: 'Enable Downloads'
 	String get showDownloads => 'Enable Downloads';
 
-	/// en: 'Show the Downloads section in the navigation menu'
+	/// en: 'Enable downloading movies and shows for offline viewing'
 	String get showDownloadsDescription => 'Enable downloading movies and shows for offline viewing';
 
 	/// en: 'Downloads'
@@ -958,12 +949,6 @@ class TranslationsSettingsEn {
 
 	/// en: 'High'
 	String get performanceHigh => 'High';
-
-	/// en: 'Hide Support Development'
-	String get hideSupportDevelopment => 'Hide Support Development';
-
-	/// en: 'Hide the Support Development section in Settings'
-	String get hideSupportDevelopmentDescription => 'Hide the Support Development section in Settings';
 }
 
 // Path: search
@@ -1298,6 +1283,9 @@ class TranslationsVideoControlsEn {
 
 	/// en: 'Audio tracks'
 	String get audioTrackButton => 'Audio tracks';
+
+	/// en: 'Audio & Subtitles'
+	String get tracksButton => 'Audio & Subtitles';
 
 	/// en: 'Subtitles'
 	String get subtitlesButton => 'Subtitles';
@@ -3102,9 +3090,6 @@ extension on Translations {
 			'update.latestVersion' => 'You are on the latest version',
 			'update.checkFailed' => 'Failed to check for updates',
 			'settings.title' => 'Settings',
-			'settings.supportOptionalCaption' => 'Optional — app stays free',
-			'settings.supportTierSupport' => 'Support development',
-			'settings.supportTipThankYou' => 'Thank you for your support!',
 			'settings.language' => 'Language',
 			'settings.theme' => 'Theme',
 			'settings.appearance' => 'Appearance',
@@ -3294,8 +3279,6 @@ extension on Translations {
 			'settings.performanceLarge' => 'Large',
 			'settings.performanceLow' => 'Low',
 			'settings.performanceHigh' => 'High',
-			'settings.hideSupportDevelopment' => 'Hide Support Development',
-			'settings.hideSupportDevelopmentDescription' => 'Hide the Support Development section in Settings',
 			'search.hint' => 'Search movies, shows, music...',
 			'search.tryDifferentTerm' => 'Try a different search term',
 			'search.searchYourMedia' => 'Search your media',
@@ -3408,6 +3391,7 @@ extension on Translations {
 			'videoControls.unmuteButton' => 'Unmute',
 			'videoControls.settingsButton' => 'Playback settings',
 			'videoControls.audioTrackButton' => 'Audio tracks',
+			'videoControls.tracksButton' => 'Audio & Subtitles',
 			'videoControls.subtitlesButton' => 'Subtitles',
 			'videoControls.chaptersButton' => 'Chapters',
 			'videoControls.versionsButton' => 'Video versions',
@@ -3530,12 +3514,12 @@ extension on Translations {
 			'errors.failedToVerifyToken' => ({required Object error}) => 'Failed to verify token: ${error}',
 			'errors.failedToSwitchProfile' => ({required Object displayName}) => 'Failed to switch to ${displayName}',
 			'libraries.title' => 'Libraries',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.scanLibraryFiles' => 'Scan Library Files',
 			'libraries.scanLibrary' => 'Scan Library',
 			'libraries.analyze' => 'Analyze',
 			'libraries.analyzeLibrary' => 'Analyze Library',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.refreshMetadata' => 'Refresh Metadata',
 			'libraries.emptyTrash' => 'Empty Trash',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Emptying trash for "${title}"...',
