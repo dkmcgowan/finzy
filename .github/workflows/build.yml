@@ -480,10 +480,14 @@ jobs:
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
+      # Pinned: newer Flutter master regresses Windows touchscreen (digitizer)
+      # mapping on ARM64 while mouse is fine; 5f58b37fdaa (~3.43.0-0.3.pre) verified OK.
+      # Re-test master periodically; keep x64/macOS/Android jobs on stable.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: "master"
+          flutter-version: "5f58b37fdaa"
           cache: true
 
       - name: Cache Pub dependencies
@@ -491,7 +495,7 @@ jobs:
         with:
           path: |
             ~\AppData\Local\Pub\Cache
-          key: ${{ runner.os }}-arm64-pub-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-arm64-pub-flutter-5f58b37fdaa-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-arm64-pub-
 
@@ -734,10 +738,12 @@ jobs:
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
+      # Same pin as build-windows-arm64 (Flutter master regression on ARM).
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: "master"
+          flutter-version: "5f58b37fdaa"
           cache: true
 
       - name: Cache Pub dependencies
@@ -745,7 +751,7 @@ jobs:
         with:
           path: |
             ~/.pub-cache
-          key: ${{ runner.os }}-arm64-pub-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-arm64-pub-flutter-5f58b37fdaa-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-arm64-pub-
 
