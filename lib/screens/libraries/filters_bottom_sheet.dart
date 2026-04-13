@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../utils/app_logger.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -190,9 +189,6 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
       if (_currentFilter == null && _currentGroup == null) {
         return KeyEventResult.handled;
       }
-      appLogger.d(
-        '[FiltersNav] detail back/esc key=$key ev=${event.runtimeType} filter=${_currentFilter?.filter} group=${_currentGroup?.group} → pop',
-      );
       if (_currentFilter != null) {
         _goBack();
       } else {
@@ -360,7 +356,6 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     if (_currentFilter == null) return;
     OverlaySheetController.maybeOf(context)?.retainSheetFocus();
     _suppressFilterCallbacks = true;
-    appLogger.d('[FiltersNav] _goBack() leaving value list was=${_currentFilter?.filter}');
     setState(() {
       _currentFilter = null;
       _filterValues = [];
@@ -377,7 +372,6 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     if (_currentGroup == null) return;
     OverlaySheetController.maybeOf(context)?.retainSheetFocus();
     _suppressFilterCallbacks = true;
-    appLogger.d('[FiltersNav] _goBackFromGroup() leaving was=${_currentGroup?.group}');
     setState(() {
       _currentGroup = null;
     });
@@ -411,10 +405,8 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
           event is KeyRepeatEvent &&
           _suppressEscapeDismissOnMainUntil != null &&
           DateTime.now().isBefore(_suppressEscapeDismissOnMainUntil!)) {
-        appLogger.d('[FiltersNav] main Escape repeat ignored (post-pop debounce)');
         return KeyEventResult.handled;
       }
-      appLogger.d('[FiltersNav] main surface back/esc key=${event.logicalKey} ev=${event.runtimeType} → dismiss');
       _dismiss();
       return KeyEventResult.handled;
     }
@@ -442,7 +434,6 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
 
   void _notifyFiltersChanged() {
     if (_suppressFilterCallbacks) {
-      appLogger.d('FiltersBottomSheet: _notifyFiltersChanged skipped (sub-route pop)');
       return;
     }
     widget.onFiltersChanged(_tempSelectedFilters);
@@ -450,11 +441,9 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
   }
 
   void _refocusAfterChange() {
-    appLogger.d('FiltersBottomSheet: _refocusAfterChange');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final ctrl = OverlaySheetController.maybeOf(context);
-      appLogger.d('FiltersBottomSheet: maybeOf=${ctrl != null}');
       if (_currentFilter == null && _currentGroup == null) {
         ctrl?.refocus(prefer: _initialFocusNode);
       } else {
@@ -466,9 +455,6 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
   /// Close without applying (Back/ESC = cancel).
   void _dismiss() {
     _suppressEscapeDismissOnMainUntil = null;
-    appLogger.d(
-      '[FiltersNav] _dismiss() closing overlay filter=${_currentFilter?.filter} group=${_currentGroup?.group}',
-    );
     OverlaySheetController.of(context).close();
   }
 

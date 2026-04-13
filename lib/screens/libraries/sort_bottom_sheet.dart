@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:finzy/utils/app_logger.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -196,11 +195,9 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
   }
 
   void _refocusAfterChange() {
-    appLogger.d('SortBottomSheet: _refocusAfterChange');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final ctrl = OverlaySheetController.maybeOf(context);
-      appLogger.d('SortBottomSheet: maybeOf=${ctrl != null}');
       ctrl?.refocus();
     });
   }

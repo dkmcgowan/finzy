@@ -13,7 +13,6 @@ import '../../../models/library_filter.dart';
 import '../../../models/first_character.dart';
 import '../../../models/library_sort.dart';
 import '../../../providers/settings_provider.dart';
-import '../../../utils/app_logger.dart';
 import '../../../utils/error_message_utils.dart';
 import '../../../utils/grid_size_calculator.dart';
 import '../../../widgets/alpha_jump_bar.dart';
@@ -160,7 +159,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
     final ctrl = OverlaySheetController.maybeOf(_overlayContext ?? context);
     final sheetOpen = ctrl?.isOpen ?? false;
     if (sheetOpen) {
-      appLogger.d('LibraryBrowseTab: tryFocus skipped (sheet open)');
       return;
     }
     super.tryFocus();
@@ -435,8 +433,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
       if (_selectedSort != null) {
         filterParams['sort'] = _selectedSort!.getSortKey(descending: _isSortDescending);
       }
-
-      appLogger.d('Library browse: getLibraryContent key=${widget.library.key} sort=${filterParams['sort']} type=${filterParams['type']} filters=${_selectedFilters.isEmpty ? "none" : _selectedFilters}');
 
       // Items are automatically tagged with server info by JellyfinClient
       final loadedItems = await client.getLibraryContent(

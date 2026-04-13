@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import '../focus/dpad_navigator.dart';
 import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
-import '../utils/app_logger.dart';
 import '../utils/platform_detector.dart';
 
 /// Entry in the sheet page stack.
@@ -284,7 +283,6 @@ class _OverlaySheetHostState extends State<OverlaySheetHost>
 
   void _close([dynamic result]) {
     if (!_isOpen || _isClosing) return;
-    appLogger.d('[OverlaySheet] _close() pageStackLen=${_pageStack.length} result=$result');
     _isClosing = true;
 
     _animationController.reverse().then((_) {
@@ -444,14 +442,8 @@ class _OverlaySheetHostState extends State<OverlaySheetHost>
     // descendants see the event.
     if (event.logicalKey.isBackKey) {
       if (_pageStack.length > 1) {
-        appLogger.d(
-          '[OverlaySheet] host handles back stack=${_pageStack.length} key=${event.logicalKey} ev=${event.runtimeType}',
-        );
         return handleBackKeyAction(event, _handleBack);
       }
-      appLogger.d(
-        '[OverlaySheet] host ignores back (single page → child sheet) key=${event.logicalKey} ev=${event.runtimeType}',
-      );
       return KeyEventResult.ignored;
     }
 
