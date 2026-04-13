@@ -65,6 +65,7 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
     if (!event.isActionable) return KeyEventResult.ignored;
     final key = event.logicalKey;
 
+    // isBackKey includes Escape — same as TV Back for Windows testing.
     if (key.isBackKey) {
       OverlaySheetController.of(context).close();
       return KeyEventResult.handled;

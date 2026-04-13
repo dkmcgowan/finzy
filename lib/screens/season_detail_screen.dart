@@ -13,6 +13,7 @@ import '../focus/dpad_navigator.dart';
 import '../focus/input_mode_tracker.dart';
 import '../models/download_models.dart';
 import '../providers/download_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/download_storage_service.dart';
 import '../widgets/optimized_image.dart';
 import '../models/media_metadata.dart';
@@ -547,8 +548,10 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                           // Build download status icon based on state
                           Widget? downloadStatusIcon;
 
-                          // Only show download status in online mode
-                          if (!widget.isOffline && widget.episode.serverId != null) {
+                          final downloadsEnabled = context.watch<SettingsProvider>().showDownloads;
+
+                          // Only show download status in online mode and when downloads are enabled
+                          if (downloadsEnabled && !widget.isOffline && widget.episode.serverId != null) {
                             final globalKey = '${widget.episode.serverId}:${widget.episode.itemId}';
                             final progress = downloadProvider.getProgress(globalKey);
                             final isQueueing = downloadProvider.isQueueing(globalKey);

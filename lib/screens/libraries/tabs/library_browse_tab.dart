@@ -38,6 +38,38 @@ import '../../../i18n/strings.g.dart';
 import '../../main_screen.dart';
 import 'base_library_tab.dart';
 
+/// Each active filter selection for the browse chip count (aligned with
+/// [FiltersBottomSheet]: comma-separated values on one map key count separately).
+int countActiveLibraryFilterSelections(Map<String, String> filters) {
+  const multiValueKeys = {
+    'genre',
+    'Genre',
+    'OfficialRating',
+    'tags',
+    'VideoTypes',
+    'year',
+    'Year',
+  };
+  var n = 0;
+  for (final e in filters.entries) {
+    final k = e.key;
+    final v = e.value;
+    if (v.isEmpty) continue;
+    if (k == 'sort' || k == 'type') continue;
+
+    if (multiValueKeys.contains(k)) {
+      n += v.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).length;
+      continue;
+    }
+    if (v == '1') {
+      n += 1;
+      continue;
+    }
+    n += 1;
+  }
+  return n;
+}
+
 /// Browse tab for library screen
 /// Shows library items with grouping, filtering, and sorting
 class LibraryBrowseTab extends BaseLibraryTab<MediaMetadata> {
@@ -1096,6 +1128,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
 
   /// Builds the chips bar widget
   Widget _buildChipsBar() {
+    final activeFilterCount = countActiveLibraryFilterSelections(_selectedFilters);
     VoidCallback? groupingNavigateRight;
     if (_isFiltersChipVisible) {
       groupingNavigateRight = () => _filtersChipFocusNode.requestFocus();
@@ -1130,9 +1163,9 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
             FocusableFilterChip(
               focusNode: _filtersChipFocusNode,
               icon: Symbols.filter_alt_rounded,
-              label: _selectedFilters.isEmpty
+              label: activeFilterCount == 0
                   ? t.libraries.filters
-                  : t.libraries.filtersWithCount(count: _selectedFilters.length),
+                  : t.libraries.filtersWithCount(count: activeFilterCount),
               onPressed: _showFiltersBottomSheet,
               onNavigateDown: _navigateToGrid,
               onNavigateUp: widget.onBack,

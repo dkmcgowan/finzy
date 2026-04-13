@@ -786,10 +786,10 @@ class TranslationsSettingsEn {
 	String autoSkipDelayDescription({required Object seconds}) => 'Wait ${seconds} seconds before auto-skipping';
 
 	/// en: 'Show Downloads'
-	String get showDownloads => 'Show Downloads';
+	String get showDownloads => 'Enable Downloads';
 
 	/// en: 'Show the Downloads section in the navigation menu'
-	String get showDownloadsDescription => 'Show the Downloads section in the navigation menu';
+	String get showDownloadsDescription => 'Enable downloading movies and shows for offline viewing';
 
 	/// en: 'Downloads'
 	String get downloads => 'Downloads';
@@ -3236,8 +3236,8 @@ extension on Translations {
 			'settings.autoSkipCommercialDescription' => 'Automatically skip commercial/ad segments',
 			'settings.autoSkipDelay' => 'Auto Skip Delay',
 			'settings.autoSkipDelayDescription' => ({required Object seconds}) => 'Wait ${seconds} seconds before auto-skipping',
-			'settings.showDownloads' => 'Show Downloads',
-			'settings.showDownloadsDescription' => 'Show the Downloads section in the navigation menu',
+			'settings.showDownloads' => 'Enable Downloads',
+			'settings.showDownloadsDescription' => 'Enable downloading movies and shows for offline viewing',
 			'settings.downloads' => 'Downloads',
 			'settings.downloadLocationDescription' => 'Choose where to store downloaded content',
 			'settings.downloadLocationDefault' => 'Default (App Storage)',

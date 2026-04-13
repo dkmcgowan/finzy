@@ -46,7 +46,7 @@ dependencies:
   file_picker: ^10.3.10
   saf_util: ^0.11.0
   saf_stream: ^0.12.2
-  material_symbols_icons: ^4.2892.0
+  material_symbols_icons: ^4.2928.1
 
   in_app_review: ^2.0.11
   store_checker: ^1.8.0

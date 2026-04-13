@@ -20,11 +20,9 @@ import '../i18n/strings.g.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/auth_button_style.dart';
 import '../utils/error_message_utils.dart';
-import '../utils/desktop_window_padding.dart';
 import '../utils/platform_detector.dart';
 import '../focus/focusable_wrapper.dart';
 import 'main_screen.dart';
-import 'settings/settings_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -54,37 +52,17 @@ class _AuthScreenState extends State<AuthScreen> {
   final FocusNode _serverUrlFocusNode = FocusNode(debugLabel: 'serverUrl');
   final FocusNode _usernameFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
-  late final FocusNode _settingsFocusNode;
   late final FocusNode _connectFocusNode;
 
   @override
   void initState() {
     super.initState();
-    _settingsFocusNode = FocusNode(
-      debugLabel: 'settings',
-      onKeyEvent: (node, event) {
-        if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
-        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          _serverUrlFocusNode.requestFocus();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-          _connectFocusNode.requestFocus();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-    );
     _connectFocusNode = FocusNode(
       debugLabel: 'connect',
       onKeyEvent: (node, event) {
         if (!event.isActionable || event is! KeyDownEvent) return KeyEventResult.ignored;
         if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
           _serverUrlFocusNode.requestFocus();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-          _settingsFocusNode.requestFocus();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
@@ -98,7 +76,6 @@ class _AuthScreenState extends State<AuthScreen> {
     _serverUrlFocusNode.dispose();
     _usernameFocusNode.dispose();
     _passwordFocusNode.dispose();
-    _settingsFocusNode.dispose();
     _connectFocusNode.dispose();
     _jellyfinUrlController.dispose();
     _jellyfinUsernameController.dispose();
@@ -492,62 +469,13 @@ class _AuthScreenState extends State<AuthScreen> {
           : null,
     );
 
-    void openSettings() {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SideNavigationScope(
-            child: const SettingsScreen(),
-          ),
-        ),
-      ).then((_) {
-        if (mounted) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _serverUrlFocusNode.requestFocus();
-          });
-        }
-      });
-    }
-
-    final connectRow = FocusTraversalGroup(
-      policy: OrderedTraversalPolicy(),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          FocusTraversalOrder(
-            order: const NumericFocusOrder(2),
-            child: IconButton(
-              focusNode: _settingsFocusNode,
-              onPressed: openSettings,
-              icon: const Icon(Symbols.settings_rounded, size: 20),
-              tooltip: t.common.settings,
-              style: IconButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(48, 48),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: FocusTraversalOrder(
-              order: const NumericFocusOrder(1),
-              child: SizedBox(
-                height: 48,
-                child: ElevatedButton(
-                  focusNode: _connectFocusNode,
-                  onPressed: _isAuthenticating ? null : _jellyfinConnectToServer,
-                  style: authPillButtonStyle(context),
-                  child: _isAuthenticating
-                      ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Connect'),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    final connectButton = ElevatedButton(
+      focusNode: _connectFocusNode,
+      onPressed: _isAuthenticating ? null : _jellyfinConnectToServer,
+      style: authPillButtonStyle(context),
+      child: _isAuthenticating
+          ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+          : const Text('Connect'),
     );
 
     return FocusTraversalGroup(
@@ -590,7 +518,7 @@ class _AuthScreenState extends State<AuthScreen> {
           const SizedBox(height: 24),
           FocusTraversalOrder(
             order: const NumericFocusOrder(1),
-            child: connectRow,
+            child: connectButton,
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 16),

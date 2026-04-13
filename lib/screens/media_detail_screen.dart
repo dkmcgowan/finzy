@@ -471,8 +471,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
             ),
             const SizedBox(width: 12),
           ],
-          // Download button (hide in offline mode - already downloaded)
-          if (!widget.isOffline)
+          // Download button (hide in offline mode or when downloads disabled)
+          if (!widget.isOffline && context.watch<SettingsProvider>().showDownloads)
             Consumer<DownloadProvider>(
               builder: (context, downloadProvider, _) {
                 final globalKey = '${metadata.serverId}:${metadata.itemId}';

@@ -97,7 +97,14 @@ class BottomSheetHeader extends StatelessWidget {
       child: Row(
         children: [
           if (resolvedLeading != null) ...[resolvedLeading, const SizedBox(width: 8)],
-          Expanded(child: Text(title, style: effectiveTitleStyle)),
+          Expanded(
+            child: Text(
+              title,
+              style: effectiveTitleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           ...[action].whereType<Widget>(),
           onCloseKeyEvent != null
               ? Focus(

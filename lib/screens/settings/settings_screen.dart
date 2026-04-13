@@ -42,6 +42,7 @@ import '../../utils/platform_detector.dart';
 import '../../widgets/desktop_app_bar.dart';
 import '../../widgets/quick_connect_authorize_dialog.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
+import '../../widgets/scroll_to_index_list_view.dart';
 import '../../widgets/tv_number_spinner.dart';
 import 'hotkey_recorder_widget.dart';
 import 'about_screen.dart';
@@ -796,57 +797,61 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
   }
 
   Widget _buildLibrariesContent() {
-    return Consumer2<LibrariesProvider, HiddenLibrariesProvider>(
-      builder: (context, librariesProvider, hiddenProvider, child) {
-        final allLibraries = _buildOrderedLibraries(librariesProvider);
-        final hiddenKeys = hiddenProvider.hiddenLibraryKeys;
-        final isTV = PlatformDetector.isTV();
+    // Outer Consumer<SettingsProvider> so the whole column rebuilds reactively
+    // when showDownloads changes, keeping the flat list structure intact for
+    // correct D-pad focus traversal.
+    return Consumer<SettingsProvider>(
+      builder: (context, settingsProvider, _) {
+        return Consumer2<LibrariesProvider, HiddenLibrariesProvider>(
+          builder: (context, librariesProvider, hiddenProvider, child) {
+            final allLibraries = _buildOrderedLibraries(librariesProvider);
+            final hiddenKeys = hiddenProvider.hiddenLibraryKeys;
+            final isTV = PlatformDetector.isTV();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ..._buildDownloadsItems(),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.only(left: 16, top: 8, right: 16, bottom: 4),
-              child: Text(
-                t.settings.libraryOrder,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.primary,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ..._buildDownloadsItems(settingsProvider),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 8, right: 16, bottom: 4),
+                  child: Text(
+                    t.settings.libraryOrder,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            if (isTV)
-              _buildLibrariesListTV(allLibraries, hiddenKeys, librariesProvider, hiddenProvider)
-            else
-              _buildLibrariesListNonTV(allLibraries, hiddenKeys, librariesProvider, hiddenProvider),
-          ],
+                if (isTV)
+                  _buildLibrariesListTV(allLibraries, hiddenKeys, librariesProvider, hiddenProvider, settingsProvider)
+                else
+                  _buildLibrariesListNonTV(allLibraries, hiddenKeys, librariesProvider, hiddenProvider),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  List<Widget> _buildDownloadsItems() {
+  List<Widget> _buildDownloadsItems(SettingsProvider settingsProvider) {
     final storageService = DownloadStorageService.instance;
     final isCustom = storageService.isUsingCustomPath();
+    final downloadsEnabled = settingsProvider.showDownloads;
 
     return [
-      Consumer<SettingsProvider>(
-        builder: (context, settingsProvider, child) {
-          return SwitchListTile(
-            focusNode: _focusTracker.get(_kShowDownloads),
-            secondary: const AppIcon(Symbols.download_rounded, fill: 1),
-            title: Text(t.settings.showDownloads),
-            subtitle: Text(t.settings.showDownloadsDescription),
-            value: settingsProvider.showDownloads,
-            onChanged: (value) async {
-              await settingsProvider.setShowDownloads(value);
-            },
-          );
+      SwitchListTile(
+        focusNode: _focusTracker.get(_kShowDownloads),
+        secondary: const AppIcon(Symbols.download_rounded, fill: 1),
+        title: Text(t.settings.showDownloads),
+        subtitle: Text(t.settings.showDownloadsDescription),
+        value: downloadsEnabled,
+        onChanged: (value) async {
+          await settingsProvider.setShowDownloads(value);
         },
       ),
-      if (!Platform.isIOS)
+      if (downloadsEnabled && !Platform.isIOS)
         FutureBuilder<String>(
           future: storageService.getCurrentDownloadPathDisplay(),
           builder: (context, snapshot) {
@@ -861,25 +866,27 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
             );
           },
         ),
-      SwitchListTile(
-        focusNode: _focusTracker.get(_kDownloadOnWifiOnly),
-        secondary: const AppIcon(Symbols.wifi_rounded, fill: 1),
-        title: Text(t.settings.downloadOnWifiOnly),
-        subtitle: Text(t.settings.downloadOnWifiOnlyDescription),
-        value: _downloadOnWifiOnly,
-        onChanged: (value) async {
-          setState(() => _downloadOnWifiOnly = value);
-          await _settingsService.setDownloadOnWifiOnly(value);
-        },
-      ),
-      ListTile(
-        focusNode: _focusTracker.get(_kDownloadQuality),
-        leading: const AppIcon(Symbols.download_rounded, fill: 1),
-        title: Text(t.settings.downloadQuality),
-        subtitle: Text(_downloadQualityLabel),
-        trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-        onTap: () => _showDownloadQualityDialog(),
-      ),
+      if (downloadsEnabled)
+        SwitchListTile(
+          focusNode: _focusTracker.get(_kDownloadOnWifiOnly),
+          secondary: const AppIcon(Symbols.wifi_rounded, fill: 1),
+          title: Text(t.settings.downloadOnWifiOnly),
+          subtitle: Text(t.settings.downloadOnWifiOnlyDescription),
+          value: _downloadOnWifiOnly,
+          onChanged: (value) async {
+            setState(() => _downloadOnWifiOnly = value);
+            await _settingsService.setDownloadOnWifiOnly(value);
+          },
+        ),
+      if (downloadsEnabled)
+        ListTile(
+          focusNode: _focusTracker.get(_kDownloadQuality),
+          leading: const AppIcon(Symbols.download_rounded, fill: 1),
+          title: Text(t.settings.downloadQuality),
+          subtitle: Text(_downloadQualityLabel),
+          trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
+          onTap: () => _showDownloadQualityDialog(),
+        ),
     ];
   }
 
@@ -888,13 +895,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
     Set<String> hiddenKeys,
     LibrariesProvider librariesProvider,
     HiddenLibrariesProvider hiddenProvider,
+    SettingsProvider settingsProvider,
   ) {
+    // No sectionHeaderFocusNode: all UP-key boundary handlers in _LibraryRowsTV
+    // return KeyEventResult.ignored so Flutter's geometry-based traversal
+    // naturally walks up to the download settings tiles above. This avoids the
+    // FocusTraversalPolicy pivot-state bug caused by programmatic requestFocus().
     return _buildLibrariesSectionTV(
       allLibraries,
       hiddenKeys,
       librariesProvider,
       hiddenProvider,
-      sectionHeaderFocusNode: _focusTracker.get(_kDownloadOnWifiOnly),
     );
   }
 
@@ -1728,40 +1739,46 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
   ];
 
   void _showStreamingQualityDialog() {
+    final selectedIndex = _streamingQualityModes.indexOf(_playbackMode);
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(t.settings.streamingQuality),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: _streamingQualityModes.map((mode) {
-              return ListTile(
-                leading: AppIcon(
-                  _playbackMode == mode ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
-                  fill: 1,
-                ),
-                title: Text(switch (mode) {
-                  settings.PlaybackMode.auto => t.settings.playbackModeAutoDirect,
-                  settings.PlaybackMode.directPlay => t.settings.playbackModeDirectPlay,
-                  settings.PlaybackMode.transcode15 => t.settings.quality15Mbps,
-                  settings.PlaybackMode.transcode10 => t.settings.quality10Mbps,
-                  settings.PlaybackMode.transcode8 => t.settings.quality8Mbps,
-                  settings.PlaybackMode.transcode6 => t.settings.quality6Mbps,
-                  settings.PlaybackMode.transcode4 => t.settings.quality4Mbps,
-                  settings.PlaybackMode.transcode3 => t.settings.quality3Mbps,
-                  settings.PlaybackMode.transcode1_5 => t.settings.quality1_5Mbps,
-                  settings.PlaybackMode.transcode720k => t.settings.quality720kbps,
-                  settings.PlaybackMode.transcode420k => t.settings.quality420kbps,
-                }),
-                onTap: () async {
-                  final navigator = Navigator.of(context);
-                  setState(() => _playbackMode = mode);
-                  await _settingsService.setPlaybackMode(mode);
-                  navigator.pop();
-                },
-              );
-            }).toList(),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ScrollToIndexListView(
+              itemCount: _streamingQualityModes.length,
+              initialIndex: selectedIndex >= 0 ? selectedIndex : 0,
+              itemBuilder: (context, index) {
+                final mode = _streamingQualityModes[index];
+                return ListTile(
+                  leading: AppIcon(
+                    _playbackMode == mode ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                    fill: 1,
+                  ),
+                  title: Text(switch (mode) {
+                    settings.PlaybackMode.auto => t.settings.playbackModeAutoDirect,
+                    settings.PlaybackMode.directPlay => t.settings.playbackModeDirectPlay,
+                    settings.PlaybackMode.transcode15 => t.settings.quality15Mbps,
+                    settings.PlaybackMode.transcode10 => t.settings.quality10Mbps,
+                    settings.PlaybackMode.transcode8 => t.settings.quality8Mbps,
+                    settings.PlaybackMode.transcode6 => t.settings.quality6Mbps,
+                    settings.PlaybackMode.transcode4 => t.settings.quality4Mbps,
+                    settings.PlaybackMode.transcode3 => t.settings.quality3Mbps,
+                    settings.PlaybackMode.transcode1_5 => t.settings.quality1_5Mbps,
+                    settings.PlaybackMode.transcode720k => t.settings.quality720kbps,
+                    settings.PlaybackMode.transcode420k => t.settings.quality420kbps,
+                  }),
+                  onTap: () async {
+                    final navigator = Navigator.of(context);
+                    setState(() => _playbackMode = mode);
+                    await _settingsService.setPlaybackMode(mode);
+                    navigator.pop();
+                  },
+                );
+              },
+            ),
           ),
           actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
         );
@@ -1783,42 +1800,48 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
   ];
 
   void _showLiveTvQualityDialog() {
+    final selectedIndex = _liveTvQualityBitrates.indexOf(_liveTvBitrate);
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(t.settings.liveTvQuality),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: _liveTvQualityBitrates.map((bitrate) {
-              final label = bitrate == null
-                  ? t.settings.playbackModeAutoDirect
-                  : switch (bitrate) {
-                      15000000 => t.settings.quality15Mbps,
-                      10000000 => t.settings.quality10Mbps,
-                      8000000 => t.settings.quality8Mbps,
-                      6000000 => t.settings.quality6Mbps,
-                      4000000 => t.settings.quality4Mbps,
-                      3000000 => t.settings.quality3Mbps,
-                      1500000 => t.settings.quality1_5Mbps,
-                      720000 => t.settings.quality720kbps,
-                      420000 => t.settings.quality420kbps,
-                      _ => t.settings.liveTvQualityNone,
-                    };
-              return ListTile(
-                leading: AppIcon(
-                  _liveTvBitrate == bitrate ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
-                  fill: 1,
-                ),
-                title: Text(label),
-                onTap: () async {
-                  final navigator = Navigator.of(context);
-                  setState(() => _liveTvBitrate = bitrate);
-                  await _settingsService.setLiveTvMaxStreamingBitrate(bitrate);
-                  navigator.pop();
-                },
-              );
-            }).toList(),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ScrollToIndexListView(
+              itemCount: _liveTvQualityBitrates.length,
+              initialIndex: selectedIndex >= 0 ? selectedIndex : 0,
+              itemBuilder: (context, index) {
+                final bitrate = _liveTvQualityBitrates[index];
+                final label = bitrate == null
+                    ? t.settings.playbackModeAutoDirect
+                    : switch (bitrate) {
+                        15000000 => t.settings.quality15Mbps,
+                        10000000 => t.settings.quality10Mbps,
+                        8000000 => t.settings.quality8Mbps,
+                        6000000 => t.settings.quality6Mbps,
+                        4000000 => t.settings.quality4Mbps,
+                        3000000 => t.settings.quality3Mbps,
+                        1500000 => t.settings.quality1_5Mbps,
+                        720000 => t.settings.quality720kbps,
+                        420000 => t.settings.quality420kbps,
+                        _ => t.settings.liveTvQualityNone,
+                      };
+                return ListTile(
+                  leading: AppIcon(
+                    _liveTvBitrate == bitrate ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                    fill: 1,
+                  ),
+                  title: Text(label),
+                  onTap: () async {
+                    final navigator = Navigator.of(context);
+                    setState(() => _liveTvBitrate = bitrate);
+                    await _settingsService.setLiveTvMaxStreamingBitrate(bitrate);
+                    navigator.pop();
+                  },
+                );
+              },
+            ),
           ),
           actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
         );
@@ -1826,55 +1849,63 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
     );
   }
 
-  Widget _buildDownloadQualityTile(settings.DownloadQuality quality, String label) {
-    return ListTile(
-      leading: AppIcon(
-        _downloadQuality == quality ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
-        fill: 1,
-      ),
-      title: Text(label),
-      onTap: () async {
-        final navigator = Navigator.of(context);
-        setState(() => _downloadQuality = quality);
-        await _settingsService.setDownloadQuality(quality);
-        navigator.pop();
-      },
-    );
-  }
+  static const List<settings.DownloadQuality> _downloadQualities = [
+    settings.DownloadQuality.original,
+    settings.DownloadQuality.p15,
+    settings.DownloadQuality.p10,
+    settings.DownloadQuality.p8,
+    settings.DownloadQuality.p6,
+    settings.DownloadQuality.p4,
+    settings.DownloadQuality.p3,
+    settings.DownloadQuality.p1_5,
+    settings.DownloadQuality.p720k,
+    settings.DownloadQuality.p420k,
+  ];
+
+  String _downloadQualityTitle(settings.DownloadQuality quality) => switch (quality) {
+    settings.DownloadQuality.original => t.settings.downloadQualityOriginal,
+    settings.DownloadQuality.p15 => t.settings.quality15Mbps,
+    settings.DownloadQuality.p10 => t.settings.quality10Mbps,
+    settings.DownloadQuality.p8 => t.settings.quality8Mbps,
+    settings.DownloadQuality.p6 => t.settings.quality6Mbps,
+    settings.DownloadQuality.p4 => t.settings.quality4Mbps,
+    settings.DownloadQuality.p3 => t.settings.quality3Mbps,
+    settings.DownloadQuality.p1_5 => t.settings.quality1_5Mbps,
+    settings.DownloadQuality.p720k => t.settings.quality720kbps,
+    settings.DownloadQuality.p420k => t.settings.quality420kbps,
+  };
 
   void _showDownloadQualityDialog() {
+    final selectedIndex = _downloadQualities.indexOf(_downloadQuality);
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(t.settings.downloadQuality),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: AppIcon(
-                  _downloadQuality == settings.DownloadQuality.original ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
-                  fill: 1,
-                ),
-                title: Text(t.settings.downloadQualityOriginal),
-                subtitle: Text(t.settings.downloadQualityOriginalDescription),
-                onTap: () async {
-                  final navigator = Navigator.of(context);
-                  setState(() => _downloadQuality = settings.DownloadQuality.original);
-                  await _settingsService.setDownloadQuality(settings.DownloadQuality.original);
-                  navigator.pop();
-                },
-              ),
-              _buildDownloadQualityTile(settings.DownloadQuality.p15, t.settings.quality15Mbps),
-              _buildDownloadQualityTile(settings.DownloadQuality.p10, t.settings.quality10Mbps),
-              _buildDownloadQualityTile(settings.DownloadQuality.p8, t.settings.quality8Mbps),
-              _buildDownloadQualityTile(settings.DownloadQuality.p6, t.settings.quality6Mbps),
-              _buildDownloadQualityTile(settings.DownloadQuality.p4, t.settings.quality4Mbps),
-              _buildDownloadQualityTile(settings.DownloadQuality.p3, t.settings.quality3Mbps),
-              _buildDownloadQualityTile(settings.DownloadQuality.p1_5, t.settings.quality1_5Mbps),
-              _buildDownloadQualityTile(settings.DownloadQuality.p720k, t.settings.quality720kbps),
-              _buildDownloadQualityTile(settings.DownloadQuality.p420k, t.settings.quality420kbps),
-            ],
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ScrollToIndexListView(
+              itemCount: _downloadQualities.length,
+              initialIndex: selectedIndex >= 0 ? selectedIndex : 0,
+              itemExtent: 72.0,
+              itemBuilder: (context, index) {
+                final quality = _downloadQualities[index];
+                return ListTile(
+                  leading: AppIcon(
+                    _downloadQuality == quality ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                    fill: 1,
+                  ),
+                  title: Text(_downloadQualityTitle(quality)),
+                  subtitle: quality == settings.DownloadQuality.original ? Text(t.settings.downloadQualityOriginalDescription) : null,
+                  onTap: () async {
+                    final navigator = Navigator.of(context);
+                    setState(() => _downloadQuality = quality);
+                    await _settingsService.setDownloadQuality(quality);
+                    navigator.pop();
+                  },
+                );
+              },
+            ),
           ),
           actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
         );
@@ -2437,26 +2468,34 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
         return Consumer<SettingsProvider>(
           builder: (context, provider, child) {
             final currentValue = getCurrentValue(provider);
+            final selectedIndex = options.indexWhere((o) => o.value == currentValue);
+            final hasSubtitles = options.any((o) => o.subtitle != null);
             return AlertDialog(
               title: Text(title),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: options.map((option) {
-                  return ListTile(
-                    leading: AppIcon(
-                      currentValue == option.value
-                          ? Symbols.radio_button_checked_rounded
-                          : Symbols.radio_button_unchecked_rounded,
-                      fill: 1,
-                    ),
-                    title: Text(option.title),
-                    subtitle: option.subtitle != null ? Text(option.subtitle!) : null,
-                    onTap: () async {
-                      await onSelect(option.value, settingsProvider);
-                      if (context.mounted) Navigator.pop(context);
-                    },
-                  );
-                }).toList(),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ScrollToIndexListView(
+                  itemCount: options.length,
+                  initialIndex: selectedIndex >= 0 ? selectedIndex : 0,
+                  itemExtent: hasSubtitles ? 72.0 : 56.0,
+                  itemBuilder: (context, index) {
+                    final option = options[index];
+                    return ListTile(
+                      leading: AppIcon(
+                        currentValue == option.value
+                            ? Symbols.radio_button_checked_rounded
+                            : Symbols.radio_button_unchecked_rounded,
+                        fill: 1,
+                      ),
+                      title: Text(option.title),
+                      subtitle: option.subtitle != null ? Text(option.subtitle!) : null,
+                      onTap: () async {
+                        await onSelect(option.value, settingsProvider);
+                        if (context.mounted) Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
               ),
               actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(t.common.cancel))],
             );
@@ -2884,10 +2923,10 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
     if (key.isUpKey) {
       if (index > 0) {
         _centerFocusNodes[index - 1].requestFocus();
-      } else if (widget.sectionHeaderFocusNode != null) {
-        widget.sectionHeaderFocusNode!.requestFocus();
+        return KeyEventResult.handled;
       }
-      return KeyEventResult.handled;
+      // At the top of the list: let Flutter's traversal reach the settings above.
+      return KeyEventResult.ignored;
     }
     if (key.isDownKey) {
       if (index < widget.libraries.length - 1) {
@@ -2921,10 +2960,9 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
         final prev = widget.libraries[index - 1];
         final isPrevFavorites = prev.globalKey == kJellyfinFavoritesKey;
         (isPrevFavorites ? _centerFocusNodes[index - 1] : _visibilityFocusNodes[index - 1]).requestFocus();
-      } else if (widget.sectionHeaderFocusNode != null) {
-        widget.sectionHeaderFocusNode!.requestFocus();
+        return KeyEventResult.handled;
       }
-      return KeyEventResult.handled;
+      return KeyEventResult.ignored;
     }
     if (key.isRightKey) {
       _reorderDownFocusNodes[index].requestFocus();
@@ -2939,10 +2977,10 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
     if (key.isUpKey) {
       if (index > 0) {
         _reorderUpFocusNodes[index - 1].requestFocus();
-      } else if (widget.sectionHeaderFocusNode != null) {
-        widget.sectionHeaderFocusNode!.requestFocus();
+        return KeyEventResult.handled;
       }
-      return KeyEventResult.handled;
+      // At the top of the list: let Flutter's traversal reach the settings above.
+      return KeyEventResult.ignored;
     }
     return KeyEventResult.ignored;
   }
@@ -3001,10 +3039,10 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
       if (index > 0) {
         final prevIsFavorites = widget.libraries[index - 1].globalKey == kJellyfinFavoritesKey;
         (prevIsFavorites ? _visibilityFocusNodes[index - 1] : _scanFocusNodes[index - 1]).requestFocus();
-      } else if (widget.sectionHeaderFocusNode != null) {
-        widget.sectionHeaderFocusNode!.requestFocus();
+        return KeyEventResult.handled;
       }
-      return KeyEventResult.handled;
+      // At the top of the list: let Flutter's traversal reach the settings above.
+      return KeyEventResult.ignored;
     }
     if (key.isDownKey && index < widget.libraries.length - 1) {
       final nextIsFavorites = widget.libraries[index + 1].globalKey == kJellyfinFavoritesKey;
@@ -3034,10 +3072,10 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
       if (index > 0) {
         final prevIsFavorites = widget.libraries[index - 1].globalKey == kJellyfinFavoritesKey;
         (prevIsFavorites ? _visibilityFocusNodes[index - 1] : _refreshFocusNodes[index - 1]).requestFocus();
-      } else if (widget.sectionHeaderFocusNode != null) {
-        widget.sectionHeaderFocusNode!.requestFocus();
+        return KeyEventResult.handled;
       }
-      return KeyEventResult.handled;
+      // At the top of the list: let Flutter's traversal reach the settings above.
+      return KeyEventResult.ignored;
     }
     if (key.isDownKey && index < widget.libraries.length - 1) {
       final nextIsFavorites = widget.libraries[index + 1].globalKey == kJellyfinFavoritesKey;
@@ -3067,10 +3105,10 @@ class _LibraryRowsTVState extends State<_LibraryRowsTV> {
     if (key.isUpKey) {
       if (index > 0) {
         _visibilityFocusNodes[index - 1].requestFocus();
-      } else if (widget.sectionHeaderFocusNode != null) {
-        widget.sectionHeaderFocusNode!.requestFocus();
+        return KeyEventResult.handled;
       }
-      return KeyEventResult.handled;
+      // At the top of the list: let Flutter's traversal reach the settings above.
+      return KeyEventResult.ignored;
     }
     if (key.isDownKey && index < widget.libraries.length - 1) {
       _visibilityFocusNodes[index + 1].requestFocus();

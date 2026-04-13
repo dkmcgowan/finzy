@@ -7,6 +7,7 @@ import '../services/play_queue_launcher.dart';
 import '../models/media_metadata.dart';
 import '../models/playlist.dart';
 import '../providers/download_provider.dart';
+import '../providers/settings_provider.dart';
 import '../providers/offline_mode_provider.dart';
 import '../providers/offline_watch_provider.dart';
 import '../utils/provider_extensions.dart';
@@ -186,11 +187,13 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         menuActions.add(_MenuAction(value: 'fileinfo', icon: Symbols.info_rounded, label: t.mediaMenu.fileInfo));
       }
 
-      // Download options (for episodes, movies, shows, and seasons)
-      if (mediaType == MediaType.episode ||
+      // Download options (for episodes, movies, shows, and seasons, only when downloads enabled)
+      final downloadsEnabled = Provider.of<SettingsProvider>(context, listen: false).showDownloads;
+      if (downloadsEnabled &&
+          (mediaType == MediaType.episode ||
           mediaType == MediaType.movie ||
           mediaType == MediaType.show ||
-          mediaType == MediaType.season) {
+          mediaType == MediaType.season)) {
         final downloadProvider = Provider.of<DownloadProvider>(context, listen: false);
         final globalKey = '${metadata.serverId}:${metadata.itemId}';
         final isDownloaded = downloadProvider.isDownloaded(globalKey);

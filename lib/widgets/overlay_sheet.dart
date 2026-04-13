@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../focus/dpad_navigator.dart';
 import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
+import '../utils/app_logger.dart';
 import '../utils/platform_detector.dart';
 
 /// Entry in the sheet page stack.
@@ -93,10 +94,23 @@ class OverlaySheetController {
     _state._close(result);
   }
 
-  /// Re-focus the first focusable descendant within the sheet.
-  /// Useful after internal page changes via setState.
-  void refocus() {
-    _state._refocus();
+  /// Re-focus within the sheet after layout changes (e.g. filter toggles).
+  ///
+  /// When [prefer] is given and attached (next frame if not yet), that node receives
+  /// focus instead of [traversalDescendants.first] — avoids the header Close button
+  /// winning traversal and focus escaping to the app chrome when popping a sub-page.
+  void refocus({FocusNode? prefer}) {
+    _state._refocus(prefer: prefer);
+  }
+
+  /// Puts primary focus on this host's sheet [FocusScope] **synchronously** (when open).
+  ///
+  /// Call **before** [setState] removes the currently focused widget inside the sheet
+  /// (e.g. leaving a filter sub-page). Otherwise focus can fall through to widgets
+  /// **outside** this host's [ExcludeFocus] subtree (e.g. the app-wide side rail when
+  /// the host only wraps the library grid).
+  void retainSheetFocus() {
+    _state._retainSheetFocus();
   }
 }
 
@@ -270,6 +284,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost>
 
   void _close([dynamic result]) {
     if (!_isOpen || _isClosing) return;
+    appLogger.d('[OverlaySheet] _close() pageStackLen=${_pageStack.length} result=$result');
     _isClosing = true;
 
     _animationController.reverse().then((_) {
@@ -323,13 +338,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost>
         if (!mounted || !_isOpen) return;
         // If the current top entry has an initialFocusNode that is attached,
         // focus that instead of the first descendant.
-        final topEntry = _pageStack.isNotEmpty ? _pageStack.last : null;
-        final initialNode = topEntry?.initialFocusNode;
-        if (initialNode != null && initialNode.context != null) {
-          initialNode.requestFocus();
-        } else {
-          _focusFirstDescendant();
-        }
+        _applyDefaultSheetFocusTop();
 
         // Clear stale select suppression from the press that opened this sheet,
         // but only if no select key is currently held down. This handles:
@@ -344,19 +353,35 @@ class _OverlaySheetHostState extends State<OverlaySheetHost>
     });
   }
 
-  void _refocus() {
+  void _retainSheetFocus() {
+    if (!mounted || !_isOpen) return;
+    _sheetFocusScopeNode.requestFocus();
+  }
+
+  void _refocus({FocusNode? prefer}) {
+    void focusPreferredOrDefault() {
+      if (!mounted || !_isOpen) return;
+      if (prefer != null && prefer.canRequestFocus && prefer.context != null) {
+        prefer.requestFocus();
+      } else {
+        _applyDefaultSheetFocusTop();
+      }
+    }
+
     void doRefocus() {
       if (!mounted || !_isOpen) return;
       _sheetFocusScopeNode.requestFocus();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || !_isOpen) return;
-        final topEntry = _pageStack.isNotEmpty ? _pageStack.last : null;
-        final initialNode = topEntry?.initialFocusNode;
-        if (initialNode != null && initialNode.context != null) {
-          initialNode.requestFocus();
-        } else {
-          _focusFirstDescendant();
+        if (prefer != null && (prefer.context == null || !prefer.canRequestFocus)) {
+          // First list row may attach one frame after the shell switches (e.g. Filters pop).
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || !_isOpen) return;
+            focusPreferredOrDefault();
+          });
+          return;
         }
+        focusPreferredOrDefault();
       });
     }
 
@@ -371,6 +396,17 @@ class _OverlaySheetHostState extends State<OverlaySheetHost>
         }
       });
     });
+  }
+
+  void _applyDefaultSheetFocusTop() {
+    if (!mounted || !_isOpen) return;
+    final topEntry = _pageStack.isNotEmpty ? _pageStack.last : null;
+    final initialNode = topEntry?.initialFocusNode;
+    if (initialNode != null && initialNode.context != null) {
+      initialNode.requestFocus();
+    } else {
+      _focusFirstDescendant();
+    }
   }
 
   void _focusFirstDescendant() {
@@ -401,9 +437,22 @@ class _OverlaySheetHostState extends State<OverlaySheetHost>
       return KeyEventResult.handled;
     }
 
-    // Back key: pop sub-page or close sheet
+    // Back key: pop sub-page or close sheet only when this host's page stack has
+    // multiple entries (OverlaySheetController.push). For a single builder (e.g.
+    // filters/sort), inner widgets must handle Back so they can navigate internally
+    // first; otherwise this Focus consumes KeyDown and closes on KeyUp before
+    // descendants see the event.
     if (event.logicalKey.isBackKey) {
-      return handleBackKeyAction(event, _handleBack);
+      if (_pageStack.length > 1) {
+        appLogger.d(
+          '[OverlaySheet] host handles back stack=${_pageStack.length} key=${event.logicalKey} ev=${event.runtimeType}',
+        );
+        return handleBackKeyAction(event, _handleBack);
+      }
+      appLogger.d(
+        '[OverlaySheet] host ignores back (single page → child sheet) key=${event.logicalKey} ev=${event.runtimeType}',
+      );
+      return KeyEventResult.ignored;
     }
 
     // Let all other keys pass through. Directional keys need to reach

@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.14)
 project(finzy LANGUAGES CXX)
 
 # Download and extract mpv-dev (architecture-dependent)
-set(MPV_VERSION "20260120")
-set(MPV_GIT_HASH "b7e8fe9")
+set(MPV_VERSION "20260412")
+set(MPV_GIT_HASH "062f4bf")
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
   # ARM64: use file(DOWNLOAD) + 7z extraction (CMake's built-in libarchive
@@ -119,9 +119,11 @@ include(flutter/generated_plugins.cmake)
 set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
 # Make the "install" step default, as it's required to run.
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
-endif()
+# Always install next to the built executable. CMake's Windows default prefix is
+# under Program Files; if that stays in the cache, INSTALL fails without admin
+# (MSB3073). Do not gate on CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT — a
+# stale cache or IDE configure can leave the default and skip the override.
+set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "Flutter build output directory" FORCE)
 
 set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
 set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")

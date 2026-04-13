@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Scaled so squircle fills 108dp adaptive icon canvas (512/400 = 1.28 scale from center) -->
+<!-- Adaptive icon foreground: gradient fills full canvas, play button at original finzy.svg proportions -->
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="finzy-gradient" x1="110.25" y1="213.3" x2="496.14" y2="436.09" gradientUnits="userSpaceOnUse">
@@ -7,20 +7,15 @@
       <stop offset="1" stop-color="#00A4DC"/>
     </linearGradient>
   </defs>
-  <g transform="translate(256,256) scale(1.28) translate(-256,-256)">
-    <path fill-rule="evenodd" fill="url(#finzy-gradient)" d="
-      M256 56
-      C122 56 56 122 56 256
-      C56 390 122 456 256 456
-      C390 456 456 390 456 256
-      C456 122 390 56 256 56 Z
-      M214 168
-      C214 156 228 148 240 156
-      L342 240
-      C354 250 354 262 342 272
-      L240 356
-      C228 364 214 356 214 344
-      Z
-    "/>
-  </g>
+  <!-- Play button scaled 0.853x from center to match finzy.svg proportions within adaptive icon safe zone -->
+  <path fill-rule="evenodd" fill="url(#finzy-gradient)" d="
+    M0 0 L512 0 L512 512 L0 512 Z
+    M220 181
+    C220 171 232 164 242 171
+    L329 242
+    C340 251 340 261 329 270
+    L242 341
+    C232 348 220 341 220 331
+    Z
+  "/>
 </svg>

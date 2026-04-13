@@ -34,6 +34,7 @@ import '../services/storage_service.dart';
 import '../screens/media_detail_screen.dart';
 import '../constants/library_constants.dart';
 import '../utils/desktop_window_padding.dart';
+import '../widgets/overlay_sheet.dart';
 import '../widgets/side_navigation_rail.dart';
 import '../focus/dpad_navigator.dart';
 import '../focus/key_event_utils.dart';
@@ -660,6 +661,13 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       return KeyEventResult.handled;
     }
 
+    // [OverlaySheetHost] in library browse only excludes its child (the grid), not this
+    // rail. While any overlay sheet is open, do not treat Back as "jump to sidebar" —
+    // that races sheet refocus and leaves Escape on the rail instead of the dialog.
+    if (OverlaySheetHost.anySheetOpen.value && event.logicalKey.isBackKey) {
+      return KeyEventResult.ignored;
+    }
+
     if (!_isSidebarFocused) {
       // Content focused → move to sidebar
       return handleBackKeyAction(event, _focusSidebar);
@@ -938,38 +946,47 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
                         top: 0,
                         bottom: 0,
                         left: 0,
-                        child: FocusScope(
-                          node: _sidebarFocusScope,
-                          child: Builder(
-                            builder: (context) {
-                              final offlineProvider = context.watch<OfflineModeProvider?>();
-                              return SideNavigationRail(
-                                key: _sideNavKey,
-                                selectedIndex: _currentIndex,
-                                selectedLibraryKey: _selectedLibraryGlobalKey,
-                                isOfflineMode: _isOffline,
-                                isSidebarFocused: _isSidebarFocused,
-                                alwaysExpanded: alwaysExpanded,
-                                isReconnecting: _isReconnecting,
-                                isForcedOffline: offlineProvider?.isForcedOffline ?? false,
-                                connectionAvailableWhenForced: offlineProvider?.connectionAvailableWhenForced ?? false,
-                                onGoOffline: offlineProvider != null ? _handleGoOffline : null,
-                                jellyfinFavoritesKey: context.watch<MultiServerProvider>().hasConnectedServers
-                                    ? kJellyfinFavoritesKey
-                                    : null,
-                                onDestinationSelected: (index) {
-                                  _selectTab(index);
-                                  _focusContent();
-                                },
-                                onLibrarySelected: (key) {
-                                  _selectLibrary(key);
-                                  _focusContent();
-                                },
-                                onNavigateToContent: _focusContent,
-                                onReconnect: _triggerReconnect,
-                              );
-                            },
-                          ),
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: OverlaySheetHost.anySheetOpen,
+                          builder: (context, anySheetOpen, _) {
+                            return ExcludeFocus(
+                              excluding: anySheetOpen,
+                              child: FocusScope(
+                                node: _sidebarFocusScope,
+                                child: Builder(
+                                  builder: (context) {
+                                    final offlineProvider = context.watch<OfflineModeProvider?>();
+                                    return SideNavigationRail(
+                                      key: _sideNavKey,
+                                      selectedIndex: _currentIndex,
+                                      selectedLibraryKey: _selectedLibraryGlobalKey,
+                                      isOfflineMode: _isOffline,
+                                      isSidebarFocused: _isSidebarFocused,
+                                      alwaysExpanded: alwaysExpanded,
+                                      isReconnecting: _isReconnecting,
+                                      isForcedOffline: offlineProvider?.isForcedOffline ?? false,
+                                      connectionAvailableWhenForced:
+                                          offlineProvider?.connectionAvailableWhenForced ?? false,
+                                      onGoOffline: offlineProvider != null ? _handleGoOffline : null,
+                                      jellyfinFavoritesKey: context.watch<MultiServerProvider>().hasConnectedServers
+                                          ? kJellyfinFavoritesKey
+                                          : null,
+                                      onDestinationSelected: (index) {
+                                        _selectTab(index);
+                                        _focusContent();
+                                      },
+                                      onLibrarySelected: (key) {
+                                        _selectLibrary(key);
+                                        _focusContent();
+                                      },
+                                      onNavigateToContent: _focusContent,
+                                      onReconnect: _triggerReconnect,
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                       // Loading overlay while checking for pending external return (TV)

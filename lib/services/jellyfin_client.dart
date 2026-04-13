@@ -38,6 +38,14 @@ class JellyfinClient {
   static const String _collectionListFields =
       'Genres,UserData,RunTimeTicks,ItemCounts,EndDate,Status,DateCreated,DateLastMediaAdded,CommunityRating,CriticRating,PremiereDate,SortName,ImageTags';
 
+  /// UI stores multiple tokens per key as comma-separated; expand for API lists.
+  static Iterable<String> _splitFilterCsv(String v) sync* {
+    for (final part in v.split(',')) {
+      final t = part.trim();
+      if (t.isNotEmpty) yield t;
+    }
+  }
+
   final JellyfinConfig config;
   late final Dio _dio;
   bool _offlineMode = false;
@@ -518,12 +526,14 @@ class JellyfinClient {
           break;
         case 'genre':
         case 'Genre':
-          if (v.isNotEmpty) genres.add(v);
+          if (v.isNotEmpty) genres.addAll(_splitFilterCsv(v));
           break;
         case 'year':
         case 'Year':
-          final y = int.tryParse(v);
-          if (y != null) years.add(y);
+          for (final part in _splitFilterCsv(v)) {
+            final y = int.tryParse(part);
+            if (y != null) years.add(y);
+          }
           break;
         case 'IsPlayed':
         case 'IsUnplayed':
@@ -542,13 +552,13 @@ class JellyfinClient {
           if (v.isNotEmpty) seriesStatusValue = v;
           break;
         case 'OfficialRating':
-          if (v.isNotEmpty) officialRatings.add(v);
+          if (v.isNotEmpty) officialRatings.addAll(_splitFilterCsv(v));
           break;
         case 'tags':
-          if (v.isNotEmpty) tagsList.add(v);
+          if (v.isNotEmpty) tagsList.addAll(_splitFilterCsv(v));
           break;
         case 'VideoTypes':
-          if (v.isNotEmpty) videoTypesList.add(v);
+          if (v.isNotEmpty) videoTypesList.addAll(_splitFilterCsv(v));
           break;
         default:
           // Ignore unknown keys from UI/serialization
@@ -2028,12 +2038,14 @@ class JellyfinClient {
               break;
             case 'genre':
             case 'Genre':
-              if (e.value.isNotEmpty) genres.add(e.value);
+              if (e.value.isNotEmpty) genres.addAll(_splitFilterCsv(e.value));
               break;
             case 'year':
             case 'Year':
-              final y = int.tryParse(e.value);
-              if (y != null) years.add(y);
+              for (final part in _splitFilterCsv(e.value)) {
+                final y = int.tryParse(part);
+                if (y != null) years.add(y);
+              }
               break;
             case 'IsPlayed':
             case 'IsUnplayed':
@@ -2052,13 +2064,15 @@ class JellyfinClient {
               if (e.value.isNotEmpty) query['SeriesStatus'] = e.value;
               break;
             case 'OfficialRating':
-              if (e.value.isNotEmpty) officialRatings.add(e.value);
+              if (e.value.isNotEmpty) officialRatings.addAll(_splitFilterCsv(e.value));
               break;
             case 'tags':
-              if (e.value.isNotEmpty) tagsList.add(e.value);
+              if (e.value.isNotEmpty) tagsList.addAll(_splitFilterCsv(e.value));
               break;
             case 'VideoTypes':
-              if (e.value.isNotEmpty) query['VideoTypes'] = e.value;
+              if (e.value.isNotEmpty) {
+                query['VideoTypes'] = _splitFilterCsv(e.value).join(',');
+              }
               break;
           }
         }

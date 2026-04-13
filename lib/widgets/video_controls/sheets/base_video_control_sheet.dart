@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../focus/key_event_utils.dart';
 import '../../../focus/dpad_navigator.dart';
+import '../../../widgets/overlay_sheet.dart';
 import 'video_sheet_header.dart';
 
 /// Base class for video control bottom sheets providing common UI structure
@@ -31,21 +32,21 @@ class BaseVideoControlSheet extends StatelessWidget {
       ],
     );
 
-    // Intercept back key at the sub-page level so it triggers onBack
-    // instead of bubbling up to OverlaySheetHost which would close the sheet.
-    if (onBack != null) {
-      content = Focus(
-        canRequestFocus: false,
-        skipTraversal: true,
-        onKeyEvent: (node, event) {
-          if (event.logicalKey.isBackKey) {
-            return handleBackKeyAction(event, onBack!);
-          }
-          return KeyEventResult.ignored;
-        },
-        child: content,
-      );
-    }
+    // Intercept Back/Escape here: [OverlaySheetHost] ignores those keys for single-page
+    // sheets so inner UIs can handle them first. Default closes the overlay when [onBack]
+    // is null (e.g. track list); otherwise run the sheet's sub-navigation callback.
+    final backAction = onBack ?? () => OverlaySheetController.of(context).close();
+    content = Focus(
+      canRequestFocus: false,
+      skipTraversal: true,
+      onKeyEvent: (node, event) {
+        if (event.logicalKey.isBackKey) {
+          return handleBackKeyAction(event, backAction);
+        }
+        return KeyEventResult.ignored;
+      },
+      child: content,
+    );
 
     return SizedBox(height: MediaQuery.of(context).size.height * 0.75, child: content);
   }
