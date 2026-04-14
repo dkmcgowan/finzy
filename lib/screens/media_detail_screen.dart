@@ -1951,6 +1951,21 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                         ),
                       ),
 
+                      if (isTv)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          child: SafeArea(
+                            bottom: false,
+                            child: FocusableAppBarBackButton(
+                              focusNode: _backButtonFocusNode,
+                              onKeyEvent: _handleBackButtonKeyEvent,
+                              onPressed: () => Navigator.pop(context, _watchStateChanged),
+                              useAdjustedLeading: true,
+                            ),
+                          ),
+                        ),
+
                       // Content at bottom
                       Positioned(
                         bottom: 16,
@@ -2214,36 +2229,37 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                 SliverPadding(padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom)),
               ],
             ),
-            // Sticky top bar with fading background
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                ignoring: _scrollOffset < 50,
-                child: AnimatedOpacity(
-                  opacity: (_scrollOffset / 100).clamp(0.0, 1.0),
-                  duration: const Duration(milliseconds: 150),
-                  child: Container(
-                    height: MediaQuery.of(context).padding.top + 58,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
-                          Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
-                          Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0),
-                        ],
-                        stops: const [0.0, 0.3, 1.0],
+            if (!isTv) ...[
+              // Sticky top bar with fading background
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  ignoring: _scrollOffset < 50,
+                  child: AnimatedOpacity(
+                    opacity: (_scrollOffset / 100).clamp(0.0, 1.0),
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(
+                      height: MediaQuery.of(context).padding.top + 58,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
+                            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
+                            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0),
+                          ],
+                          stops: const [0.0, 0.3, 1.0],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            // Floating back button: stays visible when scrolling
-            Positioned(
+              // Floating back button: stays visible when scrolling
+              Positioned(
                 top: 0,
                 left: 0,
                 child: SafeArea(
@@ -2256,6 +2272,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                   ),
                 ),
               ),
+            ],
           ],
         ),
       ),
