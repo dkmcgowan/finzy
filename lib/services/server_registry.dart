@@ -83,6 +83,40 @@ class ServerRegistry {
     return true;
   }
 
+  /// Sets [primaryImageTag] on the stored user [userId] when missing or different (from Jellyfin `/Users/{id}`).
+  /// Returns `true` if disk was updated.
+  Future<bool> mergePrimaryImageTagForUser({required String userId, required String primaryImageTag}) async {
+    if (primaryImageTag.isEmpty) return false;
+    final servers = await getServers();
+    if (servers.isEmpty) return false;
+    const index = 0;
+    final data = servers[index].jellyfinData;
+    var changed = false;
+    final newUsers = data.users.map((u) {
+      if (u.userId != userId) return u;
+      if (u.primaryImageTag == primaryImageTag) return u;
+      changed = true;
+      return JellyfinStoredUser(
+        userId: u.userId,
+        accessToken: u.accessToken,
+        userName: u.userName,
+        primaryImageTag: primaryImageTag,
+      );
+    }).toList();
+    if (!changed) return false;
+    servers[index] = RegisteredServer.jellyfin(
+      JellyfinServerData(
+        baseUrl: data.baseUrl,
+        serverId: data.serverId,
+        serverName: data.serverName,
+        users: newUsers,
+        currentUserId: data.currentUserId,
+      ),
+    );
+    await saveServers(servers);
+    return true;
+  }
+
   /// Set the current user (for switch profile). [userId] must be in the server's users list.
   Future<bool> setCurrentJellyfinUser(String userId) async {
     final servers = await getServers();

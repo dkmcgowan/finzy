@@ -59,6 +59,10 @@ class JellyfinClient {
   bool get canDeleteContent => _canDeleteContent || _isAdministrator;
   bool get isAdministrator => _isAdministrator;
 
+  /// From last [loadUserPolicy] response (`PrimaryImageTag`); used to backfill stored profile avatars.
+  String? _fetchedUserPrimaryImageTag;
+  String? get fetchedUserPrimaryImageTag => _fetchedUserPrimaryImageTag;
+
   JellyfinClient(this.config, {required this.serverId, this.serverName}) {
     _dio = Dio(
       BaseOptions(
@@ -132,7 +136,11 @@ class JellyfinClient {
       );
     }
 
-    final policy = response.data?['Policy'] as Map<String, dynamic>?;
+    final data = response.data;
+    final tag = data?['PrimaryImageTag'] as String?;
+    _fetchedUserPrimaryImageTag = (tag != null && tag.isNotEmpty) ? tag : null;
+
+    final policy = data?['Policy'] as Map<String, dynamic>?;
     if (policy != null) {
       _isAdministrator = policy['IsAdministrator'] as bool? ?? false;
       _canDeleteContent = policy['EnableContentDeletion'] as bool? ?? false;

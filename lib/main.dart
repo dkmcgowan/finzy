@@ -460,6 +460,10 @@ class _SetupScreenState extends State<SetupScreen> {
       if (!mounted) return;
 
       if (result.hasConnections) {
+        // Connect may have backfilled PrimaryImageTag from Jellyfin `/Users/{id}` — reload registry before UI.
+        await context.read<JellyfinProfileProvider>().refresh();
+        if (!mounted) return;
+
         // Resume any downloads that were interrupted by app kill
         downloadProvider.ensureInitialized().then((_) {
           downloadProvider.resumeQueuedDownloads(result.firstClient!);

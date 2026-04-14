@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -6,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../i18n/strings.g.dart';
 import '../providers/jellyfin_profile_provider.dart';
+import 'jellyfin_profile_network_avatar.dart';
 import 'quick_connect_authorize_dialog.dart';
 
 /// Profile avatar + menu (Switch Profile / Logout) for app bars.
@@ -36,15 +36,15 @@ class ProfileAppBarButton extends StatelessWidget {
         final jUser = jellyfinProvider.currentUser;
         if (jUser != null) {
           final imageUrl = jellyfinProvider.imageUrlFor(jUser);
+          final imageHeaders = jellyfinProvider.imageHttpHeadersFor(jUser);
           avatar = imageUrl.isNotEmpty
               ? ClipOval(
-                  child: CachedNetworkImage(
+                  child: JellyfinProfileNetworkAvatar(
+                    userId: jUser.userId,
                     imageUrl: imageUrl,
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.cover,
-                    placeholder: (context, loadingProgress) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
-                    errorWidget: (context, error, stackTrace) => const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32),
+                    httpHeaders: imageHeaders,
+                    size: 32,
+                    placeholderIcon: Symbols.account_circle_rounded,
                   ),
                 )
               : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32);

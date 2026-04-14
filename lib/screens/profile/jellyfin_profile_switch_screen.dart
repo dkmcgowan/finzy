@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/jellyfin_profile_provider.dart';
 import '../../utils/snackbar_helper.dart';
+import '../../widgets/jellyfin_profile_network_avatar.dart';
 import '../../i18n/strings.g.dart';
 import '../../theme/mono_tokens.dart';
 import '../../utils/platform_detector.dart';
@@ -41,6 +41,8 @@ class _JellyfinProfileSwitchScreenState extends State<JellyfinProfileSwitchScree
     required String label,
     String? subtitle,
     String? imageUrl,
+    Map<String, String>? imageHttpHeaders,
+    String? avatarUserId,
     IconData? icon,
     bool isCurrent = false,
     required VoidCallback? onTap,
@@ -62,13 +64,12 @@ class _JellyfinProfileSwitchScreenState extends State<JellyfinProfileSwitchScree
                 children: [
                   if (imageUrl != null && imageUrl.isNotEmpty)
                     ClipOval(
-                      child: CachedNetworkImage(
+                      child: JellyfinProfileNetworkAvatar(
+                        userId: avatarUserId ?? '',
                         imageUrl: imageUrl,
-                        width: 72,
-                        height: 72,
-                        fit: BoxFit.cover,
-                        placeholder: (context, loadingProgress) => Icon(icon ?? Symbols.person_rounded, size: 48),
-                        errorWidget: (context, error, stackTrace) => Icon(icon ?? Symbols.person_rounded, size: 48),
+                        httpHeaders: imageHttpHeaders,
+                        size: 72,
+                        placeholderIcon: icon ?? Symbols.person_rounded,
                       ),
                     )
                   else
@@ -186,6 +187,8 @@ class _JellyfinProfileSwitchScreenState extends State<JellyfinProfileSwitchScree
                           context: context,
                           label: user.userName,
                           imageUrl: imageUrl.isNotEmpty ? imageUrl : null,
+                          imageHttpHeaders: provider.imageHttpHeadersFor(user),
+                          avatarUserId: user.userId,
                           icon: Symbols.person_rounded,
                           isCurrent: isCurrent,
                           onTap: isCurrent

@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/jellyfin_public_user.dart';
 import '../../models/registered_server.dart';
+import '../../providers/jellyfin_profile_provider.dart';
 import '../../providers/libraries_provider.dart';
 import '../../providers/multi_server_provider.dart';
 import '../../services/jellyfin_auth_service.dart';
@@ -151,6 +152,8 @@ class _JellyfinAddUserScreenState extends State<JellyfinAddUserScreen> {
     );
     if (!connResult.hasConnections || !mounted) return;
 
+    await context.read<JellyfinProfileProvider>().refresh();
+    if (!mounted) return;
     Navigator.of(context).pop(true);
   }
 

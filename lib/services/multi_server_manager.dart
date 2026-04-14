@@ -9,6 +9,8 @@ import '../utils/app_logger.dart';
 import '../utils/connection_constants.dart';
 import 'jellyfin_auth_service.dart';
 import 'jellyfin_client.dart';
+import 'server_registry.dart';
+import 'storage_service.dart';
 
 /// Manages multiple Jellyfin server connections.
 class MultiServerManager {
@@ -79,6 +81,18 @@ class MultiServerManager {
   /// Check if a server is online
   bool isServerOnline(String serverId) => _serverStatus[serverId] ?? false;
 
+  Future<void> _persistPrimaryImageTagFromClient(JellyfinClient client) async {
+    final tag = client.fetchedUserPrimaryImageTag;
+    if (tag == null || tag.isEmpty) return;
+    try {
+      final storage = await StorageService.getInstance();
+      final registry = ServerRegistry(storage);
+      await registry.mergePrimaryImageTagForUser(userId: client.config.userId, primaryImageTag: tag);
+    } catch (e, st) {
+      appLogger.w('Persist PrimaryImageTag after connect failed', error: e, stackTrace: st);
+    }
+  }
+
   /// Creates a JellyfinClient for the given Jellyfin server data
   JellyfinClient _createJellyfinClient(JellyfinServerData data) {
     final config = JellyfinConfig(
@@ -122,6 +136,7 @@ class MultiServerManager {
 
         final client = _createJellyfinClient(registered.jellyfinData);
         await client.loadUserPolicy();
+        await _persistPrimaryImageTagFromClient(client);
         await client.reportCapabilities();
 
         _clients[serverId] = client;
@@ -178,6 +193,7 @@ class MultiServerManager {
 
       final client = _createJellyfinClient(registered.jellyfinData);
       await client.loadUserPolicy();
+      await _persistPrimaryImageTagFromClient(client);
       await client.reportCapabilities();
 
       _clients[serverId] = client;
@@ -366,6 +382,7 @@ class MultiServerManager {
 
       final client = _createJellyfinClient(registered.jellyfinData);
       await client.loadUserPolicy();
+      await _persistPrimaryImageTagFromClient(client);
       await client.reportCapabilities();
 
       _clients[serverId] = client;

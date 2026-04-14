@@ -13,8 +13,9 @@ import '../services/jellyfin_auth_service.dart';
 import '../services/server_connection_orchestrator.dart';
 import '../services/server_registry.dart';
 import '../services/storage_service.dart';
-import '../providers/multi_server_provider.dart';
+import '../providers/jellyfin_profile_provider.dart';
 import '../providers/libraries_provider.dart';
+import '../providers/multi_server_provider.dart';
 import '../services/offline_watch_sync_service.dart';
 import '../i18n/strings.g.dart';
 import '../theme/mono_tokens.dart';
@@ -207,6 +208,7 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
+    await context.read<JellyfinProfileProvider>().refresh();
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
