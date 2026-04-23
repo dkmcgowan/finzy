@@ -49,6 +49,7 @@ dart_code_linter:
     - prefer-trailing-comma: false
     - avoid-non-null-assertion: false
     - prefer-conditional-expressions: false
+    - avoid-unused-parameters: false
 
   metrics:
     cyclomatic-complexity: 70
