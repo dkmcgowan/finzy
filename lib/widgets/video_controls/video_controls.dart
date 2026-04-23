@@ -776,7 +776,11 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
   }
 
   /// Hide controls immediately when the mouse leaves the player area (desktop only).
+  ///
+  /// Android TV uses the same non-phone layout as desktop but must not use pointer-exit:
+  /// transcode reloads can spuriously fire [MouseRegion.onExit], hiding OSD and the pointer.
   void _hideControlsFromPointerExit() {
+    if (PlatformDetector.isTV()) return;
     final isMobile = PlatformDetector.isMobile(context) && !PlatformDetector.isTV();
     if (isMobile) return;
 
