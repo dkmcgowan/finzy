@@ -1030,6 +1030,13 @@ class ExoPlayerCore(private val activity: Activity) : Player.Listener {
     private fun reloadWithExternalSubtitle(subtitleIndex: Int) {
         val uri = currentMediaUri ?: return
         val player = exoPlayer ?: return
+        val selector = trackSelector ?: return
+
+        // Re-enable the text renderer in case subs were previously disabled via
+        // selectSubtitleTrack("no") — without this the new external sub never displays.
+        selector.parameters = selector.buildUponParameters()
+            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+            .build()
 
         val currentPosition = player.currentPosition
         val wasPlaying = player.isPlaying

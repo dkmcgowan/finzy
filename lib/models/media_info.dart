@@ -133,29 +133,47 @@ class MediaSubtitleTrack with TrackLabelBuilder {
   bool get isExternal => (key != null && key!.isNotEmpty) || (deliveryUrl != null && deliveryUrl!.isNotEmpty);
 
   /// Constructs the full URL for fetching external subtitle files
-  /// Returns null if this is not an external subtitle
-  String? getSubtitleUrl(String baseUrl, String token) {
+  /// Returns null if this is not an external subtitle.
+  ///
+  /// When [forceTextFormat] is true and the source codec is image-based (PGS/DVD/DVB),
+  /// the URL extension is rewritten to `.srt` so the server OCRs to text. Use on
+  /// ExoPlayer (Android) where image-based subtitles cannot be decoded.
+  String? getSubtitleUrl(String baseUrl, String token, {bool forceTextFormat = false}) {
     if (!isExternal) return null;
 
     final base = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
     final auth = 'ApiKey=${Uri.encodeComponent(token)}';
+    final shouldForceText = forceTextFormat && CodecUtils.isImageBasedSubtitleCodec(codec);
 
     // Prefer server DeliveryUrl when available (correct format, jellyfin-web parity)
     final url = deliveryUrl;
     if (url != null && url.isNotEmpty) {
+      final effective = shouldForceText ? _replacePathExtension(url, 'srt') : url;
       // Already absolute URL (IsExternalUrl case)
-      if (url.contains('://')) {
-        final separator = url.contains('?') ? '&' : '?';
-        return '$url$separator$auth';
+      if (effective.contains('://')) {
+        final separator = effective.contains('?') ? '&' : '?';
+        return '$effective$separator$auth';
       }
-      final path = url.startsWith('/') ? url : '/$url';
+      final path = effective.startsWith('/') ? effective : '/$effective';
       final separator = path.contains('?') ? '&' : '?';
       return '$base${path.substring(1)}$separator$auth';
     }
 
-    // Fallback: build from key
+    // Fallback: build from key. getSubtitleExtension already maps PGS/DVD → 'srt'.
     final ext = CodecUtils.getSubtitleExtension(codec);
     return '$base$key.$ext?$auth';
+  }
+
+  /// Rewrite the extension of a URL path (preserving query string).
+  /// e.g. `/Videos/x/y/Subtitles/0/0/Stream.pgssub?foo=bar` → `.../Stream.srt?foo=bar`
+  static String _replacePathExtension(String url, String newExt) {
+    final queryIdx = url.indexOf('?');
+    final pathPart = queryIdx >= 0 ? url.substring(0, queryIdx) : url;
+    final queryPart = queryIdx >= 0 ? url.substring(queryIdx) : '';
+    final lastDot = pathPart.lastIndexOf('.');
+    final lastSlash = pathPart.lastIndexOf('/');
+    if (lastDot < 0 || lastDot < lastSlash) return url;
+    return '${pathPart.substring(0, lastDot)}.$newExt$queryPart';
   }
 }
 

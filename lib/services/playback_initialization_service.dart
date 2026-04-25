@@ -111,7 +111,11 @@ class PlaybackInitializationService {
           );
 
           // Always build server subtitle options (embedded + sidecar) so user can select them.
-          final externalSubtitles = _buildExternalSubtitles(playbackData.mediaInfo);
+          final forceTextFormat = Platform.isAndroid && settings.getUseExoPlayer();
+          final externalSubtitles = _buildExternalSubtitles(
+            playbackData.mediaInfo,
+            forceTextFormat: forceTextFormat,
+          );
 
           return PlaybackInitializationResult(
             availableVersions: playbackData.availableVersions,
@@ -156,7 +160,11 @@ class PlaybackInitializationService {
       // Always build server subtitle options (embedded + sidecar) so user can select them.
       // They load on demand when selected; enableExternalSubtitles was gating this but server
       // subtitles (e.g. The Matrix) weren't showing when player has no embedded tracks.
-      final externalSubtitles = _buildExternalSubtitles(playbackData.mediaInfo);
+      final forceTextFormat = Platform.isAndroid && settings.getUseExoPlayer();
+      final externalSubtitles = _buildExternalSubtitles(
+        playbackData.mediaInfo,
+        forceTextFormat: forceTextFormat,
+      );
 
       return PlaybackInitializationResult(
         availableVersions: playbackData.availableVersions,
@@ -177,8 +185,15 @@ class PlaybackInitializationService {
     }
   }
 
-  /// Build list of external subtitle tracks from media info
-  List<SubtitleTrack> _buildExternalSubtitles(MediaInfo? mediaInfo) {
+  /// Build list of external subtitle tracks from media info.
+  ///
+  /// When [forceTextFormat] is true (ExoPlayer mode on Android), image-based subtitle
+  /// codecs (PGS/DVD/DVB) are requested as `.srt` so the server OCRs them — ExoPlayer
+  /// has no decoder for image-based subs.
+  List<SubtitleTrack> _buildExternalSubtitles(
+    MediaInfo? mediaInfo, {
+    bool forceTextFormat = false,
+  }) {
     final externalSubtitles = <SubtitleTrack>[];
 
     if (mediaInfo == null) {
@@ -200,7 +215,7 @@ class PlaybackInitializationService {
           continue;
         }
 
-        final url = serverTrack.getSubtitleUrl(client.baseUrl, token);
+        final url = serverTrack.getSubtitleUrl(client.baseUrl, token, forceTextFormat: forceTextFormat);
 
         // Skip if URL couldn't be constructed
         if (url == null) continue;

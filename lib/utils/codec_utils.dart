@@ -39,16 +39,48 @@ class CodecUtils {
     }
   }
 
+  /// True for image-based ("bitmap") subtitle codecs that ExoPlayer cannot decode.
+  /// These need server-side OCR conversion to SubRip for delivery to ExoPlayer.
+  static bool isImageBasedSubtitleCodec(String? codec) {
+    if (codec == null) return false;
+    return switch (codec.toLowerCase()) {
+      'pgs' || 'pgssub' || 'hdmv_pgs_subtitle' => true,
+      'dvd_subtitle' || 'dvdsub' => true,
+      'dvb_subtitle' || 'dvbsub' => true,
+      _ => false,
+    };
+  }
+
   /// Formats a subtitle codec name to a user-friendly display format.
   ///
-  /// Converts internal codec names like 'SUBRIP' to friendly names like 'SRT'.
+  /// Accepts both internal codec names (e.g. 'SUBRIP') and MIME types
+  /// (e.g. 'application/x-subrip', emitted by ExoPlayer for external tracks)
+  /// and maps both to friendly names like 'SRT'.
   static String formatSubtitleCodec(String codec) {
+    final lower = codec.toLowerCase();
+    // MIME types (ExoPlayer sets these for external SubtitleConfigurations)
+    switch (lower) {
+      case 'application/x-subrip':
+      case 'text/x-subrip':
+        return 'SRT';
+      case 'text/vtt':
+      case 'application/x-vtt':
+        return 'VTT';
+      case 'text/x-ssa':
+      case 'application/x-ssa':
+        return 'SSA';
+      case 'application/x-ass':
+        return 'ASS';
+      case 'application/ttml+xml':
+        return 'TTML';
+    }
     final upper = codec.toUpperCase();
     return switch (upper) {
       'SUBRIP' => 'SRT',
-      'DVD_SUBTITLE' => 'DVD',
+      'DVD_SUBTITLE' || 'DVDSUB' => 'DVD',
+      'DVB_SUBTITLE' || 'DVBSUB' => 'DVB',
       'WEBVTT' => 'VTT',
-      'HDMV_PGS_SUBTITLE' => 'PGS',
+      'HDMV_PGS_SUBTITLE' || 'PGSSUB' => 'PGS',
       'MOV_TEXT' => 'MOV',
       _ => upper,
     };

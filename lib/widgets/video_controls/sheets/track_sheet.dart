@@ -43,11 +43,20 @@ class TrackSheet extends StatelessWidget {
           tracks,
           (t) => t?.audio ?? [],
         );
+        // Player track list includes embedded subs AND any externals previously
+        // added via addSubtitleTrack — exclude the externals here so they show up
+        // only once via [availableExternalSubtitles] below.
         final embeddedSubs = TrackFilterHelper.extractAndFilterTracks<SubtitleTrack>(
           tracks,
           (t) => t?.subtitle ?? [],
-        );
-        final extras = availableExternalSubtitles;
+        ).where((s) => !s.isExternal).toList();
+
+        // Dedupe externals by URI in case the server lists the same sidecar twice.
+        final seenUris = <String>{};
+        final extras = <SubtitleTrack>[
+          for (final t in availableExternalSubtitles)
+            if (t.uri != null && seenUris.add(t.uri!)) t,
+        ];
 
         final showAudio = audioTracks.isNotEmpty;
         final showSubtitles = embeddedSubs.isNotEmpty || extras.isNotEmpty;
