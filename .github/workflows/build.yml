@@ -480,9 +480,18 @@ jobs:
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      # Pinned: newer Flutter master regresses Windows touchscreen (digitizer)
-      # mapping on ARM64 while mouse is fine; 5f58b37fdaa (~3.43.0-0.3.pre) verified OK.
-      # Re-test master periodically; keep x64/macOS/Android jobs on stable.
+      # Flutter master ships engine source files whose paths exceed Windows' 260-char
+      # default, breaking the clone done by flutter-action below. Enable long paths first.
+      - name: Enable git long paths
+        run: git config --system core.longpaths true
+        shell: pwsh
+
+      # ARM64 is not on the stable Flutter channel yet, so this job has to use master.
+      # Within master, newer revisions regress Windows touchscreen (digitizer) mapping
+      # on ARM64 while mouse input stays fine — reported upstream and not yet merged:
+      #   https://github.com/flutter/flutter/issues/184954
+      # 5f58b37fdaa (~3.43.0-0.3.pre) is the last verified-good revision before the regression.
+      # When the upstream fix lands (or stable picks up ARM64), drop the pin / move to stable.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -738,7 +747,8 @@ jobs:
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      # Same pin as build-windows-arm64 (Flutter master regression on ARM).
+      # Same pin as build-windows-arm64: ARM64 isn't on stable yet, and within master a
+      # newer revision regressed ARM input handling (flutter/flutter#184954, not yet merged).
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:

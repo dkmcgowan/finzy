@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Finzy is a Flutter-based Jellyfin client targeting iOS, Android (phone + TV), macOS, Windows, and Linux. It is a fork of Plezy (a Plex client) adapted to the Jellyfin API — that heritage shows up in architecture and comments, and the `docs/UPSTREAM_PLEZY_ANALYSIS.md` / `docs/PLEZY_UPSTREAM_PORTING_PLAN.md` files track ongoing alignment with upstream.
 
-`pubspec.yaml` pins **Dart SDK `^3.8.1`** (which ships with Flutter ≥ 3.32). CI builds on `channel: stable` for most jobs; Windows and Linux ARM64 pin `channel: master` at a specific Flutter revision (see `.github/workflows/build.yml`).
+`pubspec.yaml` pins **Dart SDK `^3.8.1`** (which ships with Flutter ≥ 3.32). CI builds on `channel: stable` for most jobs; **Windows and Linux ARM64 are forced onto `channel: master`** because ARM64 isn't on the stable channel yet, and within master those jobs are pinned to a specific revision (`5f58b37fdaa`) before an unresolved upstream regression in ARM input handling — see `.github/workflows/build.yml` and [flutter/flutter#184954](https://github.com/flutter/flutter/issues/184954). When the upstream fix lands (or stable picks up ARM64) the pin can be dropped.
 
 ## Common commands
 
