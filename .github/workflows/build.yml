@@ -68,11 +68,11 @@ jobs:
           fi
 
       - name: Build APK
-        run: flutter build apk --release --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
+        run: flutter build apk --release --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
 
       - name: Build AAB
         if: vars.GOOGLE_PLAY_UPLOAD_ENABLED == 'true'
-        run: flutter build appbundle --release --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
+        run: flutter build appbundle --release --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
 
       - name: Clean up keystore
         if: always()
@@ -220,7 +220,7 @@ jobs:
         run: |
           for i in 1 2 3 4 5; do
             echo "Build attempt $i of 5"
-            flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }} && break
+            flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }} && break
             if [ $i -eq 5 ]; then exit 1; fi
             echo "Build failed (often transient SPM download), retrying in 120 seconds..."
             sleep 120
@@ -231,7 +231,7 @@ jobs:
         run: |
           for i in 1 2 3 4 5; do
             echo "Build attempt $i of 5"
-            flutter build ios --release --no-codesign --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }} && break
+            flutter build ios --release --no-codesign --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }} && break
             if [ $i -eq 5 ]; then exit 1; fi
             echo "Build failed (often transient SPM download), retrying in 120 seconds..."
             sleep 120
@@ -321,7 +321,7 @@ jobs:
         run: |
           for i in 1 2 3 4 5; do
             echo "Build attempt $i of 5"
-            flutter build macos --release --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }} && break
+            flutter build macos --release --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }} && break
             if [ $i -eq 5 ]; then exit 1; fi
             echo "Build failed (often transient SPM download), retrying in 120 seconds..."
             sleep 120
@@ -462,7 +462,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows x64
-        run: flutter build windows --release --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
+        run: flutter build windows --release --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
 
       - name: Upload x64 build
         uses: actions/upload-artifact@v4
@@ -503,7 +503,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows arm64
-        run: flutter build windows --release --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
+        run: flutter build windows --release --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
 
       - name: Upload arm64 build
         uses: actions/upload-artifact@v4
@@ -671,7 +671,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Linux x64
-        run: flutter build linux --release --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
+        run: flutter build linux --release --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
         env:
           PKG_CONFIG_PATH: ${{ github.workspace }}/libmpv-prefix/lib/pkgconfig:${{ github.workspace }}/libmpv-prefix/lib/x86_64-linux-gnu/pkgconfig
 
@@ -784,7 +784,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Linux arm64
-        run: flutter build linux --release --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
+        run: flutter build linux --release --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
         env:
           PKG_CONFIG_PATH: ${{ github.workspace }}/libmpv-prefix/lib/pkgconfig:${{ github.workspace }}/libmpv-prefix/lib/aarch64-linux-gnu/pkgconfig
 

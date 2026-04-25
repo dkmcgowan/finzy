@@ -29,9 +29,7 @@ class _AboutScreenState extends State<AboutScreen> {
   void initState() {
     super.initState();
     _loadData();
-    if (UpdateService.isUpdateCheckEnabled) {
-      _checkForUpdates();
-    }
+    _checkForUpdates();
   }
 
   Future<void> _loadData() async {
@@ -118,18 +116,16 @@ class _AboutScreenState extends State<AboutScreen> {
                       t.about.versionLabel(version: appVersion),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                     ),
-                    if (UpdateService.isUpdateCheckEnabled) ...[
-                      const SizedBox(height: 12),
-                      _buildUpdateStatusText(context),
-                      const SizedBox(height: 12),
-                      TextButton.icon(
-                        onPressed: isChecking ? null : _checkForUpdates,
-                        icon: isChecking
-                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const AppIcon(Symbols.refresh_rounded, fill: 1, size: 18),
-                        label: Text(t.update.checkForUpdatesButton),
-                      ),
-                    ],
+                    const SizedBox(height: 12),
+                    _buildUpdateStatusText(context),
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: isChecking ? null : _checkForUpdates,
+                      icon: isChecking
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const AppIcon(Symbols.refresh_rounded, fill: 1, size: 18),
+                      label: Text(t.update.checkForUpdatesButton),
+                    ),
                     const SizedBox(height: 24),
                     Text(
                       t.about.appDescription,

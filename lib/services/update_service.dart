@@ -8,21 +8,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 class UpdateService {
   static final Logger _logger = Logger();
   static const String _githubRepo = 'dkmcgowan/finzy';
-  static const String _githubReleasesUrl = 'https://github.com/dkmcgowan/finzy/releases';
-
-  /// Gated by build flag so dev/CI builds don't ping GitHub.
-  static bool get isUpdateCheckEnabled {
-    return const bool.fromEnvironment('ENABLE_UPDATE_CHECK', defaultValue: false);
-  }
-
-  /// GitHub releases page — shown to users who want to see what's new.
-  static String get releasesUrl => _githubReleasesUrl;
 
   /// Hits the GitHub releases API and reports whether a newer version exists.
-  /// Returns null on error or when the build flag is off.
+  /// Returns null on network/parse error.
   static Future<UpdateCheckResult?> checkForUpdates() async {
-    if (!isUpdateCheckEnabled) return null;
-
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
