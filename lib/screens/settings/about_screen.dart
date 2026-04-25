@@ -68,23 +68,18 @@ class _AboutScreenState extends State<AboutScreen> {
     });
   }
 
-  Widget _buildUpdateStatusText(BuildContext context) {
-    final theme = Theme.of(context);
+  String? _updateSubtitleText() {
     switch (_updateStatus) {
       case _UpdateStatus.idle:
-        return const SizedBox.shrink();
+        return null;
       case _UpdateStatus.checking:
-        return Text(t.update.checking, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey));
+        return t.update.checking;
       case _UpdateStatus.upToDate:
-        return Text(t.update.latestVersion, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey));
+        return t.update.latestVersion;
       case _UpdateStatus.updateAvailable:
-        return Text(
-          t.update.newVersionAvailable(version: _latestVersion ?? ''),
-          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-          textAlign: TextAlign.center,
-        );
+        return t.update.newVersionAvailable(version: _latestVersion ?? '');
       case _UpdateStatus.failed:
-        return Text(t.update.checkFailed, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey));
+        return t.update.checkFailed;
     }
   }
 
@@ -93,6 +88,8 @@ class _AboutScreenState extends State<AboutScreen> {
     final appName = _appName;
     final appVersion = _appVersion;
     final isChecking = _updateStatus == _UpdateStatus.checking;
+    final updateSubtitle = _updateSubtitleText();
+    final hasUpdate = _updateStatus == _UpdateStatus.updateAvailable;
 
     return FocusedScrollScaffold(
       title: Text(t.about.title),
@@ -116,16 +113,14 @@ class _AboutScreenState extends State<AboutScreen> {
                       t.about.versionLabel(version: appVersion),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                     ),
-                    const SizedBox(height: 12),
-                    _buildUpdateStatusText(context),
-                    const SizedBox(height: 12),
-                    TextButton.icon(
-                      onPressed: isChecking ? null : _checkForUpdates,
-                      icon: isChecking
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const AppIcon(Symbols.refresh_rounded, fill: 1, size: 18),
-                      label: Text(t.update.checkForUpdatesButton),
-                    ),
+                    if (hasUpdate) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        t.update.newVersionAvailable(version: _latestVersion ?? ''),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     Text(
                       t.about.appDescription,
@@ -148,6 +143,20 @@ class _AboutScreenState extends State<AboutScreen> {
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const LicensesScreen()));
                   },
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Card(
+                child: ListTile(
+                  leading: const AppIcon(Symbols.system_update_rounded, fill: 1),
+                  title: Text(t.update.checkForUpdatesButton),
+                  subtitle: updateSubtitle != null ? Text(updateSubtitle) : null,
+                  trailing: isChecking
+                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const AppIcon(Symbols.refresh_rounded, fill: 1),
+                  onTap: isChecking ? null : _checkForUpdates,
                 ),
               ),
 
