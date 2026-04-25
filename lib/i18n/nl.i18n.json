@@ -83,14 +83,11 @@
     "logs": "Logbestanden"
   },
   "update": {
-    "available": "Update beschikbaar",
-    "versionAvailable": "Versie ${version} is beschikbaar",
-    "currentVersion": "Huidig: ${version}",
-    "skipVersion": "Deze versie overslaan",
-    "viewRelease": "Bekijk release",
-    "updateInStore": "Bijwerken in de Store",
+    "checking": "Controleren op updates…",
+    "newVersionAvailable": "Nieuwe versie ${version} beschikbaar",
     "latestVersion": "Je hebt de nieuwste versie",
-    "checkFailed": "Kon niet controleren op updates"
+    "checkFailed": "Kon niet controleren op updates",
+    "checkForUpdatesButton": "Controleer op updates"
   },
   "settings": {
     "title": "Instellingen",
@@ -197,9 +194,6 @@
     "shortcutsReset": "Sneltoetsen gereset naar standaard",
     "about": "Over",
     "aboutDescription": "App informatie en licenties",
-    "updates": "Updates",
-    "updateAvailable": "Update beschikbaar",
-    "checkForUpdates": "Controleer op updates",
     "validationErrorEnterNumber": "Voer een geldig nummer in",
     "validationErrorDuration": "Duur moet tussen ${min} en ${max} ${unit} zijn",
     "shortcutAlreadyAssigned": "Sneltoets al toegewezen aan ${action}",

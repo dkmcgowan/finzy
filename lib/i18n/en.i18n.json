@@ -83,14 +83,11 @@
     "logs": "Logs"
   },
   "update": {
-    "available": "Update Available",
-    "versionAvailable": "Version ${version} is available",
-    "currentVersion": "Current: ${version}",
-    "skipVersion": "Skip This Version",
-    "viewRelease": "View Release",
-    "updateInStore": "Update in Store",
-    "latestVersion": "You are on the latest version",
-    "checkFailed": "Failed to check for updates"
+    "checking": "Checking for updates…",
+    "newVersionAvailable": "New version ${version} available",
+    "latestVersion": "You're on the latest version",
+    "checkFailed": "Failed to check for updates",
+    "checkForUpdatesButton": "Check for updates"
   },
   "settings": {
     "title": "Settings",
@@ -197,9 +194,6 @@
     "shortcutsReset": "Shortcuts reset to defaults",
     "about": "About",
     "aboutDescription": "App information and licenses",
-    "updates": "Updates",
-    "updateAvailable": "Update Available",
-    "checkForUpdates": "Check for Updates",
     "validationErrorEnterNumber": "Please enter a valid number",
     "validationErrorDuration": "Duration must be between ${min} and ${max} ${unit}",
     "shortcutAlreadyAssigned": "Shortcut already assigned to ${action}",

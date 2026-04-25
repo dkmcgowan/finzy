@@ -1,144 +1,27 @@
-import 'dart:io' show Platform;
-
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:store_checker/store_checker.dart';
 
-/// Service to check for new versions on GitHub
-/// Only enabled when ENABLE_UPDATE_CHECK build flag is set
-/// Routes users to the appropriate store (Play Store, App Store, etc.) when installed from a store
+/// Passive check for newer versions on GitHub.
+/// No dialogs, no skip-version, no cooldowns — the About screen calls this
+/// on demand and just displays the result.
 class UpdateService {
   static final Logger _logger = Logger();
   static const String _githubRepo = 'dkmcgowan/finzy';
   static const String _githubReleasesUrl = 'https://github.com/dkmcgowan/finzy/releases';
 
-  // Store URLs
-  static const String _playStoreUrl =
-      'https://play.google.com/store/apps/details?id=com.dkmcgowan.finzy';
-  static const String _amazonStoreUrl = 'https://www.amazon.com/gp/product/B0GRRLSYDX';
-  static const String _appStoreUrl = 'https://apps.apple.com/us/app/id6759632535';
-
-  // SharedPreferences keys
-  static const String _keySkippedVersion = 'update_skipped_version';
-  static const String _keyLastCheckTime = 'update_last_check_time';
-
-  // Check cooldown: 6 hours
-  static const Duration _checkCooldown = Duration(hours: 6);
-
-  /// Check if update checking is enabled via build flag
+  /// Gated by build flag so dev/CI builds don't ping GitHub.
   static bool get isUpdateCheckEnabled {
     return const bool.fromEnvironment('ENABLE_UPDATE_CHECK', defaultValue: false);
   }
 
-  /// Skip a specific version
-  static Future<void> skipVersion(String version) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keySkippedVersion, version);
-  }
+  /// GitHub releases page — shown to users who want to see what's new.
+  static String get releasesUrl => _githubReleasesUrl;
 
-  /// Get the skipped version
-  static Future<String?> getSkippedVersion() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keySkippedVersion);
-  }
-
-  /// Clear skipped version
-  static Future<void> clearSkippedVersion() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keySkippedVersion);
-  }
-
-  /// Check if cooldown period has passed since last check
-  static Future<bool> shouldCheckForUpdates() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastCheckString = prefs.getString(_keyLastCheckTime);
-
-    if (lastCheckString == null) return true;
-
-    final lastCheck = DateTime.parse(lastCheckString);
-    final now = DateTime.now();
-    final timeSinceLastCheck = now.difference(lastCheck);
-
-    return timeSinceLastCheck >= _checkCooldown;
-  }
-
-  /// Update the last check timestamp
-  static Future<void> _updateLastCheckTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyLastCheckTime, DateTime.now().toIso8601String());
-  }
-
-  /// Returns the appropriate update URL and whether to use "Update in Store" label.
-  /// TestFlight: returns null (caller should not show dialog).
-  /// Store installs: returns store URL + isStoreUpdate: true.
-  /// Direct/sideloaded: returns GitHub URL + isStoreUpdate: false.
-  static Future<({String url, bool isStoreUpdate})?> getUpdateAction() async {
-    if (Platform.isIOS) {
-      try {
-        final source = await StoreChecker.getSource;
-        if (source == Source.IS_INSTALLED_FROM_TEST_FLIGHT) {
-          return null; // TestFlight handles updates; don't show dialog
-        }
-        if (source == Source.IS_INSTALLED_FROM_APP_STORE) {
-          return (url: _appStoreUrl, isStoreUpdate: true);
-        }
-      } catch (e) {
-        _logger.w('StoreChecker failed on iOS: $e');
-      }
-      return (url: _githubReleasesUrl, isStoreUpdate: false);
-    }
-
-    if (Platform.isAndroid) {
-      try {
-        final source = await StoreChecker.getSource;
-        switch (source) {
-          case Source.IS_INSTALLED_FROM_PLAY_STORE:
-            return (url: _playStoreUrl, isStoreUpdate: true);
-          case Source.IS_INSTALLED_FROM_AMAZON_APP_STORE:
-            return (url: _amazonStoreUrl, isStoreUpdate: true);
-          default:
-            return (url: _githubReleasesUrl, isStoreUpdate: false);
-        }
-      } catch (e) {
-        _logger.w('StoreChecker failed on Android: $e');
-      }
-      return (url: _githubReleasesUrl, isStoreUpdate: false);
-    }
-
-    if (Platform.isWindows) {
-      // Same build used for MSIX and installer; no runtime detection. Default to GitHub.
-      return (url: _githubReleasesUrl, isStoreUpdate: false);
-    }
-
-    // macOS (DMG/Homebrew), Linux: GitHub
-    return (url: _githubReleasesUrl, isStoreUpdate: false);
-  }
-
-  /// Internal method that performs the actual update check
-  /// [respectCooldown] - if true, checks cooldown and updates last check time
-  static Future<Map<String, dynamic>?> _performUpdateCheck({required bool respectCooldown}) async {
-    if (!isUpdateCheckEnabled) {
-      return null;
-    }
-
-    // TestFlight: skip update check entirely (TestFlight handles updates)
-    if (Platform.isIOS) {
-      try {
-        final source = await StoreChecker.getSource;
-        if (source == Source.IS_INSTALLED_FROM_TEST_FLIGHT) {
-          return null;
-        }
-      } catch (_) {
-        // Proceed with check if StoreChecker fails
-      }
-    }
-
-    // Check cooldown if requested
-    if (respectCooldown && !await shouldCheckForUpdates()) {
-      return null;
-    }
+  /// Hits the GitHub releases API and reports whether a newer version exists.
+  /// Returns null on error or when the build flag is off.
+  static Future<UpdateCheckResult?> checkForUpdates() async {
+    if (!isUpdateCheckEnabled) return null;
 
     try {
       final packageInfo = await PackageInfo.fromPlatform();
@@ -150,75 +33,20 @@ class UpdateService {
         options: Options(headers: {'Accept': 'application/vnd.github+json'}),
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final latestVersion = data['tag_name'] as String;
+      if (response.statusCode != 200) return null;
 
-        // Remove 'v' prefix if present
-        final cleanVersion = latestVersion.startsWith('v') ? latestVersion.substring(1) : latestVersion;
+      final data = response.data;
+      final tag = data['tag_name'] as String;
+      final latestVersion = tag.startsWith('v') ? tag.substring(1) : tag;
+      final hasUpdate = _isNewerVersion(latestVersion, currentVersion);
 
-        final hasUpdate = _isNewerVersion(cleanVersion, currentVersion);
-
-        if (hasUpdate) {
-          // Check if this version was skipped
-          final skippedVersion = await getSkippedVersion();
-          if (skippedVersion == cleanVersion) {
-            // Update last check time even when skipped (if respecting cooldown)
-            if (respectCooldown) {
-              await _updateLastCheckTime();
-            }
-            return null;
-          }
-
-          // Update last check time on success (if respecting cooldown)
-          if (respectCooldown) {
-            await _updateLastCheckTime();
-          }
-
-          final action = await getUpdateAction();
-          if (action == null) {
-            return null; // TestFlight - don't show
-          }
-
-          return {
-            'hasUpdate': true,
-            'currentVersion': currentVersion,
-            'latestVersion': cleanVersion,
-            'releaseUrl': data['html_url'] as String,
-            'updateUrl': action.url,
-            'isStoreUpdate': action.isStoreUpdate,
-            'releaseName': data['name'] as String? ?? 'Version $cleanVersion',
-            'releaseNotes': data['body'] as String? ?? '',
-            'publishedAt': data['published_at'] as String,
-          };
-        }
-      }
-
-      // Update last check time even when no update (if respecting cooldown)
-      if (respectCooldown) {
-        await _updateLastCheckTime();
-      }
+      return UpdateCheckResult(currentVersion: currentVersion, latestVersion: latestVersion, hasUpdate: hasUpdate);
     } catch (e) {
       _logger.e('Failed to check for updates: $e');
+      return null;
     }
-
-    return null;
   }
 
-  /// Check for updates on GitHub (manual check, ignores cooldown)
-  /// Returns a map with update info, or null if no update or error
-  static Future<Map<String, dynamic>?> checkForUpdates() {
-    return _performUpdateCheck(respectCooldown: false);
-  }
-
-  /// Check for updates on startup (respects cooldown and skipped versions)
-  /// Returns update info if available, null otherwise
-  static Future<Map<String, dynamic>?> checkForUpdatesOnStartup() {
-    return _performUpdateCheck(respectCooldown: true);
-  }
-
-  /// Parse version string into list of integers
-  /// Handles versions like "1.2.3+4" by taking only the numeric parts
   static List<int> _parseVersionParts(String version) {
     return version.split('.').map((p) {
       final numPart = p.split('+').first.split('-').first;
@@ -226,28 +54,30 @@ class UpdateService {
     }).toList();
   }
 
-  /// Compare two version strings
-  /// Returns true if newVersion is newer than currentVersion
   static bool _isNewerVersion(String newVersion, String currentVersion) {
     try {
       final newParts = _parseVersionParts(newVersion);
       final currentParts = _parseVersionParts(currentVersion);
-
-      // Compare each part
       final maxLength = newParts.length > currentParts.length ? newParts.length : currentParts.length;
 
       for (int i = 0; i < maxLength; i++) {
         final newPart = i < newParts.length ? newParts[i] : 0;
         final currentPart = i < currentParts.length ? currentParts[i] : 0;
-
         if (newPart > currentPart) return true;
         if (newPart < currentPart) return false;
       }
-
-      return false; // Versions are equal
+      return false;
     } catch (e) {
       _logger.e('Error comparing versions: $e');
       return false;
     }
   }
+}
+
+class UpdateCheckResult {
+  final String currentVersion;
+  final String latestVersion;
+  final bool hasUpdate;
+
+  const UpdateCheckResult({required this.currentVersion, required this.latestVersion, required this.hasUpdate});
 }

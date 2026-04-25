@@ -193,14 +193,11 @@ class _TranslationsUpdateZh implements TranslationsUpdateEn {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
-	@override String get available => '有可用更新';
-	@override String versionAvailable({required Object version}) => '版本 ${version} 已发布';
-	@override String currentVersion({required Object version}) => '当前版本: ${version}';
-	@override String get skipVersion => '跳过此版本';
-	@override String get viewRelease => '查看发布详情';
-	@override String get updateInStore => '在应用商店更新';
+	@override String get checking => '正在检查更新…';
+	@override String newVersionAvailable({required Object version}) => '新版本 ${version} 可用';
 	@override String get latestVersion => '已安装的版本是可用的最新版本';
 	@override String get checkFailed => '无法检查更新';
+	@override String get checkForUpdatesButton => '检查更新';
 }
 
 // Path: settings
@@ -314,9 +311,6 @@ class _TranslationsSettingsZh implements TranslationsSettingsEn {
 	@override String get shortcutsReset => '快捷键已重置为默认值';
 	@override String get about => '关于';
 	@override String get aboutDescription => '应用程序信息和许可证';
-	@override String get updates => '更新';
-	@override String get updateAvailable => '有可用更新';
-	@override String get checkForUpdates => '检查更新';
 	@override String get validationErrorEnterNumber => '请输入一个有效的数字';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => '时长必须介于 ${min} 和 ${max} ${unit} 之间';
 	@override String shortcutAlreadyAssigned({required Object action}) => '快捷键已被分配给 ${action}';
@@ -1400,14 +1394,11 @@ extension on TranslationsZh {
 			'screens.subtitleStyling' => '字幕样式',
 			'screens.mpvConfig' => 'MPV 配置',
 			'screens.logs' => '日志',
-			'update.available' => '有可用更新',
-			'update.versionAvailable' => ({required Object version}) => '版本 ${version} 已发布',
-			'update.currentVersion' => ({required Object version}) => '当前版本: ${version}',
-			'update.skipVersion' => '跳过此版本',
-			'update.viewRelease' => '查看发布详情',
-			'update.updateInStore' => '在应用商店更新',
+			'update.checking' => '正在检查更新…',
+			'update.newVersionAvailable' => ({required Object version}) => '新版本 ${version} 可用',
 			'update.latestVersion' => '已安装的版本是可用的最新版本',
 			'update.checkFailed' => '无法检查更新',
+			'update.checkForUpdatesButton' => '检查更新',
 			'settings.title' => '设置',
 			'settings.language' => '语言',
 			'settings.theme' => '主题',
@@ -1512,9 +1503,6 @@ extension on TranslationsZh {
 			'settings.shortcutsReset' => '快捷键已重置为默认值',
 			'settings.about' => '关于',
 			'settings.aboutDescription' => '应用程序信息和许可证',
-			'settings.updates' => '更新',
-			'settings.updateAvailable' => '有可用更新',
-			'settings.checkForUpdates' => '检查更新',
 			'settings.validationErrorEnterNumber' => '请输入一个有效的数字',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => '时长必须介于 ${min} 和 ${max} ${unit} 之间',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => '快捷键已被分配给 ${action}',
@@ -1837,14 +1825,14 @@ extension on TranslationsZh {
 			'libraries.scanLibraryFiles' => '扫描媒体库文件',
 			'libraries.scanLibrary' => '扫描媒体库',
 			'libraries.analyze' => '分析',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analyzeLibrary' => '分析媒体库',
 			'libraries.refreshMetadata' => '刷新元数据',
 			'libraries.emptyTrash' => '清空回收站',
 			'libraries.emptyingTrash' => ({required Object title}) => '正在清空 “${title}” 的回收站...',
 			'libraries.trashEmptied' => ({required Object title}) => '已清空 “${title}” 的回收站',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => '无法清空回收站: ${error}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzing' => ({required Object title}) => '正在分析 “${title}”...',
 			'libraries.analysisStarted' => ({required Object title}) => '已开始分析 “${title}”',
 			'libraries.failedToAnalyze' => ({required Object error}) => '无法分析媒体库: ${error}',

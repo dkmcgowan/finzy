@@ -193,14 +193,11 @@ class _TranslationsUpdateFr implements TranslationsUpdateEn {
 	final TranslationsFr _root; // ignore: unused_field
 
 	// Translations
-	@override String get available => 'Mise à jour disponible';
-	@override String versionAvailable({required Object version}) => 'Version ${version} disponible';
-	@override String currentVersion({required Object version}) => 'Installé: ${version}';
-	@override String get skipVersion => 'Ignorer cette version';
-	@override String get viewRelease => 'Voir la Release';
-	@override String get updateInStore => 'Mettre à jour dans le Store';
+	@override String get checking => 'Recherche de mises à jour…';
+	@override String newVersionAvailable({required Object version}) => 'Nouvelle version ${version} disponible';
 	@override String get latestVersion => 'Vous utilisez la dernière version';
 	@override String get checkFailed => 'Échec de la vérification des mises à jour';
+	@override String get checkForUpdatesButton => 'Vérifier les mises à jour';
 }
 
 // Path: settings
@@ -314,9 +311,6 @@ class _TranslationsSettingsFr implements TranslationsSettingsEn {
 	@override String get shortcutsReset => 'Raccourcis réinitialisés aux valeurs par défaut';
 	@override String get about => 'À propos';
 	@override String get aboutDescription => 'Informations sur l\'application et licences';
-	@override String get updates => 'Mises à jour';
-	@override String get updateAvailable => 'Mise à jour disponible';
-	@override String get checkForUpdates => 'Vérifier les mises à jour';
 	@override String get validationErrorEnterNumber => 'Veuillez saisir un numéro valide';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => 'La durée doit être comprise entre ${min} et ${max} ${unit}';
 	@override String shortcutAlreadyAssigned({required Object action}) => 'Raccourci déjà attribué à ${action}';
@@ -1400,14 +1394,11 @@ extension on TranslationsFr {
 			'screens.subtitleStyling' => 'Configuration des sous-titres',
 			'screens.mpvConfig' => 'Configuration MPV',
 			'screens.logs' => 'Journaux',
-			'update.available' => 'Mise à jour disponible',
-			'update.versionAvailable' => ({required Object version}) => 'Version ${version} disponible',
-			'update.currentVersion' => ({required Object version}) => 'Installé: ${version}',
-			'update.skipVersion' => 'Ignorer cette version',
-			'update.viewRelease' => 'Voir la Release',
-			'update.updateInStore' => 'Mettre à jour dans le Store',
+			'update.checking' => 'Recherche de mises à jour…',
+			'update.newVersionAvailable' => ({required Object version}) => 'Nouvelle version ${version} disponible',
 			'update.latestVersion' => 'Vous utilisez la dernière version',
 			'update.checkFailed' => 'Échec de la vérification des mises à jour',
+			'update.checkForUpdatesButton' => 'Vérifier les mises à jour',
 			'settings.title' => 'Paramètres',
 			'settings.language' => 'Langue',
 			'settings.theme' => 'Thème',
@@ -1512,9 +1503,6 @@ extension on TranslationsFr {
 			'settings.shortcutsReset' => 'Raccourcis réinitialisés aux valeurs par défaut',
 			'settings.about' => 'À propos',
 			'settings.aboutDescription' => 'Informations sur l\'application et licences',
-			'settings.updates' => 'Mises à jour',
-			'settings.updateAvailable' => 'Mise à jour disponible',
-			'settings.checkForUpdates' => 'Vérifier les mises à jour',
 			'settings.validationErrorEnterNumber' => 'Veuillez saisir un numéro valide',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => 'La durée doit être comprise entre ${min} et ${max} ${unit}',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => 'Raccourci déjà attribué à ${action}',
@@ -1837,14 +1825,14 @@ extension on TranslationsFr {
 			'libraries.scanLibraryFiles' => 'Scanner les fichiers de la bibliothèque',
 			'libraries.scanLibrary' => 'Scanner la bibliothèque',
 			'libraries.analyze' => 'Analyser',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analyzeLibrary' => 'Analyser la bibliothèque',
 			'libraries.refreshMetadata' => 'Actualiser les métadonnées',
 			'libraries.emptyTrash' => 'Vider la corbeille',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Vider les poubelles pour "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Poubelles vidées pour "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Échec de la suppression des éléments supprimés: ${error}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzing' => ({required Object title}) => 'Analyse de "${title}"...',
 			'libraries.analysisStarted' => ({required Object title}) => 'L\'analyse a commencé pour "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Échec de l\'analyse de la bibliothèque: ${error}',

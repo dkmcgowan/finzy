@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show KeyUpEvent, SystemNavigator;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 import '../../services/jellyfin_client.dart';
 import '../i18n/strings.g.dart';
-import '../services/update_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/dialogs.dart';
 
@@ -47,7 +45,6 @@ import 'settings/settings_screen.dart';
 
 import 'profile/jellyfin_profile_switch_screen.dart';
 import '../services/watch_next_service.dart';
-
 
 /// Provides access to the main screen's focus control.
 class MainScreenFocusScope extends InheritedWidget {
@@ -175,27 +172,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       if (!_isSidebarFocused && !_isShowingProfileSelection) {
         _contentFocusScope.requestFocus();
       }
-
-      // Check for updates on startup
-      _checkForUpdatesOnStartup();
     });
-  }
-
-  Future<void> _checkForUpdatesOnStartup() async {
-    // Delay slightly to allow UI to settle
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (!mounted) return;
-
-    try {
-      final updateInfo = await UpdateService.checkForUpdatesOnStartup();
-
-      if (updateInfo != null && updateInfo['hasUpdate'] == true && mounted) {
-        _showUpdateDialog(updateInfo);
-      }
-    } catch (e) {
-      appLogger.e('Error checking for updates', error: e);
-    }
   }
 
   /// Restore to media detail screen when returning from external app (e.g. trailer).
@@ -240,11 +217,8 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
       Navigator.of(context).push(
         PageRouteBuilder(
-          pageBuilder: (context, _, _) => MediaDetailScreen(
-            metadata: metadata,
-            isOffline: false,
-            onFirstBuild: onRestored,
-          ),
+          pageBuilder: (context, _, _) =>
+              MediaDetailScreen(metadata: metadata, isOffline: false, onFirstBuild: onRestored),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
         ),
@@ -253,68 +227,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
       appLogger.d('Pending external return restore failed: $e');
       onRestored?.call();
     }
-  }
-
-  void _showUpdateDialog(Map<String, dynamic> updateInfo) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(t.update.available),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t.update.versionAvailable(version: updateInfo['latestVersion']),
-                style: Theme.of(dialogContext).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                t.update.currentVersion(version: updateInfo['currentVersion']),
-                style: Theme.of(dialogContext).textTheme.bodySmall,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              autofocus: true,
-              onPressed: () => Navigator.pop(dialogContext),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                shape: const StadiumBorder(),
-              ),
-              child: Text(t.common.later),
-            ),
-            TextButton(
-              onPressed: () async {
-                await UpdateService.skipVersion(updateInfo['latestVersion']);
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-              },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                shape: const StadiumBorder(),
-              ),
-              child: Text(t.update.skipVersion),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final url = Uri.parse(
-                    updateInfo['updateUrl'] as String? ?? updateInfo['releaseUrl'] as String);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-              },
-              child: Text(
-                  (updateInfo['isStoreUpdate'] as bool? ?? false)
-                      ? t.update.updateInStore
-                      : t.update.viewRelease),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   /// Set up Watch Next deep link handling for Android TV launcher taps
@@ -449,9 +361,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     if (!jellyfinProfileProvider.hasMultipleUsers) return;
 
     _isShowingProfileSelection = true;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const JellyfinProfileSwitchScreen()),
-    );
+    await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const JellyfinProfileSwitchScreen()));
     _isShowingProfileSelection = false;
   }
 
@@ -995,9 +905,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
                           child: ColoredBox(
                             color: Theme.of(context).colorScheme.surface,
                             child: Center(
-                              child: CircularProgressIndicator(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                              child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
                             ),
                           ),
                         ),
@@ -1012,10 +920,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _screens.isEmpty ? 0 : _currentIndex.clamp(0, _screens.length - 1),
-        children: _screens,
-      ),
+      body: IndexedStack(index: _screens.isEmpty ? 0 : _currentIndex.clamp(0, _screens.length - 1), children: _screens),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1024,7 +929,8 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
             Builder(
               builder: (context) {
                 final isForcedOffline = context.watch<OfflineModeProvider?>()?.isForcedOffline ?? false;
-                final connectionAvailable = context.watch<OfflineModeProvider?>()?.connectionAvailableWhenForced ?? false;
+                final connectionAvailable =
+                    context.watch<OfflineModeProvider?>()?.connectionAvailableWhenForced ?? false;
                 final label = isForcedOffline ? t.common.goOnline : t.common.reconnect;
                 return Material(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,

@@ -347,29 +347,20 @@ class TranslationsUpdateEn {
 
 	// Translations
 
-	/// en: 'Update Available'
-	String get available => 'Update Available';
+	/// en: 'Checking for updates…'
+	String get checking => 'Checking for updates…';
 
-	/// en: 'Version ${version} is available'
-	String versionAvailable({required Object version}) => 'Version ${version} is available';
+	/// en: 'New version ${version} available'
+	String newVersionAvailable({required Object version}) => 'New version ${version} available';
 
-	/// en: 'Current: ${version}'
-	String currentVersion({required Object version}) => 'Current: ${version}';
-
-	/// en: 'Skip This Version'
-	String get skipVersion => 'Skip This Version';
-
-	/// en: 'View Release'
-	String get viewRelease => 'View Release';
-
-	/// en: 'Update in Store'
-	String get updateInStore => 'Update in Store';
-
-	/// en: 'You are on the latest version'
-	String get latestVersion => 'You are on the latest version';
+	/// en: 'You're on the latest version'
+	String get latestVersion => 'You\'re on the latest version';
 
 	/// en: 'Failed to check for updates'
 	String get checkFailed => 'Failed to check for updates';
+
+	/// en: 'Check for updates'
+	String get checkForUpdatesButton => 'Check for updates';
 }
 
 // Path: settings
@@ -691,15 +682,6 @@ class TranslationsSettingsEn {
 
 	/// en: 'App information and licenses'
 	String get aboutDescription => 'App information and licenses';
-
-	/// en: 'Updates'
-	String get updates => 'Updates';
-
-	/// en: 'Update Available'
-	String get updateAvailable => 'Update Available';
-
-	/// en: 'Check for Updates'
-	String get checkForUpdates => 'Check for Updates';
 
 	/// en: 'Please enter a valid number'
 	String get validationErrorEnterNumber => 'Please enter a valid number';
@@ -3081,14 +3063,11 @@ extension on Translations {
 			'screens.subtitleStyling' => 'Subtitle Styling',
 			'screens.mpvConfig' => 'MPV Configuration',
 			'screens.logs' => 'Logs',
-			'update.available' => 'Update Available',
-			'update.versionAvailable' => ({required Object version}) => 'Version ${version} is available',
-			'update.currentVersion' => ({required Object version}) => 'Current: ${version}',
-			'update.skipVersion' => 'Skip This Version',
-			'update.viewRelease' => 'View Release',
-			'update.updateInStore' => 'Update in Store',
-			'update.latestVersion' => 'You are on the latest version',
+			'update.checking' => 'Checking for updates…',
+			'update.newVersionAvailable' => ({required Object version}) => 'New version ${version} available',
+			'update.latestVersion' => 'You\'re on the latest version',
 			'update.checkFailed' => 'Failed to check for updates',
+			'update.checkForUpdatesButton' => 'Check for updates',
 			'settings.title' => 'Settings',
 			'settings.language' => 'Language',
 			'settings.theme' => 'Theme',
@@ -3193,9 +3172,6 @@ extension on Translations {
 			'settings.shortcutsReset' => 'Shortcuts reset to defaults',
 			'settings.about' => 'About',
 			'settings.aboutDescription' => 'App information and licenses',
-			'settings.updates' => 'Updates',
-			'settings.updateAvailable' => 'Update Available',
-			'settings.checkForUpdates' => 'Check for Updates',
 			'settings.validationErrorEnterNumber' => 'Please enter a valid number',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => 'Duration must be between ${min} and ${max} ${unit}',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => 'Shortcut already assigned to ${action}',
@@ -3518,14 +3494,14 @@ extension on Translations {
 			'libraries.scanLibrary' => 'Scan Library',
 			'libraries.analyze' => 'Analyze',
 			'libraries.analyzeLibrary' => 'Analyze Library',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.refreshMetadata' => 'Refresh Metadata',
 			'libraries.emptyTrash' => 'Empty Trash',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Emptying trash for "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Trash emptied for "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Failed to empty trash: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analyzing "${title}"...',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analysis started for "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Failed to analyze library: ${error}',
 			'libraries.noLibrariesFound' => 'No libraries found',

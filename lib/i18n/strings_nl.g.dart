@@ -193,14 +193,11 @@ class _TranslationsUpdateNl implements TranslationsUpdateEn {
 	final TranslationsNl _root; // ignore: unused_field
 
 	// Translations
-	@override String get available => 'Update beschikbaar';
-	@override String versionAvailable({required Object version}) => 'Versie ${version} is beschikbaar';
-	@override String currentVersion({required Object version}) => 'Huidig: ${version}';
-	@override String get skipVersion => 'Deze versie overslaan';
-	@override String get viewRelease => 'Bekijk release';
-	@override String get updateInStore => 'Bijwerken in de Store';
+	@override String get checking => 'Controleren op updates…';
+	@override String newVersionAvailable({required Object version}) => 'Nieuwe versie ${version} beschikbaar';
 	@override String get latestVersion => 'Je hebt de nieuwste versie';
 	@override String get checkFailed => 'Kon niet controleren op updates';
+	@override String get checkForUpdatesButton => 'Controleer op updates';
 }
 
 // Path: settings
@@ -314,9 +311,6 @@ class _TranslationsSettingsNl implements TranslationsSettingsEn {
 	@override String get shortcutsReset => 'Sneltoetsen gereset naar standaard';
 	@override String get about => 'Over';
 	@override String get aboutDescription => 'App informatie en licenties';
-	@override String get updates => 'Updates';
-	@override String get updateAvailable => 'Update beschikbaar';
-	@override String get checkForUpdates => 'Controleer op updates';
 	@override String get validationErrorEnterNumber => 'Voer een geldig nummer in';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => 'Duur moet tussen ${min} en ${max} ${unit} zijn';
 	@override String shortcutAlreadyAssigned({required Object action}) => 'Sneltoets al toegewezen aan ${action}';
@@ -1400,14 +1394,11 @@ extension on TranslationsNl {
 			'screens.subtitleStyling' => 'Ondertitel opmaak',
 			'screens.mpvConfig' => 'MPV-configuratie',
 			'screens.logs' => 'Logbestanden',
-			'update.available' => 'Update beschikbaar',
-			'update.versionAvailable' => ({required Object version}) => 'Versie ${version} is beschikbaar',
-			'update.currentVersion' => ({required Object version}) => 'Huidig: ${version}',
-			'update.skipVersion' => 'Deze versie overslaan',
-			'update.viewRelease' => 'Bekijk release',
-			'update.updateInStore' => 'Bijwerken in de Store',
+			'update.checking' => 'Controleren op updates…',
+			'update.newVersionAvailable' => ({required Object version}) => 'Nieuwe versie ${version} beschikbaar',
 			'update.latestVersion' => 'Je hebt de nieuwste versie',
 			'update.checkFailed' => 'Kon niet controleren op updates',
+			'update.checkForUpdatesButton' => 'Controleer op updates',
 			'settings.title' => 'Instellingen',
 			'settings.language' => 'Taal',
 			'settings.theme' => 'Thema',
@@ -1512,9 +1503,6 @@ extension on TranslationsNl {
 			'settings.shortcutsReset' => 'Sneltoetsen gereset naar standaard',
 			'settings.about' => 'Over',
 			'settings.aboutDescription' => 'App informatie en licenties',
-			'settings.updates' => 'Updates',
-			'settings.updateAvailable' => 'Update beschikbaar',
-			'settings.checkForUpdates' => 'Controleer op updates',
 			'settings.validationErrorEnterNumber' => 'Voer een geldig nummer in',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => 'Duur moet tussen ${min} en ${max} ${unit} zijn',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => 'Sneltoets al toegewezen aan ${action}',
@@ -1837,14 +1825,14 @@ extension on TranslationsNl {
 			'libraries.scanLibraryFiles' => 'Scan bibliotheek bestanden',
 			'libraries.scanLibrary' => 'Scan bibliotheek',
 			'libraries.analyze' => 'Analyseren',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analyzeLibrary' => 'Analyseer bibliotheek',
 			'libraries.refreshMetadata' => 'Vernieuw metadata',
 			'libraries.emptyTrash' => 'Prullenbak legen',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Prullenbak legen voor "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Prullenbak geleegd voor "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Kon prullenbak niet legen: ${error}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzing' => ({required Object title}) => 'Analyseren "${title}"...',
 			'libraries.analysisStarted' => ({required Object title}) => 'Analyse gestart voor "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Kon bibliotheek niet analyseren: ${error}',

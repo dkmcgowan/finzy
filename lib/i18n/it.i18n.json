@@ -83,14 +83,11 @@
     "logs": "Registro"
   },
   "update": {
-    "available": "Aggiornamento disponibile",
-    "versionAvailable": "Versione ${version} disponibile",
-    "currentVersion": "Corrente: ${version}",
-    "skipVersion": "Salta questa versione",
-    "viewRelease": "Visualizza dettagli release",
-    "updateInStore": "Aggiorna nello Store",
+    "checking": "Ricerca aggiornamenti…",
+    "newVersionAvailable": "Nuova versione ${version} disponibile",
     "latestVersion": "La versione installata è l'ultima disponibile",
-    "checkFailed": "Impossibile controllare gli aggiornamenti"
+    "checkFailed": "Impossibile controllare gli aggiornamenti",
+    "checkForUpdatesButton": "Controlla aggiornamenti"
   },
   "settings": {
     "title": "Impostazioni",
@@ -197,9 +194,6 @@
     "shortcutsReset": "Scorciatoie ripristinate alle impostazioni predefinite",
     "about": "Informazioni",
     "aboutDescription": "Informazioni sull'app e le licenze",
-    "updates": "Aggiornamenti",
-    "updateAvailable": "Aggiornamento disponibile",
-    "checkForUpdates": "Controlla aggiornamenti",
     "validationErrorEnterNumber": "Inserisci un numero valido",
     "validationErrorDuration": "la durata deve essere compresa tra ${min} e ${max} ${unit}",
     "shortcutAlreadyAssigned": "Scorciatoia già assegnata a ${action}",

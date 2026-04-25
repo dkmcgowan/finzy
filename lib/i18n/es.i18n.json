@@ -83,14 +83,11 @@
     "logs": "Registros"
   },
   "update": {
-    "available": "Actualización disponible",
-    "versionAvailable": "Versión ${version} disponible",
-    "currentVersion": "Actual: ${version}",
-    "skipVersion": "Saltar esta versión",
-    "viewRelease": "Ver versión",
-    "updateInStore": "Actualizar en la tienda",
+    "checking": "Buscando actualizaciones…",
+    "newVersionAvailable": "Nueva versión ${version} disponible",
     "latestVersion": "Ya estás en la última versión",
-    "checkFailed": "Error al buscar actualizaciones"
+    "checkFailed": "Error al buscar actualizaciones",
+    "checkForUpdatesButton": "Buscar actualizaciones"
   },
   "settings": {
     "title": "Configuración",
@@ -197,9 +194,6 @@
     "shortcutsReset": "Atajos restablecidos a los valores predeterminados",
     "about": "Acerca de",
     "aboutDescription": "Información de la aplicación y licencias",
-    "updates": "Actualizaciones",
-    "updateAvailable": "Actualización disponible",
-    "checkForUpdates": "Buscar actualizaciones",
     "validationErrorEnterNumber": "Por favor, introduce un número válido",
     "validationErrorDuration": "La duración debe estar entre ${min} y ${max} ${unit}",
     "shortcutAlreadyAssigned": "El atajo ya está asignado a ${action}",

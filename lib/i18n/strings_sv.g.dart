@@ -193,14 +193,11 @@ class _TranslationsUpdateSv implements TranslationsUpdateEn {
 	final TranslationsSv _root; // ignore: unused_field
 
 	// Translations
-	@override String get available => 'Uppdatering tillgänglig';
-	@override String versionAvailable({required Object version}) => 'Version ${version} är tillgänglig';
-	@override String currentVersion({required Object version}) => 'Nuvarande: ${version}';
-	@override String get skipVersion => 'Hoppa över denna version';
-	@override String get viewRelease => 'Visa release';
-	@override String get updateInStore => 'Uppdatera i Store';
+	@override String get checking => 'Söker efter uppdateringar…';
+	@override String newVersionAvailable({required Object version}) => 'Ny version ${version} tillgänglig';
 	@override String get latestVersion => 'Du har den senaste versionen';
 	@override String get checkFailed => 'Misslyckades att kontrollera uppdateringar';
+	@override String get checkForUpdatesButton => 'Sök efter uppdateringar';
 }
 
 // Path: settings
@@ -314,9 +311,6 @@ class _TranslationsSettingsSv implements TranslationsSettingsEn {
 	@override String get shortcutsReset => 'Genvägar återställda till standard';
 	@override String get about => 'Om';
 	@override String get aboutDescription => 'Appinformation och licenser';
-	@override String get updates => 'Uppdateringar';
-	@override String get updateAvailable => 'Uppdatering tillgänglig';
-	@override String get checkForUpdates => 'Kontrollera uppdateringar';
 	@override String get validationErrorEnterNumber => 'Vänligen ange ett giltigt nummer';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => 'Tiden måste vara mellan ${min} och ${max} ${unit}';
 	@override String shortcutAlreadyAssigned({required Object action}) => 'Genväg redan tilldelad ${action}';
@@ -1400,14 +1394,11 @@ extension on TranslationsSv {
 			'screens.subtitleStyling' => 'Undertext-styling',
 			'screens.mpvConfig' => 'MPV-konfiguration',
 			'screens.logs' => 'Loggar',
-			'update.available' => 'Uppdatering tillgänglig',
-			'update.versionAvailable' => ({required Object version}) => 'Version ${version} är tillgänglig',
-			'update.currentVersion' => ({required Object version}) => 'Nuvarande: ${version}',
-			'update.skipVersion' => 'Hoppa över denna version',
-			'update.viewRelease' => 'Visa release',
-			'update.updateInStore' => 'Uppdatera i Store',
+			'update.checking' => 'Söker efter uppdateringar…',
+			'update.newVersionAvailable' => ({required Object version}) => 'Ny version ${version} tillgänglig',
 			'update.latestVersion' => 'Du har den senaste versionen',
 			'update.checkFailed' => 'Misslyckades att kontrollera uppdateringar',
+			'update.checkForUpdatesButton' => 'Sök efter uppdateringar',
 			'settings.title' => 'Inställningar',
 			'settings.language' => 'Språk',
 			'settings.theme' => 'Tema',
@@ -1512,9 +1503,6 @@ extension on TranslationsSv {
 			'settings.shortcutsReset' => 'Genvägar återställda till standard',
 			'settings.about' => 'Om',
 			'settings.aboutDescription' => 'Appinformation och licenser',
-			'settings.updates' => 'Uppdateringar',
-			'settings.updateAvailable' => 'Uppdatering tillgänglig',
-			'settings.checkForUpdates' => 'Kontrollera uppdateringar',
 			'settings.validationErrorEnterNumber' => 'Vänligen ange ett giltigt nummer',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => 'Tiden måste vara mellan ${min} och ${max} ${unit}',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => 'Genväg redan tilldelad ${action}',
@@ -1837,14 +1825,14 @@ extension on TranslationsSv {
 			'libraries.scanLibraryFiles' => 'Skanna biblioteksfiler',
 			'libraries.scanLibrary' => 'Skanna bibliotek',
 			'libraries.analyze' => 'Analysera',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analyzeLibrary' => 'Analysera bibliotek',
 			'libraries.refreshMetadata' => 'Uppdatera metadata',
 			'libraries.emptyTrash' => 'Töm papperskorg',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Tömmer papperskorg för "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Papperskorg tömd för "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Misslyckades att tömma papperskorg: ${error}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzing' => ({required Object title}) => 'Analyserar "${title}"...',
 			'libraries.analysisStarted' => ({required Object title}) => 'Analys startad för "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Misslyckades att analysera bibliotek: ${error}',

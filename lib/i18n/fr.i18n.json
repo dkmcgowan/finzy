@@ -83,14 +83,11 @@
     "logs": "Journaux"
   },
   "update": {
-    "available": "Mise à jour disponible",
-    "versionAvailable": "Version ${version} disponible",
-    "currentVersion": "Installé: ${version}",
-    "skipVersion": "Ignorer cette version",
-    "viewRelease": "Voir la Release",
-    "updateInStore": "Mettre à jour dans le Store",
+    "checking": "Recherche de mises à jour…",
+    "newVersionAvailable": "Nouvelle version ${version} disponible",
     "latestVersion": "Vous utilisez la dernière version",
-    "checkFailed": "Échec de la vérification des mises à jour"
+    "checkFailed": "Échec de la vérification des mises à jour",
+    "checkForUpdatesButton": "Vérifier les mises à jour"
   },
   "settings": {
     "title": "Paramètres",
@@ -197,9 +194,6 @@
     "shortcutsReset": "Raccourcis réinitialisés aux valeurs par défaut",
     "about": "À propos",
     "aboutDescription": "Informations sur l'application et licences",
-    "updates": "Mises à jour",
-    "updateAvailable": "Mise à jour disponible",
-    "checkForUpdates": "Vérifier les mises à jour",
     "validationErrorEnterNumber": "Veuillez saisir un numéro valide",
     "validationErrorDuration": "La durée doit être comprise entre ${min} et ${max} ${unit}",
     "shortcutAlreadyAssigned": "Raccourci déjà attribué à ${action}",

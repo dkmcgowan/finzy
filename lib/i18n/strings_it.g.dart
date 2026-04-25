@@ -193,14 +193,11 @@ class _TranslationsUpdateIt implements TranslationsUpdateEn {
 	final TranslationsIt _root; // ignore: unused_field
 
 	// Translations
-	@override String get available => 'Aggiornamento disponibile';
-	@override String versionAvailable({required Object version}) => 'Versione ${version} disponibile';
-	@override String currentVersion({required Object version}) => 'Corrente: ${version}';
-	@override String get skipVersion => 'Salta questa versione';
-	@override String get viewRelease => 'Visualizza dettagli release';
-	@override String get updateInStore => 'Aggiorna nello Store';
+	@override String get checking => 'Ricerca aggiornamenti…';
+	@override String newVersionAvailable({required Object version}) => 'Nuova versione ${version} disponibile';
 	@override String get latestVersion => 'La versione installata è l\'ultima disponibile';
 	@override String get checkFailed => 'Impossibile controllare gli aggiornamenti';
+	@override String get checkForUpdatesButton => 'Controlla aggiornamenti';
 }
 
 // Path: settings
@@ -314,9 +311,6 @@ class _TranslationsSettingsIt implements TranslationsSettingsEn {
 	@override String get shortcutsReset => 'Scorciatoie ripristinate alle impostazioni predefinite';
 	@override String get about => 'Informazioni';
 	@override String get aboutDescription => 'Informazioni sull\'app e le licenze';
-	@override String get updates => 'Aggiornamenti';
-	@override String get updateAvailable => 'Aggiornamento disponibile';
-	@override String get checkForUpdates => 'Controlla aggiornamenti';
 	@override String get validationErrorEnterNumber => 'Inserisci un numero valido';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => 'la durata deve essere compresa tra ${min} e ${max} ${unit}';
 	@override String shortcutAlreadyAssigned({required Object action}) => 'Scorciatoia già assegnata a ${action}';
@@ -1400,14 +1394,11 @@ extension on TranslationsIt {
 			'screens.subtitleStyling' => 'Stile sottotitoli',
 			'screens.mpvConfig' => 'Configurazione MPV',
 			'screens.logs' => 'Registro',
-			'update.available' => 'Aggiornamento disponibile',
-			'update.versionAvailable' => ({required Object version}) => 'Versione ${version} disponibile',
-			'update.currentVersion' => ({required Object version}) => 'Corrente: ${version}',
-			'update.skipVersion' => 'Salta questa versione',
-			'update.viewRelease' => 'Visualizza dettagli release',
-			'update.updateInStore' => 'Aggiorna nello Store',
+			'update.checking' => 'Ricerca aggiornamenti…',
+			'update.newVersionAvailable' => ({required Object version}) => 'Nuova versione ${version} disponibile',
 			'update.latestVersion' => 'La versione installata è l\'ultima disponibile',
 			'update.checkFailed' => 'Impossibile controllare gli aggiornamenti',
+			'update.checkForUpdatesButton' => 'Controlla aggiornamenti',
 			'settings.title' => 'Impostazioni',
 			'settings.language' => 'Lingua',
 			'settings.theme' => 'Tema',
@@ -1512,9 +1503,6 @@ extension on TranslationsIt {
 			'settings.shortcutsReset' => 'Scorciatoie ripristinate alle impostazioni predefinite',
 			'settings.about' => 'Informazioni',
 			'settings.aboutDescription' => 'Informazioni sull\'app e le licenze',
-			'settings.updates' => 'Aggiornamenti',
-			'settings.updateAvailable' => 'Aggiornamento disponibile',
-			'settings.checkForUpdates' => 'Controlla aggiornamenti',
 			'settings.validationErrorEnterNumber' => 'Inserisci un numero valido',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => 'la durata deve essere compresa tra ${min} e ${max} ${unit}',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => 'Scorciatoia già assegnata a ${action}',
@@ -1837,14 +1825,14 @@ extension on TranslationsIt {
 			'libraries.scanLibraryFiles' => 'Scansiona file libreria',
 			'libraries.scanLibrary' => 'Scansiona libreria',
 			'libraries.analyze' => 'Analizza',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analyzeLibrary' => 'Analizza libreria',
 			'libraries.refreshMetadata' => 'Aggiorna metadati',
 			'libraries.emptyTrash' => 'Svuota cestino',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Svuotamento cestino per "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Cestino svuotato per "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Impossibile svuotare cestino: ${error}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzing' => ({required Object title}) => 'Analisi "${title}"...',
 			'libraries.analysisStarted' => ({required Object title}) => 'Analisi iniziata per "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Impossibile analizzare libreria: ${error}',

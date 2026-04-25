@@ -83,14 +83,11 @@
     "logs": "Protokolle"
   },
   "update": {
-    "available": "Update verfügbar",
-    "versionAvailable": "Version ${version} ist verfügbar",
-    "currentVersion": "Aktuell: ${version}",
-    "skipVersion": "Diese Version überspringen",
-    "viewRelease": "Release anzeigen",
-    "updateInStore": "Im Store aktualisieren",
+    "checking": "Suche nach Updates…",
+    "newVersionAvailable": "Neue Version ${version} verfügbar",
     "latestVersion": "Aktuellste Version installiert",
-    "checkFailed": "Fehler bei der Updateprüfung"
+    "checkFailed": "Fehler bei der Updateprüfung",
+    "checkForUpdatesButton": "Nach Updates suchen"
   },
   "settings": {
     "title": "Einstellungen",
@@ -197,9 +194,6 @@
     "shortcutsReset": "Tastenkürzel auf Standard zurückgesetzt",
     "about": "Über",
     "aboutDescription": "App-Informationen und Lizenzen",
-    "updates": "Updates",
-    "updateAvailable": "Update verfügbar",
-    "checkForUpdates": "Nach Updates suchen",
     "validationErrorEnterNumber": "Bitte eine gültige Zahl eingeben",
     "validationErrorDuration": "Dauer muss zwischen ${min} und ${max} ${unit} liegen",
     "shortcutAlreadyAssigned": "Tastenkürzel bereits zugewiesen an ${action}",

@@ -1,13 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../focus/focus_utils.dart';
 import '../../services/update_service.dart';
-import '../../utils/snackbar_helper.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import '../../i18n/strings.g.dart';
 import 'licenses_screen.dart';
@@ -19,16 +15,23 @@ class AboutScreen extends StatefulWidget {
   State<AboutScreen> createState() => _AboutScreenState();
 }
 
+enum _UpdateStatus { idle, checking, upToDate, updateAvailable, failed }
+
 class _AboutScreenState extends State<AboutScreen> {
   String _appName = '';
   String _appVersion = '';
-  bool _isCheckingForUpdate = false;
   final _contentKey = GlobalKey();
+
+  _UpdateStatus _updateStatus = _UpdateStatus.idle;
+  String? _latestVersion;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    if (UpdateService.isUpdateCheckEnabled) {
+      _checkForUpdates();
+    }
   }
 
   Future<void> _loadData() async {
@@ -48,91 +51,50 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _checkForUpdates() async {
-    setState(() => _isCheckingForUpdate = true);
-    try {
-      final updateInfo = await UpdateService.checkForUpdates();
-      if (!mounted) return;
-      setState(() => _isCheckingForUpdate = false);
-      if (updateInfo != null && updateInfo['hasUpdate'] == true) {
-        _showUpdateDialog(updateInfo);
+    setState(() {
+      _updateStatus = _UpdateStatus.checking;
+    });
+    final result = await UpdateService.checkForUpdates();
+    if (!mounted) return;
+    setState(() {
+      if (result == null) {
+        _updateStatus = _UpdateStatus.failed;
+        _latestVersion = null;
+      } else if (result.hasUpdate) {
+        _updateStatus = _UpdateStatus.updateAvailable;
+        _latestVersion = result.latestVersion;
       } else {
-        showAppSnackBar(context, t.update.latestVersion);
+        _updateStatus = _UpdateStatus.upToDate;
+        _latestVersion = result.latestVersion;
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isCheckingForUpdate = false);
-        showErrorSnackBar(context, t.update.checkFailed);
-      }
-    }
+    });
   }
 
-  void _showUpdateDialog(Map<String, dynamic> updateInfo) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(t.update.available),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t.update.versionAvailable(version: updateInfo['latestVersion']),
-                style: Theme.of(dialogContext).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                t.update.currentVersion(version: updateInfo['currentVersion']),
-                style: Theme.of(dialogContext).textTheme.bodySmall,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              autofocus: true,
-              onPressed: () => Navigator.pop(dialogContext),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                shape: const StadiumBorder(),
-              ),
-              child: Text(t.common.later),
-            ),
-            TextButton(
-              onPressed: () async {
-                await UpdateService.skipVersion(updateInfo['latestVersion']);
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-              },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                shape: const StadiumBorder(),
-              ),
-              child: Text(t.update.skipVersion),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final url = Uri.parse(
-                    updateInfo['updateUrl'] as String? ?? updateInfo['releaseUrl'] as String);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-              },
-              child: Text(
-                  (updateInfo['isStoreUpdate'] as bool? ?? false)
-                      ? t.update.updateInStore
-                      : t.update.viewRelease),
-            ),
-          ],
+  Widget _buildUpdateStatusText(BuildContext context) {
+    final theme = Theme.of(context);
+    switch (_updateStatus) {
+      case _UpdateStatus.idle:
+        return const SizedBox.shrink();
+      case _UpdateStatus.checking:
+        return Text(t.update.checking, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey));
+      case _UpdateStatus.upToDate:
+        return Text(t.update.latestVersion, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey));
+      case _UpdateStatus.updateAvailable:
+        return Text(
+          t.update.newVersionAvailable(version: _latestVersion ?? ''),
+          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          textAlign: TextAlign.center,
         );
-      },
-    );
+      case _UpdateStatus.failed:
+        return Text(t.update.checkFailed, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final appName = _appName;
     final appVersion = _appVersion;
+    final isChecking = _updateStatus == _UpdateStatus.checking;
 
     return FocusedScrollScaffold(
       title: Text(t.about.title),
@@ -156,6 +118,18 @@ class _AboutScreenState extends State<AboutScreen> {
                       t.about.versionLabel(version: appVersion),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                     ),
+                    if (UpdateService.isUpdateCheckEnabled) ...[
+                      const SizedBox(height: 12),
+                      _buildUpdateStatusText(context),
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: isChecking ? null : _checkForUpdates,
+                        icon: isChecking
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const AppIcon(Symbols.refresh_rounded, fill: 1, size: 18),
+                        label: Text(t.update.checkForUpdatesButton),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     Text(
                       t.about.appDescription,
@@ -180,21 +154,6 @@ class _AboutScreenState extends State<AboutScreen> {
                   },
                 ),
               ),
-
-              if (UpdateService.isUpdateCheckEnabled &&
-                  (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) ...[
-                const SizedBox(height: 8),
-                Card(
-                  child: ListTile(
-                    leading: const AppIcon(Symbols.system_update_rounded, fill: 1),
-                    title: Text(t.settings.checkForUpdates),
-                    trailing: _isCheckingForUpdate
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-                    onTap: _isCheckingForUpdate ? null : _checkForUpdates,
-                  ),
-                ),
-              ],
 
               const SizedBox(height: 24),
             ]),

@@ -83,14 +83,11 @@
     "logs": "Loggar"
   },
   "update": {
-    "available": "Uppdatering tillgänglig",
-    "versionAvailable": "Version ${version} är tillgänglig",
-    "currentVersion": "Nuvarande: ${version}",
-    "skipVersion": "Hoppa över denna version",
-    "viewRelease": "Visa release",
-    "updateInStore": "Uppdatera i Store",
+    "checking": "Söker efter uppdateringar…",
+    "newVersionAvailable": "Ny version ${version} tillgänglig",
     "latestVersion": "Du har den senaste versionen",
-    "checkFailed": "Misslyckades att kontrollera uppdateringar"
+    "checkFailed": "Misslyckades att kontrollera uppdateringar",
+    "checkForUpdatesButton": "Sök efter uppdateringar"
   },
   "settings": {
     "title": "Inställningar",
@@ -197,9 +194,6 @@
     "shortcutsReset": "Genvägar återställda till standard",
     "about": "Om",
     "aboutDescription": "Appinformation och licenser",
-    "updates": "Uppdateringar",
-    "updateAvailable": "Uppdatering tillgänglig",
-    "checkForUpdates": "Kontrollera uppdateringar",
     "validationErrorEnterNumber": "Vänligen ange ett giltigt nummer",
     "validationErrorDuration": "Tiden måste vara mellan ${min} och ${max} ${unit}",
     "shortcutAlreadyAssigned": "Genväg redan tilldelad ${action}",

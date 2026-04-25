@@ -193,14 +193,11 @@ class _TranslationsUpdateDe implements TranslationsUpdateEn {
 	final TranslationsDe _root; // ignore: unused_field
 
 	// Translations
-	@override String get available => 'Update verfügbar';
-	@override String versionAvailable({required Object version}) => 'Version ${version} ist verfügbar';
-	@override String currentVersion({required Object version}) => 'Aktuell: ${version}';
-	@override String get skipVersion => 'Diese Version überspringen';
-	@override String get viewRelease => 'Release anzeigen';
-	@override String get updateInStore => 'Im Store aktualisieren';
+	@override String get checking => 'Suche nach Updates…';
+	@override String newVersionAvailable({required Object version}) => 'Neue Version ${version} verfügbar';
 	@override String get latestVersion => 'Aktuellste Version installiert';
 	@override String get checkFailed => 'Fehler bei der Updateprüfung';
+	@override String get checkForUpdatesButton => 'Nach Updates suchen';
 }
 
 // Path: settings
@@ -314,9 +311,6 @@ class _TranslationsSettingsDe implements TranslationsSettingsEn {
 	@override String get shortcutsReset => 'Tastenkürzel auf Standard zurückgesetzt';
 	@override String get about => 'Über';
 	@override String get aboutDescription => 'App-Informationen und Lizenzen';
-	@override String get updates => 'Updates';
-	@override String get updateAvailable => 'Update verfügbar';
-	@override String get checkForUpdates => 'Nach Updates suchen';
 	@override String get validationErrorEnterNumber => 'Bitte eine gültige Zahl eingeben';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => 'Dauer muss zwischen ${min} und ${max} ${unit} liegen';
 	@override String shortcutAlreadyAssigned({required Object action}) => 'Tastenkürzel bereits zugewiesen an ${action}';
@@ -1400,14 +1394,11 @@ extension on TranslationsDe {
 			'screens.subtitleStyling' => 'Untertitel-Stil',
 			'screens.mpvConfig' => 'MPV-Konfiguration',
 			'screens.logs' => 'Protokolle',
-			'update.available' => 'Update verfügbar',
-			'update.versionAvailable' => ({required Object version}) => 'Version ${version} ist verfügbar',
-			'update.currentVersion' => ({required Object version}) => 'Aktuell: ${version}',
-			'update.skipVersion' => 'Diese Version überspringen',
-			'update.viewRelease' => 'Release anzeigen',
-			'update.updateInStore' => 'Im Store aktualisieren',
+			'update.checking' => 'Suche nach Updates…',
+			'update.newVersionAvailable' => ({required Object version}) => 'Neue Version ${version} verfügbar',
 			'update.latestVersion' => 'Aktuellste Version installiert',
 			'update.checkFailed' => 'Fehler bei der Updateprüfung',
+			'update.checkForUpdatesButton' => 'Nach Updates suchen',
 			'settings.title' => 'Einstellungen',
 			'settings.language' => 'Sprache',
 			'settings.theme' => 'Design',
@@ -1512,9 +1503,6 @@ extension on TranslationsDe {
 			'settings.shortcutsReset' => 'Tastenkürzel auf Standard zurückgesetzt',
 			'settings.about' => 'Über',
 			'settings.aboutDescription' => 'App-Informationen und Lizenzen',
-			'settings.updates' => 'Updates',
-			'settings.updateAvailable' => 'Update verfügbar',
-			'settings.checkForUpdates' => 'Nach Updates suchen',
 			'settings.validationErrorEnterNumber' => 'Bitte eine gültige Zahl eingeben',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => 'Dauer muss zwischen ${min} und ${max} ${unit} liegen',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => 'Tastenkürzel bereits zugewiesen an ${action}',
@@ -1837,14 +1825,14 @@ extension on TranslationsDe {
 			'libraries.scanLibraryFiles' => 'Mediatheksdateien scannen',
 			'libraries.scanLibrary' => 'Mediathek scannen',
 			'libraries.analyze' => 'Analysieren',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analyzeLibrary' => 'Mediathek analysieren',
 			'libraries.refreshMetadata' => 'Metadaten aktualisieren',
 			'libraries.emptyTrash' => 'Papierkorb leeren',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Papierkorb für „${title}“ wird geleert...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Papierkorb für „${title}“ geleert',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Papierkorb konnte nicht geleert werden: ${error}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzing' => ({required Object title}) => 'Analysiere „${title}“...',
 			'libraries.analysisStarted' => ({required Object title}) => 'Analyse gestartet für „${title}“',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Analyse der Mediathek fehlgeschlagen: ${error}',

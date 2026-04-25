@@ -193,14 +193,11 @@ class _TranslationsUpdateKo implements TranslationsUpdateEn {
 	final TranslationsKo _root; // ignore: unused_field
 
 	// Translations
-	@override String get available => '사용 가능한 업데이트';
-	@override String versionAvailable({required Object version}) => '버전 ${version} 출시됨';
-	@override String currentVersion({required Object version}) => '현재 버전: ${version}';
-	@override String get skipVersion => '이 버전 건너뛰기';
-	@override String get viewRelease => '릴리스 정보 보기';
-	@override String get updateInStore => '스토어에서 업데이트';
+	@override String get checking => '업데이트 확인 중…';
+	@override String newVersionAvailable({required Object version}) => '새 버전 ${version} 사용 가능';
 	@override String get latestVersion => '최신 버전을 사용 중입니다';
 	@override String get checkFailed => '업데이트 확인 실패';
+	@override String get checkForUpdatesButton => '업데이트 확인';
 }
 
 // Path: settings
@@ -314,9 +311,6 @@ class _TranslationsSettingsKo implements TranslationsSettingsEn {
 	@override String get shortcutsReset => '단축키가 기본값으로 재설정되었습니다';
 	@override String get about => '정보';
 	@override String get aboutDescription => '응용 프로그램 정보 및 라이선스';
-	@override String get updates => '업데이트';
-	@override String get updateAvailable => '사용 가능한 업데이트 있음';
-	@override String get checkForUpdates => '업데이트 확인';
 	@override String get validationErrorEnterNumber => '유효한 숫자를 입력하세요';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => '기간은 ${min}과 ${max} ${unit} 사이여야 합니다';
 	@override String shortcutAlreadyAssigned({required Object action}) => '단축키가 이미 ${action}에 할당 되었습니다';
@@ -1400,14 +1394,11 @@ extension on TranslationsKo {
 			'screens.subtitleStyling' => '자막 스타일 설정',
 			'screens.mpvConfig' => 'MPV 설정',
 			'screens.logs' => '로그',
-			'update.available' => '사용 가능한 업데이트',
-			'update.versionAvailable' => ({required Object version}) => '버전 ${version} 출시됨',
-			'update.currentVersion' => ({required Object version}) => '현재 버전: ${version}',
-			'update.skipVersion' => '이 버전 건너뛰기',
-			'update.viewRelease' => '릴리스 정보 보기',
-			'update.updateInStore' => '스토어에서 업데이트',
+			'update.checking' => '업데이트 확인 중…',
+			'update.newVersionAvailable' => ({required Object version}) => '새 버전 ${version} 사용 가능',
 			'update.latestVersion' => '최신 버전을 사용 중입니다',
 			'update.checkFailed' => '업데이트 확인 실패',
+			'update.checkForUpdatesButton' => '업데이트 확인',
 			'settings.title' => '설정',
 			'settings.language' => '언어',
 			'settings.theme' => '테마',
@@ -1512,9 +1503,6 @@ extension on TranslationsKo {
 			'settings.shortcutsReset' => '단축키가 기본값으로 재설정되었습니다',
 			'settings.about' => '정보',
 			'settings.aboutDescription' => '응용 프로그램 정보 및 라이선스',
-			'settings.updates' => '업데이트',
-			'settings.updateAvailable' => '사용 가능한 업데이트 있음',
-			'settings.checkForUpdates' => '업데이트 확인',
 			'settings.validationErrorEnterNumber' => '유효한 숫자를 입력하세요',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => '기간은 ${min}과 ${max} ${unit} 사이여야 합니다',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => '단축키가 이미 ${action}에 할당 되었습니다',
@@ -1837,14 +1825,14 @@ extension on TranslationsKo {
 			'libraries.scanLibraryFiles' => '미디어 라이브러리 파일 스캔',
 			'libraries.scanLibrary' => '미디어 라이브러리 스캔',
 			'libraries.analyze' => '분석',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analyzeLibrary' => '미디어 라이브러리 분석',
 			'libraries.refreshMetadata' => '메타데이터 새로 고침',
 			'libraries.emptyTrash' => '휴지통 비우기',
 			'libraries.emptyingTrash' => ({required Object title}) => '「${title}」의 휴지통을 비우고 있습니다...',
 			'libraries.trashEmptied' => ({required Object title}) => '「${title}」의 휴지통을 비웠습니다',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => '휴지통 비우기 실패: ${error}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzing' => ({required Object title}) => '"${title}" 분석 중...',
 			'libraries.analysisStarted' => ({required Object title}) => '"${title}" 분석 시작됨',
 			'libraries.failedToAnalyze' => ({required Object error}) => '미디어 라이브러리 분석 실패: ${error}',

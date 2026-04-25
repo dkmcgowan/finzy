@@ -83,14 +83,11 @@
     "logs": "로그"
   },
   "update": {
-    "available": "사용 가능한 업데이트",
-    "versionAvailable": "버전 ${version} 출시됨",
-    "currentVersion": "현재 버전: ${version}",
-    "skipVersion": "이 버전 건너뛰기",
-    "viewRelease": "릴리스 정보 보기",
-    "updateInStore": "스토어에서 업데이트",
+    "checking": "업데이트 확인 중…",
+    "newVersionAvailable": "새 버전 ${version} 사용 가능",
     "latestVersion": "최신 버전을 사용 중입니다",
-    "checkFailed": "업데이트 확인 실패"
+    "checkFailed": "업데이트 확인 실패",
+    "checkForUpdatesButton": "업데이트 확인"
   },
   "settings": {
     "title": "설정",
@@ -197,9 +194,6 @@
     "shortcutsReset": "단축키가 기본값으로 재설정되었습니다",
     "about": "정보",
     "aboutDescription": "응용 프로그램 정보 및 라이선스",
-    "updates": "업데이트",
-    "updateAvailable": "사용 가능한 업데이트 있음",
-    "checkForUpdates": "업데이트 확인",
     "validationErrorEnterNumber": "유효한 숫자를 입력하세요",
     "validationErrorDuration": "기간은 ${min}과 ${max} ${unit} 사이여야 합니다",
     "shortcutAlreadyAssigned": "단축키가 이미 ${action}에 할당 되었습니다",

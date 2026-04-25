@@ -193,14 +193,11 @@ class _TranslationsUpdateEs implements TranslationsUpdateEn {
 	final TranslationsEs _root; // ignore: unused_field
 
 	// Translations
-	@override String get available => 'Actualización disponible';
-	@override String versionAvailable({required Object version}) => 'Versión ${version} disponible';
-	@override String currentVersion({required Object version}) => 'Actual: ${version}';
-	@override String get skipVersion => 'Saltar esta versión';
-	@override String get viewRelease => 'Ver versión';
-	@override String get updateInStore => 'Actualizar en la tienda';
+	@override String get checking => 'Buscando actualizaciones…';
+	@override String newVersionAvailable({required Object version}) => 'Nueva versión ${version} disponible';
 	@override String get latestVersion => 'Ya estás en la última versión';
 	@override String get checkFailed => 'Error al buscar actualizaciones';
+	@override String get checkForUpdatesButton => 'Buscar actualizaciones';
 }
 
 // Path: settings
@@ -314,9 +311,6 @@ class _TranslationsSettingsEs implements TranslationsSettingsEn {
 	@override String get shortcutsReset => 'Atajos restablecidos a los valores predeterminados';
 	@override String get about => 'Acerca de';
 	@override String get aboutDescription => 'Información de la aplicación y licencias';
-	@override String get updates => 'Actualizaciones';
-	@override String get updateAvailable => 'Actualización disponible';
-	@override String get checkForUpdates => 'Buscar actualizaciones';
 	@override String get validationErrorEnterNumber => 'Por favor, introduce un número válido';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => 'La duración debe estar entre ${min} y ${max} ${unit}';
 	@override String shortcutAlreadyAssigned({required Object action}) => 'El atajo ya está asignado a ${action}';
@@ -1400,14 +1394,11 @@ extension on TranslationsEs {
 			'screens.subtitleStyling' => 'Estilo de Subtítulos',
 			'screens.mpvConfig' => 'Configuración de MPV',
 			'screens.logs' => 'Registros',
-			'update.available' => 'Actualización disponible',
-			'update.versionAvailable' => ({required Object version}) => 'Versión ${version} disponible',
-			'update.currentVersion' => ({required Object version}) => 'Actual: ${version}',
-			'update.skipVersion' => 'Saltar esta versión',
-			'update.viewRelease' => 'Ver versión',
-			'update.updateInStore' => 'Actualizar en la tienda',
+			'update.checking' => 'Buscando actualizaciones…',
+			'update.newVersionAvailable' => ({required Object version}) => 'Nueva versión ${version} disponible',
 			'update.latestVersion' => 'Ya estás en la última versión',
 			'update.checkFailed' => 'Error al buscar actualizaciones',
+			'update.checkForUpdatesButton' => 'Buscar actualizaciones',
 			'settings.title' => 'Configuración',
 			'settings.language' => 'Idioma',
 			'settings.theme' => 'Tema',
@@ -1512,9 +1503,6 @@ extension on TranslationsEs {
 			'settings.shortcutsReset' => 'Atajos restablecidos a los valores predeterminados',
 			'settings.about' => 'Acerca de',
 			'settings.aboutDescription' => 'Información de la aplicación y licencias',
-			'settings.updates' => 'Actualizaciones',
-			'settings.updateAvailable' => 'Actualización disponible',
-			'settings.checkForUpdates' => 'Buscar actualizaciones',
 			'settings.validationErrorEnterNumber' => 'Por favor, introduce un número válido',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => 'La duración debe estar entre ${min} y ${max} ${unit}',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => 'El atajo ya está asignado a ${action}',
@@ -1837,14 +1825,14 @@ extension on TranslationsEs {
 			'libraries.scanLibraryFiles' => 'Escanear Archivos de la Biblioteca',
 			'libraries.scanLibrary' => 'Escanear Biblioteca',
 			'libraries.analyze' => 'Analizar',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analyzeLibrary' => 'Analizar Biblioteca',
 			'libraries.refreshMetadata' => 'Actualizar Metadatos',
 			'libraries.emptyTrash' => 'Vaciar Papelera',
 			'libraries.emptyingTrash' => ({required Object title}) => 'Vaciando papelera de "${title}"...',
 			'libraries.trashEmptied' => ({required Object title}) => 'Papelera vaciada para "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Error al vaciar papelera: ${error}',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.analyzing' => ({required Object title}) => 'Analizando "${title}"...',
 			'libraries.analysisStarted' => ({required Object title}) => 'Análisis iniciado para "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Error al analizar la biblioteca: ${error}',
