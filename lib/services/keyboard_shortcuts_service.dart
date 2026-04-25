@@ -285,12 +285,12 @@ class KeyboardShortcutsService {
         onPreviousChapter?.call();
         break;
       case 'speed_increase':
-        final newRateUp = (player.state.rate + 0.1).clamp(0.1, 3.0);
+        final newRateUp = (player.state.rate + 0.1).clamp(0.1, 8.0);
         player.setRate(newRateUp);
         _settingsService.setDefaultPlaybackSpeed(newRateUp);
         break;
       case 'speed_decrease':
-        final newRateDown = (player.state.rate - 0.1).clamp(0.1, 3.0);
+        final newRateDown = (player.state.rate - 0.1).clamp(0.1, 8.0);
         player.setRate(newRateDown);
         _settingsService.setDefaultPlaybackSpeed(newRateDown);
         break;

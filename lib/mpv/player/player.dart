@@ -109,7 +109,7 @@ abstract class Player {
 
   /// Set the playback rate/speed.
   ///
-  /// [rate] - Playback rate from 0.25 to 4.0 (1.0 = normal speed).
+  /// [rate] - Playback rate from 0.5 to 8.0 (1.0 = normal speed).
   Future<void> setRate(double rate);
 
   /// Set the audio output device.

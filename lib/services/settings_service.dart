@@ -1243,9 +1243,9 @@ class SettingsService extends BaseSharedPreferencesService {
     return prefs.getBool(_keyMatchContentFrameRate) ?? false; // Default disabled
   }
 
-  // Default Playback Speed (0.5 to 3.0)
+  // Default Playback Speed (0.5 to 8.0)
   Future<void> setDefaultPlaybackSpeed(double speed) async {
-    await prefs.setDouble(_keyDefaultPlaybackSpeed, speed.clamp(0.5, 3.0));
+    await prefs.setDouble(_keyDefaultPlaybackSpeed, speed.clamp(0.5, 8.0));
   }
 
   double getDefaultPlaybackSpeed() {
