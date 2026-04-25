@@ -13,8 +13,7 @@ class ServerRegistry {
   Future<List<RegisteredServer>> getServers() async {
     try {
       final serversJson = _storage.getServersListJson();
-      final list = RegisteredServer.listFromJsonString(serversJson);
-      return list;
+      return RegisteredServer.listFromJsonString(serversJson);
     } catch (e, stackTrace) {
       appLogger.e('Failed to load servers from storage', error: e, stackTrace: stackTrace);
       return [];

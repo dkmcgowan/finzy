@@ -652,8 +652,8 @@ Widget _buildPosterImage(
         child: posterUrl != null
             ? Center(
                 child: FractionallySizedBox(
-                  widthFactor: 0.70,
-                  heightFactor: 0.70,
+                  widthFactor: 0.7,
+                  heightFactor: 0.7,
                   child: OptimizedImage.poster(
                     client: isOffline ? null : context.getClientWithFallback(item.serverId),
                     imagePath: posterUrl,

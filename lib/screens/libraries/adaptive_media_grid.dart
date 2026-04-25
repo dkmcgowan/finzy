@@ -121,6 +121,7 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
       return ListView.builder(
         controller: scrollController,
         padding: effectivePadding,
+        // Flutter deprecated cacheExtent on scrollables; keep until a replacement lands.
         // ignore: deprecated_member_use
         cacheExtent: cacheExtent,
         clipBehavior: Clip.none,
@@ -154,6 +155,7 @@ class AdaptiveMediaGrid<T> extends StatelessWidget {
           return GridView.builder(
             controller: scrollController,
             padding: effectivePadding,
+            // Flutter deprecated cacheExtent on scrollables; keep until a replacement lands.
             // ignore: deprecated_member_use
             cacheExtent: cacheExtent,
             clipBehavior: Clip.none,

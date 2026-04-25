@@ -198,11 +198,9 @@ class _AppBarBackButtonState extends State<AppBarBackButton> with TickerProvider
       ),
     );
 
-    final button = widget.semanticLabel != null
+    return widget.semanticLabel != null
         ? Semantics(label: widget.semanticLabel, button: true, excludeSemantics: true, child: buttonWidget)
         : buttonWidget;
-
-    return button;
   }
 }
 

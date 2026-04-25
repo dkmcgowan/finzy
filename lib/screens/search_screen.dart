@@ -388,7 +388,7 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
     }
     _ensureHubKeys(_searchHubs.length);
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
         (context, index) {
@@ -444,7 +444,7 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
     _ensureHubKeys(_searchHubs.length);
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       clipBehavior: Clip.none,
       itemCount: _searchHubs.length,
       itemBuilder: (context, index) {

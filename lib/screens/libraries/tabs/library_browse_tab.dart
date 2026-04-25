@@ -351,7 +351,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
         client.getLibrarySorts(widget.library.key, libraryType: widget.library.type),
         client.getDisplayPreferences(widget.library.key),
       ]);
-      final storage = results[0] as StorageService;
+      final storage = results.first as StorageService;
       final filters = results[1] as List<LibraryFilter>;
       final sorts = results[2] as List<LibrarySort>;
       final serverPrefs = results[3] as Map<String, dynamic>?;
@@ -1107,6 +1107,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) => CustomScrollView(
           controller: _scrollController,
+          // Flutter deprecated cacheExtent on scrollables; keep until a replacement lands.
           // ignore: deprecated_member_use
           cacheExtent: settings.gridPreloadCacheExtent,
           clipBehavior: Clip.none,

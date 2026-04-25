@@ -487,12 +487,12 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
         color: Colors.transparent,
         child: InkWell(
           onTap: _handleClear,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: const BorderRadius.all(Radius.circular(999)),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: const BorderRadius.all(Radius.circular(999)),
             ),
             child: Text(
               t.common.clear,

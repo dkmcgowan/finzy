@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print
 
-/// Applies [tool/i18n_fill.json] to lib/i18n/*.i18n.json when value still matches English.
-/// Run: dart run tool/apply_i18n_fill.dart
+// Applies tool/i18n_fill.json to lib/i18n/*.i18n.json when value still matches English.
+// Run: dart run tool/apply_i18n_fill.dart
 
 import 'dart:convert';
 import 'dart:io';
@@ -36,7 +36,7 @@ void main() {
       changed++;
     }
     if (changed > 0) {
-      f.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(root) + '\n');
+      f.writeAsStringSync('${const JsonEncoder.withIndent('  ').convert(root)}\n');
       print('$loc: updated $changed strings');
     } else {
       print('$loc: no changes');

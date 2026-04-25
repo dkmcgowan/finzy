@@ -232,18 +232,16 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
       }
     }
     // Merge enriched series metadata (unwatched count) when playlist API didn't provide it
-    final merged = result.map((item) {
+    return result.map((item) {
       if (item.mediaType != MediaType.show) return item;
       final enriched = _enrichedShowCounts[item.itemId];
       if (enriched == null) return item;
-      final m = item.copyWith(
+      return item.copyWith(
         unwatchedCount: enriched.unwatchedCount,
         leafCount: enriched.leafCount,
         watchedEpisodeCount: enriched.watchedEpisodeCount,
       );
-      return m;
     }).toList();
-    return merged;
   }
 
   Future<void> _deletePlaylist() async {
@@ -297,6 +295,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     // Grid uses its own focus nodes (firstItemFocusNode, getGridItemFocusNode)
     Widget scrollView = CustomScrollView(
       controller: scrollController,
+      // Flutter deprecated cacheExtent on scrollables; keep until a replacement lands.
       // ignore: deprecated_member_use
       cacheExtent: context.read<SettingsProvider>().gridPreloadCacheExtent,
       slivers: [

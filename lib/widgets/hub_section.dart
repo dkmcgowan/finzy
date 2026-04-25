@@ -473,6 +473,7 @@ class HubSectionState extends State<HubSection> {
                     builder: (scrollController) => ListView.builder(
                       controller: scrollController,
                       scrollDirection: Axis.horizontal,
+                      // Flutter deprecated cacheExtent on scrollables; keep until a replacement lands.
                       // ignore: deprecated_member_use
                       cacheExtent: context.read<SettingsProvider>().gridPreloadCacheExtent,
                       padding: const EdgeInsets.only(left: 12, right: 24, top: 5, bottom: 5),

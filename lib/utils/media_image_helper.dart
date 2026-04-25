@@ -249,7 +249,7 @@ class MediaImageHelper {
     if (s.length < 30) return false;
     final parts = s.split('-');
     return parts.length == 5 &&
-        parts[0].length == 8 &&
+        parts.first.length == 8 &&
         parts[1].length == 4 &&
         parts[2].length == 4 &&
         parts[3].length == 4 &&

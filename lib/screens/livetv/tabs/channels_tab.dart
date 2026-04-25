@@ -154,8 +154,8 @@ class _ChannelCardState extends State<_ChannelCard> {
                 if (widget.channel.thumb != null)
                   Center(
                     child: FractionallySizedBox(
-                      widthFactor: 0.70,
-                      heightFactor: 0.70,
+                      widthFactor: 0.7,
+                      heightFactor: 0.7,
                       child: OptimizedImage(
                         client: context.getClientWithFallback(widget.channel.serverId),
                         imagePath: widget.channel.thumb,
@@ -241,7 +241,7 @@ class _ChannelCardState extends State<_ChannelCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: tokens(context).surface,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: const BorderRadius.all(Radius.circular(4)),
                       ),
                       child: Text(
                         t.liveTv.hd,

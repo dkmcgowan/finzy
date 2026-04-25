@@ -374,6 +374,7 @@ class _DownloadsGridContentState extends State<_DownloadsGridContent> {
         if (isListMode) {
           return ListView.builder(
             padding: effectivePadding,
+            // Flutter deprecated cacheExtent on scrollables; keep until a replacement lands.
             // ignore: deprecated_member_use
             cacheExtent: settingsProvider.gridPreloadCacheExtent,
             clipBehavior: Clip.none,
@@ -404,6 +405,7 @@ class _DownloadsGridContentState extends State<_DownloadsGridContent> {
 
             return GridView.builder(
               padding: effectivePadding,
+              // Flutter deprecated cacheExtent on scrollables; keep until a replacement lands.
               // ignore: deprecated_member_use
               cacheExtent: settingsProvider.gridPreloadCacheExtent,
               clipBehavior: Clip.none,

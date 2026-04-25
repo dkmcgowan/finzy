@@ -427,6 +427,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
           key: _overlayChildKey,
           body: CustomScrollView(
             controller: _scrollController,
+            // Flutter deprecated cacheExtent on scrollables; keep until a replacement lands.
             // ignore: deprecated_member_use
             cacheExtent: context.read<SettingsProvider>().gridPreloadCacheExtent,
             clipBehavior: Clip.none,
@@ -588,7 +589,7 @@ class _HubDetailScreenState extends State<HubDetailScreen> with Refreshable, Gri
                     }
 
                     return SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                      padding: const EdgeInsets.all(8),
                       sliver: sliver,
                     );
                   },

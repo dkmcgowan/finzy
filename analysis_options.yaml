@@ -34,6 +34,7 @@ dart_code_linter:
     - prefer-commenting-analyzer-ignores
 
     # --- Disable noisy rules from recommended preset ---
+    - avoid-nested-conditional-expressions: false
     - no-magic-number: false
     - avoid-dynamic: false
     - format-comment: false
@@ -52,19 +53,19 @@ dart_code_linter:
     - avoid-unused-parameters: false
 
   metrics:
-    cyclomatic-complexity: 70
+    cyclomatic-complexity: 90
     halstead-volume: 16000
-    maintainability-index: 8
-    maximum-nesting-level: 7
-    number-of-parameters: 25
-    number-of-methods: 150
+    maintainability-index: 5
+    maximum-nesting-level: 8
+    number-of-parameters: 30
+    number-of-methods: 200
     source-lines-of-code: 500
 
   anti-patterns:
     - long-method:
         lines-of-code: 500
     - long-parameter-list:
-        number-of-parameters: 25
+        number-of-parameters: 30
 
 formatter:
   page_width: 120

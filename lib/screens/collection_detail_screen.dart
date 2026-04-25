@@ -80,6 +80,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
       child: Scaffold(
         body: CustomScrollView(
           controller: scrollController,
+          // Flutter deprecated cacheExtent on scrollables; keep until a replacement lands.
           // ignore: deprecated_member_use
           cacheExtent: context.read<SettingsProvider>().gridPreloadCacheExtent,
           slivers: [

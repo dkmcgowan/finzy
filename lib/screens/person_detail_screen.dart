@@ -91,7 +91,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
       if (!mounted) return;
 
-      final personDetails = results[0] as Map<String, dynamic>?;
+      final personDetails = results.first as Map<String, dynamic>?;
       final items = results[1] as List<MediaMetadata>;
 
       setState(() {
@@ -514,7 +514,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
           child: SizedBox(
             width: imageWidth,
             height: imageHeight,
@@ -558,7 +558,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       children: [
         Center(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: const BorderRadius.all(Radius.circular(12)),
             child: SizedBox(
               width: imageWidth,
               height: imageHeight,

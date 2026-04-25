@@ -520,7 +520,7 @@ class JellyfinClient {
         case 'sort':
           if (v.contains(':')) {
             final parts = v.split(':');
-            sortBy = parts[0];
+            sortBy = parts.first;
             sortOrder = (parts.length > 1 && parts[1].toLowerCase() == 'desc')
                 ? 'Descending'
                 : 'Ascending';
@@ -649,7 +649,7 @@ class JellyfinClient {
         final data = response.data;
         var items = data?['Items'] as List?;
         if (items != null && items.isNotEmpty) {
-          final first = items[0] as Map<String, dynamic>;
+          final first = items.first as Map<String, dynamic>;
           nextEpisode = _itemToMetadata(first);
         }
       } catch (e) {
@@ -810,7 +810,7 @@ class JellyfinClient {
         '/Shows/$seriesId/Episodes',
         queryParameters: {
           'UserId': config.userId,
-          if (seasonId != null) 'SeasonId': seasonId,
+          'SeasonId': ?seasonId,
           'Fields': 'Overview,UserData,RunTimeTicks',
         },
       );
@@ -1290,7 +1290,7 @@ class JellyfinClient {
 
     try {
       final enableDirect = forceDirectPlay ? true : !forceTranscode;
-      final enableTranscode = forceDirectPlay ? false : true;
+      final enableTranscode = !forceDirectPlay;
       var result = await tryPlaybackInfo(enableDirect, enableTranscode);
       if (result == null && forceDirectPlay) {
         appLogger.d('PlaybackInfo: force direct play returned null, retrying with auto (server decides)');
@@ -1638,7 +1638,7 @@ class JellyfinClient {
         if (ratio.contains(':')) {
           final parts = ratio.split(':');
           if (parts.length == 2) {
-            final w = double.tryParse(parts[0]);
+            final w = double.tryParse(parts.first);
             final h = double.tryParse(parts[1]);
             if (w != null && h != null && h > 0) return w / h;
           }
@@ -2507,7 +2507,7 @@ class JellyfinClient {
     final results = await Future.wait([nextUp(), movies(), shows()]);
     final hubs = <Hub>[];
 
-    final nextUpData = results[0];
+    final nextUpData = results.first;
     if (nextUpData != null) {
       final items = (nextUpData['Items'] as List?) ?? [];
       if (items.isNotEmpty) {
@@ -3432,7 +3432,7 @@ class JellyfinClient {
         || item['EpisodeTitle'] != null
         || item['SeriesId'] != null;
     final isMovie = !isSeries && item['IsMovie'] == true;
-    final type = isSeries ? 'episode' : (isMovie ? 'movie' : 'movie');
+    final type = isSeries ? 'episode' : (isMovie ? 'movie' : 'program');
 
     // Jellyfin-web: item = item.ProgramInfo || item
     // Use ProgramInfo for image fields when available (richer metadata).
