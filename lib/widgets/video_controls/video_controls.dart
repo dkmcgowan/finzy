@@ -231,6 +231,16 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
   List<Chapter> _chapters = [];
   bool _chaptersLoaded = false;
   Timer? _hideTimer;
+
+  /// Latched: flips true on first rendered frame and stays true.
+  ///
+  /// During a transcode reseek the player toggles `hasFirstFrame` back to
+  /// false (it has dropped the surface and is loading the new segment), but
+  /// from the user's perspective they've already been watching — wiping the
+  /// OSD looks like a bug. We use this latched signal for the controls
+  /// background and visibility so the OSD stays painted across reseeks; the
+  /// raw `widget.hasFirstFrame` still drives the loading spinner overlay.
+  late final ValueNotifier<bool> _hasShownFirstFrame;
   bool _isFullscreen = false;
   bool _isAlwaysOnTop = false;
   late final FocusNode _focusNode;
@@ -333,7 +343,8 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
     });
     // Register global key handler for focus-independent shortcuts (desktop only)
     HardwareKeyboard.instance.addHandler(_handleGlobalKeyEvent);
-    // Listen for first frame to start auto-hide timer
+    _hasShownFirstFrame = ValueNotifier<bool>(widget.hasFirstFrame?.value == true);
+    // Listen for first frame to start auto-hide timer and latch the "has ever rendered" flag
     widget.hasFirstFrame?.addListener(_onFirstFrameReady);
     // Listen for external requests to show controls (e.g. screen-level focus recovery)
     widget.controlsVisible?.addListener(_onControlsVisibleExternal);
@@ -342,6 +353,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
   /// Called when hasFirstFrame changes - start auto-hide timer when first frame is ready
   void _onFirstFrameReady() {
     if (widget.hasFirstFrame?.value == true) {
+      if (!_hasShownFirstFrame.value) _hasShownFirstFrame.value = true;
       _startHideTimer();
     }
   }
@@ -638,6 +650,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
     HardwareKeyboard.instance.removeHandler(_handleGlobalKeyEvent);
     widget.controlsVisible?.removeListener(_onControlsVisibleExternal);
     widget.hasFirstFrame?.removeListener(_onFirstFrameReady);
+    _hasShownFirstFrame.dispose();
     _hideTimer?.cancel();
     _feedbackTimer?.cancel();
     _autoSkipTimer?.cancel();
@@ -1964,11 +1977,11 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
                                 onLongPressCancel: _handleLongPressCancel,
                                 behavior: HitTestBehavior.deferToChild,
                                 child: ValueListenableBuilder<bool>(
-                                  valueListenable: widget.hasFirstFrame ?? ValueNotifier(true),
+                                  valueListenable: _hasShownFirstFrame,
                                   builder: (context, hasFrame, child) {
                                     return Container(
                                       decoration: BoxDecoration(
-                                        // Use solid black when loading, gradient when loaded
+                                        // Use solid black before any frame has rendered, gradient once we've seen one
                                         color: hasFrame ? null : Colors.black,
                                         gradient: hasFrame
                                             ? LinearGradient(
@@ -2007,7 +2020,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
                                             onStartAutoHide: _startHideTimer,
                                             onBack: widget.onBack,
                                             canControl: widget.canControl,
-                                            hasFirstFrame: widget.hasFirstFrame,
+                                            hasFirstFrame: _hasShownFirstFrame,
                                             thumbnailUrlBuilder: widget.thumbnailUrlBuilder,
                                             positionOffsetMs: widget.positionOffsetMs,
                                             isLive: widget.isLive,
@@ -2118,7 +2131,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
         serverId: widget.metadata.serverId ?? '',
         onBack: widget.onBack,
         canControl: widget.canControl,
-        hasFirstFrame: widget.hasFirstFrame,
+        hasFirstFrame: _hasShownFirstFrame,
         shaderService: widget.shaderService,
         onShaderChanged: widget.onShaderChanged,
         thumbnailUrlBuilder: widget.thumbnailUrlBuilder,
