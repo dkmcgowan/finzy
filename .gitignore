@@ -54,3 +54,6 @@ duplication-report/
 **/fastlane/**/
 **/fastlane/report.xml
 maestro/**/*.png
+
+# Claude Code per-developer settings
+.claude/settings.local.json
