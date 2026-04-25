@@ -11,6 +11,7 @@ Env: AMAZON_APPSTORE_CLIENT_ID, AMAZON_APPSTORE_CLIENT_SECRET, AMAZON_APP_ID
 """
 import os
 import sys
+import time
 
 try:
     import requests
@@ -21,6 +22,46 @@ except ImportError:
 BASE_URL = "https://developer.amazon.com/api/appstore"
 AUTH_URL = "https://api.amazon.com/auth/o2/token"
 SCOPE = "appstore::apps:readwrite"
+
+_RETRYABLE_STATUSES = {500, 502, 503, 504}
+_MAX_ATTEMPTS = 4
+_BACKOFF_BASE_SECONDS = 2
+
+
+def request_with_retry(method: str, url: str, **kwargs) -> requests.Response:
+    """Issue an HTTP request, retrying on transient 5xx and connection errors.
+
+    Amazon's developer API is well known for empty-body 500s on PUT/POST.
+    Retries up to _MAX_ATTEMPTS times with exponential backoff. 4xx responses
+    (incl. 412 Precondition Failed) flow through unchanged so caller logic
+    that depends on those status codes still works.
+    """
+    last_exc: Exception | None = None
+    for attempt in range(1, _MAX_ATTEMPTS + 1):
+        try:
+            resp = requests.request(method, url, **kwargs)
+        except (requests.ConnectionError, requests.Timeout) as exc:
+            last_exc = exc
+            if attempt == _MAX_ATTEMPTS:
+                raise
+            delay = _BACKOFF_BASE_SECONDS * (2 ** (attempt - 1))
+            print(
+                f"  network error on {method} {url} (attempt {attempt}/{_MAX_ATTEMPTS}): {exc}; retrying in {delay}s",
+                file=sys.stderr,
+            )
+            time.sleep(delay)
+            continue
+
+        if resp.status_code not in _RETRYABLE_STATUSES or attempt == _MAX_ATTEMPTS:
+            return resp
+        delay = _BACKOFF_BASE_SECONDS * (2 ** (attempt - 1))
+        print(
+            f"  Amazon {resp.status_code} on {method} {url} (attempt {attempt}/{_MAX_ATTEMPTS}): {resp.text or '<empty body>'}; retrying in {delay}s",
+            file=sys.stderr,
+        )
+        time.sleep(delay)
+    # Loop always returns or raises; this is unreachable but keeps type checkers happy.
+    raise RuntimeError(f"request_with_retry exhausted without result: {last_exc}")
 
 
 def get_token(client_id: str, client_secret: str) -> str:
@@ -56,14 +97,14 @@ def main():
 
     # Get or create edit
     edits_url = f"{BASE_URL}/v1/applications/{app_id}/edits"
-    edits_resp = requests.get(edits_url, headers=headers)
+    edits_resp = request_with_retry("GET", edits_url, headers=headers)
     edits_resp.raise_for_status()
     edits_data = edits_resp.json() or {}
 
     edit_id = edits_data.get("id")
     if not edit_id:
         # Create new edit
-        create_resp = requests.post(edits_url, headers=headers)
+        create_resp = request_with_retry("POST", edits_url, headers=headers)
         create_resp.raise_for_status()
         edit_id = create_resp.json()["id"]
         print(f"Created edit {edit_id}")
@@ -72,7 +113,7 @@ def main():
 
     # List APKs to get first one for replace (or upload new)
     apks_url = f"{BASE_URL}/v1/applications/{app_id}/edits/{edit_id}/apks"
-    apks_resp = requests.get(apks_url, headers=headers)
+    apks_resp = request_with_retry("GET", apks_url, headers=headers)
     apks_resp.raise_for_status()
     apks_list = apks_resp.json()
     if not isinstance(apks_list, list):
@@ -91,7 +132,7 @@ def main():
         first_apk = apks_list[0]
         apk_id = first_apk["id"]
         # GET the specific APK to retrieve ETag from response headers
-        apk_get = requests.get(f"{apks_url}/{apk_id}", headers=headers)
+        apk_get = request_with_retry("GET", f"{apks_url}/{apk_id}", headers=headers)
         apk_get.raise_for_status()
         etag = apk_get.headers.get("ETag", "").strip()
         if not etag:
@@ -99,22 +140,23 @@ def main():
             sys.exit(1)
         replace_url = f"{apks_url}/{apk_id}/replace"
         apk_headers["If-Match"] = etag
-        resp = requests.put(replace_url, headers=apk_headers, data=apk_data)
-        print(f"Replaced APK {apk_id}")
+        resp = request_with_retry("PUT", replace_url, headers=apk_headers, data=apk_data)
+        action = f"Replaced APK {apk_id}"
     else:
         # Add new APK
         upload_url = f"{apks_url}/upload"
-        resp = requests.post(upload_url, headers=apk_headers, data=apk_data)
-        print("Uploaded new APK")
+        resp = request_with_retry("POST", upload_url, headers=apk_headers, data=apk_data)
+        action = "Uploaded new APK"
 
     if not resp.ok:
         print(f"Amazon API error {resp.status_code}: {resp.text}", file=sys.stderr)
     resp.raise_for_status()
+    print(action)
 
     # Update en-US listing recent changes (required for commit)
     release_notes = os.environ.get("AMAZON_RELEASE_NOTES", "").strip() or "Bug fixes and improvements."
     listings_url = f"{BASE_URL}/v1/applications/{app_id}/edits/{edit_id}/listings"
-    listing_get = requests.get(f"{listings_url}/en-US", headers=headers)
+    listing_get = request_with_retry("GET", f"{listings_url}/en-US", headers=headers)
     listing_get.raise_for_status()
     listing_data = listing_get.json()
     listing_etag = listing_get.headers.get("ETag", "").strip()
@@ -122,7 +164,8 @@ def main():
         print("ERROR: No ETag in listing response. Cannot update recent changes.", file=sys.stderr)
         sys.exit(1)
     listing_data["recentChanges"] = release_notes
-    listing_put = requests.put(
+    listing_put = request_with_retry(
+        "PUT",
         f"{listings_url}/en-US",
         headers={**headers, "Content-Type": "application/json", "If-Match": listing_etag},
         json=listing_data,
@@ -131,7 +174,7 @@ def main():
     print("Updated en-US recent changes")
 
     # Get fresh ETag for edit (it changed after APK replace/upload) - required for commit
-    edit_get = requests.get(f"{BASE_URL}/v1/applications/{app_id}/edits/{edit_id}", headers=headers)
+    edit_get = request_with_retry("GET", f"{BASE_URL}/v1/applications/{app_id}/edits/{edit_id}", headers=headers)
     edit_get.raise_for_status()
     edit_etag = edit_get.headers.get("ETag", "").strip()
     if not edit_etag:
@@ -141,7 +184,7 @@ def main():
     # Commit edit
     commit_url = f"{BASE_URL}/v1/applications/{app_id}/edits/{edit_id}/commit"
     commit_headers = {**headers, "If-Match": edit_etag}
-    commit_resp = requests.post(commit_url, headers=commit_headers)
+    commit_resp = request_with_retry("POST", commit_url, headers=commit_headers)
     if commit_resp.status_code == 412:
         print("", file=sys.stderr)
         print("ERROR: App is still in Amazon review. The API cannot update apps", file=sys.stderr)
