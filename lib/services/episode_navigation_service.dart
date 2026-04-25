@@ -5,7 +5,9 @@ import '../mpv/mpv.dart';
 import '../models/media_metadata.dart';
 import '../providers/playback_state_provider.dart';
 import '../utils/app_logger.dart';
+import '../utils/content_utils.dart';
 import '../utils/video_player_navigation.dart';
+import 'jellyfin_client.dart';
 
 /// Result of loading adjacent episodes
 class AdjacentEpisodes {
@@ -27,32 +29,48 @@ class AdjacentEpisodes {
 ///
 /// All episode navigation uses play queues for consistent behavior.
 class EpisodeNavigationService {
-  /// Load the next and previous episodes for the current episode
+  /// Load the next and previous episodes for the current episode.
   ///
-  /// Returns null for episodes if:
-  /// - Not applicable (e.g., movie content)
-  /// - Next episode doesn't exist (end of season/series)
-  /// - Previous episode doesn't exist (first episode)
-  Future<AdjacentEpisodes> loadAdjacentEpisodes({required BuildContext context, required MediaMetadata metadata}) async {
+  /// If a play queue is active (shuffle, play-all from collection), neighbours
+  /// come from the queue. Otherwise we look them up directly from the series in
+  /// Jellyfin, walking across seasons by (parentIndex, index). Returns nulls
+  /// for movies, missing series metadata, or edges of the series.
+  Future<AdjacentEpisodes> loadAdjacentEpisodes({
+    required BuildContext context,
+    required JellyfinClient client,
+    required MediaMetadata metadata,
+  }) async {
     try {
       final playbackState = context.read<PlaybackStateProvider>();
 
-      // All episode navigation now uses play queues (sequential, shuffle, playlists)
-      // If no queue is active, navigation is not available
-      if (!playbackState.isQueueActive) {
+      if (playbackState.isQueueActive) {
+        final next = await playbackState.getNextEpisode(metadata.itemId, loopQueue: false);
+        final previous = await playbackState.getPreviousEpisode(metadata.itemId);
+        return AdjacentEpisodes(next: next, previous: previous);
+      }
+
+      if (!metadata.isEpisode || metadata.seriesId == null) {
         return AdjacentEpisodes();
       }
 
-      // Use the play queue for next/previous navigation
-      final next = await playbackState.getNextEpisode(metadata.itemId, loopQueue: false);
-      final previous = await playbackState.getPreviousEpisode(metadata.itemId);
+      final episodes = await client.getSeriesEpisodes(metadata.seriesId!);
+      if (episodes.isEmpty) return AdjacentEpisodes();
 
-      final mode = playbackState.isShuffleActive ? 'Shuffle' : 'Sequential';
-      appLogger.d('$mode mode - Next: ${next?.title}, Previous: ${previous?.title}');
+      final sorted = List<MediaMetadata>.from(episodes)
+        ..sort((a, b) {
+          final seasonCmp = (a.parentIndex ?? 0).compareTo(b.parentIndex ?? 0);
+          if (seasonCmp != 0) return seasonCmp;
+          return (a.index ?? 0).compareTo(b.index ?? 0);
+        });
 
-      return AdjacentEpisodes(next: next, previous: previous);
+      final currentIdx = sorted.indexWhere((ep) => ep.itemId == metadata.itemId);
+      if (currentIdx == -1) return AdjacentEpisodes();
+
+      return AdjacentEpisodes(
+        previous: currentIdx > 0 ? sorted[currentIdx - 1] : null,
+        next: currentIdx < sorted.length - 1 ? sorted[currentIdx + 1] : null,
+      );
     } catch (e) {
-      // Non-critical: Failed to load next/previous episode metadata
       appLogger.d('Could not load adjacent episodes', error: e);
       return AdjacentEpisodes();
     }

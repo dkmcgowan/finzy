@@ -13,7 +13,7 @@ class KeyboardShortcutsService {
   late SettingsService _settingsService;
   Map<String, String> _shortcuts = {}; // Legacy string shortcuts for backward compatibility
   Map<String, HotKey> _hotkeys = {}; // New HotKey objects
-  int _seekTimeSmall = 10; // Default, loaded from settings
+  int _seekTimeSmall = 30; // Default, loaded from settings
   int _seekTimeLarge = 30; // Default, loaded from settings
   int _maxVolume = 100; // Default, loaded from settings (100-300%)
 

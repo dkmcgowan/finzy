@@ -32,8 +32,6 @@ class MobileVideoControls extends StatelessWidget {
   final VoidCallback? onCancelAutoHide;
   final VoidCallback? onStartAutoHide;
   final VoidCallback? onBack;
-  final VoidCallback? onNext;
-  final VoidCallback? onPrevious;
 
   /// Whether the user can control playback (false in host-only mode for non-host).
   final bool canControl;
@@ -68,8 +66,6 @@ class MobileVideoControls extends StatelessWidget {
     this.onCancelAutoHide,
     this.onStartAutoHide,
     this.onBack,
-    this.onNext,
-    this.onPrevious,
     this.canControl = true,
     this.hasFirstFrame,
     this.thumbnailUrlBuilder,
@@ -125,44 +121,19 @@ class MobileVideoControls extends StatelessWidget {
     return PlayPauseStreamBuilder(
       player: player,
       builder: (context, isPlaying) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (!isLive) ...[
-              // Previous episode button (greyed out when unavailable)
-              CircularControlButton(
-                semanticLabel: t.videoControls.previousButton,
-                icon: Symbols.skip_previous_rounded,
-                iconSize: 48,
-                onPressed: onPrevious,
-              ),
-              const SizedBox(width: 24),
-            ],
-            CircularControlButton(
-              semanticLabel: isPlaying ? t.videoControls.pauseButton : t.videoControls.playButton,
-              icon: isPlaying ? Symbols.pause_rounded : Symbols.play_arrow_rounded,
-              iconSize: 72,
-              onPressed: () {
-                if (isPlaying) {
-                  player.pause();
-                  onCancelAutoHide?.call(); // Cancel auto-hide when paused
-                } else {
-                  player.play();
-                  onStartAutoHide?.call(); // Start auto-hide when playing
-                }
-              },
-            ),
-            if (!isLive) ...[
-              const SizedBox(width: 24),
-              // Next episode button (greyed out when unavailable)
-              CircularControlButton(
-                semanticLabel: t.videoControls.nextButton,
-                icon: Symbols.skip_next_rounded,
-                iconSize: 48,
-                onPressed: onNext,
-              ),
-            ],
-          ],
+        return CircularControlButton(
+          semanticLabel: isPlaying ? t.videoControls.pauseButton : t.videoControls.playButton,
+          icon: isPlaying ? Symbols.pause_rounded : Symbols.play_arrow_rounded,
+          iconSize: 72,
+          onPressed: () {
+            if (isPlaying) {
+              player.pause();
+              onCancelAutoHide?.call(); // Cancel auto-hide when paused
+            } else {
+              player.play();
+              onStartAutoHide?.call(); // Start auto-hide when playing
+            }
+          },
         );
       },
     );

@@ -141,7 +141,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, TabV
   bool _enableDebugLogging = false;
   bool _enableHardwareDecoding = true;
   int _bufferSize = 128;
-  int _seekTimeSmall = 10;
+  int _seekTimeSmall = 30;
   int _seekTimeLarge = 30;
   int _sleepTimerDuration = 30;
   bool _rememberTrackSelections = true;

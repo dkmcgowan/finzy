@@ -420,7 +420,7 @@ class SettingsService extends BaseSharedPreferencesService {
   }
 
   int getSeekTimeSmall() {
-    return prefs.getInt(_keySeekTimeSmall) ?? 10; // Default: 10 seconds
+    return prefs.getInt(_keySeekTimeSmall) ?? 30; // Default: 30 seconds (Jellyfin standard)
   }
 
   // Seek Time Large (in seconds)

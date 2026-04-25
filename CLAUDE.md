@@ -20,17 +20,18 @@ dart run slang                                             # regenerate lib/i18n
 flutter run                                                # default connected device
 flutter run --dart-define=GIT_COMMIT=$(git rev-parse HEAD) # stamp commit in startup log / About screen
 
-# CI-equivalent checks (all required to pass)
+# Local checks
 find lib -name "*.dart" ! -name "*.g.dart" -print0 \
   | xargs -0 dart format --output=none --set-exit-if-changed
-flutter analyze                              # must produce zero errors AND zero warnings
+flutter analyze                              # see notes — warnings exist today and aren't a hard gate
 dart run dart_code_linter:metrics check-unused-code lib
 dart run dart_code_linter:metrics check-unused-files lib
 ```
 
 Notes:
+- **The build must succeed** — that's the hard requirement. `flutter analyze` currently surfaces a backlog of *warnings*; resolving them is ongoing cleanup work but not a blocker for changes you make. Don't introduce new warnings, but don't gate your work on getting analyze to zero either. (`.github/workflows/ci.yml` still fails on warnings; treat that as aspirational rather than a current invariant.)
+- Analyzer **errors** are still a hard no — fix any you introduce.
 - `*.g.dart` is excluded from analyzer and format checks — do not hand-edit; regenerate with `build_runner`.
-- CI's analyze step fails on *warnings* too, not just errors (see `.github/workflows/ci.yml`).
 - Line width is 120 (`analysis_options.yaml` → `formatter.page_width`).
 - After editing any model with `@JsonSerializable` or any `drift` table, re-run `build_runner`.
 - After editing any `lib/i18n/*.i18n.json`, re-run `dart run slang`.
@@ -87,6 +88,24 @@ Two backends behind a shared `Player` abstraction in `lib/mpv/` (internal code u
 - `lib/theme/` — `mono_tokens.dart` + `mono_theme.dart` define the design system; `ThemeProvider` exposes it to `MaterialApp`.
 - `lib/focus/` — the **focus/input-mode system**. `InputModeTracker` (wrapped around `MaterialApp` in `main.dart`) distinguishes keyboard/D-pad navigation from pointer input so focus rings only appear in keyboard mode. `dpad_navigator.dart`, `focus_memory_tracker.dart`, and `locked_hub_controller.dart` implement TV-style navigation. When adding a widget that can receive focus, check if a `focusable_*` counterpart already exists in `lib/widgets/` before rolling your own.
 
+### Android TV / D-pad navigation (read before any UX change)
+
+Android TV is a first-class target and **UX changes routinely break D-pad navigation** when contributors don't follow the existing patterns — wrong widget choice, missing focus restoration on back, broken Back-key handling in modals, or hand-rolled focus logic that ignores `InputModeTracker`. Before modifying any screen, dialog, list, grid, or tab strip, look at the canonical examples below and reuse the existing primitives instead of rolling your own.
+
+**Reference patterns to copy from:**
+
+- **Dialogs / bottom sheets** — `lib/screens/libraries/filters_bottom_sheet.dart` is the canonical example: multiple focus zones, manual `KeyEventResult` handling for Back/Up/Down/Select, `ExcludeFocusTraversal` to prevent default traversal while keeping manual control, and Back-key suppression to avoid double-dismiss after popping a nested view. `lib/screens/libraries/sort_bottom_sheet.dart` is a simpler version of the same pattern (single focus zone, calls `OverlaySheetController.refocus()` after state changes).
+- **Detail pages with app bar + grid** — `lib/screens/hub_detail_screen.dart` and the `FocusableDetailScreenMixin` in `lib/screens/focusable_detail_screen_mixin.dart`. They handle app-bar button cycling, grid focus restoration via `GridFocusNodeMixin` (`lastFocusedGridIndex` / `shouldRestoreGridFocus`), and auto-focus the first grid item when arriving in keyboard mode.
+- **Tabbed screens** — `lib/screens/libraries/libraries_screen.dart` plus `TabNavigationMixin`: gamepad L1/R1 tab switching, `FocusableTabChip` for tab focus, and focus suppression during programmatic tab changes.
+
+**Primitives to reuse, not reinvent:**
+
+- `lib/focus/`: `dpad_navigator.dart` (`isBackKey` / `isSelectKey` / `isDpadDirection` extensions), `focus_memory_tracker.dart` (restore last-focused item), `locked_hub_controller.dart` (per-hub focus memory + column hint), `focus_theme.dart` (shared focus decoration), `focus_utils.dart` (find-and-focus first focusable in a subtree), `focusable_chip_mixin.dart`, `focusable_wrapper.dart` (base wrapper with D-pad + long-press + nav callbacks).
+- `lib/widgets/focusable_*.dart`: `focusable_media_card.dart` (grid item with auto-scroll), `focusable_list_tile.dart`, `focusable_tab_chip.dart`, `focusable_filter_chip.dart`, plus the shared `focus_builders.dart` static helpers (`buildFocusableChip`, `buildFocusableCard`, `buildLockedFocusWrapper`).
+- Mixins: `tab_navigation_mixin.dart`, `grid_focus_node_mixin.dart`, `focusable_detail_screen_mixin.dart`.
+
+If a UX change adds, removes, or rearranges focusable elements, verify D-pad behaviour explicitly: tab in/out with Up/Down/Left/Right, Back returns to the prior focus, and focus rings appear only in keyboard/D-pad mode (not after a mouse click). If you can't run an Android TV build, say so rather than claiming success.
+
 ### i18n
 
 `slang` with JSON sources in `lib/i18n/{locale}.i18n.json` and generated code in `lib/i18n/strings*.g.dart`. Access via the generated `t.section.key` after `LocaleSettings.setLocale(...)` and wrapping with `TranslationProvider` (done in `main.dart`). See `docs/CONTRIBUTING.md` for workflow; always rerun `dart run slang` after edits.
@@ -104,7 +123,7 @@ All `*.g.dart` (including `lib/i18n/strings*.g.dart` and `lib/database/app_datab
 - **iPadOS 26.1+ modal bug**: `main.dart` installs a global pointer guard (`_installZeroOffsetPointerGuard`) that cancels fake `(0,0)` touch events. Remove when Flutter #179643 ships — the comment tracks the upstream fix.
 - **Android cold start**: network/TCP may not be ready on app resume; `_MainAppState.didChangeAppLifecycleState` delays `checkServerHealth`/`reconnectOfflineServers` by 2 seconds. Mirror this pattern if adding resume-time network work.
 - **Desktop-only init**: `window_manager`, `MacOSTitlebarService`, and `GamepadService` are guarded by `Platform.isMacOS/isWindows/isLinux` in `main()`.
-- **Android TV** is a first-class target — anything focus/gesture-related should be verified with the D-pad, not just mouse/touch.
+- **Android TV** is a first-class target — anything focus/gesture-related should be verified with the D-pad, not just mouse/touch. See **Architecture → Android TV / D-pad navigation** for the canonical patterns and primitives; UX changes that don't follow them tend to break TV navigation.
 
 ## Other top-level directories
 

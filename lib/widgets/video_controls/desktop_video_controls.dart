@@ -31,8 +31,6 @@ import 'widgets/track_chapter_controls.dart';
 class DesktopVideoControls extends StatefulWidget {
   final Player player;
   final MediaMetadata metadata;
-  final VoidCallback? onNext;
-  final VoidCallback? onPrevious;
   final List<Chapter> chapters;
   final bool chaptersLoaded;
   final int seekTimeSmall;
@@ -119,8 +117,6 @@ class DesktopVideoControls extends StatefulWidget {
     super.key,
     required this.player,
     required this.metadata,
-    this.onNext,
-    this.onPrevious,
     required this.chapters,
     required this.chaptersLoaded,
     required this.seekTimeSmall,
@@ -176,13 +172,11 @@ class DesktopVideoControls extends StatefulWidget {
 
 class DesktopVideoControlsState extends State<DesktopVideoControls> {
   // Focus nodes for playback control buttons
-  late final FocusNode _prevItemFocusNode;
   late final FocusNode _prevChapterFocusNode;
   late final FocusNode _skipBackFocusNode;
   late final FocusNode _playPauseFocusNode;
   late final FocusNode _skipForwardFocusNode;
   late final FocusNode _nextChapterFocusNode;
-  late final FocusNode _nextItemFocusNode;
   late final FocusNode _timelineFocusNode;
 
   // Focus node for volume control
@@ -191,8 +185,21 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
   // Focus nodes for track/chapter controls (max 8 buttons possible)
   late final List<FocusNode> _trackControlFocusNodes;
 
-  // List of button focus nodes for horizontal navigation
-  late final List<FocusNode> _buttonFocusNodes;
+  /// Currently-rendered playback buttons in left-to-right order.
+  ///
+  /// Built per-frame so D-pad left/right traversal stays in sync with the
+  /// rendered Row — chapter buttons drop out of both the UI and the
+  /// navigation chain when the item has no chapters. Each button passes its
+  /// FocusNode here to derive its index, so positions can shift safely.
+  List<FocusNode> get _buttonFocusNodes => widget.isLive
+      ? [_playPauseFocusNode]
+      : [
+          if (widget.chapters.isNotEmpty) _prevChapterFocusNode,
+          _skipBackFocusNode,
+          _playPauseFocusNode,
+          _skipForwardFocusNode,
+          if (widget.chapters.isNotEmpty) _nextChapterFocusNode,
+        ];
 
   // Progressive seek acceleration state
   LogicalKeyboardKey? _seekDirection; // Current direction being held
@@ -201,41 +208,25 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
   @override
   void initState() {
     super.initState();
-    _prevItemFocusNode = FocusNode(debugLabel: 'PrevItem');
     _prevChapterFocusNode = FocusNode(debugLabel: 'PrevChapter');
     _skipBackFocusNode = FocusNode(debugLabel: 'SkipBack');
     _playPauseFocusNode = FocusNode(debugLabel: 'PlayPause');
     _skipForwardFocusNode = FocusNode(debugLabel: 'SkipForward');
     _nextChapterFocusNode = FocusNode(debugLabel: 'NextChapter');
-    _nextItemFocusNode = FocusNode(debugLabel: 'NextItem');
     _timelineFocusNode = FocusNode(debugLabel: 'Timeline');
     _volumeFocusNode = FocusNode(debugLabel: 'Volume');
 
     // Create focus nodes for track controls (up to 8 buttons)
     _trackControlFocusNodes = List.generate(8, (i) => FocusNode(debugLabel: 'TrackControl$i'));
-
-    _buttonFocusNodes = widget.isLive
-        ? [_playPauseFocusNode]
-        : [
-            _prevItemFocusNode,
-            _prevChapterFocusNode,
-            _skipBackFocusNode,
-            _playPauseFocusNode,
-            _skipForwardFocusNode,
-            _nextChapterFocusNode,
-            _nextItemFocusNode,
-          ];
   }
 
   @override
   void dispose() {
-    _prevItemFocusNode.dispose();
     _prevChapterFocusNode.dispose();
     _skipBackFocusNode.dispose();
     _playPauseFocusNode.dispose();
     _skipForwardFocusNode.dispose();
     _nextChapterFocusNode.dispose();
-    _nextItemFocusNode.dispose();
     _timelineFocusNode.dispose();
     _volumeFocusNode.dispose();
     for (final node in _trackControlFocusNodes) {
@@ -525,38 +516,24 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
           Row(
             children: [
               if (!widget.isLive) ...[
-                // Previous item
-                Opacity(
-                  opacity: widget.canControl ? 1.0 : 0.5,
-                  child: _buildFocusableButton(
-                    focusNode: _prevItemFocusNode,
-                    index: 0,
-                    icon: Symbols.skip_previous_rounded,
-                    color: widget.onPrevious != null && widget.canControl ? Colors.white : Colors.white54,
-                    onPressed: widget.canControl ? widget.onPrevious : null,
-                    semanticLabel: t.videoControls.previousButton,
+                // Previous chapter (hidden when item has no chapters)
+                if (widget.chapters.isNotEmpty)
+                  Opacity(
+                    opacity: widget.canControl ? 1.0 : 0.5,
+                    child: _buildFocusableButton(
+                      focusNode: _prevChapterFocusNode,
+                      index: _buttonFocusNodes.indexOf(_prevChapterFocusNode),
+                      icon: Symbols.fast_rewind_rounded,
+                      onPressed: widget.canControl ? widget.onSeekToPreviousChapter : null,
+                      semanticLabel: t.videoControls.previousChapterButton,
+                    ),
                   ),
-                ),
-                // Previous chapter
-                Opacity(
-                  opacity: widget.canControl ? 1.0 : 0.5,
-                  child: _buildFocusableButton(
-                    focusNode: _prevChapterFocusNode,
-                    index: 1,
-                    icon: Symbols.fast_rewind_rounded,
-                    color: widget.chapters.isNotEmpty && widget.canControl ? Colors.white : Colors.white54,
-                    onPressed: widget.canControl && widget.chapters.isNotEmpty
-                        ? widget.onSeekToPreviousChapter
-                        : null,
-                    semanticLabel: t.videoControls.previousChapterButton,
-                  ),
-                ),
                 // Skip backward
                 Opacity(
                   opacity: widget.canControl ? 1.0 : 0.5,
                   child: _buildFocusableButton(
                     focusNode: _skipBackFocusNode,
-                    index: 2,
+                    index: _buttonFocusNodes.indexOf(_skipBackFocusNode),
                     icon: widget.getReplayIcon(widget.seekTimeSmall),
                     onPressed: widget.canControl ? widget.onSeekBackward : null,
                     semanticLabel: t.videoControls.seekBackwardButton(seconds: widget.seekTimeSmall),
@@ -594,36 +571,24 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                   opacity: widget.canControl ? 1.0 : 0.5,
                   child: _buildFocusableButton(
                     focusNode: _skipForwardFocusNode,
-                    index: 4,
+                    index: _buttonFocusNodes.indexOf(_skipForwardFocusNode),
                     icon: widget.getForwardIcon(widget.seekTimeSmall),
                     onPressed: widget.canControl ? widget.onSeekForward : null,
                     semanticLabel: t.videoControls.seekForwardButton(seconds: widget.seekTimeSmall),
                   ),
                 ),
-                // Next chapter
-                Opacity(
-                  opacity: widget.canControl ? 1.0 : 0.5,
-                  child: _buildFocusableButton(
-                    focusNode: _nextChapterFocusNode,
-                    index: 5,
-                    icon: Symbols.fast_forward_rounded,
-                    color: widget.chapters.isNotEmpty && widget.canControl ? Colors.white : Colors.white54,
-                    onPressed: widget.canControl && widget.chapters.isNotEmpty ? widget.onSeekToNextChapter : null,
-                    semanticLabel: t.videoControls.nextChapterButton,
+                // Next chapter (hidden when item has no chapters)
+                if (widget.chapters.isNotEmpty)
+                  Opacity(
+                    opacity: widget.canControl ? 1.0 : 0.5,
+                    child: _buildFocusableButton(
+                      focusNode: _nextChapterFocusNode,
+                      index: _buttonFocusNodes.indexOf(_nextChapterFocusNode),
+                      icon: Symbols.fast_forward_rounded,
+                      onPressed: widget.canControl ? widget.onSeekToNextChapter : null,
+                      semanticLabel: t.videoControls.nextChapterButton,
+                    ),
                   ),
-                ),
-                // Next item
-                Opacity(
-                  opacity: widget.canControl ? 1.0 : 0.5,
-                  child: _buildFocusableButton(
-                    focusNode: _nextItemFocusNode,
-                    index: 6,
-                    icon: Symbols.skip_next_rounded,
-                    color: widget.onNext != null && widget.canControl ? Colors.white : Colors.white54,
-                    onPressed: widget.canControl ? widget.onNext : null,
-                    semanticLabel: t.videoControls.nextButton,
-                  ),
-                ),
               ],
               // Finish time (hidden for live TV and when too narrow to fit)
               if (widget.isLive)

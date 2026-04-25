@@ -235,7 +235,7 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
   bool _isAlwaysOnTop = false;
   late final FocusNode _focusNode;
   KeyboardShortcutsService? _keyboardService;
-  int _seekTimeSmall = 10; // Default, loaded from settings
+  int _seekTimeSmall = 30; // Default, loaded from settings
   int _audioSyncOffset = 0; // Default, loaded from settings
   int _subtitleSyncOffset = 0; // Default, loaded from settings
   bool _isRotationLocked = true; // Default locked (landscape only)
@@ -2006,8 +2006,6 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
                                             onCancelAutoHide: () => _hideTimer?.cancel(),
                                             onStartAutoHide: _startHideTimer,
                                             onBack: widget.onBack,
-                                            onNext: widget.onNext,
-                                            onPrevious: widget.onPrevious,
                                             canControl: widget.canControl,
                                             hasFirstFrame: widget.hasFirstFrame,
                                             thumbnailUrlBuilder: widget.thumbnailUrlBuilder,
@@ -2081,8 +2079,6 @@ class _AppVideoControlsState extends State<AppVideoControls> with WindowListener
         key: _desktopControlsKey,
         player: widget.player,
         metadata: widget.metadata,
-        onNext: widget.onNext,
-        onPrevious: widget.onPrevious,
         chapters: _chapters,
         chaptersLoaded: _chaptersLoaded,
         seekTimeSmall: _seekTimeSmall,

@@ -802,6 +802,26 @@ class JellyfinClient {
 
   Map<String, String>? get imageHttpHeaders => requestHeaders;
 
+  /// Fetch episodes for a series, optionally filtered to a single season.
+  /// Returned items are tagged with this server's id/name. Sort order is left to the caller.
+  Future<List<MediaMetadata>> getSeriesEpisodes(String seriesId, {String? seasonId}) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/Shows/$seriesId/Episodes',
+        queryParameters: {
+          'UserId': config.userId,
+          if (seasonId != null) 'SeasonId': seasonId,
+          'Fields': 'Overview,UserData,RunTimeTicks',
+        },
+      );
+      final items = response.data?['Items'] as List? ?? const [];
+      return items.whereType<Map<String, dynamic>>().map(_itemToMetadata).toList();
+    } catch (e) {
+      appLogger.d('getSeriesEpisodes failed for $seriesId', error: e);
+      return const [];
+    }
+  }
+
   Future<List<Chapter>> getChapters(String itemId, {bool includeImages = false}) async {
     try {
       final item = await _dio.get<Map<String, dynamic>>(

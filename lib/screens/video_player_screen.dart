@@ -809,10 +809,12 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
       return;
     }
 
+    final client = _getClientForMetadata(context);
+
     try {
-      // Load adjacent episodes using the service
       final adjacentEpisodes = await _episodeNavigation.loadAdjacentEpisodes(
         context: context,
+        client: client,
         metadata: widget.metadata,
       );
 
@@ -878,14 +880,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     _previousPlaybackModeForRevert = previousPlaybackMode;
     _previousLiveTvBitrateForRevert = previousLiveTvBitrate;
     final rawPosition = player!.state.position.inMilliseconds;
-    // Transcode streams report position from stream start (0), not the video timeline.
-    // If player position is less than our stored start, we're on transcode: use start + raw.
-    final int videoPositionMs;
-    if (_lastPlaybackStartPositionMs != null && rawPosition < _lastPlaybackStartPositionMs!) {
-      videoPositionMs = _lastPlaybackStartPositionMs! + rawPosition;
-    } else {
-      videoPositionMs = rawPosition;
-    }
+    // Transcode streams report position from stream start (0); add the server-provided
+    // startTimeTicks offset to get movie-time. Direct streams already report movie-time.
+    final videoPositionMs = _isTranscodeStream && _lastPlaybackStartPositionMs != null
+        ? _lastPlaybackStartPositionMs! + rawPosition
+        : rawPosition;
     _startPlayback(overrideResumePosition: Duration(milliseconds: videoPositionMs));
   }
 

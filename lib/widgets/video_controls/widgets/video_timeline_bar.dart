@@ -85,8 +85,9 @@ class VideoTimelineBar extends StatelessWidget {
                         playerDuration.inMilliseconds < fallbackDuration!.inMilliseconds))
                 ? fallbackDuration!
                 : playerDuration;
-            // Transcode streams report position from stream start (0); add offset for display
-            final position = positionOffsetMs != null && rawPosition.inMilliseconds < positionOffsetMs!
+            // Transcode streams report position from stream start (0); add the server-provided
+            // startTimeTicks offset to map to movie-time. Direct streams pass null and use raw.
+            final position = positionOffsetMs != null
                 ? Duration(milliseconds: positionOffsetMs! + rawPosition.inMilliseconds)
                 : rawPosition;
             final remaining = position - duration; // We want this to be negative
