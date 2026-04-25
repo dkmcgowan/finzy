@@ -93,10 +93,23 @@ class PlayerNative extends PlayerBase {
     // Show the video layer
     await setVisible(true);
 
-    // Set HTTP headers for server authentication and profile
+    // Set HTTP headers for server authentication and profile.
+    // mpv's http-header-fields is a comma-separated stringlist with no escape for
+    // commas inside values — a header value containing a comma would be split into
+    // multiple malformed header lines, causing the server to return 400. Drop any
+    // such header here as a safety net; the call site is expected to avoid them.
     if (media.headers != null && media.headers!.isNotEmpty) {
-      final headerList = media.headers!.entries.map((e) => '${e.key}: ${e.value}').toList();
-      await setProperty('http-header-fields', headerList.join(','));
+      final headerList = <String>[];
+      for (final entry in media.headers!.entries) {
+        if (entry.value.contains(',')) {
+          appLogger.w('Dropping HTTP header "${entry.key}" — value contains comma which mpv cannot escape');
+          continue;
+        }
+        headerList.add('${entry.key}: ${entry.value}');
+      }
+      if (headerList.isNotEmpty) {
+        await setProperty('http-header-fields', headerList.join(','));
+      }
     }
 
     // Set start position if provided (must be set before loading file).

@@ -971,9 +971,14 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         // Offline mode: get video path from downloads without requiring server
         result = await _startOfflinePlayback();
       } else {
-        // Online mode: use server-specific client
+        // Online mode: use server-specific client.
+        // Strip Authorization: the Jellyfin "MediaBrowser ..." header value contains
+        // commas, which mpv's http-header-fields stringlist splits on with no escape,
+        // mangling the request → 400 Bad Request. The api_key query param already
+        // baked into the streaming URL authenticates the request on its own.
         final client = _getClientForMetadata(context);
-        requestHeaders = client.requestHeaders;
+        requestHeaders = Map.of(client.requestHeaders)..remove('Authorization');
+        if (requestHeaders.isEmpty) requestHeaders = null;
         final settingsService = await SettingsService.getInstance();
         final enableExternalSubtitles = settingsService.getEnableExternalSubtitles();
         final playbackService = PlaybackInitializationService(client: client, database: ApiCache.instance.database);
