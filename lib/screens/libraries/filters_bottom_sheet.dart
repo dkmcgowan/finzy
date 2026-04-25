@@ -45,20 +45,26 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
   final Map<String, String> _tempSelectedFilters = {};
   static final Map<String, String> _filterDisplayNames = {}; // Cache for display names
   static const int _maxCachedDisplayNames = 1000;
+
   /// Groups in order. When all filters have group != null (Jellyfin), main view shows only these category rows.
   late List<({String group, List<LibraryFilter> filters})> _groupedFilters;
+
   /// When set, we're in "group detail" view (e.g. Filters toggles, Features toggles).
   ({String group, List<LibraryFilter> filters})? _currentGroup;
   late final FocusNode _initialFocusNode;
+
   /// Receives the same "back" keys as TV from descendants on the main list (cannot take focus).
   late final FocusNode _mainSurfaceFocusNode;
+
   /// True when filters use groups (Jellyfin). Main view then shows only category names; no toggles.
   late bool _useGroupedMainView;
 
   /// For filter/group detail view: single Focus, manual zone tracking.
   late final FocusNode _detailFocusNode;
+
   /// While popping a sub-route, ignore spurious [SwitchListTile.onChanged] during dispose.
   bool _suppressFilterCallbacks = false;
+
   /// After returning to the main list, ignore one Escape burst (repeat / duplicate KeyDown) so it does not close the sheet.
   DateTime? _suppressEscapeDismissOnMainUntil;
   bool _detailFocusZoneHeader = true; // true = header (back/close), false = list
@@ -70,13 +76,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
 
   String _cacheKey(String filter, String value) => '${widget.serverId}:${widget.libraryKey}:$filter:$value';
 
-  static const Set<String> _multiValueFilterKeys = {
-    'genre',
-    'OfficialRating',
-    'tags',
-    'VideoTypes',
-    'year',
-  };
+  static const Set<String> _multiValueFilterKeys = {'genre', 'OfficialRating', 'tags', 'VideoTypes', 'year'};
 
   bool _isMultiValueStringFilter(LibraryFilter f) {
     return f.filterType != 'boolean' && _multiValueFilterKeys.contains(f.filter);
@@ -97,11 +97,8 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
 
     final allBoolean = entry.filters.every((f) => f.filterType == 'boolean');
     if (allBoolean) {
-      final activeTitles = entry.filters
-          .where((f) => _tempSelectedFilters[f.filter] == '1')
-          .map((f) => f.title)
-          .toList()
-        ..sort();
+      final activeTitles =
+          entry.filters.where((f) => _tempSelectedFilters[f.filter] == '1').map((f) => f.title).toList()..sort();
       if (activeTitles.isEmpty) return null;
       return activeTitles.join(', ');
     }
@@ -186,8 +183,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
     // isBackKey == TV Back + Escape + browserBack + gameButtonB (dpad_navigator). Same on Windows & TV.
     if (key.isBackKey) {
       // Stale key delivery on the detail Focus node after we've already popped to main.
+      // Return ignored (not handled) so the event can bubble to the main-surface handler;
+      // otherwise the orphaned node silently swallows every back press and the sheet locks open.
       if (_currentFilter == null && _currentGroup == null) {
-        return KeyEventResult.handled;
+        return KeyEventResult.ignored;
       }
       if (_currentFilter != null) {
         _goBack();
@@ -226,7 +225,9 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
           });
           _notifyFiltersChanged();
         }
-      } else if (_currentGroup != null && _detailFocusedIndex >= 0 && _detailFocusedIndex < _currentGroup!.filters.length) {
+      } else if (_currentGroup != null &&
+          _detailFocusedIndex >= 0 &&
+          _detailFocusedIndex < _currentGroup!.filters.length) {
         final filter = _currentGroup!.filters[_detailFocusedIndex];
         final isActive = _tempSelectedFilters.containsKey(filter.filter) && _tempSelectedFilters[filter.filter] == '1';
         setState(() {
@@ -308,11 +309,11 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
       if (seen.add(f.group)) order.add(f.group);
     }
     // Only use grouped main view when every filter has a non-null group (Jellyfin).
-    _useGroupedMainView = widget.filters.isNotEmpty && widget.filters.every((f) => f.group != null && f.group!.isNotEmpty);
+    _useGroupedMainView =
+        widget.filters.isNotEmpty && widget.filters.every((f) => f.group != null && f.group!.isNotEmpty);
     _groupedFilters = [
       for (final g in order)
-        if (g != null && g.isNotEmpty)
-          (group: g, filters: groups[g]!),
+        if (g != null && g.isNotEmpty) (group: g, filters: groups[g]!),
     ];
   }
 
@@ -384,15 +385,22 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
   }
 
   /// After returning to the category list, keep focus inside the sheet on the first row.
+  /// Forces the focus directly on the first available frame so the orphaned detail
+  /// FocusNode doesn't keep swallowing subsequent back presses.
   void _scheduleRefocusMainList() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (_currentFilter == null && _currentGroup == null) {
-        // Duplicate Escape (or repeat) right after pop would otherwise dismiss the sheet on Windows.
-        _suppressEscapeDismissOnMainUntil = DateTime.now().add(const Duration(milliseconds: 200));
-        // Prefer first category row — avoids overlay refocus picking header Close / losing scope to sidebar.
-        OverlaySheetController.maybeOf(context)?.refocus(prefer: _initialFocusNode);
+      if (_currentFilter != null || _currentGroup != null) return;
+      // Duplicate Escape (or repeat) right after pop would otherwise dismiss the sheet on Windows.
+      _suppressEscapeDismissOnMainUntil = DateTime.now().add(const Duration(milliseconds: 200));
+      // First try a direct, immediate focus request — avoids the multi-frame delay inside
+      // OverlaySheetController.refocus that left focus stranded on the orphaned detail node.
+      if (_initialFocusNode.context != null && _initialFocusNode.canRequestFocus) {
+        _initialFocusNode.requestFocus();
       }
+      // Belt-and-suspenders: also schedule the controller refocus in case the node attaches a
+      // frame later, or focus needs to be re-snapped after async list builds.
+      OverlaySheetController.maybeOf(context)?.refocus(prefer: _initialFocusNode);
     });
   }
 
@@ -488,11 +496,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
             ),
             child: Text(
               t.common.clear,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xE6FFFFFF),
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xE6FFFFFF)),
             ),
           ),
         ),
@@ -523,7 +527,9 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
             child: AppBarBackButton(style: BackButtonStyle.plain, onPressed: onBack),
           ),
           const SizedBox(width: 8),
-          Expanded(child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+          Expanded(
+            child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
           if (_hasDetailClear) ...[
             _buildClearPillButton(isFocused: _detailFocusZoneHeader && _detailHeaderIndex == _detailClearIndex),
             const SizedBox(width: 8),
@@ -534,10 +540,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
             useListTileStyle: true,
             circular: true,
             onTap: _dismiss,
-            child: IconButton(
-              icon: AppIcon(Symbols.close_rounded, fill: 1),
-              onPressed: _dismiss,
-            ),
+            child: IconButton(icon: AppIcon(Symbols.close_rounded, fill: 1), onPressed: _dismiss),
           ),
         ],
       ),
@@ -584,7 +587,8 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                   itemBuilder: (context, index) {
                     final value = _filterValues[index];
                     final filterValue = _extractFilterValue(value.key, _currentFilter!.filter);
-                    final isFocused = !_detailFocusZoneHeader && _detailFocusedIndex >= 0 && index == _detailFocusedIndex;
+                    final isFocused =
+                        !_detailFocusZoneHeader && _detailFocusedIndex >= 0 && index == _detailFocusedIndex;
                     final multi = _isMultiValueStringFilter(_currentFilter!);
                     final isOn = multi
                         ? _parseFilterTokens(_tempSelectedFilters[_currentFilter!.filter]).contains(filterValue)
@@ -727,9 +731,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
             leading: const AppIcon(Symbols.filter_alt_rounded, fill: 1),
             action: _tempSelectedFilters.isNotEmpty ? _buildClearPillButton(isFocused: false) : null,
           ),
-          Expanded(
-            child: _useGroupedMainView ? _buildCategoryList() : _buildFlatFilterList(),
-          ),
+          Expanded(child: _useGroupedMainView ? _buildCategoryList() : _buildFlatFilterList()),
         ],
       ),
     );
@@ -753,10 +755,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                 Flexible(
                   child: Text(
                     summary,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -805,9 +804,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
           if (_isMultiValueStringFilter(filter)) {
             final tokens = _parseFilterTokens(selectedValue);
             if (tokens.isNotEmpty) {
-              displayValue = tokens
-                  .map((t) => _filterDisplayNames[_cacheKey(filter.filter, t)] ?? t)
-                  .join(', ');
+              displayValue = tokens.map((t) => _filterDisplayNames[_cacheKey(filter.filter, t)] ?? t).join(', ');
             }
           } else {
             displayValue = _filterDisplayNames[_cacheKey(filter.filter, selectedValue)] ?? selectedValue;
@@ -823,8 +820,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
                 Flexible(
                   child: Text(
                     displayValue,
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500),
+                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
