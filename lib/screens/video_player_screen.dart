@@ -686,6 +686,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         player: player!,
         isOffline: true,
         offlineWatchService: offlineWatchService,
+        getPositionMs: _resolveMoviePositionMs,
       );
       _progressTracker!.startTracking();
     } else if (client != null) {
@@ -699,6 +700,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
         mediaSourceId: _mediaSourceId,
         playMethod: playMethod,
         isTranscode: _isTranscodeStream,
+        getPositionMs: _resolveMoviePositionMs,
       );
       _progressTracker!.startTracking();
     }
@@ -865,6 +867,19 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> with WidgetsBindin
     } catch (e) {
       appLogger.d('Could not load offline adjacent episodes', error: e);
     }
+  }
+
+  /// Current movie-time position in ms.
+  ///
+  /// For transcoded streams the player reports stream-relative position (0 at
+  /// the start of each transcode session); add the session's startTimeTicks
+  /// offset so progress reports and resume metadata land on the movie timeline.
+  int _resolveMoviePositionMs() {
+    final raw = player?.state.position.inMilliseconds ?? 0;
+    if (_isTranscodeStream && _lastPlaybackStartPositionMs != null) {
+      return _lastPlaybackStartPositionMs! + raw;
+    }
+    return raw;
   }
 
   /// Seek during transcode: reload stream with new start position.

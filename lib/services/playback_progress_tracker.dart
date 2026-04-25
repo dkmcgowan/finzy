@@ -45,6 +45,16 @@ class PlaybackProgressTracker {
   /// True when using transcoding; stopActiveEncodings is called on stop.
   final bool isTranscode;
 
+  /// Resolves the current movie-time position in milliseconds.
+  ///
+  /// For online transcoded streams the player reports position from the start
+  /// of the current transcode session (0), not the movie timeline — so reporting
+  /// `player.state.position` directly stores stream-time on the server and the
+  /// next session resumes near the beginning. Callers pass a closure that adds
+  /// the active session's startTimeTicks offset; for direct streams and offline
+  /// playback they can leave this null and the tracker uses `player.state.position`.
+  final int Function()? getPositionMs;
+
   /// Timer for periodic progress updates
   Timer? _progressTimer;
 
@@ -70,6 +80,7 @@ class PlaybackProgressTracker {
     this.mediaSourceId,
     this.playMethod = 'DirectStream',
     this.isTranscode = false,
+    this.getPositionMs,
     this.updateInterval = const Duration(seconds: 10),
   }) : assert(!isOffline || offlineWatchService != null, 'offlineWatchService is required when isOffline is true'),
        assert(isOffline || client != null, 'client is required when isOffline is false');
@@ -124,7 +135,8 @@ class PlaybackProgressTracker {
 
   Future<void> _sendProgress(String state) async {
     try {
-      final position = player.state.position;
+      final resolvedMs = getPositionMs?.call() ?? player.state.position.inMilliseconds;
+      final position = Duration(milliseconds: resolvedMs);
       final duration = player.state.duration;
 
       appLogger.d(
