@@ -1,4 +1,14 @@
-This is a demo server with sample media for testing. All media content is public domain - titles like Night of the Living Dead, Jungle Book (1942), Dracula (1931), The Great Train Robbery - and the TV section is Pioneer One, web series, also public domain. This was done on purpose to avoid copyright issues during app store review (e.g. previous rejections for in-app content claims).
+This app is a client for connecting to user-provided Jellyfin servers.
+
+For app review purposes only, a temporary demonstration server is provided to allow testing of app functionality. This server is not part of the app’s core functionality.
+
+The application does not provide, host, or distribute any media content. Users are expected to connect to their own Jellyfin server with media they have the legal right to access.
+
+Reviewers may alternatively connect the app to their own Jellyfin server.
+
+A publicly accessible Jellyfin server is provided below strictly for testing during the review process.
+
+The server is independently hosted and contains only freely available sample media to demonstrate playback and app features.
 
 Server URL: https://demo.jellyfin.org/stable
 Username: demo
@@ -9,5 +19,5 @@ How to test:
 - Open the app. On first launch you will see the server setup screen with a Server URL field.
 - Enter the server URL above in the Server URL field, then tap Connect (or press Enter).
 - On the user selection screen, tap the Demo tile. The demo account has no password, so tapping the tile logs you in directly.
-- After login you can browse sample movies and TV shows, play videos, and use the main features.
+- After login you can browse the server’s media library, play videos, and test app features.
 - Use the bottom navigation for Home, Libraries, Live TV, Search, Downloads, and Settings.
