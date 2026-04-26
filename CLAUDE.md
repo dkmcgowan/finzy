@@ -23,14 +23,14 @@ flutter run --dart-define=GIT_COMMIT=$(git rev-parse HEAD) # stamp commit in sta
 # Local checks
 find lib -name "*.dart" ! -name "*.g.dart" -print0 \
   | xargs -0 dart format --output=none --set-exit-if-changed
-flutter analyze                              # see notes — warnings exist today and aren't a hard gate
+flutter analyze                              # must stay clean — CI fails on errors AND warnings
 dart run dart_code_linter:metrics check-unused-code lib
 dart run dart_code_linter:metrics check-unused-files lib
 ```
 
 Notes:
-- **The build must succeed** — that's the hard requirement. `flutter analyze` currently surfaces a backlog of *warnings*; resolving them is ongoing cleanup work but not a blocker for changes you make. Don't introduce new warnings, but don't gate your work on getting analyze to zero either. (`.github/workflows/ci.yml` still fails on warnings; treat that as aspirational rather than a current invariant.)
-- Analyzer **errors** are still a hard no — fix any you introduce.
+- **The build must succeed** and **`flutter analyze` must be clean** — both are hard CI gates (`.github/workflows/ci.yml` fails on errors *and* warnings). The codebase was cleaned up and some `dart_code_linter` rules were dialed down to make this realistic to maintain; do not regress it. If you can't fix a warning your change introduces, dial the rule down deliberately in `analysis_options.yaml` rather than letting the warning ship — and call out the rule change in the PR.
+- Analyzer **errors** are obviously a hard no — fix any you introduce.
 - `*.g.dart` is excluded from analyzer and format checks — do not hand-edit; regenerate with `build_runner`.
 - Line width is 120 (`analysis_options.yaml` → `formatter.page_width`).
 - After editing any model with `@JsonSerializable` or any `drift` table, re-run `build_runner`.
@@ -51,18 +51,22 @@ Notes:
 
 `SetupScreen` is the bootstrap gate: it loads registered servers from `ServerRegistry`, calls `ServerConnectionOrchestrator.connectAndInitialize` (with a 2-second retry for cold-start TCP flakiness on mobile/TV), and routes to `AuthScreen` or `MainScreen` — including a dedicated offline `MainScreen(isOfflineMode: true)` branch when no server is reachable.
 
-### Multi-server model
+### Server model (a.k.a. "multi-server" — but not really)
 
-Finzy supports multiple Jellyfin servers simultaneously. The layers:
+**The product is single-server.** A user is connected to one Jellyfin server at a time, and switching servers means logging out and connecting to a new one. There is no Plex-style "two servers active at once" mode.
 
-- `lib/services/jellyfin_client.dart` — per-server `JellyfinClient` wrapping the Jellyfin REST API via `dio`. Single source of truth for API calls; extend it rather than creating parallel clients. Intentionally has **no 401 interceptor**: runtime 401s mark a server offline rather than bouncing to login.
+The `MultiServer*` / `DataAggregationService` scaffolding is **leftover Plex/Plezy heritage**. Treat it as the registry/persistence layer for the currently-connected server (plus historical entries the user has registered), not as concurrent-connection infrastructure. Don't suggest test cases or features that assume two servers can be active simultaneously, and don't propose ripping the scaffolding out unless explicitly asked — it works, it's just over-named.
+
+The layers:
+
+- `lib/services/jellyfin_client.dart` — `JellyfinClient` wrapping the Jellyfin REST API via `dio`. Single source of truth for API calls; extend it rather than creating parallel clients. Intentionally has **no 401 interceptor**: runtime 401s mark the server offline rather than bouncing to login.
 - `lib/services/server_registry.dart` — persistence of registered servers in `SharedPreferences`.
-- `lib/services/multi_server_manager.dart` — owns the set of active `JellyfinClient`s, health checks, reconnection.
-- `lib/services/data_aggregation_service.dart` — cross-server queries (unified hubs, search, etc.).
+- `lib/services/multi_server_manager.dart` — owns the active `JellyfinClient`(s), health checks, reconnection.
+- `lib/services/data_aggregation_service.dart` — query layer originally designed for cross-server queries; in practice, used for the single connected server.
 - `lib/services/server_connection_orchestrator.dart` — startup/reconnect flow that stitches the above together.
 - `lib/providers/multi_server_provider.dart` + `server_state_provider.dart` — UI-facing `ChangeNotifier`s.
 
-In practice, most single-server screens receive a concrete `JellyfinClient` via constructor (e.g. `MainScreen(client: ...)` in `main.dart`). Use `MultiServerProvider` / `DataAggregationService` when the feature is cross-server or server-agnostic; don't force everything through the aggregation layer.
+Most screens receive a concrete `JellyfinClient` via constructor (e.g. `MainScreen(client: ...)` in `main.dart`). `MultiServerProvider` / `DataAggregationService` exist for server-agnostic call sites; don't force everything through the aggregation layer.
 
 ### Offline / downloads / cache
 
