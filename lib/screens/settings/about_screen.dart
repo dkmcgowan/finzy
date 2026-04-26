@@ -49,6 +49,7 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _checkForUpdates() async {
+    if (_updateStatus == _UpdateStatus.checking) return;
     setState(() {
       _updateStatus = _UpdateStatus.checking;
     });
@@ -156,7 +157,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   trailing: isChecking
                       ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
                       : const AppIcon(Symbols.refresh_rounded, fill: 1),
-                  onTap: isChecking ? null : _checkForUpdates,
+                  onTap: _checkForUpdates,
                 ),
               ),
 
