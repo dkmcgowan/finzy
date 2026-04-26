@@ -122,7 +122,7 @@ Map<int, _Weight> _parseAllKeys(String text) {
     // Extract Kangxi radical → CJK mapping from header
     final headerChars = line.substring(eqIdx + 1, colonIdx).runes.toList();
     if (headerChars.length >= 2) {
-      final kangxi = headerChars[0];
+      final kangxi = headerChars.first;
       final cjk = headerChars[1];
       // Kangxi Radicals: U+2F00-U+2FD5
       if (kangxi >= 0x2F00 && kangxi <= 0x2FD5 && cjk <= 0xFFFF) {
@@ -200,7 +200,7 @@ List<int> _buildOrder(Map<int, _Weight> allKeys, List<int> cjkRadicalOrder) {
 // Main
 // ---------------------------------------------------------------------------
 Future<void> main(List<String> args) async {
-  final allKeysPath = args.isNotEmpty ? args[0] : '/tmp/allkeys.txt';
+  final allKeysPath = args.isNotEmpty ? args.first : '/tmp/allkeys.txt';
   final fracUcaPath = args.length > 1 ? args[1] : '/tmp/FractionalUCA.txt';
 
   // Download if missing

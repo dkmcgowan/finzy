@@ -982,6 +982,9 @@ class _FocusableContextMenuSheetState extends State<_FocusableContextMenuSheet> 
                   physics: const ClampingScrollPhysics(),
                   scrollbars: false,
                 ),
+                // Context menus have a small fixed action list (≤~10 items);
+                // shrinkWrap is correct here, sliver refactor would be overkill.
+                // ignore: avoid-shrink-wrap-in-lists
                 child: ListView.builder(
                   primary: false,
                   shrinkWrap: true,

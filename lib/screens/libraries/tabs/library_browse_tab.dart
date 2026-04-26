@@ -959,6 +959,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaMetadata, LibraryB
 
     while (_hasMoreItems && mounted) {
       await _loadItems(loadMore: true);
+      if (!mounted) return;
       final idx = _indexOfFirstItemWithLetterAtRowStart(letter) ?? _indexOfFirstItemWithLetter(letter);
       if (idx != null) {
         setState(() => _currentFirstVisibleIndex = idx);
