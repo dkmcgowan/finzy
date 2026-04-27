@@ -115,6 +115,7 @@ class _LiveTvShowScheduleScreenState extends State<LiveTvShowScheduleScreen> {
         maxHeight: 120,
         devicePixelRatio: MediaImageHelper.effectiveDevicePixelRatio(context),
         imageType: ImageType.poster,
+        tag: program.thumbTag,
       );
     }
 

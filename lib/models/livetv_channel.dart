@@ -5,7 +5,15 @@ class LiveTvChannel {
   final String? callSign;
   final String? title;
   final String? thumb;
+
+  /// Jellyfin ImageTag (content hash) for [thumb]. Used as a `tag=` query
+  /// parameter in image URLs so cached images bust when the server's image
+  /// changes (e.g. after a metadata refresh).
+  final String? thumbTag;
   final String? art;
+
+  /// Jellyfin ImageTag for [art] (Backdrop). See [thumbTag].
+  final String? artTag;
   final String? number;
   final bool hd;
   final String? lineup;
@@ -22,7 +30,9 @@ class LiveTvChannel {
     this.callSign,
     this.title,
     this.thumb,
+    this.thumbTag,
     this.art,
+    this.artTag,
     this.number,
     this.hd = false,
     this.lineup,
@@ -34,12 +44,19 @@ class LiveTvChannel {
 
   factory LiveTvChannel.fromJson(Map<String, dynamic> json) {
     return LiveTvChannel(
-      key: json['key'] as String? ?? json['itemId'] as String? ?? json['identifier'] as String? ?? json['channelIdentifier'] as String? ?? '',
+      key:
+          json['key'] as String? ??
+          json['itemId'] as String? ??
+          json['identifier'] as String? ??
+          json['channelIdentifier'] as String? ??
+          '',
       identifier: json['identifier'] as String? ?? json['channelIdentifier'] as String?,
       callSign: json['callSign'] as String?,
       title: json['title'] as String? ?? json['callSign'] as String?,
       thumb: json['thumb'] as String?,
+      thumbTag: json['thumbTag'] as String?,
       art: json['art'] as String?,
+      artTag: json['artTag'] as String?,
       number: json['number'] as String? ?? json['channelNumber'] as String? ?? json['channelVcn']?.toString(),
       hd: json['hd'] == true || json['hd'] == 1,
       lineup: json['lineup'] as String?,
@@ -55,7 +72,9 @@ class LiveTvChannel {
       callSign: callSign,
       title: title,
       thumb: thumb,
+      thumbTag: thumbTag,
       art: art,
+      artTag: artTag,
       number: number,
       hd: hd,
       lineup: lineup,

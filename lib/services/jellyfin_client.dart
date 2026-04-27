@@ -3056,12 +3056,20 @@ class JellyfinClient {
       if (list == null) return [];
       return list.map((item) {
         final m = item as Map<String, dynamic>;
+        // Pair the channel logo id with its content tag so the URL changes
+        // when the server's logo changes; mirrors jellyfin-web's behavior.
+        final imageTags = m['ImageTags'] as Map<String, dynamic>?;
+        final primaryTag = imageTags?['Primary'] as String?;
+        final backdropTags = m['BackdropImageTags'] as List?;
+        final backdropTag = (backdropTags?.isNotEmpty == true) ? backdropTags!.first as String? : null;
         return LiveTvChannel(
           key: m['Id'] as String? ?? '',
           identifier: m['Id'] as String?,
           callSign: m['Name'] as String?,
           title: m['Name'] as String?,
           thumb: m['Id'] as String?,
+          thumbTag: primaryTag,
+          artTag: backdropTag,
           number: m['ChannelNumber'] as String?,
           hd: m['IsHD'] as bool? ?? false,
           serverId: serverId,
@@ -3113,13 +3121,31 @@ class JellyfinClient {
     final isSeries = m['IsSeries'] as bool? ?? false;
     final episodeTitle = m['EpisodeTitle'] as String?;
     final seriesName = isSeries ? (m['Name'] as String?) : null;
+    // Pair the chosen thumb id with its matching tag so URLs change after a
+    // server-side metadata refresh (mirrors jellyfin-web cardbuilder/utils/url.ts).
     final imageTags = m['ImageTags'] as Map<String, dynamic>?;
-    final hasPrimaryTag = imageTags?['Primary'] != null;
-    final thumbId =
-        m['PrimaryImageItemId'] as String? ??
-        m['SeriesId'] as String? ??
-        m['ChannelId'] as String? ??
-        (hasPrimaryTag ? m['Id'] as String? : null);
+    final primaryTag = imageTags?['Primary'] as String?;
+    final hasPrimaryTag = primaryTag != null;
+    final String? thumbId;
+    final String? thumbTag;
+    if (m['PrimaryImageItemId'] is String) {
+      thumbId = m['PrimaryImageItemId'] as String;
+      thumbTag = m['PrimaryImageTag'] as String?;
+    } else if (m['SeriesId'] is String) {
+      thumbId = m['SeriesId'] as String;
+      thumbTag = m['SeriesPrimaryImageTag'] as String?;
+    } else if (m['ChannelId'] is String) {
+      thumbId = m['ChannelId'] as String;
+      thumbTag = null;
+    } else if (hasPrimaryTag) {
+      thumbId = m['Id'] as String?;
+      thumbTag = primaryTag;
+    } else {
+      thumbId = null;
+      thumbTag = null;
+    }
+    final backdropTags = m['BackdropImageTags'] as List?;
+    final backdropTag = (backdropTags?.isNotEmpty == true) ? backdropTags!.first as String? : null;
 
     return LiveTvProgram(
       key: m['Id'] as String?,
@@ -3136,6 +3162,8 @@ class JellyfinClient {
       index: (m['IndexNumber'] as num?)?.toInt(),
       parentIndex: (m['ParentIndexNumber'] as num?)?.toInt(),
       thumb: thumbId,
+      thumbTag: thumbTag,
+      artTag: backdropTag,
       art: thumbId,
       channelIdentifier: m['ChannelId'] as String?,
       channelCallSign: m['ChannelName'] as String?,

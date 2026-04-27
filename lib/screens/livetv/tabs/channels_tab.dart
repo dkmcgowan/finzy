@@ -159,6 +159,7 @@ class _ChannelCardState extends State<_ChannelCard> {
                       child: OptimizedImage(
                         client: context.getClientWithFallback(widget.channel.serverId),
                         imagePath: widget.channel.thumb,
+                        imageTag: widget.channel.thumbTag,
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.contain,

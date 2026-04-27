@@ -14,7 +14,15 @@ class LiveTvProgram {
   final int? index; // episode number
   final int? parentIndex; // season number
   final String? thumb;
+
+  /// Jellyfin ImageTag (content hash) for [thumb]. See `MediaMetadata.thumbTag`
+  /// for context — pairing the tag with the chosen image id makes the URL
+  /// change after a server-side metadata refresh and invalidates the cache.
+  final String? thumbTag;
   final String? art;
+
+  /// Jellyfin ImageTag for [art] (Backdrop). See [thumbTag].
+  final String? artTag;
   final String? channelIdentifier;
   final String? channelCallSign;
   final bool? live;
@@ -35,7 +43,9 @@ class LiveTvProgram {
     this.index,
     this.parentIndex,
     this.thumb,
+    this.thumbTag,
     this.art,
+    this.artTag,
     this.channelIdentifier,
     this.channelCallSign,
     this.live,
@@ -62,7 +72,9 @@ class LiveTvProgram {
       index: (json['index'] as num?)?.toInt(),
       parentIndex: (json['parentIndex'] as num?)?.toInt(),
       thumb: json['thumb'] as String? ?? json['seriesImageId'] as String?,
+      thumbTag: json['thumbTag'] as String? ?? json['seriesImageTag'] as String?,
       art: json['art'] as String?,
+      artTag: json['artTag'] as String?,
       channelIdentifier:
           json['channelIdentifier'] as String? ?? media?['channelIdentifier']?.toString() ?? channel?['id']?.toString(),
       channelCallSign: json['channelCallSign'] as String? ?? media?['channelCallSign'] as String?,

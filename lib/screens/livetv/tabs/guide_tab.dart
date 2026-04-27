@@ -1096,6 +1096,7 @@ class GuideTabState extends State<GuideTab> {
         maxHeight: 120,
         devicePixelRatio: MediaImageHelper.effectiveDevicePixelRatio(context),
         imageType: ImageType.poster,
+        tag: program.thumbTag,
       );
     }
 
@@ -1171,6 +1172,7 @@ class _ChannelCellState extends State<_ChannelCell> {
                       ? OptimizedImage.thumb(
                           client: widget.client!,
                           imagePath: widget.channelThumb,
+                          imageTag: widget.channel.thumbTag,
                           width: widget.channelColumnWidth - 16,
                           height: widget.rowHeight - 16,
                           fit: BoxFit.contain,

@@ -192,9 +192,31 @@ class ProgramsTabState extends State<ProgramsTab> {
     final multiServer = context.read<MultiServerProvider>();
     final client = multiServer.getClientForServer(metadata.serverId ?? '');
     final channelFirst = program.isCurrentlyAiring && channel?.thumb != null;
-    final posterImage = channelFirst
-        ? (channel?.thumb ?? metadata.seriesImageId ?? metadata.thumb)
-        : (metadata.seriesImageId ?? metadata.thumb ?? channel?.thumb);
+    final String? posterImage;
+    final String? posterTag;
+    if (channelFirst) {
+      if (channel?.thumb != null) {
+        posterImage = channel!.thumb;
+        posterTag = channel.thumbTag;
+      } else if (metadata.seriesImageId != null) {
+        posterImage = metadata.seriesImageId;
+        posterTag = metadata.seriesImageTag;
+      } else {
+        posterImage = metadata.thumb;
+        posterTag = metadata.thumbTag;
+      }
+    } else {
+      if (metadata.seriesImageId != null) {
+        posterImage = metadata.seriesImageId;
+        posterTag = metadata.seriesImageTag;
+      } else if (metadata.thumb != null) {
+        posterImage = metadata.thumb;
+        posterTag = metadata.thumbTag;
+      } else {
+        posterImage = channel?.thumb;
+        posterTag = channel?.thumbTag;
+      }
+    }
     String? posterUrl;
     if (posterImage != null && client != null) {
       posterUrl = MediaImageHelper.getOptimizedImageUrl(
@@ -204,6 +226,7 @@ class ProgramsTabState extends State<ProgramsTab> {
         maxHeight: 120,
         devicePixelRatio: MediaImageHelper.effectiveDevicePixelRatio(context),
         imageType: ImageType.poster,
+        tag: posterTag,
       );
     }
 
@@ -626,9 +649,33 @@ class _LiveTvPosterCardState extends State<_LiveTvPosterCard> {
     final theme = Theme.of(context);
     final channelFirst = widget.entry.program.isCurrentlyAiring && widget.channel?.thumb != null;
     // For currently airing rows, prefer channel logo first; otherwise use program/series art.
-    final posterImage = channelFirst
-        ? (widget.channel?.thumb ?? metadata.seriesImageId ?? metadata.thumb)
-        : (metadata.seriesImageId ?? metadata.thumb ?? widget.channel?.thumb);
+    // Each chosen id pairs with its matching tag so the image URL changes
+    // when the server's image changes.
+    final String? posterImage;
+    final String? posterTag;
+    if (channelFirst) {
+      if (widget.channel?.thumb != null) {
+        posterImage = widget.channel!.thumb;
+        posterTag = widget.channel!.thumbTag;
+      } else if (metadata.seriesImageId != null) {
+        posterImage = metadata.seriesImageId;
+        posterTag = metadata.seriesImageTag;
+      } else {
+        posterImage = metadata.thumb;
+        posterTag = metadata.thumbTag;
+      }
+    } else {
+      if (metadata.seriesImageId != null) {
+        posterImage = metadata.seriesImageId;
+        posterTag = metadata.seriesImageTag;
+      } else if (metadata.thumb != null) {
+        posterImage = metadata.thumb;
+        posterTag = metadata.thumbTag;
+      } else {
+        posterImage = widget.channel?.thumb;
+        posterTag = widget.channel?.thumbTag;
+      }
+    }
     final isChannelImage = widget.channel?.thumb != null && posterImage == widget.channel!.thumb;
     final showHoverPlay = _isHovered && !widget.isFocused;
 
@@ -664,6 +711,7 @@ class _LiveTvPosterCardState extends State<_LiveTvPosterCard> {
                           OptimizedImage.poster(
                             client: context.getClientWithFallback(metadata.serverId),
                             imagePath: posterImage,
+                            imageTag: posterTag,
                             width: double.infinity,
                             height: double.infinity,
                             fit: isChannelImage ? BoxFit.contain : BoxFit.cover,
