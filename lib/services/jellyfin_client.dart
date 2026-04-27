@@ -203,13 +203,25 @@ class JellyfinClient {
     // Always use item id for thumb/art: Jellyfin serves at /Items/{Id}/Images/Primary (and Backdrop).
     // List responses often omit ImageTags; using id ensures thumbnails load everywhere.
     // For collections (BoxSet): only set thumb when the API reports a Primary image, so we don't request and get 404.
-    final bool hasPrimaryImage = (item['ImageTags'] as Map<String, dynamic>?)?['Primary'] != null;
+    final imageTags = item['ImageTags'] as Map<String, dynamic>?;
+    final primaryTag = imageTags?['Primary'] as String?;
+    final bool hasPrimaryImage = primaryTag != null;
     final bool isCollection = type == 'collection';
     final thumbForItem = id.isEmpty
         ? null
         : (isCollection ? (hasPrimaryImage ? id : null) : id);
-    final hasBackdrop = (item['BackdropImageTags'] as List?)?.isNotEmpty == true;
-    final hasParentBackdrop = (item['ParentBackdropImageTags'] as List?)?.isNotEmpty == true;
+    // Pair the chosen thumb id with its content-hash tag (when known) so the
+    // resulting `/Items/{id}/Images/Primary?tag=...` URL changes after a
+    // server-side metadata refresh. Without the tag, cached_network_image
+    // keeps serving the old image because the URL hash is identical.
+    final thumbTagForItem = thumbForItem == null ? null : primaryTag;
+    final backdropTags = item['BackdropImageTags'] as List?;
+    final hasBackdrop = backdropTags?.isNotEmpty == true;
+    final backdropTag = hasBackdrop ? backdropTags!.first as String? : null;
+    final parentBackdropTags = item['ParentBackdropImageTags'] as List?;
+    final hasParentBackdrop = parentBackdropTags?.isNotEmpty == true;
+    final parentBackdropTag = hasParentBackdrop ? parentBackdropTags!.first as String? : null;
+    final seriesPrimaryTag = item['SeriesPrimaryImageTag'] as String?;
 
     final leafCount = _leafCountForItem(item, type);
     final watchedEpisodeCount = _watchedEpisodeCountForItem(item, type, userData);
@@ -236,16 +248,20 @@ class JellyfinClient {
       seriesStatus: item['Status'] as String?,
       originallyAvailableAt: item['PremiereDate'] as String?,
       thumb: thumbForItem,
+      thumbTag: thumbTagForItem,
       art: hasBackdrop ? id : null,
+      artTag: backdropTag,
       duration: _ticksToMs(_toInt(item['RunTimeTicks'])),
       addedAt: item['DateCreated'] != null ? _parseDateToEpochSeconds(item['DateCreated']) : null,
       updatedAt: item['DateLastMediaAdded'] != null ? _parseDateToEpochSeconds(item['DateLastMediaAdded']) : null,
       lastPlayedAt: userData['LastPlayedDate'] != null ? _parseDateToEpochSeconds(userData['LastPlayedDate']) : null,
       seriesTitle: item['SeriesName'] as String?,
       seriesImageId: item['SeriesId']?.toString(),
+      seriesImageTag: seriesPrimaryTag,
       seriesArt: (type == 'episode' && hasParentBackdrop && item['SeriesId'] != null)
           ? item['SeriesId'].toString()
           : null,
+      seriesArtTag: (type == 'episode' && hasParentBackdrop) ? parentBackdropTag : null,
       seriesId: item['SeriesId']?.toString(),
       seasonTitle: item['SeasonName'] as String?,
       seasonId: item['SeasonId']?.toString(),
@@ -765,13 +781,16 @@ class JellyfinClient {
     return episodes.where((e) => e.type.toLowerCase() == 'episode' && (e.playCount ?? 0) == 0).toList();
   }
 
-  String getThumbnailUrl(String? thumbPath) {
+  String getThumbnailUrl(String? thumbPath, {String? tag}) {
     if (thumbPath == null || thumbPath.isEmpty) return '';
     final base = config.baseUrl.endsWith('/') ? config.baseUrl : '${config.baseUrl}/';
     final token = config.token;
-    return token.isEmpty
-        ? '${base}Items/$thumbPath/Images/Primary'
-        : '${base}Items/$thumbPath/Images/Primary?ApiKey=${Uri.encodeComponent(token)}';
+    final params = <String>[
+      if (token.isNotEmpty) 'ApiKey=${Uri.encodeComponent(token)}',
+      if (tag != null && tag.isNotEmpty) 'tag=${Uri.encodeComponent(tag)}',
+    ];
+    final query = params.isEmpty ? '' : '?${params.join('&')}';
+    return '${base}Items/$thumbPath/Images/Primary$query';
   }
 
   /// Build a trickplay (timeline scrub) thumbnail URL for the given position.
@@ -3211,12 +3230,26 @@ class JellyfinClient {
       final m = item as Map<String, dynamic>;
       final program = _jellyfinProgramToLiveTvProgram(m);
       final imageTags = m['ImageTags'] as Map<String, dynamic>?;
-      final hasPrimaryTag = imageTags?['Primary'] != null;
-      final thumbId =
-          m['PrimaryImageItemId'] as String? ??
-          m['SeriesId'] as String? ??
-          m['ChannelId'] as String? ??
-          (hasPrimaryTag ? m['Id'] as String? : null);
+      final primaryTag = imageTags?['Primary'] as String?;
+      final hasPrimaryTag = primaryTag != null;
+      final String? thumbId;
+      final String? thumbTag;
+      if (m['PrimaryImageItemId'] is String) {
+        thumbId = m['PrimaryImageItemId'] as String;
+        thumbTag = m['PrimaryImageTag'] as String?;
+      } else if (m['SeriesId'] is String) {
+        thumbId = m['SeriesId'] as String;
+        thumbTag = m['SeriesPrimaryImageTag'] as String?;
+      } else if (m['ChannelId'] is String) {
+        thumbId = m['ChannelId'] as String;
+        thumbTag = null;
+      } else if (hasPrimaryTag) {
+        thumbId = m['Id'] as String?;
+        thumbTag = primaryTag;
+      } else {
+        thumbId = null;
+        thumbTag = null;
+      }
       final metadata = MediaMetadata(
         itemId: m['Id'] as String? ?? '',
         key: m['Id'] as String? ?? '',
@@ -3224,9 +3257,12 @@ class JellyfinClient {
         title: m['Name'] as String? ?? '',
         summary: m['Overview'] as String?,
         thumb: thumbId,
+        thumbTag: thumbTag,
         art: thumbId,
+        artTag: thumbTag,
         serverId: serverId,
         seriesImageId: m['SeriesId'] as String?,
+        seriesImageTag: m['SeriesPrimaryImageTag'] as String?,
       );
       entries.add(LiveTvHubEntry(metadata: metadata, program: program));
     }
@@ -3440,46 +3476,61 @@ class JellyfinClient {
     final imgSource = programInfo ?? item;
     final imageTags = imgSource['ImageTags'] as Map<String, dynamic>?;
 
-    // Image fallback chain — mirrors jellyfin-web cardBuilder getCardImageUrl
+    // Image fallback chain — mirrors jellyfin-web cardBuilder getCardImageUrl.
+    // Each branch pairs its chosen id (or full URL) with the matching content
+    // tag so URLs change after a server-side metadata refresh.
     String? thumbId;
+    String? thumbTag;
     final imgId = imgSource['Id']?.toString() ?? id;
+    String tagQuery(String? t) => t != null && t.isNotEmpty ? '&tag=${Uri.encodeComponent(t)}' : '';
 
     if (imageTags?['Primary'] != null) {
       thumbId = imgId;
+      thumbTag = imageTags!['Primary'] as String?;
     } else if (imgSource['SeriesPrimaryImageTag'] != null && imgSource['SeriesId'] != null) {
       thumbId = imgSource['SeriesId'] as String;
+      thumbTag = imgSource['SeriesPrimaryImageTag'] as String?;
     } else if (imgSource['PrimaryImageTag'] != null && imgSource['PrimaryImageItemId'] != null) {
       thumbId = imgSource['PrimaryImageItemId'] as String;
+      thumbTag = imgSource['PrimaryImageTag'] as String?;
     } else if (imgSource['ParentPrimaryImageTag'] != null && imgSource['ParentPrimaryImageItemId'] != null) {
       thumbId = imgSource['ParentPrimaryImageItemId'] as String;
+      thumbTag = imgSource['ParentPrimaryImageTag'] as String?;
     } else {
       final backdrop = imgSource['BackdropImageTags'] as List?;
       final parentBackdrop = imgSource['ParentBackdropImageTags'] as List?;
+      final apiKeyQuery = token != null && token!.isNotEmpty ? '&ApiKey=$token' : '';
       if (backdrop != null && backdrop.isNotEmpty) {
-        thumbId = '$baseUrl/Items/$imgId/Images/Backdrop?quality=90'
-            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+        final t = backdrop.first as String?;
+        thumbId = '$baseUrl/Items/$imgId/Images/Backdrop?quality=90$apiKeyQuery${tagQuery(t)}';
       } else if (imageTags?['Thumb'] != null) {
-        thumbId = '$baseUrl/Items/$imgId/Images/Thumb?quality=90'
-            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+        final t = imageTags!['Thumb'] as String?;
+        thumbId = '$baseUrl/Items/$imgId/Images/Thumb?quality=90$apiKeyQuery${tagQuery(t)}';
       } else if (imgSource['SeriesThumbImageTag'] != null && imgSource['SeriesId'] != null) {
         final seriesId = imgSource['SeriesId'] as String;
-        thumbId = '$baseUrl/Items/$seriesId/Images/Thumb?quality=90'
-            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+        final t = imgSource['SeriesThumbImageTag'] as String?;
+        thumbId = '$baseUrl/Items/$seriesId/Images/Thumb?quality=90$apiKeyQuery${tagQuery(t)}';
       } else if (imgSource['ParentThumbImageTag'] != null && imgSource['ParentThumbItemId'] != null) {
         final parentId = imgSource['ParentThumbItemId'] as String;
-        thumbId = '$baseUrl/Items/$parentId/Images/Thumb?quality=90'
-            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+        final t = imgSource['ParentThumbImageTag'] as String?;
+        thumbId = '$baseUrl/Items/$parentId/Images/Thumb?quality=90$apiKeyQuery${tagQuery(t)}';
       } else if (parentBackdrop != null && parentBackdrop.isNotEmpty && imgSource['ParentBackdropItemId'] != null) {
         final parentId = imgSource['ParentBackdropItemId'] as String;
-        thumbId = '$baseUrl/Items/$parentId/Images/Backdrop?quality=90'
-            '${token != null && token!.isNotEmpty ? '&ApiKey=$token' : ''}';
+        final t = parentBackdrop.first as String?;
+        thumbId = '$baseUrl/Items/$parentId/Images/Backdrop?quality=90$apiKeyQuery${tagQuery(t)}';
       } else if (item['SeriesId'] != null) {
         thumbId = item['SeriesId'] as String;
+        thumbTag = item['SeriesPrimaryImageTag'] as String?;
       }
     }
 
-    final hasBackdrop = (imgSource['BackdropImageTags'] as List?)?.isNotEmpty == true
-        || (item['BackdropImageTags'] as List?)?.isNotEmpty == true;
+    final ownBackdrops = imgSource['BackdropImageTags'] as List?;
+    final itemBackdrops = item['BackdropImageTags'] as List?;
+    final hasBackdrop = (ownBackdrops?.isNotEmpty == true) || (itemBackdrops?.isNotEmpty == true);
+    final backdropTag = (ownBackdrops?.isNotEmpty == true)
+        ? ownBackdrops!.first as String?
+        : ((itemBackdrops?.isNotEmpty == true) ? itemBackdrops!.first as String? : null);
+    final seriesPrimaryTag = (imgSource['SeriesPrimaryImageTag'] as String?) ?? (item['SeriesPrimaryImageTag'] as String?);
 
     return MediaMetadata(
       itemId: id,
@@ -3494,13 +3545,16 @@ class JellyfinClient {
       year: _toInt(item['ProductionYear']),
       originallyAvailableAt: item['PremiereDate'] as String?,
       thumb: thumbId,
+      thumbTag: thumbTag,
       art: hasBackdrop ? id : null,
+      artTag: backdropTag,
       duration: _ticksToMs(_toInt(item['RunTimeTicks'])),
       addedAt: item['DateCreated'] != null ? _parseDateToEpochSeconds(item['DateCreated']) : null,
       seriesTitle: item['SeriesName'] as String?,
-      seriesImageId: isSeries && (imgSource['SeriesPrimaryImageTag'] != null || item['SeriesPrimaryImageTag'] != null)
+      seriesImageId: isSeries && seriesPrimaryTag != null
           ? (item['SeriesId']?.toString())
           : null,
+      seriesImageTag: isSeries ? seriesPrimaryTag : null,
       seriesId: item['SeriesId']?.toString(),
       parentIndex: _toInt(item['ParentIndexNumber']),
       index: _toInt(item['IndexNumber']),

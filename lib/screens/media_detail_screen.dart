@@ -1913,6 +1913,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> with WatchStateAw
                                     maxHeight: mediaQuery.size.height * 0.6,
                                     devicePixelRatio: dpr,
                                     imageType: ImageType.art,
+                                    tag: metadata.artTag,
                                   );
 
                                   return blurArtwork(CachedNetworkImage(
@@ -2684,6 +2685,7 @@ class _SeasonCardState extends State<_SeasonCard> {
       return OptimizedImage.poster(
         client: widget.client,
         imagePath: widget.season.thumb,
+        imageTag: widget.season.thumbTag,
         width: 80,
         height: 120,
         fit: BoxFit.cover,

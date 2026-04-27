@@ -1276,9 +1276,23 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         final mediaQuery = MediaQuery.of(context);
                         final dpr = MediaImageHelper.effectiveDevicePixelRatio(context);
                         final hasBackdrop = heroItem.art != null || heroItem.seriesArt != null;
-                        final thumbPath = hasBackdrop
-                            ? (heroItem.art ?? heroItem.seriesArt)
-                            : (heroItem.seriesImageId ?? heroItem.thumb);
+                        final String? thumbPath;
+                        final String? thumbTag;
+                        if (hasBackdrop) {
+                          if (heroItem.art != null) {
+                            thumbPath = heroItem.art;
+                            thumbTag = heroItem.artTag;
+                          } else {
+                            thumbPath = heroItem.seriesArt;
+                            thumbTag = heroItem.seriesArtTag;
+                          }
+                        } else if (heroItem.seriesImageId != null) {
+                          thumbPath = heroItem.seriesImageId;
+                          thumbTag = heroItem.seriesImageTag;
+                        } else {
+                          thumbPath = heroItem.thumb;
+                          thumbTag = heroItem.thumbTag;
+                        }
                         final imageUrl = MediaImageHelper.getOptimizedImageUrl(
                           client: client,
                           thumbPath: thumbPath,
@@ -1286,6 +1300,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           maxHeight: mediaQuery.size.height * 0.7,
                           devicePixelRatio: dpr,
                           imageType: hasBackdrop ? ImageType.art : ImageType.poster,
+                          tag: thumbTag,
                         );
 
                         return blurArtwork(CachedNetworkImage(

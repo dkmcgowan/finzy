@@ -106,7 +106,10 @@ class MediaCardState extends State<MediaCard> {
 
     // Add watched status
     final hasActiveProgress =
-        item.resumePositionMs != null && item.duration != null && item.resumePositionMs! > 0 && item.resumePositionMs! < item.duration!;
+        item.resumePositionMs != null &&
+        item.duration != null &&
+        item.resumePositionMs! > 0 &&
+        item.resumePositionMs! < item.duration!;
 
     if (hasActiveProgress) {
       final percent = ((item.resumePositionMs! / item.duration!) * 100).round();
@@ -480,9 +483,7 @@ class _MediaCardList extends StatelessWidget {
     if (item is Playlist) return (item as Playlist).title;
     if (item is! MediaMetadata) return '$item';
     final metadata = item as MediaMetadata;
-    if (metadata.mediaType == MediaType.episode &&
-        metadata.parentIndex != null &&
-        metadata.index != null) {
+    if (metadata.mediaType == MediaType.episode && metadata.parentIndex != null && metadata.index != null) {
       return 'S${metadata.parentIndex}:E${metadata.index} - ${metadata.title}';
     }
     return metadata.displayTitle;
@@ -641,7 +642,8 @@ Widget _buildPosterImage(
     );
   } else if (item is MediaMetadata) {
     final episodePosterMode = context.watch<SettingsProvider>().episodePosterMode;
-    posterUrl = item.posterThumb(mode: episodePosterMode, mixedHubContext: mixedHubContext);
+    final poster = item.posterImage(mode: episodePosterMode, mixedHubContext: mixedHubContext);
+    posterUrl = poster.path;
 
     // Channel logos: center at 70% size with contain, matching Live TV channels tab.
     // Check first so channels never fall through to BoxFit.cover.
@@ -657,6 +659,7 @@ Widget _buildPosterImage(
                   child: OptimizedImage.poster(
                     client: isOffline ? null : context.getClientWithFallback(item.serverId),
                     imagePath: posterUrl,
+                    imageTag: poster.tag,
                     width: double.infinity,
                     height: double.infinity,
                     fit: BoxFit.contain,
@@ -685,6 +688,7 @@ Widget _buildPosterImage(
         return OptimizedImage.thumb(
           client: isOffline ? null : context.getClientWithFallback(item.serverId),
           imagePath: posterUrl,
+          imageTag: poster.tag,
           width: double.infinity,
           height: double.infinity,
           fit: BoxFit.cover,
@@ -695,6 +699,7 @@ Widget _buildPosterImage(
         return OptimizedImage(
           client: isOffline ? null : context.getClientWithFallback(item.serverId),
           imagePath: posterUrl,
+          imageTag: poster.tag,
           imageType: ImageType.art,
           width: double.infinity,
           height: double.infinity,
@@ -707,6 +712,7 @@ Widget _buildPosterImage(
     return OptimizedImage.poster(
       client: isOffline ? null : context.getClientWithFallback(item.serverId),
       imagePath: posterUrl,
+      imageTag: poster.tag,
       width: double.infinity,
       height: double.infinity,
       fit: BoxFit.cover,
@@ -743,9 +749,7 @@ class _MediaCardHelpers {
     if (item is Playlist) return item.title;
     if (item is! MediaMetadata) return '$item';
     final metadata = item;
-    if (metadata.mediaType == MediaType.episode &&
-        metadata.parentIndex != null &&
-        metadata.index != null) {
+    if (metadata.mediaType == MediaType.episode && metadata.parentIndex != null && metadata.index != null) {
       return 'S${metadata.parentIndex}:E${metadata.index} - ${metadata.title}';
     }
     return metadata.displayTitle;
@@ -856,8 +860,7 @@ class _MediaCardHelpers {
               child: AppIcon(Symbols.check_rounded, fill: 1, color: tokens(context).bg, size: 16),
             ),
           ),
-        if (showUnwatchedCount &&
-            (metadata.mediaType == MediaType.show || metadata.mediaType == MediaType.season)) ...[
+        if (showUnwatchedCount && (metadata.mediaType == MediaType.show || metadata.mediaType == MediaType.season)) ...[
           if (metadata.effectiveUnwatchedCount != null && metadata.effectiveUnwatchedCount! > 0)
             Positioned(
               top: 4,

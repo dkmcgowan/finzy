@@ -33,6 +33,7 @@ Notes:
 - Analyzer **errors** are obviously a hard no — fix any you introduce.
 - `*.g.dart` is excluded from analyzer and format checks — do not hand-edit; regenerate with `build_runner`.
 - Line width is 120 (`analysis_options.yaml` → `formatter.page_width`).
+- **Don't bulk-reformat.** Local `dart format` may be stricter than CI's (CI uses the Flutter-pinned Dart SDK on Linux; if your local Dart is newer the formatter algorithm itself can differ). There are pre-existing format diffs across the tree that CI tolerates — don't "fix" them. Only format files you actually edited, and check the diff before committing: a single formatter decision (long array → one-per-line, restructured string concat, blank lines between members) can rewrite hundreds of lines of pre-existing code with zero functional change. If your "small" PR shows a 1000+ line diff, that's almost certainly what happened — `git checkout` the bloated files and re-apply just your targeted edits.
 - After editing any model with `@JsonSerializable` or any `drift` table, re-run `build_runner`.
 - After editing any `lib/i18n/*.i18n.json`, re-run `dart run slang`.
 - **No `test/` directory exists yet** — `flutter test` is a no-op today. If you add tests, the CI job already handles them.

@@ -54,6 +54,12 @@ class OptimizedImage extends StatelessWidget {
   final ImageType imageType;
   final String? localFilePath;
 
+  /// Jellyfin ImageTag (content hash) paired with [imagePath]. When set, the
+  /// final URL includes `&tag=<imageTag>` so the URL — and therefore the
+  /// `cached_network_image` cache key — changes after a server-side metadata
+  /// refresh. Without it, refreshed artwork keeps showing the stale image.
+  final String? imageTag;
+
   const OptimizedImage._({
     super.key,
     this.client,
@@ -71,6 +77,7 @@ class OptimizedImage extends StatelessWidget {
     this.fallbackIcon,
     this.imageType = ImageType.poster,
     this.localFilePath,
+    this.imageTag,
   });
 
   /// Generic constructor for optimized images.
@@ -91,6 +98,7 @@ class OptimizedImage extends StatelessWidget {
     IconData? fallbackIcon,
     ImageType imageType,
     String? localFilePath,
+    String? imageTag,
   }) = OptimizedImage._;
 
   /// Named constructor for poster images with default fallback icon.
@@ -109,6 +117,7 @@ class OptimizedImage extends StatelessWidget {
     String? cacheKey,
     Alignment alignment,
     String? localFilePath,
+    String? imageTag,
   }) = OptimizedImage._poster;
 
   /// Named constructor for episode thumbnails.
@@ -127,6 +136,7 @@ class OptimizedImage extends StatelessWidget {
     String? cacheKey,
     Alignment alignment,
     String? localFilePath,
+    String? imageTag,
   }) = OptimizedImage._thumb;
 
   /// Named constructor for playlist images.
@@ -145,6 +155,7 @@ class OptimizedImage extends StatelessWidget {
     String? cacheKey,
     Alignment alignment,
     String? localFilePath,
+    String? imageTag,
   }) = OptimizedImage._playlist;
 
   const OptimizedImage._poster({
@@ -162,6 +173,7 @@ class OptimizedImage extends StatelessWidget {
     String? cacheKey,
     Alignment alignment = Alignment.center,
     String? localFilePath,
+    String? imageTag,
   }) : this._(
          key: key,
          client: client,
@@ -179,6 +191,7 @@ class OptimizedImage extends StatelessWidget {
          fallbackIcon: Symbols.movie_rounded,
          imageType: ImageType.poster,
          localFilePath: localFilePath,
+         imageTag: imageTag,
        );
 
   const OptimizedImage._thumb({
@@ -196,6 +209,7 @@ class OptimizedImage extends StatelessWidget {
     String? cacheKey,
     Alignment alignment = Alignment.center,
     String? localFilePath,
+    String? imageTag,
   }) : this._(
          key: key,
          client: client,
@@ -213,6 +227,7 @@ class OptimizedImage extends StatelessWidget {
          fallbackIcon: Symbols.video_library_rounded,
          imageType: ImageType.thumb,
          localFilePath: localFilePath,
+         imageTag: imageTag,
        );
 
   const OptimizedImage._playlist({
@@ -230,6 +245,7 @@ class OptimizedImage extends StatelessWidget {
     String? cacheKey,
     Alignment alignment = Alignment.center,
     String? localFilePath,
+    String? imageTag,
   }) : this._(
          key: key,
          client: client,
@@ -247,6 +263,7 @@ class OptimizedImage extends StatelessWidget {
          fallbackIcon: Symbols.playlist_play_rounded,
          imageType: ImageType.poster,
          localFilePath: localFilePath,
+         imageTag: imageTag,
        );
 
   /// Whether both width and height are explicitly set to finite positive values,
@@ -325,6 +342,7 @@ class OptimizedImage extends StatelessWidget {
       enableTranscoding: enableTranscoding && MediaImageHelper.shouldTranscode(imagePath),
       imageType: imageType,
       performanceProfile: performanceProfile,
+      tag: imageTag,
     );
 
     if (imageUrl.isEmpty) {
@@ -358,7 +376,9 @@ class OptimizedImage extends StatelessWidget {
       memCacheHeight: memHeight,
       cacheKey: effectiveCacheKey,
       placeholder: placeholder != null ? placeholder! : (context, url) => _buildPlaceholder(context),
-      errorWidget: errorWidget != null ? errorWidget! : (context, url, error) => _buildErrorWidgetWithLog(context, url, error),
+      errorWidget: errorWidget != null
+          ? errorWidget!
+          : (context, url, error) => _buildErrorWidgetWithLog(context, url, error),
       httpHeaders: headers,
     );
   }
@@ -395,7 +415,9 @@ class OptimizedImage extends StatelessWidget {
 
   /// Log thumbnail load failure (URL redacted, error and status if present) then show broken image.
   Widget _buildErrorWidgetWithLog(BuildContext context, String url, dynamic error) {
-    final redactedUrl = url.replaceAll(RegExp(r'ApiKey=[^&]+'), 'ApiKey=***').replaceAll(RegExp(r'[?&]token=[^&]+'), '&token=***');
+    final redactedUrl = url
+        .replaceAll(RegExp(r'ApiKey=[^&]+'), 'ApiKey=***')
+        .replaceAll(RegExp(r'[?&]token=[^&]+'), '&token=***');
     if (_loggedFailUrls.length < _maxLogFailUrls && _loggedFailUrls.add(redactedUrl)) {
       int? statusCode;
       if (error != null) {

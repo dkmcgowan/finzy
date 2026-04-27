@@ -37,10 +37,7 @@ class MediaImageHelper {
   /// the platform-reported DPR doesn't reflect the true physical density
   /// (common on Linux X11 with compositor scaling).
   /// When [performanceProfile] is [PerformanceProfile.small], returns 1.0 for faster loading.
-  static double effectiveDevicePixelRatio(
-    BuildContext context, {
-    PerformanceProfile? performanceProfile,
-  }) {
+  static double effectiveDevicePixelRatio(BuildContext context, {PerformanceProfile? performanceProfile}) {
     if (performanceProfile == PerformanceProfile.small) {
       return 1.0;
     }
@@ -118,15 +115,21 @@ class MediaImageHelper {
     int? height,
     String imageType = 'Primary',
     int quality = 90,
+    String? tag,
   }) {
     final baseUrl = client.baseUrl;
     final token = client.token;
 
+    // `tag` is the Jellyfin image content hash. Including it makes the URL
+    // change after a server-side metadata refresh so cached_network_image
+    // (and any HTTP cache in front) fetches the new bytes instead of serving
+    // the stale file. Mirrors jellyfin-web cardbuilder/utils/url.ts.
     final params = <String, String>{
       'fillWidth': width.toString(),
       if (height != null) 'fillHeight': height.toString(),
       'maxWidth': (width * 2).clamp(width, _maxTranscodedWidth).toString(),
       'quality': quality.toString(),
+      if (tag != null && tag.isNotEmpty) 'tag': tag,
       if (token != null && token.isNotEmpty) 'ApiKey': token,
     };
 
@@ -148,6 +151,7 @@ class MediaImageHelper {
     bool enableTranscoding = true,
     ImageType imageType = ImageType.poster,
     PerformanceProfile? performanceProfile,
+    String? tag,
   }) {
     if (thumbPath == null || thumbPath.isEmpty) {
       return '';
@@ -155,7 +159,9 @@ class MediaImageHelper {
 
     final basePath = thumbPath;
 
-    // External URLs (e.g. EPG provider images) — use directly
+    // External URLs (e.g. EPG provider images, or `_recordingToMetadata`'s
+    // pre-built Backdrop/Thumb URLs that already include their own `tag=`)
+    // — use directly without re-wrapping.
     if (basePath.startsWith('http://') || basePath.startsWith('https://')) {
       return basePath;
     }
@@ -170,12 +176,12 @@ class MediaImageHelper {
 
     // If marked non-transcodable or transcoding disabled, use the direct thumbnail URL.
     if (!canTranscode) {
-      return client.getThumbnailUrl(basePath);
+      return client.getThumbnailUrl(basePath, tag: tag);
     }
 
     // For very small images use original URL
     if (maxWidth < 80 || maxHeight < 120) {
-      return client.getThumbnailUrl(basePath);
+      return client.getThumbnailUrl(basePath, tag: tag);
     }
 
     // Calculate optimal dimensions
@@ -188,7 +194,7 @@ class MediaImageHelper {
 
     // For dimensions close to minimum, use original to avoid unnecessary processing
     if (width <= _minTranscodedWidth * 1.2 && height <= _minTranscodedHeight * 1.2) {
-      return client.getThumbnailUrl(basePath);
+      return client.getThumbnailUrl(basePath, tag: tag);
     }
 
     try {
@@ -200,9 +206,10 @@ class MediaImageHelper {
         height: height,
         imageType: _jellyfinApiImageType(imageType),
         quality: quality,
+        tag: tag,
       );
     } catch (e) {
-      return client.getThumbnailUrl(basePath);
+      return client.getThumbnailUrl(basePath, tag: tag);
     }
   }
 
@@ -216,9 +223,7 @@ class MediaImageHelper {
   }) {
     final scaledWidth = (displayWidth * scaleFactor).round();
     final scaledHeight = (displayHeight * scaleFactor).round();
-    final (maxW, maxH) = performanceProfile == PerformanceProfile.small
-        ? (600, 900)
-        : (1200, 1800);
+    final (maxW, maxH) = performanceProfile == PerformanceProfile.small ? (600, 900) : (1200, 1800);
 
     return (scaledWidth.clamp(120, maxW), scaledHeight.clamp(180, maxH));
   }

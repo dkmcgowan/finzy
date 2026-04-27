@@ -139,10 +139,12 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     });
   }
 
-  Future<void> _loadEpisodes() async {
-    setState(() {
-      _isLoadingEpisodes = true;
-    });
+  Future<void> _loadEpisodes({bool showLoadingIndicator = true}) async {
+    if (showLoadingIndicator) {
+      setState(() {
+        _isLoadingEpisodes = true;
+      });
+    }
 
     if (widget.isOffline) {
       // Load episodes from downloads
@@ -224,6 +226,12 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen>
     // Returning from a child route (e.g., video player).
     // Suppress the first BACK KeyUp which can otherwise pop this route.
     _suppressNextBackKeyUp = true;
+    // Re-fetch episodes so any server-side metadata refresh (titles, summaries,
+    // image tags) shows up without forcing the user to back out and re-enter.
+    // Skip the loading spinner — we already have a list rendered.
+    if (!widget.isOffline && _client != null) {
+      _loadEpisodes(showLoadingIndicator: false);
+    }
   }
 
   KeyEventResult _handleBackButtonKeyEvent(FocusNode _, KeyEvent event) {
@@ -405,14 +413,18 @@ class _EpisodeCardState extends State<_EpisodeCard> {
     );
     return Row(
       children: [
-        if (widget.episode.duration != null) Text(formatDurationTimestamp(Duration(milliseconds: widget.episode.duration!)), style: mutedStyle),
+        if (widget.episode.duration != null)
+          Text(formatDurationTimestamp(Duration(milliseconds: widget.episode.duration!)), style: mutedStyle),
         if (widget.episode.originallyAvailableAt != null) ...[
           dot,
           Text(formatFullDate(widget.episode.originallyAvailableAt!), style: mutedStyle),
         ],
         if (widget.episode.userRating != null && widget.episode.userRating! > 0) ...[
           dot,
-          Padding(padding: const EdgeInsets.only(top: 2), child: Icon(Symbols.star_rounded, size: 12, fill: 1, color: Colors.amber)),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Symbols.star_rounded, size: 12, fill: 1, color: Colors.amber),
+          ),
           const SizedBox(width: 2),
           Text(
             (widget.episode.userRating! / 2) == (widget.episode.userRating! / 2).truncateToDouble()
@@ -717,6 +729,7 @@ class _EpisodeCardState extends State<_EpisodeCard> {
       return OptimizedImage.thumb(
         client: widget.client,
         imagePath: widget.episode.thumb,
+        imageTag: widget.episode.thumbTag,
         filterQuality: FilterQuality.medium,
         fit: BoxFit.cover,
         placeholder: (context, url) => const PlaceholderContainer(),

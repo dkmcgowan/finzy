@@ -55,17 +55,31 @@ class MediaMetadata with MultiServerFields {
   final int? year;
   final String? originallyAvailableAt; // Full release date (YYYY-MM-DD)
   final String? thumb;
+
+  /// Jellyfin ImageTag (content hash) for [thumb]. Used as a `tag=` query
+  /// parameter in image URLs so cached images bust when the server's image
+  /// changes (e.g. after a metadata refresh).
+  final String? thumbTag;
   final String? art;
+
+  /// Jellyfin ImageTag for [art] (Backdrop). See [thumbTag].
+  final String? artTag;
   final int? duration;
   final int? addedAt;
   final int? updatedAt;
   final int? lastPlayedAt; // Timestamp when item was last viewed
   final String? seriesTitle; // Show title for episodes
   final String? seriesImageId; // Show poster for episodes
+  /// Jellyfin SeriesPrimaryImageTag for [seriesImageId]. See [thumbTag].
+  final String? seriesImageTag;
   final String? seriesArt; // Show art for episodes
+  /// Jellyfin ParentBackdropImageTag for [seriesArt]. See [thumbTag].
+  final String? seriesArtTag;
   final String? seriesId; // Show ID for episodes
   final String? seasonTitle; // Season title for episodes
   final String? seasonImageId; // Season poster for episodes
+  /// Jellyfin ImageTag for [seasonImageId]. See [thumbTag].
+  final String? seasonImageTag;
   final String? seasonId; // Season ID for episodes
   final int? parentIndex; // Season number
   final int? index; // Episode number
@@ -155,17 +169,22 @@ class MediaMetadata with MultiServerFields {
     this.year,
     this.originallyAvailableAt,
     this.thumb,
+    this.thumbTag,
     this.art,
+    this.artTag,
     this.duration,
     this.addedAt,
     this.updatedAt,
     this.lastPlayedAt,
     this.seriesTitle,
     this.seriesImageId,
+    this.seriesImageTag,
     this.seriesArt,
+    this.seriesArtTag,
     this.seriesId,
     this.seasonTitle,
     this.seasonImageId,
+    this.seasonImageTag,
     this.seasonId,
     this.parentIndex,
     this.index,
@@ -212,17 +231,22 @@ class MediaMetadata with MultiServerFields {
     int? year,
     String? originallyAvailableAt,
     String? thumb,
+    String? thumbTag,
     String? art,
+    String? artTag,
     int? duration,
     int? addedAt,
     int? updatedAt,
     int? lastPlayedAt,
     String? seriesTitle,
     String? seriesImageId,
+    String? seriesImageTag,
     String? seriesArt,
+    String? seriesArtTag,
     String? seriesId,
     String? seasonTitle,
     String? seasonImageId,
+    String? seasonImageTag,
     String? seasonId,
     int? parentIndex,
     int? index,
@@ -267,17 +291,22 @@ class MediaMetadata with MultiServerFields {
       year: year ?? this.year,
       originallyAvailableAt: originallyAvailableAt ?? this.originallyAvailableAt,
       thumb: thumb ?? this.thumb,
+      thumbTag: thumbTag ?? this.thumbTag,
       art: art ?? this.art,
+      artTag: artTag ?? this.artTag,
       duration: duration ?? this.duration,
       addedAt: addedAt ?? this.addedAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       seriesTitle: seriesTitle ?? this.seriesTitle,
       seriesImageId: seriesImageId ?? this.seriesImageId,
+      seriesImageTag: seriesImageTag ?? this.seriesImageTag,
       seriesArt: seriesArt ?? this.seriesArt,
+      seriesArtTag: seriesArtTag ?? this.seriesArtTag,
       seriesId: seriesId ?? this.seriesId,
       seasonTitle: seasonTitle ?? this.seasonTitle,
       seasonImageId: seasonImageId ?? this.seasonImageId,
+      seasonImageTag: seasonImageTag ?? this.seasonImageTag,
       seasonId: seasonId ?? this.seasonId,
       parentIndex: parentIndex ?? this.parentIndex,
       index: index ?? this.index,
@@ -414,6 +443,47 @@ class MediaMetadata with MultiServerFields {
     }
 
     return thumb;
+  }
+
+  /// Returns the (path, tag) pair for the image [posterThumb] would pick.
+  /// The tag is paired with the chosen path so callers can pass `tag=` to the
+  /// Jellyfin Images API for cache-busting on metadata refresh.
+  ({String? path, String? tag}) posterImage({
+    EpisodePosterMode mode = EpisodePosterMode.seriesPoster,
+    bool mixedHubContext = false,
+  }) {
+    final itemType = type.toLowerCase();
+
+    if (itemType == 'episode') {
+      switch (mode) {
+        case EpisodePosterMode.episodeThumbnail:
+          if (thumb == itemId || (thumb != null && thumb!.startsWith('http'))) {
+            return (path: thumb, tag: thumbTag);
+          }
+          if (seriesImageId != null) return (path: seriesImageId, tag: seriesImageTag);
+          return (path: thumb, tag: thumbTag);
+        case EpisodePosterMode.seasonPoster:
+          if (seasonImageId != null) return (path: seasonImageId, tag: seasonImageTag);
+          if (seriesImageId != null) return (path: seriesImageId, tag: seriesImageTag);
+          return (path: thumb, tag: thumbTag);
+        case EpisodePosterMode.seriesPoster:
+          if (seriesImageId != null) return (path: seriesImageId, tag: seriesImageTag);
+          return (path: thumb, tag: thumbTag);
+      }
+    } else if (itemType == 'season') {
+      if (mixedHubContext && mode == EpisodePosterMode.episodeThumbnail) {
+        if (art != null) return (path: art, tag: artTag);
+        return (path: thumb, tag: thumbTag);
+      }
+      if (seriesImageId != null) return (path: seriesImageId, tag: seriesImageTag);
+    }
+
+    if (mixedHubContext && mode == EpisodePosterMode.episodeThumbnail && (itemType == 'movie' || itemType == 'show')) {
+      if (art != null) return (path: art, tag: artTag);
+      return (path: thumb, tag: thumbTag);
+    }
+
+    return (path: thumb, tag: thumbTag);
   }
 
   /// Returns true if this item should use 16:9 aspect ratio.
