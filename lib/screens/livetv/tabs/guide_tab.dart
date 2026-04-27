@@ -16,7 +16,6 @@ import '../../../providers/settings_provider.dart';
 import '../../../services/jellyfin_client.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/formatters.dart';
-import '../../../utils/media_image_helper.dart';
 import '../../../utils/live_tv_player_navigation.dart';
 import '../../../widgets/app_icon.dart';
 import '../../../widgets/overlay_sheet.dart';
@@ -1087,24 +1086,14 @@ class GuideTabState extends State<GuideTab> {
   void _showProgramDetails(LiveTvChannel channel, LiveTvProgram program) {
     final multiServer = context.read<MultiServerProvider>();
     final client = multiServer.getClientForServer(channel.serverId ?? '');
-    String? posterUrl;
-    if (program.thumb != null && client != null) {
-      posterUrl = MediaImageHelper.getOptimizedImageUrl(
-        client: client,
-        thumbPath: program.thumb,
-        maxWidth: 80,
-        maxHeight: 120,
-        devicePixelRatio: MediaImageHelper.effectiveDevicePixelRatio(context),
-        imageType: ImageType.poster,
-        tag: program.thumbTag,
-      );
-    }
 
     showProgramDetailsSheet(
       context,
       program: program,
       channel: channel,
-      posterUrl: posterUrl,
+      imagePath: program.thumb ?? channel.thumb,
+      imageTag: program.thumb != null ? program.thumbTag : channel.thumbTag,
+      client: client,
       onTuneChannel: () => _tuneChannel(channel),
     );
   }

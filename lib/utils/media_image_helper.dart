@@ -116,6 +116,7 @@ class MediaImageHelper {
     String imageType = 'Primary',
     int quality = 90,
     String? tag,
+    bool preserveAspect = false,
   }) {
     final baseUrl = client.baseUrl;
     final token = client.token;
@@ -124,9 +125,15 @@ class MediaImageHelper {
     // change after a server-side metadata refresh so cached_network_image
     // (and any HTTP cache in front) fetches the new bytes instead of serving
     // the stale file. Mirrors jellyfin-web cardbuilder/utils/url.ts.
+    //
+    // `preserveAspect`: when true, omit fillWidth/fillHeight (which make the
+    // server crop/scale to fill the box) and use maxWidth only. The server
+    // returns an image at its native aspect ratio, capped at maxWidth. Use
+    // this for variable-aspect content like channel logos that shouldn't be
+    // forced into a 2:3 poster shape.
     final params = <String, String>{
-      'fillWidth': width.toString(),
-      if (height != null) 'fillHeight': height.toString(),
+      if (!preserveAspect) 'fillWidth': width.toString(),
+      if (!preserveAspect && height != null) 'fillHeight': height.toString(),
       'maxWidth': (width * 2).clamp(width, _maxTranscodedWidth).toString(),
       'quality': quality.toString(),
       if (tag != null && tag.isNotEmpty) 'tag': tag,
@@ -152,6 +159,7 @@ class MediaImageHelper {
     ImageType imageType = ImageType.poster,
     PerformanceProfile? performanceProfile,
     String? tag,
+    bool preserveAspect = false,
   }) {
     if (thumbPath == null || thumbPath.isEmpty) {
       return '';
@@ -207,6 +215,7 @@ class MediaImageHelper {
         imageType: _jellyfinApiImageType(imageType),
         quality: quality,
         tag: tag,
+        preserveAspect: preserveAspect,
       );
     } catch (e) {
       return client.getThumbnailUrl(basePath, tag: tag);

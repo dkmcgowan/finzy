@@ -11,7 +11,6 @@ import '../../providers/settings_provider.dart';
 import '../../theme/mono_tokens.dart';
 import '../../utils/formatters.dart';
 import '../../utils/live_tv_player_navigation.dart';
-import '../../utils/media_image_helper.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import '../../widgets/overlay_sheet.dart';
@@ -106,24 +105,14 @@ class _LiveTvShowScheduleScreenState extends State<LiveTvShowScheduleScreen> {
   void _showProgramDetails(LiveTvProgram program, LiveTvChannel? channel) {
     final multiServer = context.read<MultiServerProvider>();
     final client = multiServer.getClientForServer(widget.serverId);
-    String? posterUrl;
-    if (program.thumb != null && client != null) {
-      posterUrl = MediaImageHelper.getOptimizedImageUrl(
-        client: client,
-        thumbPath: program.thumb,
-        maxWidth: 80,
-        maxHeight: 120,
-        devicePixelRatio: MediaImageHelper.effectiveDevicePixelRatio(context),
-        imageType: ImageType.poster,
-        tag: program.thumbTag,
-      );
-    }
 
     showProgramDetailsSheet(
       context,
       program: program,
       channel: channel,
-      posterUrl: posterUrl,
+      imagePath: program.thumb ?? channel?.thumb,
+      imageTag: program.thumb != null ? program.thumbTag : channel?.thumbTag,
+      client: client,
       onTuneChannel: channel != null ? () => _tuneChannel(channel) : null,
     );
   }

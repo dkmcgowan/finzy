@@ -12,14 +12,21 @@ import '../../utils/app_logger.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/overlay_sheet.dart';
-import '../../widgets/optimized_image.dart' show blurArtwork;
+import '../../widgets/optimized_image.dart';
 
 /// Shows a bottom sheet with program details and actions (Record, Watch Channel, Play).
+///
+/// Image rendering: pass [imagePath] (Jellyfin item id or full URL) and
+/// [imageTag] (content hash for cache-busting) instead of a pre-built URL.
+/// The sheet renders the image preserving its native aspect ratio so channel
+/// logos and other variable-aspect artwork are not cropped to 2:3 poster shape.
 void showProgramDetailsSheet(
   BuildContext context, {
   required LiveTvProgram program,
   required LiveTvChannel? channel,
-  required String? posterUrl,
+  required String? imagePath,
+  required String? imageTag,
+  required JellyfinClient? client,
   required VoidCallback? onTuneChannel,
 }) {
   final controller = OverlaySheetController.maybeOf(context);
@@ -29,7 +36,9 @@ void showProgramDetailsSheet(
         return _ProgramDetailsSheetContent(
           program: program,
           channel: channel,
-          posterUrl: posterUrl,
+          imagePath: imagePath,
+          imageTag: imageTag,
+          client: client,
           onTuneChannel: onTuneChannel,
         );
       },
@@ -41,7 +50,9 @@ void showProgramDetailsSheet(
         return _ProgramDetailsSheetContent(
           program: program,
           channel: channel,
-          posterUrl: posterUrl,
+          imagePath: imagePath,
+          imageTag: imageTag,
+          client: client,
           onTuneChannel: onTuneChannel,
         );
       },
@@ -52,13 +63,17 @@ void showProgramDetailsSheet(
 class _ProgramDetailsSheetContent extends StatefulWidget {
   final LiveTvProgram program;
   final LiveTvChannel? channel;
-  final String? posterUrl;
+  final String? imagePath;
+  final String? imageTag;
+  final JellyfinClient? client;
   final VoidCallback? onTuneChannel;
 
   const _ProgramDetailsSheetContent({
     required this.program,
     required this.channel,
-    required this.posterUrl,
+    required this.imagePath,
+    required this.imageTag,
+    required this.client,
     required this.onTuneChannel,
   });
 
@@ -96,8 +111,8 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
       final client = serverId != null
           ? multiServer.getClientForServer(serverId)
           : multiServer.liveTvServers.isNotEmpty
-              ? multiServer.getClientForServer(multiServer.liveTvServers.first.serverId)
-              : null;
+          ? multiServer.getClientForServer(multiServer.liveTvServers.first.serverId)
+          : null;
 
       if (client == null) {
         if (mounted) setState(() => _loadingRecordingState = false);
@@ -134,34 +149,28 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
       if (_hasActiveTimer) {
         final success = await _client!.cancelTimer(_timerId!);
         if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(t.liveTv.timerCancelled)),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.liveTv.timerCancelled)));
         }
       } else {
         final defaults = await _client!.getTimerDefaults(programId);
         if (defaults == null) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(t.liveTv.recordingFailed)),
-            );
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.liveTv.recordingFailed)));
           }
           setState(() => _recordingBusy = false);
           return;
         }
         final success = await _client!.createTimer(defaults);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(success ? t.liveTv.recordingScheduled : t.liveTv.recordingFailed)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(success ? t.liveTv.recordingScheduled : t.liveTv.recordingFailed)));
         }
       }
     } catch (e) {
       appLogger.e('Failed to toggle recording', error: e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t.liveTv.recordingFailed)),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.liveTv.recordingFailed)));
       }
     }
 
@@ -179,17 +188,13 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
       if (_hasSeriesTimer) {
         final success = await _client!.deleteSeriesTimer(_seriesTimerId!);
         if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(t.liveTv.seriesTimerDeleted)),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.liveTv.seriesTimerDeleted)));
         }
       } else {
         final defaults = await _client!.getTimerDefaults(programId);
         if (defaults == null) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(t.liveTv.recordingFailed)),
-            );
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.liveTv.recordingFailed)));
           }
           setState(() => _recordingBusy = false);
           return;
@@ -204,9 +209,7 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
     } catch (e) {
       appLogger.e('Failed to toggle series recording', error: e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t.liveTv.recordingFailed)),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.liveTv.recordingFailed)));
       }
     }
 
@@ -238,16 +241,27 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (widget.posterUrl != null) ...[
+              if (widget.imagePath != null && widget.client != null) ...[
                 ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(6)),
-                  child: blurArtwork(Image.network(
-                    widget.posterUrl!,
-                    width: 80,
-                    height: 120,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                  )),
+                  // 100x100 max with BoxFit.contain + preserveAspect so channel
+                  // logos render at native aspect (no 2:3 server-side crop) and
+                  // posters/thumbs letterbox cleanly inside the same box.
+                  child: blurArtwork(
+                    SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: OptimizedImage(
+                        client: widget.client,
+                        imagePath: widget.imagePath,
+                        imageTag: widget.imageTag,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.contain,
+                        preserveAspect: true,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 14),
               ],
@@ -372,20 +386,10 @@ class _ProgramDetailsSheetContentState extends State<_ProgramDetailsSheetContent
       }
     } else {
       if (buttons.isNotEmpty) buttons.add(const SizedBox(width: 8));
-      buttons.add(
-        const SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
+      buttons.add(const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)));
     }
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: buttons,
-    );
+    return Wrap(spacing: 8, runSpacing: 8, children: buttons);
   }
 
   LiveTvProgram get program => widget.program;

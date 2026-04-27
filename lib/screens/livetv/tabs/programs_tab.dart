@@ -18,7 +18,6 @@ import '../../../theme/mono_tokens.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/layout_constants.dart';
 import '../../../utils/live_tv_player_navigation.dart';
-import '../../../utils/media_image_helper.dart';
 import '../../../utils/provider_extensions.dart';
 import '../../../widgets/app_icon.dart';
 import '../../../widgets/focus_builders.dart';
@@ -192,49 +191,39 @@ class ProgramsTabState extends State<ProgramsTab> {
     final multiServer = context.read<MultiServerProvider>();
     final client = multiServer.getClientForServer(metadata.serverId ?? '');
     final channelFirst = program.isCurrentlyAiring && channel?.thumb != null;
-    final String? posterImage;
-    final String? posterTag;
+    final String? imagePath;
+    final String? imageTag;
     if (channelFirst) {
       if (channel?.thumb != null) {
-        posterImage = channel!.thumb;
-        posterTag = channel.thumbTag;
+        imagePath = channel!.thumb;
+        imageTag = channel.thumbTag;
       } else if (metadata.seriesImageId != null) {
-        posterImage = metadata.seriesImageId;
-        posterTag = metadata.seriesImageTag;
+        imagePath = metadata.seriesImageId;
+        imageTag = metadata.seriesImageTag;
       } else {
-        posterImage = metadata.thumb;
-        posterTag = metadata.thumbTag;
+        imagePath = metadata.thumb;
+        imageTag = metadata.thumbTag;
       }
     } else {
       if (metadata.seriesImageId != null) {
-        posterImage = metadata.seriesImageId;
-        posterTag = metadata.seriesImageTag;
+        imagePath = metadata.seriesImageId;
+        imageTag = metadata.seriesImageTag;
       } else if (metadata.thumb != null) {
-        posterImage = metadata.thumb;
-        posterTag = metadata.thumbTag;
+        imagePath = metadata.thumb;
+        imageTag = metadata.thumbTag;
       } else {
-        posterImage = channel?.thumb;
-        posterTag = channel?.thumbTag;
+        imagePath = channel?.thumb;
+        imageTag = channel?.thumbTag;
       }
-    }
-    String? posterUrl;
-    if (posterImage != null && client != null) {
-      posterUrl = MediaImageHelper.getOptimizedImageUrl(
-        client: client,
-        thumbPath: posterImage,
-        maxWidth: 80,
-        maxHeight: 120,
-        devicePixelRatio: MediaImageHelper.effectiveDevicePixelRatio(context),
-        imageType: ImageType.poster,
-        tag: posterTag,
-      );
     }
 
     showProgramDetailsSheet(
       context,
       program: program,
       channel: channel,
-      posterUrl: posterUrl,
+      imagePath: imagePath,
+      imageTag: imageTag,
+      client: client,
       onTuneChannel: channel != null ? () => _tuneChannel(channel) : null,
     );
   }

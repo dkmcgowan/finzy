@@ -60,6 +60,12 @@ class OptimizedImage extends StatelessWidget {
   /// refresh. Without it, refreshed artwork keeps showing the stale image.
   final String? imageTag;
 
+  /// When true, request the image at its native aspect ratio (capped by
+  /// [width]/[height] as max dimensions) rather than forcing it into the
+  /// box. Use for variable-aspect content like channel logos that should
+  /// not be cropped to 2:3 poster shape on the server side.
+  final bool preserveAspect;
+
   const OptimizedImage._({
     super.key,
     this.client,
@@ -78,6 +84,7 @@ class OptimizedImage extends StatelessWidget {
     this.imageType = ImageType.poster,
     this.localFilePath,
     this.imageTag,
+    this.preserveAspect = false,
   });
 
   /// Generic constructor for optimized images.
@@ -99,6 +106,7 @@ class OptimizedImage extends StatelessWidget {
     ImageType imageType,
     String? localFilePath,
     String? imageTag,
+    bool preserveAspect,
   }) = OptimizedImage._;
 
   /// Named constructor for poster images with default fallback icon.
@@ -343,6 +351,7 @@ class OptimizedImage extends StatelessWidget {
       imageType: imageType,
       performanceProfile: performanceProfile,
       tag: imageTag,
+      preserveAspect: preserveAspect,
     );
 
     if (imageUrl.isEmpty) {
