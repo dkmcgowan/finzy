@@ -718,6 +718,52 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
   }
 
+  /// Refresh the home hubs (Next Up, Recently Added, etc.) in the background.
+  /// Called on return from playback so the "Next Up" section reflects the
+  /// just-watched episode without forcing a full-screen reload.
+  Future<void> _refreshHubs() async {
+    appLogger.d('Refreshing home hubs in background from all servers');
+
+    try {
+      final multiServerProvider = context.read<MultiServerProvider>();
+      if (!multiServerProvider.hasConnectedServers) {
+        appLogger.w('No servers available for background hub refresh');
+        return;
+      }
+
+      final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
+      final settingsProvider = context.read<SettingsProvider>();
+      await settingsProvider.ensureInitialized();
+      final useGlobalHubs = settingsProvider.useGlobalHubs;
+      _lastUseGlobalHubs = useGlobalHubs;
+
+      final allHubs = await multiServerProvider.aggregationService.getHubsFromAllServers(
+        hiddenLibraryKeys: hiddenLibrariesProvider.hiddenLibraryKeys,
+        useGlobalHubs: useGlobalHubs,
+      );
+
+      if (!mounted) return;
+
+      final filteredHubs = allHubs.where((hub) {
+        final hubId = hub.hubIdentifier?.toLowerCase() ?? '';
+        final title = hub.title.toLowerCase();
+        return !hubId.contains('continue') &&
+            !title.contains('continue watching');
+      }).toList();
+
+      setState(() {
+        _hubs = filteredHubs;
+        _areHubsLoading = false;
+        _updateHubKeys();
+      });
+
+      appLogger.d('Home hubs refreshed successfully (${filteredHubs.length} hubs)');
+    } catch (e) {
+      appLogger.w('Failed to refresh home hubs', error: e);
+      // Silently fail - don't show error to user for background refresh
+    }
+  }
+
   /// Sync Continue Watching items to Android TV Watch Next row
   Future<void> _syncWatchNext(List<MediaMetadata> items) async {
     try {
@@ -731,8 +777,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void refresh() {
     appLogger.d('DiscoverScreen.refresh() called');
-    // Only refresh Continue Watching in background, not full screen reload
+    // Refresh Continue Watching and home hubs (incl. Next Up) in the background;
+    // skip the full-screen loading state so returning from playback feels instant.
     _refreshContinueWatching();
+    _refreshHubs();
   }
 
   // Public method to fully reload all content (for profile switches)
