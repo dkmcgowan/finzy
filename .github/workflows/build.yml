@@ -487,16 +487,17 @@ jobs:
         shell: pwsh
 
       # ARM64 is not on the stable Flutter channel yet, so this job has to use master.
-      # Within master, newer revisions regress Windows touchscreen (digitizer) mapping
-      # on ARM64 while mouse input stays fine — reported upstream and not yet merged:
-      #   https://github.com/flutter/flutter/issues/184954
-      # 5f58b37fdaa (~3.43.0-0.3.pre) is the last verified-good revision before the regression.
+      # Within master, Windows touchscreen (digitizer) input on ARM64 was regressed by
+      # flutter/flutter#165323 ("Allow stylus support on windows", commit 904dab858c,
+      # merged 2026-03-04) — reported upstream at flutter/flutter#184954, not yet fixed.
+      # 7b7832a30f is the last verified-good revision (the immediate parent of #165323),
+      # confirmed via git bisect against a real Windows ARM64 touchscreen.
       # When the upstream fix lands (or stable picks up ARM64), drop the pin / move to stable.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: "master"
-          flutter-version: "5f58b37fdaa"
+          flutter-version: "7b7832a30f"
           cache: true
 
       - name: Cache Pub dependencies
@@ -504,7 +505,7 @@ jobs:
         with:
           path: |
             ~\AppData\Local\Pub\Cache
-          key: ${{ runner.os }}-arm64-pub-flutter-5f58b37fdaa-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-arm64-pub-flutter-7b7832a30f-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-arm64-pub-
 
@@ -747,13 +748,15 @@ jobs:
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      # Same pin as build-windows-arm64: ARM64 isn't on stable yet, and within master a
-      # newer revision regressed ARM input handling (flutter/flutter#184954, not yet merged).
+      # Same pin as build-windows-arm64. ARM64 isn't on stable yet, and the Windows
+      # touchscreen regression from flutter/flutter#165323 (commit 904dab858c) was confirmed
+      # via bisect against Windows ARM64 hardware (flutter/flutter#184954). Linux ARM64 hasn't
+      # been independently bisected for the same regression, so we conservatively share the pin.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: "master"
-          flutter-version: "5f58b37fdaa"
+          flutter-version: "7b7832a30f"
           cache: true
 
       - name: Cache Pub dependencies
@@ -761,7 +764,7 @@ jobs:
         with:
           path: |
             ~/.pub-cache
-          key: ${{ runner.os }}-arm64-pub-flutter-5f58b37fdaa-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-arm64-pub-flutter-7b7832a30f-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-arm64-pub-
 
