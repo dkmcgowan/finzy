@@ -419,15 +419,13 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
   static const _reconnectVisualCap = Duration(seconds: 10);
 
   void _triggerReconnect() {
-    // If already reconnecting, just extend the visual cap so a re-click
-    // doesn't look like it cancelled (timer firing right after a click reads
-    // as "my click did that"). Don't kick off a second underlying attempt —
-    // the existing one is still in flight.
+    // Re-click during reconnect = explicit stop. Clear the visual state
+    // immediately. The underlying reconnect future keeps running in the
+    // background (we can't cancel it), but the user gets the visual feedback
+    // they asked for.
     if (_isReconnecting) {
       _reconnectingVisualTimer?.cancel();
-      _reconnectingVisualTimer = Timer(_reconnectVisualCap, () {
-        if (mounted && _isReconnecting) setState(() => _isReconnecting = false);
-      });
+      setState(() => _isReconnecting = false);
       return;
     }
 

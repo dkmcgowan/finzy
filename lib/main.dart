@@ -553,23 +553,18 @@ class _SetupScreenState extends State<SetupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(color: Colors.white),
-                const SizedBox(height: 16),
-                Text(t.common.loading, style: const TextStyle(color: Colors.white)),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 64,
-            child: Center(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 16),
+            Text(t.common.loading, style: const TextStyle(color: Colors.white)),
+            const SizedBox(height: 32),
+            // Fixed height reserves space for the button so the spinner above
+            // doesn't shift when the button appears.
+            SizedBox(
+              height: 56,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: _showOfflineButton
@@ -589,8 +584,8 @@ class _SetupScreenState extends State<SetupScreen> {
                     : const SizedBox.shrink(),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
