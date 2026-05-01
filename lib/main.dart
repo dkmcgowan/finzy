@@ -399,24 +399,20 @@ class SetupScreen extends StatefulWidget {
 }
 
 class _SetupScreenState extends State<SetupScreen> {
-  // Once the 'Go offline' button has been on screen, the auto-flow holds the
-  // navigation off for at least this long so the button is actually tappable.
-  static const _offlineButtonMinWindow = Duration(seconds: 4);
+  static const _offlineButtonShowDelay = Duration(seconds: 2);
 
+  late final DateTime _initAt;
   Timer? _offlineButtonTimer;
   bool _showOfflineButton = false;
   bool _navigated = false;
-  DateTime? _buttonShownAt;
 
   @override
   void initState() {
     super.initState();
-    _offlineButtonTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted && !_navigated) {
-        setState(() {
-          _showOfflineButton = true;
-          _buttonShownAt = DateTime.now();
-        });
+    _initAt = DateTime.now();
+    _offlineButtonTimer = Timer(_offlineButtonShowDelay, () {
+      if (mounted && !_navigated && !_showOfflineButton) {
+        setState(() => _showOfflineButton = true);
       }
     });
     _loadSavedCredentials();
@@ -442,20 +438,19 @@ class _SetupScreenState extends State<SetupScreen> {
     _navigateTo(const MainScreen(isOfflineMode: true));
   }
 
-  /// Auto-flow path to offline mode. If the 'Go offline' button is already
-  /// visible, hold the navigation until the user has had at least
-  /// [_offlineButtonMinWindow] to interact — otherwise on a fast-fail (no
-  /// network at all) the button flashes for ~300ms and disappears before
-  /// the user can tap it.
+  /// Auto-flow path to offline mode. If we've passed the button-show
+  /// threshold, the user is in control — surface the button (in case the
+  /// timer hasn't fired yet due to event-loop ordering) and stop. Don't
+  /// auto-navigate; let the user click 'Go offline' when ready.
+  /// Only the very-fast-fail case (< 2s, button never shown) auto-navigates.
   Future<void> _autoFlowGoOffline(DownloadProvider downloadProvider) async {
     if (_navigated || !mounted) return;
 
-    if (_buttonShownAt != null) {
-      final elapsed = DateTime.now().difference(_buttonShownAt!);
-      if (elapsed < _offlineButtonMinWindow) {
-        await Future<void>.delayed(_offlineButtonMinWindow - elapsed);
-        if (_navigated || !mounted) return;
+    if (DateTime.now().difference(_initAt) >= _offlineButtonShowDelay) {
+      if (!_showOfflineButton) {
+        setState(() => _showOfflineButton = true);
       }
+      return;
     }
 
     await downloadProvider.ensureInitialized();
