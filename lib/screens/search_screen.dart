@@ -301,28 +301,57 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
 
   @override
   Widget build(BuildContext context) {
+    final isPhone = PlatformDetector.isPhone(context);
+    final isTv = PlatformDetector.isTV();
+
+    // On mobile and TV: search box scrolls with results to avoid overlap/z-order issues
+    if (isPhone || isTv) {
+      return Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 8,
+                left: 16,
+                right: 16,
+                bottom: 8,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  t.common.search,
+                  style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(child: _buildSearchHeader()),
+            SliverPadding(
+              padding: const EdgeInsets.only(bottom: 8),
+              sliver: _buildResultsSliver(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // TV/Desktop: search box fixed at top
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
               left: 16,
               right: 16,
               bottom: 8,
             ),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                t.common.search,
-                style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
-              ),
+            child: Text(
+              t.common.search,
+              style: Theme.of(context).appBarTheme.titleTextStyle ?? Theme.of(context).textTheme.titleLarge,
             ),
           ),
-          SliverToBoxAdapter(child: _buildSearchHeader()),
-          SliverPadding(
-            padding: const EdgeInsets.only(bottom: 8),
-            sliver: _buildResultsSliver(),
-          ),
+          _buildSearchHeader(),
+          Expanded(child: _buildResultsArea()),
         ],
       ),
     );
@@ -389,6 +418,57 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
     );
   }
 
+  Widget _buildResultsArea() {
+    if (_isSearching) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!_hasSearched) {
+      return StateMessageWidget(
+        message: t.search.searchYourMedia,
+        subtitle: t.search.enterTitleActorOrKeyword,
+        icon: Symbols.search_rounded,
+        iconSize: 80,
+      );
+    }
+
+    if (_searchHubs.isEmpty) {
+      return StateMessageWidget(
+        message: t.messages.noResultsFound,
+        subtitle: t.search.tryDifferentTerm,
+        icon: Symbols.search_off_rounded,
+        iconSize: 80,
+      );
+    }
+
+    _ensureHubKeys(_searchHubs.length);
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _searchHubs.length,
+      itemBuilder: (context, index) {
+        final hub = _searchHubs[index];
+        return HubSection(
+          key: index < _hubKeys.length ? _hubKeys[index] : null,
+          hub: hub,
+          icon: _iconForItemType(hub.hubKey.split('_')[1]),
+          onRefresh: null,
+          onVerticalNavigation: (isUp) => _handleVerticalNavigation(index, isUp),
+          onBack: () {
+            _lastFocusedHubIndex = index;
+            _searchFocusNode.requestFocus();
+          },
+          onNavigateUp: index == 0
+              ? () {
+                  _lastFocusedHubIndex = 0;
+                  _searchFocusNode.requestFocus();
+                }
+              : null,
+          onNavigateToSidebar: _navigateToSidebar,
+        );
+      },
+    );
+  }
 }
 
 class _SearchCategory {
