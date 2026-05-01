@@ -399,16 +399,24 @@ class SetupScreen extends StatefulWidget {
 }
 
 class _SetupScreenState extends State<SetupScreen> {
+  // Once the 'Go offline' button has been on screen, the auto-flow holds the
+  // navigation off for at least this long so the button is actually tappable.
+  static const _offlineButtonMinWindow = Duration(seconds: 4);
+
   Timer? _offlineButtonTimer;
   bool _showOfflineButton = false;
   bool _navigated = false;
+  DateTime? _buttonShownAt;
 
   @override
   void initState() {
     super.initState();
     _offlineButtonTimer = Timer(const Duration(seconds: 2), () {
       if (mounted && !_navigated) {
-        setState(() => _showOfflineButton = true);
+        setState(() {
+          _showOfflineButton = true;
+          _buttonShownAt = DateTime.now();
+        });
       }
     });
     _loadSavedCredentials();
@@ -429,6 +437,27 @@ class _SetupScreenState extends State<SetupScreen> {
   Future<void> _goOfflineNow() async {
     if (_navigated || !mounted) return;
     final downloadProvider = context.read<DownloadProvider>();
+    await downloadProvider.ensureInitialized();
+    if (!mounted) return;
+    _navigateTo(const MainScreen(isOfflineMode: true));
+  }
+
+  /// Auto-flow path to offline mode. If the 'Go offline' button is already
+  /// visible, hold the navigation until the user has had at least
+  /// [_offlineButtonMinWindow] to interact — otherwise on a fast-fail (no
+  /// network at all) the button flashes for ~300ms and disappears before
+  /// the user can tap it.
+  Future<void> _autoFlowGoOffline(DownloadProvider downloadProvider) async {
+    if (_navigated || !mounted) return;
+
+    if (_buttonShownAt != null) {
+      final elapsed = DateTime.now().difference(_buttonShownAt!);
+      if (elapsed < _offlineButtonMinWindow) {
+        await Future<void>.delayed(_offlineButtonMinWindow - elapsed);
+        if (_navigated || !mounted) return;
+      }
+    }
+
     await downloadProvider.ensureInitialized();
     if (!mounted) return;
     _navigateTo(const MainScreen(isOfflineMode: true));
@@ -506,18 +535,12 @@ class _SetupScreenState extends State<SetupScreen> {
           appLogger.i('Server reachable but auth failed — redirecting to login');
           _navigateTo(const AuthScreen());
         } else {
-          await downloadProvider.ensureInitialized();
-          if (!mounted) return;
-          _navigateTo(const MainScreen(isOfflineMode: true));
+          await _autoFlowGoOffline(downloadProvider);
         }
       }
     } catch (e, stackTrace) {
       appLogger.e('Error during multi-server connection', error: e, stackTrace: stackTrace);
-
-      if (_navigated) return;
-      await downloadProvider.ensureInitialized();
-      if (!mounted) return;
-      _navigateTo(const MainScreen(isOfflineMode: true));
+      await _autoFlowGoOffline(downloadProvider);
     }
   }
 
