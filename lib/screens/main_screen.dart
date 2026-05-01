@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform, exit;
 
 import 'package:flutter/material.dart';
@@ -33,6 +34,7 @@ import '../screens/media_detail_screen.dart';
 import '../constants/library_constants.dart';
 import '../utils/desktop_window_padding.dart';
 import '../widgets/overlay_sheet.dart';
+import '../widgets/rotating_icon.dart';
 import '../widgets/side_navigation_rail.dart';
 import '../focus/dpad_navigator.dart';
 import '../focus/key_event_utils.dart';
@@ -93,6 +95,12 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
   /// Whether a reconnection attempt is in progress
   bool _isReconnecting = false;
+
+  /// Cap how long the reconnect spinner can stay on screen, regardless of
+  /// what the underlying reconnect future is doing. Without this the user can
+  /// see the spinner for ~16s on a black-hole network — the reconnect itself
+  /// keeps trying, but the UI gives up first.
+  Timer? _reconnectingVisualTimer;
 
   /// Prevents double-pushing the profile selection screen
   bool _isShowingProfileSelection = false;
@@ -320,6 +328,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     }
     _offlineModeProvider?.removeListener(_handleOfflineStatusChanged);
     _multiServerProvider?.removeListener(_handleLiveTvChanged);
+    _reconnectingVisualTimer?.cancel();
     _sidebarFocusScope.dispose();
     _contentFocusScope.dispose();
 
@@ -418,12 +427,19 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
 
     setState(() => _isReconnecting = true);
 
+    _reconnectingVisualTimer?.cancel();
+    _reconnectingVisualTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && _isReconnecting) setState(() => _isReconnecting = false);
+    });
+
     final serverManager = context.read<MultiServerProvider>().serverManager;
     serverManager.checkServerHealth();
     serverManager.reconnectOfflineServers().whenComplete(() {
       // Give a moment for status updates to propagate
       Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) setState(() => _isReconnecting = false);
+        if (!mounted) return;
+        _reconnectingVisualTimer?.cancel();
+        if (_isReconnecting) setState(() => _isReconnecting = false);
       });
     });
   }
@@ -941,17 +957,12 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if (_isReconnecting)
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            )
-                          else
-                            Icon(Symbols.wifi_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+                          RotatingIcon(
+                            icon: _isReconnecting ? Symbols.sync_rounded : Symbols.wifi_rounded,
+                            spin: _isReconnecting,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                           const SizedBox(width: 8),
                           Column(
                             mainAxisSize: MainAxisSize.min,

@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:finzy/widgets/app_icon.dart';
+import 'package:finzy/widgets/rotating_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,12 @@ import '../i18n/strings.g.dart';
 class NavigationRailItem extends StatelessWidget {
   final IconData icon;
   final IconData? selectedIcon;
+
+  /// When non-null, replaces the default [AppIcon] render. Use for items that
+  /// need a custom icon widget (e.g. a rotating reconnect icon). Caller is
+  /// responsible for sizing/coloring to match the rest of the rail.
+  final Widget? iconOverride;
+
   final Widget label;
   final bool isSelected;
   final bool isFocused;
@@ -44,6 +51,7 @@ class NavigationRailItem extends StatelessWidget {
     super.key,
     required this.icon,
     this.selectedIcon,
+    this.iconOverride,
     required this.label,
     required this.isSelected,
     required this.isFocused,
@@ -105,12 +113,13 @@ class NavigationRailItem extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 17),
                   child: Row(
                     children: [
-                      AppIcon(
-                        isSelected && selectedIcon != null ? selectedIcon! : icon,
-                        fill: 1,
-                        size: iconSize,
-                        color: isSelected ? t.text : t.textMuted,
-                      ),
+                      iconOverride ??
+                          AppIcon(
+                            isSelected && selectedIcon != null ? selectedIcon! : icon,
+                            fill: 1,
+                            size: iconSize,
+                            color: isSelected ? t.text : t.textMuted,
+                          ),
                       const SizedBox(width: 11),
                       Expanded(
                         child: () {
@@ -729,28 +738,27 @@ class SideNavigationRailState extends State<SideNavigationRail> {
     final label = widget.isForcedOffline ? Translations.of(context).common.goOnline : Translations.of(context).common.reconnect;
 
     return NavigationRailItem(
-      icon: widget.isReconnecting ? Symbols.sync_rounded : Symbols.wifi_rounded,
-      label: widget.isReconnecting
-          ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: t.text))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: t.textMuted),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-                if (widget.connectionAvailableWhenForced)
-                  Text(
-                    Translations.of(context).common.connectionAvailable,
-                    style: TextStyle(fontSize: 11, color: t.textMuted.withValues(alpha: 0.8)),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-              ],
+      icon: Symbols.wifi_rounded,
+      iconOverride: widget.isReconnecting ? RotatingIcon(icon: Symbols.sync_rounded, spin: true, color: t.textMuted) : null,
+      label: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: t.textMuted),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+          if (widget.connectionAvailableWhenForced)
+            Text(
+              Translations.of(context).common.connectionAvailable,
+              style: TextStyle(fontSize: 11, color: t.textMuted.withValues(alpha: 0.8)),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
+        ],
+      ),
       isSelected: false,
       isFocused: isFocused,
       isSidebarFocused: widget.isSidebarFocused,
