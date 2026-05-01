@@ -445,7 +445,6 @@ class _SearchScreenState extends State<SearchScreen> with Refreshable, FullRefre
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      clipBehavior: Clip.none,
       itemCount: _searchHubs.length,
       itemBuilder: (context, index) {
         final hub = _searchHubs[index];
