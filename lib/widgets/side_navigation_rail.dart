@@ -763,8 +763,7 @@ class SideNavigationRailState extends State<SideNavigationRail> {
       isFocused: isFocused,
       isSidebarFocused: widget.isSidebarFocused,
       isCollapsed: isCollapsed,
-      // ignore: no-empty-block - no-op tap handler while reconnecting
-      onTap: widget.isReconnecting ? () {} : () => widget.onReconnect?.call(),
+      onTap: () => widget.onReconnect?.call(),
       focusNode: _focusTracker.get(_kReconnect),
       onNavigateRight: widget.onNavigateToContent,
     );

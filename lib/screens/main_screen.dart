@@ -416,8 +416,20 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     return newIndex >= 0 ? newIndex : 0;
   }
 
+  static const _reconnectVisualCap = Duration(seconds: 10);
+
   void _triggerReconnect() {
-    if (_isReconnecting) return;
+    // If already reconnecting, just extend the visual cap so a re-click
+    // doesn't look like it cancelled (timer firing right after a click reads
+    // as "my click did that"). Don't kick off a second underlying attempt —
+    // the existing one is still in flight.
+    if (_isReconnecting) {
+      _reconnectingVisualTimer?.cancel();
+      _reconnectingVisualTimer = Timer(_reconnectVisualCap, () {
+        if (mounted && _isReconnecting) setState(() => _isReconnecting = false);
+      });
+      return;
+    }
 
     // When forced offline, clear it first so reconnect can run
     final offlineProvider = context.read<OfflineModeProvider?>();
@@ -428,7 +440,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
     setState(() => _isReconnecting = true);
 
     _reconnectingVisualTimer?.cancel();
-    _reconnectingVisualTimer = Timer(const Duration(seconds: 5), () {
+    _reconnectingVisualTimer = Timer(_reconnectVisualCap, () {
       if (mounted && _isReconnecting) setState(() => _isReconnecting = false);
     });
 
@@ -951,7 +963,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware, WindowListener
                 return Material(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: InkWell(
-                    onTap: _isReconnecting ? null : _triggerReconnect,
+                    onTap: _triggerReconnect,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       child: Row(

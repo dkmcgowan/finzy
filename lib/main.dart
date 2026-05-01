@@ -553,34 +553,44 @@ class _SetupScreenState extends State<SetupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(color: Colors.white),
-            const SizedBox(height: 16),
-            Text(t.common.loading, style: const TextStyle(color: Colors.white)),
-            const SizedBox(height: 32),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: _showOfflineButton
-                  ? FocusableWrapper(
-                      autofocus: true,
-                      onSelect: _goOfflineNow,
-                      child: TextButton(
-                        onPressed: _goOfflineNow,
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white24),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        ),
-                        child: Text(t.common.goOffline),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+      body: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(color: Colors.white),
+                const SizedBox(height: 16),
+                Text(t.common.loading, style: const TextStyle(color: Colors.white)),
+              ],
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 64,
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: _showOfflineButton
+                    ? FocusableWrapper(
+                        autofocus: true,
+                        onSelect: _goOfflineNow,
+                        child: TextButton(
+                          onPressed: _goOfflineNow,
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white24),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          ),
+                          child: Text(t.common.goOffline),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
