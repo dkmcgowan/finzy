@@ -47,6 +47,7 @@ import 'utils/app_logger.dart';
 import 'utils/orientation_helper.dart';
 import 'utils/language_codes.dart';
 import 'i18n/strings.g.dart';
+import 'focus/focusable_wrapper.dart';
 import 'focus/input_mode_tracker.dart';
 import 'focus/key_event_utils.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -398,10 +399,39 @@ class SetupScreen extends StatefulWidget {
 }
 
 class _SetupScreenState extends State<SetupScreen> {
+  Timer? _offlineButtonTimer;
+  bool _showOfflineButton = false;
+  bool _navigated = false;
+
   @override
   void initState() {
     super.initState();
+    _offlineButtonTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted && !_navigated) {
+        setState(() => _showOfflineButton = true);
+      }
+    });
     _loadSavedCredentials();
+  }
+
+  @override
+  void dispose() {
+    _offlineButtonTimer?.cancel();
+    super.dispose();
+  }
+
+  void _navigateTo(Widget screen) {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  Future<void> _goOfflineNow() async {
+    if (_navigated || !mounted) return;
+    final downloadProvider = context.read<DownloadProvider>();
+    await downloadProvider.ensureInitialized();
+    if (!mounted) return;
+    _navigateTo(const MainScreen(isOfflineMode: true));
   }
 
   Future<void> _loadSavedCredentials() async {
@@ -414,9 +444,7 @@ class _SetupScreenState extends State<SetupScreen> {
     appLogger.i('_loadSavedCredentials: ${servers.length} server(s) found');
 
     if (servers.isEmpty) {
-      if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthScreen()));
-      }
+      _navigateTo(const AuthScreen());
       return;
     }
 
@@ -431,7 +459,7 @@ class _SetupScreenState extends State<SetupScreen> {
     try {
 
       final deviceId = await storage.getOrCreateDeviceId();
-      if (!mounted) return;
+      if (!mounted || _navigated) return;
 
       // Retry connection on cold start — TV/phone network may not be ready immediately
       var result = await ServerConnectionOrchestrator.connectAndInitialize(
@@ -443,9 +471,11 @@ class _SetupScreenState extends State<SetupScreen> {
         deviceId: deviceId,
       );
 
+      if (_navigated) return;
+
       if (!result.hasConnections) {
         await Future<void>.delayed(const Duration(seconds: 2));
-        if (!mounted) return;
+        if (!mounted || _navigated) return;
         multiServerProvider.clearAllConnections();
         result = await ServerConnectionOrchestrator.connectAndInitialize(
           servers: servers,
@@ -457,51 +487,37 @@ class _SetupScreenState extends State<SetupScreen> {
         );
       }
 
-      if (!mounted) return;
+      if (!mounted || _navigated) return;
 
       if (result.hasConnections) {
         // Connect may have backfilled PrimaryImageTag from Jellyfin `/Users/{id}` — reload registry before UI.
         await context.read<JellyfinProfileProvider>().refresh();
-        if (!mounted) return;
+        if (!mounted || _navigated) return;
 
         // Resume any downloads that were interrupted by app kill
         downloadProvider.ensureInitialized().then((_) {
           downloadProvider.resumeQueuedDownloads(result.firstClient!);
         });
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MainScreen(client: result.firstClient!)),
-        );
+        _navigateTo(MainScreen(client: result.firstClient!));
       } else {
         // Check if any server is reachable — if so, it's an auth issue, not network
         if (await _isAnyServerReachable(servers)) {
           appLogger.i('Server reachable but auth failed — redirecting to login');
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const AuthScreen()),
-          );
+          _navigateTo(const AuthScreen());
         } else {
           await downloadProvider.ensureInitialized();
           if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainScreen(isOfflineMode: true)),
-          );
+          _navigateTo(const MainScreen(isOfflineMode: true));
         }
       }
     } catch (e, stackTrace) {
       appLogger.e('Error during multi-server connection', error: e, stackTrace: stackTrace);
 
-      if (mounted) {
-        await downloadProvider.ensureInitialized();
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen(isOfflineMode: true)),
-        );
-      }
+      if (_navigated) return;
+      await downloadProvider.ensureInitialized();
+      if (!mounted) return;
+      _navigateTo(const MainScreen(isOfflineMode: true));
     }
   }
 
@@ -526,6 +542,25 @@ class _SetupScreenState extends State<SetupScreen> {
             const CircularProgressIndicator(color: Colors.white),
             const SizedBox(height: 16),
             Text(t.common.loading, style: const TextStyle(color: Colors.white)),
+            const SizedBox(height: 32),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _showOfflineButton
+                  ? FocusableWrapper(
+                      autofocus: true,
+                      onSelect: _goOfflineNow,
+                      child: TextButton(
+                        onPressed: _goOfflineNow,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white24),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                        child: Text(t.common.goOffline),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
