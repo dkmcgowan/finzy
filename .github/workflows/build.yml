@@ -11,13 +11,13 @@ jobs:
       attestations: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "17"
@@ -29,7 +29,7 @@ jobs:
           cache: true
 
       - name: Cache Pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -38,7 +38,7 @@ jobs:
             ${{ runner.os }}-pub-
 
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -82,19 +82,19 @@ jobs:
         run: cp build/app/outputs/flutter-apk/app-release.apk finzy-android.apk
 
       - name: Attest APK
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: finzy-android.apk
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: android-apk
           path: finzy-android.apk
 
       - name: Upload AAB
         if: vars.GOOGLE_PLAY_UPLOAD_ENABLED == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: android-aab
           path: build/app/outputs/bundle/release/app-release.aab
@@ -106,7 +106,7 @@ jobs:
       attestations: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -118,7 +118,7 @@ jobs:
           cache: true
 
       - name: Cache Pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -127,7 +127,7 @@ jobs:
             ${{ runner.os }}-pub-
 
       - name: Cache CocoaPods
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ios/Pods
@@ -138,7 +138,7 @@ jobs:
             ${{ runner.os }}-pods-
 
       - name: Cache Swift Package Manager
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/Library/Caches/org.swift.swiftpm
@@ -246,12 +246,12 @@ jobs:
           cp "$IPA_PATH" finzy-ios.ipa
 
       - name: Attest IPA
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: finzy-ios.ipa
 
       - name: Upload IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ios-ipa
           path: finzy-ios.ipa
@@ -273,7 +273,7 @@ jobs:
       attestations: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -285,7 +285,7 @@ jobs:
           cache: true
 
       - name: Cache Pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -294,7 +294,7 @@ jobs:
             ${{ runner.os }}-pub-
 
       - name: Cache CocoaPods
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             macos/Pods
@@ -305,7 +305,7 @@ jobs:
             ${{ runner.os }}-macos-pods-
 
       - name: Cache Swift Package Manager
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/Library/Caches/org.swift.swiftpm
@@ -423,12 +423,12 @@ jobs:
           hdiutil create -format ULMO -srcfolder dmg-staging -volname "Finzy" finzy-macos.dmg
 
       - name: Attest macOS DMG
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: finzy-macos.dmg
 
       - name: Upload macOS DMG
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macos-dmg
           path: finzy-macos.dmg
@@ -438,7 +438,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -450,7 +450,7 @@ jobs:
           cache: true
 
       - name: Cache Pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~\AppData\Local\Pub\Cache
@@ -465,7 +465,7 @@ jobs:
         run: flutter build windows --release --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
 
       - name: Upload x64 build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-x64-build
           path: build/windows/x64/runner/Release/
@@ -475,7 +475,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -501,7 +501,7 @@ jobs:
           cache: true
 
       - name: Cache Pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~\AppData\Local\Pub\Cache
@@ -516,7 +516,7 @@ jobs:
         run: flutter build windows --release --dart-define=GIT_COMMIT=${{ env.GIT_COMMIT }}
 
       - name: Upload arm64 build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-arm64-build
           path: build/windows/arm64/runner/Release/
@@ -529,16 +529,16 @@ jobs:
       attestations: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download x64 build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: windows-x64-build
           path: build-x64
 
       - name: Download arm64 build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: windows-arm64-build
           path: build-arm64
@@ -585,7 +585,7 @@ jobs:
           dart run msix:create --build-windows false --architecture arm64 -n finzy-windows-arm64 -o . --publisher $env:MSIX_PUBLISHER
 
       - name: Attest Windows artifacts
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
             finzy-windows-x64-portable.zip
@@ -593,32 +593,32 @@ jobs:
             finzy-windows-installer.exe
 
       - name: Attest Windows MSIX
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
             finzy-windows-x64.msix
             finzy-windows-arm64.msix
 
       - name: Upload x64 portable
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-x64-portable
           path: finzy-windows-x64-portable.zip
 
       - name: Upload arm64 portable
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-arm64-portable
           path: finzy-windows-arm64-portable.zip
 
       - name: Upload installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-installer
           path: finzy-windows-installer.exe
 
       - name: Upload MSIX
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-msix
           path: |
@@ -632,7 +632,7 @@ jobs:
       attestations: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -644,7 +644,7 @@ jobs:
           cache: true
 
       - name: Cache Pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -665,7 +665,7 @@ jobs:
 
       - name: Cache libmpv build
         id: libmpv-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: libmpv-prefix
           key: libmpv-${{ runner.arch }}-${{ hashFiles('linux/packaging/build-libmpv.sh') }}
@@ -718,7 +718,7 @@ jobs:
           tar -czf $GITHUB_WORKSPACE/finzy-linux-x64.tar.gz *
 
       - name: Attest Linux x64 artifacts
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
             finzy-linux-x64.tar.gz
@@ -727,7 +727,7 @@ jobs:
             finzy-linux-x64.pkg.tar.zst
 
       - name: Upload Linux x64 artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-x64
           path: |
@@ -743,7 +743,7 @@ jobs:
       attestations: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -760,7 +760,7 @@ jobs:
           cache: true
 
       - name: Cache Pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -781,7 +781,7 @@ jobs:
 
       - name: Cache libmpv build
         id: libmpv-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: libmpv-prefix
           key: libmpv-${{ runner.arch }}-${{ hashFiles('linux/packaging/build-libmpv.sh') }}
@@ -844,7 +844,7 @@ jobs:
           tar -czf $GITHUB_WORKSPACE/finzy-linux-arm64.tar.gz *
 
       - name: Attest Linux arm64 artifacts
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
             finzy-linux-arm64.tar.gz
@@ -853,7 +853,7 @@ jobs:
             finzy-linux-arm64.pkg.tar.zst
 
       - name: Upload Linux arm64 artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-arm64
           path: |
@@ -869,7 +869,7 @@ jobs:
       contents: write
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: artifacts
 
