@@ -6,6 +6,12 @@ Finzy is a fork of [Plezy](https://github.com/edde746/plezy), a modern cross-pla
 
 **Support development** — If you enjoy Finzy, you can leave a tip via [PayPal](https://paypal.me/dkmcgowan). Optional and much appreciated.
 
+Looking for help on Android testing. I need some people to join my Closed Testing on Google Play. You just need to join the Group below, which will add you and allow you to download from the Play Store. Then please send feedback and download any updates there and hopefully after a few weeks I can submit again for review.
+
+Google Group: https://groups.google.com/g/finzyclosedtesting
+Join on Android: https://play.google.com/store/apps/details?id=com.dkmcgowan.finzy
+Join on Web: https://play.google.com/apps/testing/com.dkmcgowan.finzy
+
 <p align="center">
   <img src="assets/screenshots/desktop-home.png" alt="Finzy Desktop Home Screen" width="800" />
 </p>
